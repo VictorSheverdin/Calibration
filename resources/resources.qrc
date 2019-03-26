@@ -1,0 +1,12 @@
+<RCC>
+    <qresource prefix="/resources">
+        <file>qss/style.css</file>
+        <file>images/settings.ico</file>
+        <file>images/grab.ico</file>
+        <file>images/power.ico</file>
+        <file>images/checkerflag.ico</file>
+        <file>images/checkerboard.ico</file>
+        <file>images/camera.ico</file>
+        <file>images/help.ico</file>
+    </qresource>
+</RCC>
