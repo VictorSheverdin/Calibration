@@ -32,6 +32,36 @@ const CvImage IconBase::previewImage() const
     return ImageWidget::image();
 }
 
+bool IconBase::isMonocularIcon() const
+{
+    return toMonocularIcon();
+}
+
+bool IconBase::isStereoIcon() const
+{
+    return toStereoIcon();
+}
+
+MonocularIcon *IconBase::toMonocularIcon()
+{
+    return dynamic_cast< MonocularIcon * >( this );
+}
+
+StereoIcon *IconBase::toStereoIcon()
+{
+    return dynamic_cast< StereoIcon * >( this );
+}
+
+const MonocularIcon *IconBase::toMonocularIcon() const
+{
+    return dynamic_cast< const MonocularIcon * >( this );
+}
+
+const StereoIcon *IconBase::toStereoIcon() const
+{
+    return dynamic_cast< const StereoIcon * >( this );
+}
+
 void IconBase::paintEvent( QPaintEvent *event )
 {
     ImageWidget::paintEvent( event );
@@ -80,6 +110,16 @@ const CvImage MonocularIcon::sourceImage() const
     return m_sourceImage;
 }
 
+void MonocularIcon::setPreviewPoints( std::vector<cv::Point2f> &points )
+{
+    m_previewPoints = points;
+}
+
+std::vector<cv::Point2f> MonocularIcon::previewPoints() const
+{
+    return m_previewPoints;
+}
+
 // StereoIcon
 StereoIcon::StereoIcon( const CvImage previewImage, const CvImage leftSourceImage, const CvImage rightSourceImage, QWidget* parent )
     : IconBase( previewImage, parent )
@@ -114,6 +154,25 @@ const CvImage StereoIcon::rightSourceImage() const
     return m_rightSourceImage;
 }
 
+void StereoIcon::setLeftPreviewPoints( std::vector< cv::Point2f > &points )
+{
+    m_previewLeftPoints = points;
+}
+
+std::vector< cv::Point2f > StereoIcon::leftPreviewPoints() const
+{
+    return m_previewLeftPoints;
+}
+
+void StereoIcon::setRightPreviewPoints( std::vector< cv::Point2f > &points )
+{
+    m_previewRightPoints = points;
+}
+
+std::vector< cv::Point2f > StereoIcon::rightPreviewPoints() const
+{
+    return m_previewRightPoints;
+}
 
 // FrameIconsWidget
 IconsLayout::IconsLayout( QWidget *parent )
@@ -194,6 +253,16 @@ double IconsLayout::maximumAspectRatio() const
 
 }
 
+QList< IconBase* > IconsLayout::icons() const
+{
+    QList< IconBase* > ret;
+
+    for ( auto i = 0; i < iconsCount(); ++i)
+        ret.push_back( dynamic_cast< IconBase* >( m_layout->itemAt( i )->widget() ) );
+
+    return ret;
+}
+
 IconBase *IconsLayout::iconAt( const size_t i ) const
 {
     return dynamic_cast< IconBase * > ( m_layout->itemAt( i )->widget() );
@@ -238,6 +307,11 @@ void IconsWidget::initialize()
 IconsLayout *IconsWidget::layoutWidget() const
 {
     return dynamic_cast<IconsLayout *>( widget() );
+}
+
+QList< IconBase* > IconsWidget::icons() const
+{
+    return layoutWidget()->icons();
 }
 
 void IconsWidget::addIcon(IconBase *icon)

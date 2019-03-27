@@ -108,6 +108,7 @@ void MainWindow::grabFrame()
 
 void MainWindow::calculate()
 {
+    m_widget->calculate();
 }
 
 void MainWindow::settingsDialog()

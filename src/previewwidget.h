@@ -17,13 +17,17 @@ public:
 
     const CvImage sourceImage() const;
     const CvImage previewImage() const;
+    const std::vector<cv::Point2f> &previewPoints() const;
 
 public slots:
-    void setSourceImage(const CvImage image);
-    void setDisplayedImage(const CvImage image);
+    void setSourceImage( const CvImage image );
+    void setPreviewImage( const CvImage image );
+    void setPreviewPoints( const std::vector<cv::Point2f> &points );
 
 protected:
     CvImage m_sourceImage;
+
+    std::vector<cv::Point2f> m_previewPoints;
 
 private:
     void initialize();

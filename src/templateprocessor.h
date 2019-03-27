@@ -4,10 +4,10 @@
 
 #include "image.h"
 
-class ProcessorData
+class ProcessorState
 {
 public:
-    ProcessorData();
+    ProcessorState();
 
 protected:
 
@@ -39,15 +39,25 @@ public:
     void setFilterQuads( const bool value );
     void setFastCheck( const bool value );
 
-    bool process(const CvImage &frame, CvImage *procFrame, std::vector<cv::Point2f> *points );
+    bool processFrame( const CvImage &frame, CvImage *view, std::vector<cv::Point2f> *points );
+    bool processPreview( const CvImage &frame, CvImage *preview, std::vector<cv::Point2f> *points );
+
+    bool calcChessboardCorners(std::vector< cv::Point3f > *corners);
 
 protected:
     Type m_templateType;
     cv::Size m_count;
     double m_size;
     bool m_resizeFlag;
+
+    bool m_subPixFlag;
+    cv::Size m_subPixWinSize;
+    cv::Size m_subPixZeroZone;
+
     unsigned int m_frameMaximumSize;
     int m_flags;
+
+    bool findPoints( const CvImage &frame, std::vector<cv::Point2f> *points );
 
 private:
     void initialize();

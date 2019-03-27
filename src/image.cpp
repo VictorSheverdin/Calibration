@@ -110,6 +110,11 @@ int CvImage::height() const
     return rows;
 }
 
+cv::Size CvImage::size() const
+{
+    return cv::Size( width(), height() );
+}
+
 double CvImage::aspectRatio() const
 {
     if ( height() != 0 )

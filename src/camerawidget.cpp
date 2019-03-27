@@ -88,9 +88,14 @@ void MonocularCameraWidget::setSourceImage(const CvImage image)
     m_previewWidget->setSourceImage( image );
 }
 
-void MonocularCameraWidget::setDisplayedImage(const CvImage image)
+void MonocularCameraWidget::setPreviewImage(const CvImage image)
 {
-    m_previewWidget->setDisplayedImage( image );
+    m_previewWidget->setPreviewImage( image );
+}
+
+void MonocularCameraWidget::setPreviewPoints( const std::vector<cv::Point2f> &points )
+{
+    m_previewWidget->setPreviewPoints( points );
 }
 
 const CvImage MonocularCameraWidget::sourceImage() const
@@ -103,17 +108,24 @@ const CvImage MonocularCameraWidget::previewImage() const
     return m_previewWidget->previewImage();
 }
 
+const std::vector<cv::Point2f> &MonocularCameraWidget::previewPoints() const
+{
+    return m_previewWidget->previewPoints();
+}
+
 void MonocularCameraWidget::updatePreview()
 {
     auto frame = sourceImage();
 
     if (!frame.empty()) {
         CvImage procFrame;
-        std::vector<cv::Point2f> points;
+        std::vector<cv::Point2f> previewPoints;
 
-        m_processor.process( frame, &procFrame, &points );
+        m_processor.processPreview( frame, &procFrame, &previewPoints );
 
-        setDisplayedImage( procFrame );
+        setPreviewImage( procFrame );
+        setPreviewPoints( previewPoints );
+
     }
 
 }
@@ -184,7 +196,12 @@ void StereoCameraWidget::setLeftSourceImage( const CvImage image )
 
 void StereoCameraWidget::setLeftDisplayedImage( const CvImage image )
 {
-    return m_leftCameraWidget->setDisplayedImage( image );
+    return m_leftCameraWidget->setPreviewImage( image );
+}
+
+void StereoCameraWidget::setLeftPreviewPoints( const std::vector<cv::Point2f> &points )
+{
+    m_leftCameraWidget->setPreviewPoints( points );
 }
 
 void StereoCameraWidget::setRightSourceImage( const CvImage image )
@@ -194,7 +211,12 @@ void StereoCameraWidget::setRightSourceImage( const CvImage image )
 
 void StereoCameraWidget::setRightDisplayedImage( const CvImage image )
 {
-    return m_rightCameraWidget->setDisplayedImage( image );
+    return m_rightCameraWidget->setPreviewImage( image );
+}
+
+void StereoCameraWidget::setRightPreviewPoints( const std::vector<cv::Point2f> &points )
+{
+    m_rightCameraWidget->setPreviewPoints( points );
 }
 
 CvImage StereoCameraWidget::createPreview( const CvImage &leftPreviewImage, const CvImage &rightPreviewImage )
@@ -221,11 +243,12 @@ void StereoCameraWidget::updateLeftPreview()
 
     if ( !frame.empty() ) {
         CvImage procFrame;
-        std::vector<cv::Point2f> points;
+        std::vector<cv::Point2f> previewPoints;
 
-        m_processor.process( frame, &procFrame, &points );
+        m_processor.processPreview( frame, &procFrame, &previewPoints );
 
-        m_leftCameraWidget->setDisplayedImage( procFrame );
+        m_leftCameraWidget->setPreviewImage( procFrame );
+        m_leftCameraWidget->setPreviewPoints( previewPoints );
 
     }
 
@@ -237,11 +260,12 @@ void StereoCameraWidget::updateRightPreview()
 
     if ( !frame.empty() ) {
         CvImage procFrame;
-        std::vector<cv::Point2f> points;
+        std::vector<cv::Point2f> previewPoints;
 
-        m_processor.process( frame, &procFrame, &points );
+        m_processor.processPreview( frame, &procFrame, &previewPoints );
 
-        m_rightCameraWidget->setDisplayedImage( procFrame );
+        m_rightCameraWidget->setPreviewImage( procFrame );
+        m_rightCameraWidget->setPreviewPoints( previewPoints );
 
     }
 
@@ -334,7 +358,7 @@ void TripleCameraWidget::setSource1Image( const unsigned int cameraIndex, const 
 
 }
 
-void TripleCameraWidget::setDisplayedImage( const unsigned int cameraIndex, const CvImage image )
+void TripleCameraWidget::setPreviewImage( const unsigned int cameraIndex, const CvImage image )
 {
     if( cameraIndex >= 0 && cameraIndex < 3 )
         m_cameraWidgets[ cameraIndex ]->setSourceImage( image );

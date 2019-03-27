@@ -5,7 +5,11 @@
 
 class MonocularTaskWidget;
 class StereoTaskWidget;
+class IconBase;
 class IconsWidget;
+class ImageWidget;
+class ImageDialog;
+class ReportDialog;
 
 class CalibrationWidgetBase : public QSplitter
 {
@@ -16,6 +20,15 @@ public:
 
 public slots:
     virtual void grabFrame() = 0;
+    virtual void calculate() = 0;
+
+protected slots:
+    void showIcon( IconBase *icon );
+
+protected:
+    QPointer< IconsWidget > m_iconsWidget;
+    QPointer< ImageDialog > m_iconViewDialog;
+    QPointer< ReportDialog > m_reportDialog;
 
 private:
     void initialize();
@@ -31,10 +44,10 @@ public:
 
 public slots:
     virtual void grabFrame() override;
+    virtual void calculate() override;
 
 protected:
     QPointer<MonocularTaskWidget> m_taskWidget;
-    QPointer<IconsWidget> m_iconsWidget;
 
 private:
     void initialize( const int cameraIndex );
@@ -49,10 +62,10 @@ public:
 
 public slots:
     virtual void grabFrame() override;
+    virtual void calculate() override;
 
 protected:
     QPointer<StereoTaskWidget> m_taskWidget;
-    QPointer<IconsWidget> m_iconsWidget;
 
 private:
     void initialize( const int leftCameraIndex, const int rightCameraIndex );

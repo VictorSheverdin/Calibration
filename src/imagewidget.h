@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QWidget>
+#include <QDialog>
 
 #include "image.h"
 
@@ -36,3 +37,20 @@ private:
 
 };
 
+class ImageDialog : public QDialog
+{
+    Q_OBJECT
+
+public:
+    explicit ImageDialog( QWidget *parent = nullptr );
+
+public slots:
+    void setImage(const CvImage image);
+
+protected:
+    QPointer< ImageWidget > m_imageWidget;
+
+private:
+    void initialize();
+
+};

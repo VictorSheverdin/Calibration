@@ -1,6 +1,9 @@
 #pragma once
 
 #include <QApplication>
+#include <QPointer>
+
+class MainWindow;
 
 class Application : public QApplication
 {
@@ -9,7 +12,14 @@ class Application : public QApplication
 public:
     Application( int &argc, char **argv );
 
+    MainWindow *mainWindow() const;
+
+protected:
+    QPointer<MainWindow> m_mainWindow;
+
 private:
-    void initialize();
+    void initialize( int &argc, char **argv );
 
 };
+
+Application *application();

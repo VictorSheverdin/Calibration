@@ -7,10 +7,10 @@
 Application::Application( int &argc, char **argv )
     : QApplication(argc, argv)
 {
-    initialize();
+    initialize( argc, argv );
 }
 
-void Application::initialize()
+void Application::initialize( int &argc, char **argv )
 {
     QFile cssFile(":/resources/qss/style.css");
 
@@ -23,5 +23,19 @@ void Application::initialize()
 
     setWindowIcon( QIcon( ":/resources/images/checkerboard.ico" ) );
 
-    (new MainWindow( 0, 2 ))->showMaximized();
+    QCommandLineParser parser;
+
+    m_mainWindow = new MainWindow( 0 );
+    m_mainWindow->showMaximized();
+
+}
+
+MainWindow *Application::mainWindow() const
+{
+    return m_mainWindow;
+}
+
+Application *application()
+{
+    return dynamic_cast< Application * >( qApp );
 }

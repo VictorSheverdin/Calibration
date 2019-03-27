@@ -8,6 +8,16 @@
 class QLabel;
 class QBoxLayout;
 
+class IconData
+{
+public:
+    IconData();
+
+};
+
+class MonocularIcon;
+class StereoIcon;
+
 class IconBase : public ImageWidget
 {
     Q_OBJECT
@@ -18,6 +28,15 @@ public:
 
     void setPreviewImage( const CvImage &image );
     const CvImage previewImage() const;
+
+    bool isMonocularIcon() const;
+    bool isStereoIcon() const;
+
+    MonocularIcon *toMonocularIcon();
+    StereoIcon *toStereoIcon();
+
+    const MonocularIcon *toMonocularIcon() const;
+    const StereoIcon *toStereoIcon() const;
 
 protected:
     virtual void paintEvent( QPaintEvent *event ) override;
@@ -41,7 +60,11 @@ public:
     void setSourceImage( const CvImage &image );
     const CvImage sourceImage() const;
 
+    void setPreviewPoints( std::vector< cv::Point2f > &points );
+    std::vector< cv::Point2f > previewPoints() const;
+
 protected:
+    std::vector< cv::Point2f > m_previewPoints;
     CvImage m_sourceImage;
 
 private:
@@ -62,7 +85,16 @@ public:
     const CvImage leftSourceImage() const;
     const CvImage rightSourceImage() const;
 
+    void setLeftPreviewPoints( std::vector< cv::Point2f > &points );
+    std::vector< cv::Point2f > leftPreviewPoints() const;
+
+    void setRightPreviewPoints( std::vector< cv::Point2f > &points );
+    std::vector< cv::Point2f > rightPreviewPoints() const;
+
 protected:
+    std::vector<cv::Point2f> m_previewLeftPoints;
+    std::vector<cv::Point2f> m_previewRightPoints;
+
     CvImage m_leftSourceImage;
     CvImage m_rightSourceImage;
 
@@ -88,6 +120,7 @@ public:
 
     double maximumAspectRatio() const;
 
+    QList< IconBase* > icons() const;
     IconBase *iconAt( const size_t i ) const;
 
     void clear();
@@ -117,6 +150,8 @@ public:
     Qt::Orientation orientation() const;
 
     IconsLayout *layoutWidget() const;
+
+    QList< IconBase* > icons() const;
 
 signals:
     void iconActivated( IconBase *icon );

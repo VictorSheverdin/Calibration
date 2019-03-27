@@ -31,6 +31,9 @@ public:
 
     int width() const;
     int height() const;
+
+    cv::Size size() const;
+
     double aspectRatio() const;
     double revAspectRatio() const;
 

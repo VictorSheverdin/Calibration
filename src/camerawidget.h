@@ -44,10 +44,12 @@ public:
 
     const CvImage sourceImage() const;
     const CvImage previewImage() const;
+    const std::vector<cv::Point2f> &previewPoints() const;
 
 public slots:
     void setSourceImage(const CvImage image);
-    void setDisplayedImage(const CvImage image);
+    void setPreviewImage(const CvImage image);
+    void setPreviewPoints( const std::vector<cv::Point2f> &points );
 
 protected slots:
     void updatePreview();
@@ -75,18 +77,22 @@ public:
 
     const CvImage leftSourceImage() const;
     const CvImage leftDisplayedImage() const;
+    const std::vector<cv::Point2f> &leftPreviewPoints() const;
 
     const CvImage rightSourceImage() const;
     const CvImage rightDisplayedImage() const;
+    const std::vector<cv::Point2f> &rightPreviewPoints() const;
 
     static CvImage createPreview( const CvImage &leftPreviewImage, const CvImage &rightPreviewImage );
 
 public slots:
     void setLeftSourceImage( const CvImage image );
     void setLeftDisplayedImage( const CvImage image );
+    void setLeftPreviewPoints( const std::vector<cv::Point2f> &points );
 
     void setRightSourceImage( const CvImage image );
     void setRightDisplayedImage( const CvImage image );
+    void setRightPreviewPoints( const std::vector<cv::Point2f> &points );
 
 protected slots:
     void updatePreview();
@@ -132,7 +138,7 @@ public:
 
 public slots:
     void setSource1Image( const unsigned int cameraIndex, const CvImage image );
-    void setDisplayedImage( const unsigned int cameraIndex, const CvImage image );
+    void setPreviewImage( const unsigned int cameraIndex, const CvImage image );
 
 protected slots:
     void updatePreview();

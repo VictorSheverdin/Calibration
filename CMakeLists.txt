@@ -35,6 +35,8 @@ set ( SOURCES
     "src/supportwidgets.cpp"
     "src/templateprocessor.h"
     "src/templateprocessor.cpp"
+    "src/reportwidget.h"
+    "src/reportwidget.cpp"
     "src/main.cpp"
 )
 
