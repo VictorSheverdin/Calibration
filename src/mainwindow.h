@@ -24,6 +24,12 @@ protected:
     QPointer<QMenuBar> m_menuBar;
     QPointer<QStatusBar> m_statusBar;
 
+    QPointer<QAction> m_newAction;
+    QPointer<QAction> m_openAction;
+    QPointer<QAction> m_saveAction;
+
+    QPointer<QAction> m_exportAction;
+
     QPointer<QAction> m_grabAction;
     QPointer<QAction> m_autoGrabAction;
     QPointer<QAction> m_calculateAction;

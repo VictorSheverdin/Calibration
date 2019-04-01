@@ -29,6 +29,12 @@ void TaskWidgetBase::updateParameters()
     m_cameraWidget->setType( m_parametersWidget->type() );
     m_cameraWidget->setCount( m_parametersWidget->count() );
     m_cameraWidget->setSize( m_parametersWidget->size() );
+
+    m_cameraWidget->setAdaptiveThreshold( m_parametersWidget->adaptiveThreshold() );
+    m_cameraWidget->setNormalizeImage( m_parametersWidget->normalizeImage() );
+    m_cameraWidget->setFilterQuads( m_parametersWidget->filterQuads() );
+    m_cameraWidget->setFastCheck( m_parametersWidget->fastCheck() );
+
     m_cameraWidget->setResizeFlag( m_parametersWidget->rescaleFlag() );
     m_cameraWidget->setFrameMaximumSize( m_parametersWidget->rescaleSize() );
 

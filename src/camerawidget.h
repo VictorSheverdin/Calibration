@@ -22,11 +22,21 @@ public:
     void setResizeFlag( const bool value );
     void setFrameMaximumSize( const unsigned int value );
 
+    void setAdaptiveThreshold( const bool value );
+    void setNormalizeImage( const bool value );
+    void setFilterQuads( const bool value );
+    void setFastCheck( const bool value );
+
     TemplateProcessor::Type type() const;
     const cv::Size &count() const;
     double size() const;
     bool resizeFlag() const;
     unsigned int frameMaximumFlag() const;
+
+    bool aptiveThreshold() const;
+    bool normalizeImage() const;
+    bool filterQuads() const;
+    bool fastCheck() const;
 
 protected:
     TemplateProcessor m_processor;
@@ -83,7 +93,8 @@ public:
     const CvImage rightDisplayedImage() const;
     const std::vector<cv::Point2f> &rightPreviewPoints() const;
 
-    static CvImage createPreview( const CvImage &leftPreviewImage, const CvImage &rightPreviewImage );
+    static CvImage makeOverlappedPreview( const CvImage &leftPreviewImage, const CvImage &rightPreviewImage );
+    static CvImage makeStraightPreview( const CvImage &leftPreviewImage, const CvImage &rightPreviewImage );
 
 public slots:
     void setLeftSourceImage( const CvImage image );
@@ -108,6 +119,8 @@ protected:
 
     void updateLeftPreview();
     void updateRightPreview();
+
+    static CvImage makePreview( const CvImage &leftPreviewImage, const CvImage &rightPreviewImage, const double factor );
 
 private:
     void initialize( const int leftCameraIndex, const int rightCameraIndex );

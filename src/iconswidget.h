@@ -77,11 +77,13 @@ class StereoIcon : public IconBase
     Q_OBJECT
 
 public:
-    StereoIcon( const CvImage previewImage, const CvImage leftSourceImage, const CvImage rightSourceImage, QWidget* parent = nullptr );
+    StereoIcon( const CvImage previewImage, const CvImage straightPreviewImage, const CvImage leftSourceImage, const CvImage rightSourceImage, QWidget* parent = nullptr );
 
+    void setStraightPreview(const CvImage &image);
     void setLeftSourceImage( const CvImage &image );
     void setRightSourceImage( const CvImage &image );
 
+    const CvImage &straightPreview() const;
     const CvImage leftSourceImage() const;
     const CvImage rightSourceImage() const;
 
@@ -92,6 +94,8 @@ public:
     std::vector< cv::Point2f > rightPreviewPoints() const;
 
 protected:
+    CvImage m_straightPreview;
+
     std::vector<cv::Point2f> m_previewLeftPoints;
     std::vector<cv::Point2f> m_previewRightPoints;
 

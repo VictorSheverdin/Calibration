@@ -26,6 +26,12 @@ void ReportWidget::addBreak()
     addText( "\n" );
 }
 
+void ReportWidget::addDoubleBreak()
+{
+    addBreak();
+    addBreak();
+}
+
 void ReportWidget::addNumber( const int num )
 {
     addText( QString::number( num ) );
@@ -52,9 +58,9 @@ void ReportWidget::addMatrix( const cv::Mat& mat )
 
     html += "<table>";
 
-    for ( auto i = 0; i < 3; ++i ) {
+    for ( auto i = 0; i < mat.rows; ++i ) {
         html += "<tr>";
-        for ( auto j = 0; j < 3; ++j ) {
+        for ( auto j = 0; j <mat.cols; ++j ) {
             html += "<td>";
             html += QString::number( mat.at<double>( i, j ) );
             html += "</td>";
@@ -66,6 +72,25 @@ void ReportWidget::addMatrix( const cv::Mat& mat )
 
     insertHtml( html );
 
+}
+
+void ReportWidget::addRect( const cv::Rect& rect )
+{
+    addText( "x:" );
+    addNumber( rect.x );
+    addText( " " );
+
+    addText( "y:" );
+    addNumber( rect.y );
+    addText( " " );
+
+    addText( "width:" );
+    addNumber( rect.width );
+    addText( " " );
+
+    addText( "height:" );
+    addNumber( rect.height );
+    addText( " " );
 }
 
 // ReportDialog
@@ -101,6 +126,11 @@ void ReportDialog::addBreak()
     m_reportWidget->addBreak();
 }
 
+void ReportDialog::addDoubleBreak()
+{
+    m_reportWidget->addDoubleBreak();
+}
+
 void ReportDialog::addNumber( const int num )
 {
     m_reportWidget->addNumber( num );
@@ -124,6 +154,11 @@ void ReportDialog::addImage( const CvImage& image )
 void ReportDialog::addMatrix( const cv::Mat& mat )
 {
     m_reportWidget->addMatrix( mat );
+}
+
+void ReportDialog::addRect( const cv::Rect& rect )
+{
+    m_reportWidget->addRect( rect );
 }
 
 

@@ -8,5 +8,9 @@
         <file>images/checkerboard.ico</file>
         <file>images/camera.ico</file>
         <file>images/help.ico</file>
+        <file>images/save.ico</file>
+        <file>images/open.ico</file>
+        <file>images/export.ico</file>
+        <file>images/new.ico</file>
     </qresource>
 </RCC>

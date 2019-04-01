@@ -28,16 +28,21 @@ public:
     void setResizeFlag( const bool value );
     void setFrameMaximumSize( const unsigned int value );
 
+    void setAdaptiveThreshold( const bool value );
+    void setNormalizeImage( const bool value );
+    void setFilterQuads( const bool value );
+    void setFastCheck( const bool value );
+
     Type type() const;
     const cv::Size &count() const;
     double size() const;
     bool resizeFlag() const;
     unsigned int frameMaximumFlag() const;
 
-    void setAdaptiveThreshold( const bool value );
-    void setNormalizeImage( const bool value );
-    void setFilterQuads( const bool value );
-    void setFastCheck( const bool value );
+    bool aptiveThreshold() const;
+    bool normalizeImage() const;
+    bool filterQuads() const;
+    bool fastCheck() const;
 
     bool processFrame( const CvImage &frame, CvImage *view, std::vector<cv::Point2f> *points );
     bool processPreview( const CvImage &frame, CvImage *preview, std::vector<cv::Point2f> *points );

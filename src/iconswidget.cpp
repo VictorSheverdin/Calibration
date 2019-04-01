@@ -121,9 +121,10 @@ std::vector<cv::Point2f> MonocularIcon::previewPoints() const
 }
 
 // StereoIcon
-StereoIcon::StereoIcon( const CvImage previewImage, const CvImage leftSourceImage, const CvImage rightSourceImage, QWidget* parent )
+StereoIcon::StereoIcon(const CvImage previewImage, const CvImage straightPreviewImage, const CvImage leftSourceImage, const CvImage rightSourceImage, QWidget* parent )
     : IconBase( previewImage, parent )
 {
+    setStraightPreview( straightPreviewImage );
     setLeftSourceImage( leftSourceImage );
     setRightSourceImage( rightSourceImage );
 
@@ -134,6 +135,11 @@ void StereoIcon::initialize()
 {
 }
 
+void StereoIcon::setStraightPreview( const CvImage &image )
+{
+    m_straightPreview = image;
+}
+
 void StereoIcon::setLeftSourceImage( const CvImage &image )
 {
     m_leftSourceImage = image;
@@ -142,6 +148,11 @@ void StereoIcon::setLeftSourceImage( const CvImage &image )
 void StereoIcon::setRightSourceImage( const CvImage &image )
 {
     m_rightSourceImage = image;
+}
+
+const CvImage &StereoIcon::straightPreview() const
+{
+    return m_straightPreview;
 }
 
 const CvImage StereoIcon::leftSourceImage() const

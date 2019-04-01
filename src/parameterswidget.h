@@ -26,6 +26,11 @@ public:
 
     double size() const;
 
+    bool adaptiveThreshold() const;
+    bool normalizeImage() const;
+    bool filterQuads() const;
+    bool fastCheck() const;
+
     bool rescaleFlag() const;
 
     unsigned int rescaleSize() const;
@@ -38,6 +43,13 @@ protected:
     QPointer<CountSpinBox> m_xCountSpinBox;
     QPointer<CountSpinBox> m_yCountSpinBox;
     QPointer<SizeSpinBox> m_sizeSpinBox;
+
+    QPointer<QCheckBox> m_adaptiveThresholdCheckBox;
+    QPointer<QCheckBox> m_normalizeImageCheckBox;
+    QPointer<QCheckBox> m_filterQuadsCheckBox;
+    QPointer<QCheckBox> m_fastCheckCheckBox;
+
+
     QPointer<QCheckBox> m_rescaleCheckBox;
     QPointer<RescaleSpinBox> m_rescaleSizeSpinBox;
 

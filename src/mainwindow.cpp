@@ -43,6 +43,12 @@ void MainWindow::initialize()
 
 void MainWindow::setupActions()
 {
+    m_newAction = new QAction( QIcon( ":/resources/images/new.ico" ), tr( "New" ), this );
+    m_openAction = new QAction( QIcon( ":/resources/images/open.ico" ), tr( "Open" ), this );
+    m_saveAction = new QAction( QIcon( ":/resources/images/save.ico" ), tr( "Save" ), this );
+
+    m_exportAction = new QAction( QIcon( ":/resources/images/export.ico" ), tr( "Export" ), this );
+
     m_grabAction = new QAction( QIcon( ":/resources/images/grab.ico" ), tr( "Grab" ), this );
 
     m_autoGrabAction = new QAction( QIcon( ":/resources/images/camera.ico" ), tr( "Autograb" ), this );
@@ -66,7 +72,12 @@ void MainWindow::setupMenus()
     m_menuBar = new QMenuBar(this);
 
     auto fileMenu = m_menuBar->addMenu( tr( "File" ) );
-    fileMenu->addAction( m_settingsAction );
+    fileMenu->addAction( m_newAction );
+    fileMenu->addSeparator();
+    fileMenu->addAction( m_openAction );
+    fileMenu->addAction( m_saveAction );
+    fileMenu->addSeparator();
+    fileMenu->addAction( m_exportAction );
     fileMenu->addSeparator();
     fileMenu->addAction( m_exitAction );
 
@@ -75,6 +86,8 @@ void MainWindow::setupMenus()
     actionsMenu->addAction( m_autoGrabAction );
     actionsMenu->addSeparator();
     actionsMenu->addAction( m_calculateAction );
+    actionsMenu->addSeparator();
+    actionsMenu->addAction( m_settingsAction );
 
     auto helpMenu = m_menuBar->addMenu( tr( "Help" ) );
     helpMenu->addAction( m_aboutAction );
@@ -89,6 +102,11 @@ void MainWindow::setupToolBars()
     m_toolBar = new QToolBar( tr( "Project tool bar" ), this );
     addToolBar( m_toolBar );
 
+    m_toolBar->addAction( m_newAction );
+    m_toolBar->addSeparator();
+    m_toolBar->addAction( m_openAction );
+    m_toolBar->addAction( m_saveAction );
+    m_toolBar->addSeparator();
     m_toolBar->addAction( m_grabAction );
     m_toolBar->addAction( m_autoGrabAction );
     m_toolBar->addSeparator();

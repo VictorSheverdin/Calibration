@@ -1,6 +1,7 @@
 #include "precompiled.h"
 
 #include "supportwidgets.h"
+#include "defs.h"
 
 // TypeComboBox
 TypeComboBox::TypeComboBox(QWidget *parent )
@@ -74,3 +75,67 @@ void RescaleSpinBox::initialize()
     setAlignment( Qt::AlignRight );
 
 }
+
+// SliderBoxBase
+SliderBoxBase::SliderBoxBase( QWidget* parent )
+    : QWidget( parent )
+{
+    initialize();
+}
+
+void SliderBoxBase::initialize()
+{
+    m_layout = new QHBoxLayout( this );
+
+    m_slider = new QSlider( Qt::Horizontal, this );
+
+    m_layout->addWidget( m_slider );
+
+}
+
+// IntSliderBox
+IntSliderBox::IntSliderBox( QWidget* parent )
+    : SliderBoxBase( parent )
+{
+    initialize();
+}
+
+void IntSliderBox::initialize()
+{
+    m_spinBox = new QSpinBox( this );
+
+    m_layout->addWidget( m_spinBox );
+
+    connect( m_slider, &QSlider::sliderMoved, m_spinBox,  &QSpinBox::setValue );
+    connect( m_spinBox,  static_cast< void ( QSpinBox::* )( int ) >( &QSpinBox::valueChanged ), m_slider, &QSlider::setValue );
+
+}
+
+// DoubleSliderBox
+DoubleSliderBox::DoubleSliderBox( QWidget* parent )
+    : SliderBoxBase( parent )
+{
+    initialize();
+}
+
+void DoubleSliderBox::initialize()
+{
+    m_spinBox = new QDoubleSpinBox( this );
+
+    m_layout->addWidget( m_spinBox );
+
+    connect( m_slider, &QSlider::sliderMoved, [&]( int position)  {
+        double value = static_cast< double >( position ) / 100;
+        if ( fabs(m_spinBox->value() - value) > DOUBLE_EPS ) {
+            m_spinBox->setValue( value );
+        }
+    } );
+    connect( m_spinBox,  static_cast< void ( QDoubleSpinBox::* )( double ) >( &QDoubleSpinBox::valueChanged ), [&]( double position ) {
+        int value = position * 100;
+        if ( m_slider->value() != value ) {
+            m_slider->setValue( value );
+        }
+    } );
+
+}
+

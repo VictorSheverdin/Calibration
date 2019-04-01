@@ -8,7 +8,7 @@ set(CMAKE_AUTOMOC ON)
 # Create code from a list of Qt designer ui files
 set(CMAKE_AUTOUIC ON)
 
-set ( SOURCES
+set ( CALIBRATION_SOURCES
     "src/precompiled.h"
     "src/calibrationwidget.h"
     "src/calibrationwidget.cpp"
@@ -37,7 +37,21 @@ set ( SOURCES
     "src/templateprocessor.cpp"
     "src/reportwidget.h"
     "src/reportwidget.cpp"
-    "src/main.cpp"
+    "src/vizwidget.h"
+    "src/vizwidget.cpp"
+    "src/disparitycontrolwidget.h"
+    "src/disparitycontrolwidget.cpp"
+    "src/calibrationapp.cpp"
+)
+
+set ( DISPARITY_PREVIEW_SOURCES
+    "src/precompiled.h"
+    "src/defs.h"
+    "src/supportwidgets.h"
+    "src/supportwidgets.cpp"
+    "src/disparitycontrolwidget.h"
+    "src/disparitycontrolwidget.cpp"
+    "src/disparitypreviewapp.cpp"
 )
 
 set ( RESOURCES
@@ -55,15 +69,18 @@ include_directories( ${Qt5Widgets_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${EIGEN3_
 
 # using Qt meta-system (precompiler)
 QT5_ADD_RESOURCES( RES_SOURCES ${RESOURCES} )
-QT5_WRAP_UI( UI_HEADERS ${UIS} )
-QT5_WRAP_CPP( MOC_SRCS ${MOC_HEADERS} )
+
+set (DISPARITY_PREVIEW_NAME DisparityPreview)
 
 # compile
-add_executable( ${PROJECT_NAME} ${SOURCES} ${MOC_SRCS} ${RES_SOURCES} ${UI_HEADERS} )
+add_executable( ${PROJECT_NAME} ${CALIBRATION_SOURCES} ${RES_SOURCES} )
+
+add_executable( DisparityPreview ${DISPARITY_PREVIEW_SOURCES} ${RES_SOURCES} )
 
 # build it (link libraries)
 target_link_libraries( ${PROJECT_NAME} ${Qt5Widgets_LIBRARIES} ${OpenCV_LIBS} ${EIGEN3_LIBS} )
 
+target_link_libraries( DisparityPreview ${Qt5Widgets_LIBRARIES} ${OpenCV_LIBS} ${EIGEN3_LIBS} )
 
 
 

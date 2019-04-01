@@ -43,6 +43,26 @@ void CameraWidgetBase::setFrameMaximumSize( const unsigned int value )
     m_processor.setFrameMaximumSize( value );
 }
 
+void CameraWidgetBase::setAdaptiveThreshold( const bool value )
+{
+    m_processor.setAdaptiveThreshold( value );
+}
+
+void CameraWidgetBase::setNormalizeImage( const bool value )
+{
+    m_processor.setNormalizeImage( value );
+}
+
+void CameraWidgetBase::setFilterQuads( const bool value )
+{
+    m_processor.setFilterQuads( value );
+}
+
+void CameraWidgetBase::setFastCheck( const bool value )
+{
+    m_processor.setFastCheck( value );
+}
+
 TemplateProcessor::Type CameraWidgetBase::type() const
 {
     return m_processor.type();
@@ -66,6 +86,26 @@ bool CameraWidgetBase::resizeFlag() const
 unsigned int CameraWidgetBase::frameMaximumFlag() const
 {
     return m_processor.frameMaximumFlag();
+}
+
+bool CameraWidgetBase::aptiveThreshold() const
+{
+    return m_processor.aptiveThreshold();
+}
+
+bool CameraWidgetBase::normalizeImage() const
+{
+    return m_processor.normalizeImage();
+}
+
+bool CameraWidgetBase::filterQuads() const
+{
+    return m_processor.filterQuads();
+}
+
+bool CameraWidgetBase::fastCheck() const
+{
+    return m_processor.fastCheck();
 }
 
 // MonocularCameraWidget
@@ -159,7 +199,12 @@ StereoCameraWidget::StereoCameraWidget( const int leftCameraIndex, const int rig
 void StereoCameraWidget::initialize( const int leftCameraIndex, const int rightCameraIndex )
 {
     m_leftCapture.open( leftCameraIndex );
+    // m_leftCapture.set( cv::CAP_PROP_FRAME_WIDTH, 1920 );
+    // m_leftCapture.set( cv::CAP_PROP_FRAME_HEIGHT, 1080 );
+
     m_rightCapture.open( rightCameraIndex );
+    // m_rightCapture.set( cv::CAP_PROP_FRAME_WIDTH, 1920 );
+    // m_rightCapture.set( cv::CAP_PROP_FRAME_HEIGHT, 1080 );
 
     m_leftCameraWidget = new PreviewWidget( this );
     m_rightCameraWidget = new PreviewWidget( this );
@@ -219,16 +264,28 @@ void StereoCameraWidget::setRightPreviewPoints( const std::vector<cv::Point2f> &
     m_rightCameraWidget->setPreviewPoints( points );
 }
 
-CvImage StereoCameraWidget::createPreview( const CvImage &leftPreviewImage, const CvImage &rightPreviewImage )
+CvImage StereoCameraWidget::makeOverlappedPreview( const CvImage &leftPreviewImage, const CvImage &rightPreviewImage )
+{
+    return makePreview( leftPreviewImage, rightPreviewImage, 0.5 );
+
+}
+
+CvImage StereoCameraWidget::makeStraightPreview( const CvImage &leftPreviewImage, const CvImage &rightPreviewImage )
+{
+    return makePreview( leftPreviewImage, rightPreviewImage, 1 );
+}
+
+CvImage StereoCameraWidget::makePreview( const CvImage &leftPreviewImage, const CvImage &rightPreviewImage, const double factor )
 {
     CvImage result( std::max( leftPreviewImage.height(), rightPreviewImage.height() ),
-                    leftPreviewImage.width() / 2 + rightPreviewImage.width(),
+                    leftPreviewImage.width() * factor + rightPreviewImage.width(),
                     leftPreviewImage.type(), cv::Scalar( 0, 0, 0, 0) );
 
     leftPreviewImage.copyTo( result( cv::Rect( 0, 0, leftPreviewImage.width(), leftPreviewImage.height() ) ) );
     rightPreviewImage.copyTo( result( cv::Rect( result.width() - rightPreviewImage.width(), 0, rightPreviewImage.width(), rightPreviewImage.height() ) ) );
 
     return result;
+
 }
 
 void StereoCameraWidget::updatePreview()

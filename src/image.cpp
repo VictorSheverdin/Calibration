@@ -28,7 +28,7 @@ QtImage::QtImage( const CvImage &img )
     CvImage convertedImage;
 
     if ( img.channels() == 3 ) {
-        cvtColor( img, convertedImage, CV_BGR2RGB );
+        cv::cvtColor( img, convertedImage, CV_BGR2RGB );
 
         operator=( QImage( reinterpret_cast<const unsigned char *>( convertedImage.data ),
                         convertedImage.width(), convertedImage.height(), convertedImage.step,

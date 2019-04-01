@@ -23,7 +23,7 @@ public slots:
     virtual void calculate() = 0;
 
 protected slots:
-    void showIcon( IconBase *icon );
+    virtual void showIcon( IconBase *icon ) = 0;
 
 protected:
     QPointer< IconsWidget > m_iconsWidget;
@@ -46,6 +46,9 @@ public slots:
     virtual void grabFrame() override;
     virtual void calculate() override;
 
+protected slots:
+    virtual void showIcon( IconBase *icon ) override;
+
 protected:
     QPointer<MonocularTaskWidget> m_taskWidget;
 
@@ -57,8 +60,12 @@ private:
 class StereoCalibrationWidget : public CalibrationWidgetBase
 {
     Q_OBJECT
+
 public:
     StereoCalibrationWidget( const int leftCameraIndex, const int rightCameraIndex, QWidget *parent = nullptr );
+
+protected slots:
+    virtual void showIcon( IconBase *icon ) override;
 
 public slots:
     virtual void grabFrame() override;

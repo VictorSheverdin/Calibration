@@ -16,11 +16,13 @@ public:
 public slots:
     void addText( const QString &text );
     void addBreak();
+    void addDoubleBreak();
     void addNumber( const int num );
     void addNumber( const double num );
     void addIcon( const IconBase& icon );
     void addImage( const CvImage& image );
     void addMatrix( const cv::Mat& mat );
+    void addRect( const cv::Rect& rect );
 
 protected:
 
@@ -41,11 +43,13 @@ public slots:
 
     void addText( const QString &text );
     void addBreak();
+    void addDoubleBreak();
     void addNumber( const int num );
     void addNumber( const double num );
     void addIcon( const IconBase& icon );
     void addImage( const CvImage& image );
     void addMatrix( const cv::Mat& mat );
+    void addRect( const cv::Rect& rect );
 
 protected:
     QPointer< ReportWidget > m_reportWidget;

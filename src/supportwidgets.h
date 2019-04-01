@@ -6,6 +6,8 @@
 
 #include "templateprocessor.h"
 
+class QHBoxLayout;
+
 class TypeComboBox : public QComboBox
 {
     Q_OBJECT
@@ -50,6 +52,51 @@ class RescaleSpinBox : public QSpinBox
 
 public:
     explicit RescaleSpinBox( QWidget *parent = nullptr );
+
+private:
+    void initialize();
+
+};
+
+class SliderBoxBase : public QWidget
+{
+    Q_OBJECT
+
+public:
+    explicit SliderBoxBase( QWidget* parent = nullptr );
+
+protected:
+    QPointer< QHBoxLayout > m_layout;
+    QPointer< QSlider > m_slider;
+
+private:
+    void initialize();
+};
+
+class IntSliderBox : public SliderBoxBase
+{
+    Q_OBJECT
+
+public:
+    explicit IntSliderBox( QWidget* parent = nullptr );
+
+protected:
+    QPointer< QSpinBox > m_spinBox;
+
+private:
+    void initialize();
+
+};
+
+class DoubleSliderBox : public SliderBoxBase
+{
+    Q_OBJECT
+
+public:
+    explicit DoubleSliderBox( QWidget* parent = nullptr );
+
+protected:
+    QPointer< QDoubleSpinBox > m_spinBox;
 
 private:
     void initialize();

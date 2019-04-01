@@ -25,7 +25,7 @@ void Application::initialize( int &argc, char **argv )
 
     QCommandLineParser parser;
 
-    m_mainWindow = new MainWindow( 0 );
+    m_mainWindow = new MainWindow( 0, 2 );
     m_mainWindow->showMaximized();
 
 }

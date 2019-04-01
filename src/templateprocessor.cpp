@@ -88,12 +88,32 @@ unsigned int TemplateProcessor::frameMaximumFlag() const
     return m_frameMaximumSize;
 }
 
+bool TemplateProcessor::aptiveThreshold() const
+{
+    return m_flags & cv::CALIB_CB_ADAPTIVE_THRESH;
+}
+
+bool TemplateProcessor::normalizeImage() const
+{
+    return m_flags & cv::CALIB_CB_NORMALIZE_IMAGE;
+}
+
+bool TemplateProcessor::filterQuads() const
+{
+    return m_flags & cv::CALIB_CB_FILTER_QUADS;
+}
+
+bool TemplateProcessor::fastCheck() const
+{
+    return m_flags & cv::CALIB_CB_FAST_CHECK;
+}
+
 void TemplateProcessor::setAdaptiveThreshold( const bool value )
 {
     if (value)
         m_flags |= cv::CALIB_CB_ADAPTIVE_THRESH;
     else
-        m_flags &= !cv::CALIB_CB_ADAPTIVE_THRESH;
+        m_flags &= ~cv::CALIB_CB_ADAPTIVE_THRESH;
 
 }
 
@@ -102,7 +122,7 @@ void TemplateProcessor::setNormalizeImage( const bool value )
     if (value)
         m_flags |= cv::CALIB_CB_NORMALIZE_IMAGE;
     else
-        m_flags &= !cv::CALIB_CB_NORMALIZE_IMAGE;
+        m_flags &= ~cv::CALIB_CB_NORMALIZE_IMAGE;
 
 }
 
@@ -111,7 +131,7 @@ void TemplateProcessor::setFilterQuads( const bool value )
     if (value)
         m_flags |= cv::CALIB_CB_FILTER_QUADS;
     else
-        m_flags &= !cv::CALIB_CB_FILTER_QUADS;
+        m_flags &= ~cv::CALIB_CB_FILTER_QUADS;
 
 }
 
@@ -120,7 +140,7 @@ void TemplateProcessor::setFastCheck( const bool value )
     if (value)
         m_flags |= cv::CALIB_CB_FAST_CHECK;
     else
-        m_flags &= !cv::CALIB_CB_FAST_CHECK;
+        m_flags &= ~cv::CALIB_CB_FAST_CHECK;
 
 }
 
