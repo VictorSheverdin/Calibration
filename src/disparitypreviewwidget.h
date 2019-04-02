@@ -1,17 +1,18 @@
 #pragma once
 
 #include <QWidget>
-#include <QPointer>
 
-class IntSliderBox;
-class DoubleSliderBox;
+#include <opencv2/opencv.hpp>
 
-class DisparityControlWidget : public QWidget
+class ImageWidget;
+class DisparityControlWidget;
+
+class DisparityPreviewWidget : public QWidget
 {
     Q_OBJECT
 
 public:
-    DisparityControlWidget( QWidget* parent = nullptr );
+    explicit DisparityPreviewWidget( const int leftCameraIndex, const int rightCameraIndex, QWidget* parent = nullptr );
 
     int prefilterSize() const;
     int prefilterCap() const;
@@ -35,17 +36,18 @@ public slots:
     void setSpeckleRange( const int value );
 
 protected:
-    QPointer< IntSliderBox > m_preFilterSizeBox;
-    QPointer< IntSliderBox > m_preFilterCapBox;
-    QPointer< IntSliderBox > m_sadWindowSizeBox;
-    QPointer< IntSliderBox > m_minDisparityBox;
-    QPointer< IntSliderBox > m_numDisparitiesBox;
-    QPointer< IntSliderBox > m_textureThresholdBox;
-    QPointer< IntSliderBox > m_uniquessRatioBox;
-    QPointer< IntSliderBox > m_speckleWindowSizeBox;
-    QPointer< IntSliderBox > m_speckleRangeBox;
+    QPointer<ImageWidget> m_leftView;
+    QPointer<ImageWidget> m_rightView;
+    QPointer<ImageWidget> m_disparityView;
+    QPointer<ImageWidget> m_filteredDisparityView;
+    QPointer<DisparityControlWidget> m_controlWidget;
+
+    cv::VideoCapture m_leftCapture;
+    cv::VideoCapture m_rightCapture;
+
+    virtual void timerEvent(QTimerEvent *event) override;
 
 private:
-    void initialize();
+    void initialize( const int leftCameraIndex, const int rightCameraIndex );
 
 };

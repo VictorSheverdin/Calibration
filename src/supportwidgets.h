@@ -7,6 +7,7 @@
 #include "templateprocessor.h"
 
 class QHBoxLayout;
+class QLabel;
 
 class TypeComboBox : public QComboBox
 {
@@ -63,14 +64,15 @@ class SliderBoxBase : public QWidget
     Q_OBJECT
 
 public:
-    explicit SliderBoxBase( QWidget* parent = nullptr );
+    explicit SliderBoxBase( const QString label, QWidget* parent = nullptr );
 
 protected:
     QPointer< QHBoxLayout > m_layout;
+    QPointer< QLabel > m_label;
     QPointer< QSlider > m_slider;
 
 private:
-    void initialize();
+    void initialize( const QString label );
 };
 
 class IntSliderBox : public SliderBoxBase
@@ -78,7 +80,16 @@ class IntSliderBox : public SliderBoxBase
     Q_OBJECT
 
 public:
-    explicit IntSliderBox( QWidget* parent = nullptr );
+    explicit IntSliderBox( const QString label, QWidget* parent = nullptr );
+
+    int value();
+
+public slots:
+    void setMinimum( const int value );
+    void setMaximum( const int value );
+    void setStepSize( const int value );
+
+    void setValue( const int value );
 
 protected:
     QPointer< QSpinBox > m_spinBox;
@@ -93,7 +104,16 @@ class DoubleSliderBox : public SliderBoxBase
     Q_OBJECT
 
 public:
-    explicit DoubleSliderBox( QWidget* parent = nullptr );
+    explicit DoubleSliderBox( const QString label, QWidget* parent = nullptr );
+
+    double value();
+
+public slots:
+    void setMinimum( const double value );
+    void setMaximum( const double value );
+    void setStepSize( const double value );
+
+    void setValue( const double value );
 
 protected:
     QPointer< QDoubleSpinBox > m_spinBox;

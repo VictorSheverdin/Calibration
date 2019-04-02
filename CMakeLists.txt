@@ -47,10 +47,16 @@ set ( CALIBRATION_SOURCES
 set ( DISPARITY_PREVIEW_SOURCES
     "src/precompiled.h"
     "src/defs.h"
+    "src/image.h"
+    "src/image.cpp"
+    "src/imagewidget.h"
+    "src/imagewidget.cpp"
     "src/supportwidgets.h"
     "src/supportwidgets.cpp"
     "src/disparitycontrolwidget.h"
     "src/disparitycontrolwidget.cpp"
+    "src/disparitypreviewwidget.h"
+    "src/disparitypreviewwidget.cpp"
     "src/disparitypreviewapp.cpp"
 )
 
