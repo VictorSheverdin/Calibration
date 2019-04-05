@@ -76,124 +76,73 @@ void RescaleSpinBox::initialize()
 
 }
 
-// SliderBoxBase
-SliderBoxBase::SliderBoxBase( const QString label, QWidget* parent )
+// IntSliderBox
+IntSliderBox::IntSliderBox( const QString label, QWidget* parent )
     : QWidget( parent )
 {
     initialize( label );
 }
 
-void SliderBoxBase::initialize( const QString label )
+void IntSliderBox::initialize( const QString label )
 {
+    m_stepSize = 1;
+
     m_layout = new QHBoxLayout( this );
 
     m_label = new QLabel( label, this );
     m_slider = new QSlider( Qt::Horizontal, this );
+    m_displayWidget = new QLineEdit( this );
+    m_displayWidget->setReadOnly( true );
+    m_displayWidget->setAlignment( Qt::AlignVCenter | Qt::AlignRight );
+    m_displayWidget->setFixedWidth( 50 );
 
     m_layout->addWidget( m_label );
     m_layout->addWidget( m_slider );
 
-}
+    m_layout->addWidget( m_displayWidget );
 
-// IntSliderBox
-IntSliderBox::IntSliderBox( const QString label, QWidget* parent )
-    : SliderBoxBase( label, parent )
-{
-    initialize();
-}
+    connect( m_slider, &QSlider::valueChanged, this, &IntSliderBox::updateDisplayedValue );
 
-void IntSliderBox::initialize()
-{
-    m_spinBox = new QSpinBox( this );
-
-    m_layout->addWidget( m_spinBox );
-
-    connect( m_slider, &QSlider::sliderMoved, m_spinBox,  &QSpinBox::setValue );
-    connect( m_spinBox,  static_cast< void ( QSpinBox::* )( int ) >( &QSpinBox::valueChanged ), m_slider, &QSlider::setValue );
+    updateDisplayedValue();
 
 }
+
 
 int IntSliderBox::value()
 {
-    return m_spinBox->value();
+    return m_slider->minimum() + ( m_slider->value() - m_slider->minimum() ) * m_stepSize;
 }
 
-void IntSliderBox::setMinimum( const int value )
+int IntSliderBox::stepSize() const
 {
-    m_slider->setMinimum( value );
-    m_spinBox->setMinimum( value );
+    return m_stepSize;
 }
 
-void IntSliderBox::setMaximum( const int value )
+int IntSliderBox::minimum() const
 {
-    m_slider->setMaximum( value );
-    m_spinBox->setMaximum( value );
+    return m_slider->minimum();
 }
 
-void IntSliderBox::setStepSize( const int value )
+int IntSliderBox::maximum() const
 {
-    m_slider->setSingleStep( value );
-    m_spinBox->setSingleStep( value );
+    return m_slider->minimum() + ( m_slider->maximum() - m_slider->maximum() ) * m_stepSize;
+}
+
+void IntSliderBox::setRange( const int minValue, const int maxValue, const int step )
+{
+    m_stepSize = std::max( 1, step );
+
+    m_slider->setMinimum( minValue );
+    m_slider->setMaximum( minValue + ( maxValue - minValue ) / m_stepSize );
+
 }
 
 void IntSliderBox::setValue( const int value )
 {
-    m_spinBox->setValue( value );
+    m_slider->setValue( m_slider->minimum() + ( value - m_slider->minimum() ) / m_stepSize );
 }
 
-// DoubleSliderBox
-DoubleSliderBox::DoubleSliderBox( const QString label, QWidget* parent )
-    : SliderBoxBase( label, parent )
+void IntSliderBox::updateDisplayedValue()
 {
-    initialize();
+    m_displayWidget->setText( QString::number( value() ) );
 }
-
-void DoubleSliderBox::initialize()
-{
-    m_spinBox = new QDoubleSpinBox( this );
-
-    m_layout->addWidget( m_spinBox );
-
-    connect( m_slider, &QSlider::sliderMoved, [&]( int position)  {
-        double value = static_cast< double >( position ) / 100.0;
-        if ( fabs(m_spinBox->value() - value) > DOUBLE_EPS ) {
-            m_spinBox->setValue( value );
-        }
-    } );
-    connect( m_spinBox,  static_cast< void ( QDoubleSpinBox::* )( double ) >( &QDoubleSpinBox::valueChanged ), [&]( double position ) {
-        int value = position * 100.0;
-        if ( m_slider->value() != value ) {
-            m_slider->setValue( value );
-        }
-    } );
-
-}
-
-double DoubleSliderBox::value()
-{
-    return m_spinBox->value();
-}
-
-void DoubleSliderBox::setMinimum( const double value )
-{
-    m_slider->setMinimum( value * 100 );
-    m_spinBox->setMinimum( value );
-}
-
-void DoubleSliderBox::setMaximum( const double value )
-{
-    m_slider->setMaximum( value * 100 );
-    m_spinBox->setMaximum( value );
-}
-
-void DoubleSliderBox::setStepSize( const double value )
-{
-    m_slider->setSingleStep( value * 100 );
-    m_spinBox->setSingleStep( value );
-}
-
-void DoubleSliderBox::setValue(const double value )
-{
-    m_spinBox->setValue( value );
-}
-

@@ -4,7 +4,6 @@
 #include <QPointer>
 
 class IntSliderBox;
-class DoubleSliderBox;
 
 class DisparityControlWidget : public QWidget
 {
@@ -22,6 +21,10 @@ public:
     int uniquessRatio() const;
     int speckleWindowSize() const;
     int speckleRange() const;
+    int disp12MaxDiff() const;
+    int smallerBlockSize() const;
+    int filterLambda() const;
+    int lrcThresh() const;
 
 public slots:
     void setPrefilterSize( const int value );
@@ -33,6 +36,10 @@ public slots:
     void setUniquessRatio( const int value );
     void setSpeckleWindowSize( const int value );
     void setSpeckleRange( const int value );
+    void setDisp12MaxDiff( const int value );
+    void setSmallerBlockSize( const int value );
+    void setFilterLambda( const int value );
+    void setLrcThresh( const int value ) const;
 
 protected:
     QPointer< IntSliderBox > m_preFilterSizeBox;
@@ -44,6 +51,10 @@ protected:
     QPointer< IntSliderBox > m_uniquessRatioBox;
     QPointer< IntSliderBox > m_speckleWindowSizeBox;
     QPointer< IntSliderBox > m_speckleRangeBox;
+    QPointer< IntSliderBox > m_disp12MaxDiffBox;
+    QPointer< IntSliderBox > m_smallerBlockSizeBox;
+    QPointer< IntSliderBox > m_filterLambdaBox;
+    QPointer< IntSliderBox > m_lrcThreshBox;
 
 private:
     void initialize();

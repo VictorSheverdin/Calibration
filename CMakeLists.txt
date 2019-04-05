@@ -1,11 +1,8 @@
 cmake_minimum_required(VERSION 2.6)
 project ( Calibration )
 
-# Find includes in corresponding build directories
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
-# Instruct CMake to run moc automatically when needed
 set(CMAKE_AUTOMOC ON)
-# Create code from a list of Qt designer ui files
 set(CMAKE_AUTOUIC ON)
 
 set ( CALIBRATION_SOURCES
@@ -64,29 +61,22 @@ set ( RESOURCES
     "resources/resources.qrc"
 )
 
-find_package (Qt5Widgets)
+find_package(Qt5Widgets REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(Eigen3 REQUIRED)
+find_package(VTK 8 REQUIRED)
+
 
 add_definitions( ${QT_DEFINITIONS} )
 include_directories( ${Qt5Widgets_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR} )
 
-# Next, using precompiler, compiler and linker
-
-# using Qt meta-system (precompiler)
 QT5_ADD_RESOURCES( RES_SOURCES ${RESOURCES} )
 
-set (DISPARITY_PREVIEW_NAME DisparityPreview)
-
-# compile
 add_executable( ${PROJECT_NAME} ${CALIBRATION_SOURCES} ${RES_SOURCES} )
-
 add_executable( DisparityPreview ${DISPARITY_PREVIEW_SOURCES} ${RES_SOURCES} )
 
-# build it (link libraries)
 target_link_libraries( ${PROJECT_NAME} ${Qt5Widgets_LIBRARIES} ${OpenCV_LIBS} ${EIGEN3_LIBS} )
-
-target_link_libraries( DisparityPreview ${Qt5Widgets_LIBRARIES} ${OpenCV_LIBS} ${EIGEN3_LIBS} )
+target_link_libraries( DisparityPreview ${Qt5Widgets_LIBRARIES} ${VTK_LIBRARIES} ${OpenCV_LIBS} ${EIGEN3_LIBS} )
 
 
 

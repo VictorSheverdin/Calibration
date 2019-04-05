@@ -15,35 +15,27 @@ void DisparityControlWidget::initialize()
     auto layout = new QVBoxLayout( this );
 
    m_preFilterSizeBox = new IntSliderBox( tr("Prefilter size" ), this );
-   m_preFilterSizeBox->setMinimum( 5 );
-   m_preFilterSizeBox->setMaximum( 255 );
-   m_preFilterSizeBox->setStepSize( 2 );
+   m_preFilterSizeBox->setRange( 5, 255, 2 );
    layout->addWidget( m_preFilterSizeBox );
 
    m_preFilterCapBox = new IntSliderBox( tr("Prefilter cap" ), this );
    layout->addWidget( m_preFilterCapBox );
-   m_preFilterCapBox->setMinimum( 1 );
-   m_preFilterCapBox->setMaximum( 63 );
+   m_preFilterCapBox->setRange( 1, 63 );
 
    m_sadWindowSizeBox = new IntSliderBox( tr("SAD Window size" ), this );
-   m_sadWindowSizeBox->setMinimum( 5 );
-   m_sadWindowSizeBox->setMaximum( 255 );
-   m_sadWindowSizeBox->setStepSize( 2 );
-   setSadWindowSize(5);
+   m_sadWindowSizeBox->setRange( 5, 255, 2 );
    layout->addWidget( m_sadWindowSizeBox );
 
    m_minDisparityBox = new IntSliderBox( tr( "Minimum disparity" ), this );
+   m_minDisparityBox->setRange( -255, 255 );
    layout->addWidget( m_minDisparityBox );
 
    m_numDisparitiesBox = new IntSliderBox( tr( "Number of disparities" ), this );
-   m_numDisparitiesBox->setMinimum( 16 );
-   m_numDisparitiesBox->setStepSize( 16 );
-   m_numDisparitiesBox->setMaximum( 256 );
+   m_numDisparitiesBox->setRange( 16, 256, 16 );
    layout->addWidget( m_numDisparitiesBox );
 
    m_textureThresholdBox = new IntSliderBox( tr( "Texture threshold" ), this );
-   m_textureThresholdBox->setMinimum( 0 );
-   m_textureThresholdBox->setMaximum( 1000 );
+   m_textureThresholdBox->setRange( 0, 1000 );
    layout->addWidget( m_textureThresholdBox );
 
    m_uniquessRatioBox = new IntSliderBox( tr( "Uniquess ratio" ), this );
@@ -55,14 +47,33 @@ void DisparityControlWidget::initialize()
    m_speckleRangeBox = new IntSliderBox( tr( "Speckle range" ), this );
    layout->addWidget( m_speckleRangeBox );
 
-   setPrefilterSize(5);
-   setPrefilterCap(1);
-   setMinDisparity(0);
-   setNumDisparities(16);
-   setTextureThreshold(0);
-   setUniquessRatio(0);
-   setSpeckleWindowSize(0);
-   setSpeckleRange(0);
+   m_disp12MaxDiffBox = new IntSliderBox( tr( "Max difference" ), this );
+   m_disp12MaxDiffBox->setRange( 0, 1000 );
+   layout->addWidget( m_disp12MaxDiffBox );
+
+   m_smallerBlockSizeBox = new IntSliderBox( tr( "Smaller block size" ), this );
+   m_smallerBlockSizeBox->setRange( 0, 100 );
+   layout->addWidget( m_smallerBlockSizeBox );
+
+   m_filterLambdaBox = new IntSliderBox( tr( "Filter lambda" ), this );
+   m_filterLambdaBox->setRange( 0, 50000 );
+   layout->addWidget( m_filterLambdaBox );
+
+   m_lrcThreshBox = new IntSliderBox( tr( "LRC Threshold" ), this );
+   m_lrcThreshBox->setRange( 0, 100 );
+   layout->addWidget( m_lrcThreshBox );
+
+   setSadWindowSize( 5 );
+   setPrefilterSize( 5 );
+   setPrefilterCap( 1 );
+   setMinDisparity( 0 );
+   setNumDisparities( 16 );
+   setTextureThreshold( 0 );
+   setUniquessRatio( 0 );
+   setSpeckleWindowSize( 0 );
+   setSpeckleRange( 0 );
+   setDisp12MaxDiff( 0 );
+   setSmallerBlockSize( 0 );
 
 }
 
@@ -111,6 +122,26 @@ int DisparityControlWidget::speckleRange() const
     return m_speckleRangeBox->value();
 }
 
+int DisparityControlWidget::disp12MaxDiff() const
+{
+    return m_disp12MaxDiffBox->value();
+}
+
+int DisparityControlWidget::smallerBlockSize() const
+{
+    return m_smallerBlockSizeBox->value();
+}
+
+int DisparityControlWidget::filterLambda() const
+{
+    return m_filterLambdaBox->value();
+}
+
+int DisparityControlWidget::lrcThresh() const
+{
+    return m_lrcThreshBox->value();
+}
+
 void DisparityControlWidget::setPrefilterSize( const int value )
 {
     m_preFilterSizeBox->setValue( value );
@@ -154,4 +185,24 @@ void DisparityControlWidget::setSpeckleWindowSize( const int value )
 void DisparityControlWidget::setSpeckleRange( const int value )
 {
     m_speckleRangeBox->setValue( value );
+}
+
+void DisparityControlWidget::setDisp12MaxDiff( const int value )
+{
+    m_disp12MaxDiffBox->setValue( value );
+}
+
+void DisparityControlWidget::setSmallerBlockSize( const int value )
+{
+    m_smallerBlockSizeBox->setValue( value );
+}
+
+void DisparityControlWidget::setFilterLambda( const int value )
+{
+    m_filterLambdaBox->setValue( value );
+}
+
+void DisparityControlWidget::setLrcThresh( const int value ) const
+{
+    m_lrcThreshBox->setValue( value );
 }

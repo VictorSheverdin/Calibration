@@ -59,23 +59,7 @@ private:
 
 };
 
-class SliderBoxBase : public QWidget
-{
-    Q_OBJECT
-
-public:
-    explicit SliderBoxBase( const QString label, QWidget* parent = nullptr );
-
-protected:
-    QPointer< QHBoxLayout > m_layout;
-    QPointer< QLabel > m_label;
-    QPointer< QSlider > m_slider;
-
-private:
-    void initialize( const QString label );
-};
-
-class IntSliderBox : public SliderBoxBase
+class IntSliderBox : public QWidget
 {
     Q_OBJECT
 
@@ -84,41 +68,26 @@ public:
 
     int value();
 
+    int stepSize() const;
+    int minimum() const;
+    int maximum() const;
+
 public slots:
-    void setMinimum( const int value );
-    void setMaximum( const int value );
-    void setStepSize( const int value );
+    void setRange( const int minValue, const int maxValue, const int step = 1 );
 
     void setValue( const int value );
 
 protected:
-    QPointer< QSpinBox > m_spinBox;
+    QPointer< QHBoxLayout > m_layout;
+    QPointer< QLabel > m_label;
+    QPointer< QSlider > m_slider;
+    QPointer< QLineEdit > m_displayWidget;
+
+    int m_stepSize;
+
+    void updateDisplayedValue();
 
 private:
-    void initialize();
-
+    void initialize( const QString label );
 };
 
-class DoubleSliderBox : public SliderBoxBase
-{
-    Q_OBJECT
-
-public:
-    explicit DoubleSliderBox( const QString label, QWidget* parent = nullptr );
-
-    double value();
-
-public slots:
-    void setMinimum( const double value );
-    void setMaximum( const double value );
-    void setStepSize( const double value );
-
-    void setValue( const double value );
-
-protected:
-    QPointer< QDoubleSpinBox > m_spinBox;
-
-private:
-    void initialize();
-
-};
