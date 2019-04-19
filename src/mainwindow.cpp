@@ -4,28 +4,28 @@
 
 #include "calibrationwidget.h"
 
-MainWindow::MainWindow(const int cameraIndex, QWidget *parent)
+MainWindow::MainWindow( const std::string &cameraIp, QWidget *parent)
     : QMainWindow(parent)
 {
-    initialize( cameraIndex );
+    initialize( cameraIp );
 }
 
-MainWindow::MainWindow( const int leftCameraIndex, const int rightCameraIndex, QWidget *parent )
+MainWindow::MainWindow( const std::string &leftCameraIp, const std::string &rightCameraIp, QWidget *parent )
     : QMainWindow(parent)
 {
-    initialize( leftCameraIndex, rightCameraIndex );
+    initialize( leftCameraIp, rightCameraIp );
 }
 
-void MainWindow::initialize( const int cameraIndex )
+void MainWindow::initialize( const std::string &cameraIp )
 {
-    m_widget = new MonocularCalibrationWidget( cameraIndex, this );
+    m_widget = new MonocularCalibrationWidget( cameraIp, this );
 
     initialize();
 }
 
-void MainWindow::initialize( const int leftCameraIndex, const int rightCameraIndex )
+void MainWindow::initialize( const std::string &leftCameraIp, const std::string &rightCameraIp )
 {
-    m_widget = new StereoCalibrationWidget( leftCameraIndex, rightCameraIndex, this );
+    m_widget = new StereoCalibrationWidget( leftCameraIp, rightCameraIp, this );
 
     initialize();
 }
@@ -38,6 +38,9 @@ void MainWindow::initialize()
     setupMenus();
     setupToolBars();
     setupStatusBar();
+
+    startTimer( m_grabInterval );
+    setAttribute( Qt::WA_DeleteOnClose );
 
 }
 
@@ -53,7 +56,7 @@ void MainWindow::setupActions()
 
     m_autoGrabAction = new QAction( QIcon( ":/resources/images/camera.ico" ), tr( "Autograb" ), this );
     m_autoGrabAction->setCheckable( true );
-    m_autoGrabAction->setChecked( false );
+    m_autoGrabAction->setChecked( true );
 
     m_calculateAction = new QAction( QIcon( ":/resources/images/checkerflag.ico" ), tr( "Calculate" ), this );
     m_settingsAction = new QAction( QIcon( ":/resources/images/settings.ico" ), tr( "Settings" ), this );
@@ -117,6 +120,12 @@ void MainWindow::setupStatusBar()
 {
     m_statusBar = new QStatusBar( this );
     setStatusBar( m_statusBar );
+}
+
+void MainWindow::timerEvent( QTimerEvent * )
+{
+    if (m_autoGrabAction->isChecked())
+        grabFrame();
 }
 
 void MainWindow::grabFrame()

@@ -8,11 +8,19 @@
 #include <opencv2/ximgproc.hpp>
 
 #include <QVTKWidget.h>
+
 #include <vtkSphereSource.h>
 #include <vtkPolyDataMapper.h>
+#include <vtkDataSet.h>
+#include <vtkPointData.h>
+#include <vtkProperty.h>
+#include <vtkVertexGlyphFilter.h>
 #include <vtkActor.h>
 #include <vtkRenderer.h>
 #include <vtkRenderWindow.h>
+
+#include <vtkNew.h>
+#include <vtkGenericOpenGLRenderWindow.h>
 
 // DisparityPreviewWidget
 DisparityPreviewWidget::DisparityPreviewWidget( const int leftCameraIndex, const int rightCameraIndex, QWidget* parent )
@@ -32,13 +40,11 @@ void DisparityPreviewWidget::initialize( const int leftCameraIndex, const int ri
     m_disparityView = new ImageWidget( this );
     m_filteredDisparityView = new ImageWidget( this );
     m_controlWidget = new DisparityControlWidget( this );
-    m_3dViewWidget = new QVTKWidget( this );
 
     layout->addWidget( m_rectifyView, 0, 0 );
     layout->addWidget( m_disparityView, 0, 1 );
     layout->addWidget( m_filteredDisparityView, 1, 0 );
     layout->addWidget( m_controlWidget, 1, 1 );
-    layout->addWidget( m_3dViewWidget, 2, 1 );
 
     startTimer( 1 );
 
@@ -186,11 +192,11 @@ void DisparityPreviewWidget::timerEvent( QTimerEvent * )
         if ( !leftFrame.empty() && !rightFrame.empty() ) {
             cv::Size imageSize = CvSize( m_leftCapture.get( cv::CAP_PROP_FRAME_WIDTH ), m_leftCapture.get( cv::CAP_PROP_FRAME_HEIGHT ) );
 
-            static cv::Mat leftCameraMatrix = ( cv::Mat1d(3, 3) << 666.444, 0, 295.737, 0, 667.349, 259.584, 0, 0 );
-            static cv::Mat rightCameraMatrix = ( cv::Mat1d(3, 3) << 661.773, 0, 301.318, 0, 660.877, 246.928, 0, 0, 1 );
+            static cv::Mat leftCameraMatrix = ( cv::Mat1d(3, 3) << 712.8176404568455, 0, 282.7442215535847, 0, 706.5428125641499, 208.9831166091617, 0, 0, 1 );
+            static cv::Mat rightCameraMatrix = ( cv::Mat1d(3, 3) << 676.621027162288, 0, 290.1575139463626, 0, 671.4547484306601, 216.9412795955598, 0, 0, 1 );
 
-            static cv::Mat leftDistCoefficients = ( cv::Mat1d(5, 1) << 0.0823932, -0.144257, 0.000522664, -0.0081481, -0.201987 );
-            static cv::Mat rightDistCoefficients = ( cv::Mat1d(5, 1) << 0.0698101, -0.13983, -0.00155805, -0.00618412, -0.0346832 );
+            static cv::Mat leftDistCoefficients = ( cv::Mat1d(5, 1) << 0.1274613500773498, -0.2392634803151839, -0.0178586870235027, -0.01409163435720991, 0 );
+            static cv::Mat rightDistCoefficients = ( cv::Mat1d(5, 1) << 0.07029276642896512, -0.0811986780559755, -0.01571869264982598, -0.01095459372093671, 0 );
 
             static cv::Mat R = ( cv::Mat1d(3, 3) << 0.99981, 0.000925433, -0.0194649, -0.000405768, 0.999644, 0.0266846, 0.0194827, -0.0266716, 0.999454 );
             static cv::Mat T = ( cv::Mat1d(3, 1) << 2.35963, 0.0248091, -0.0961474 );
@@ -252,7 +258,7 @@ void DisparityPreviewWidget::timerEvent( QTimerEvent * )
             left_matcher->setDisp12MaxDiff( disp12MaxDiff() );
             //left_matcher->setSmallerBlockSize( smallerBlockSize() );
 
-            cv::Ptr< cv::ximgproc::DisparityWLSFilter > wls_filter = cv::ximgproc::createDisparityWLSFilter( left_matcher );
+            // cv::Ptr< cv::ximgproc::DisparityWLSFilter > wls_filter = cv::ximgproc::createDisparityWLSFilter( left_matcher );
 
             cv::Ptr<cv::StereoMatcher> right_matcher = cv::ximgproc::createRightMatcher( left_matcher );
 
@@ -269,10 +275,12 @@ void DisparityPreviewWidget::timerEvent( QTimerEvent * )
 
             cv::Mat filtered_disp;
 
-            wls_filter->setLambda( filterLambda() );
+            filtered_disp = left_disp;
+
+           /* wls_filter->setLambda( filterLambda() );
             wls_filter->setSigmaColor( 0.8 );
             wls_filter->setLRCthresh( lrcThresh() );
-            wls_filter->filter( left_disp, leftFrame , filtered_disp, right_disp );
+            wls_filter->filter( left_disp, leftFrame , filtered_disp, right_disp );*/
 
             cv::Mat raw_disp_vis;
             cv::ximgproc::getDisparityVis( left_disp, raw_disp_vis, 1.0 );
@@ -306,3 +314,31 @@ void DisparityPreviewWidget::timerEvent( QTimerEvent * )
 
 }
 
+// PreviewWidget
+PreviewWidget::PreviewWidget( const int leftCameraIndex, const int rightCameraIndex, QWidget* parent )
+    : QSplitter( Qt::Horizontal, parent )
+{
+    initialize( leftCameraIndex, rightCameraIndex );
+}
+
+void PreviewWidget::initialize( const int leftCameraIndex, const int rightCameraIndex )
+{
+    QFile cssFile(":/resources/qss/style.css");
+
+    if ( cssFile.open( QIODevice::ReadOnly ) ) {
+        QString cssString( cssFile.readAll() );
+        setStyleSheet( cssString );
+    }
+    else
+        QMessageBox::critical( nullptr, tr( "Error"), tr( "Can't load css file:" ) + cssFile.fileName() );
+
+    m_disparityWidget = new DisparityPreviewWidget( leftCameraIndex, rightCameraIndex, this );
+    m_3dWidget = new QVTKWidget( this );
+    m_3dWidget->resize(200, 200);
+
+    addWidget( m_disparityWidget );
+    addWidget( m_3dWidget );
+
+   // m_visualizer = new pcl::visualization::PCLVisualizer( "viewer" );
+ //   m_3dWidget->SetRenderWindow( m_visualizer->getRenderWindow() );
+}

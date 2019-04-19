@@ -17,14 +17,13 @@ class ParametersWidget : public QWidget
 public:
     explicit ParametersWidget( QWidget* parent = nullptr );
 
-    TemplateProcessor::Type type() const;
+    TemplateProcessor::Type templateType() const;
 
     unsigned int xCount() const;
     unsigned int yCount() const;
 
-    const cv::Size count() const;
-
-    double size() const;
+    const cv::Size templateCount() const;
+    double templateSize() const;
 
     bool adaptiveThreshold() const;
     bool normalizeImage() const;

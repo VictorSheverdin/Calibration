@@ -24,11 +24,56 @@ void TaskWidgetBase::initialize()
 
 }
 
+TemplateProcessor::Type TaskWidgetBase::templateType() const
+{
+    return m_cameraWidget->templateType();
+}
+
+const cv::Size &TaskWidgetBase::templateCount() const
+{
+    return m_cameraWidget->templateCount();
+}
+
+double TaskWidgetBase::templateSize() const
+{
+    return m_cameraWidget->templateSize();
+}
+
+bool TaskWidgetBase::resizeFlag() const
+{
+    return m_cameraWidget->resizeFlag();
+}
+
+unsigned int TaskWidgetBase::frameMaximumFlag() const
+{
+    return m_cameraWidget->frameMaximumFlag();
+}
+
+bool TaskWidgetBase::adaptiveThreshold() const
+{
+    return m_cameraWidget->adaptiveThreshold();
+}
+
+bool TaskWidgetBase::normalizeImage() const
+{
+    return m_cameraWidget->normalizeImage();
+}
+
+bool TaskWidgetBase::filterQuads() const
+{
+    return m_cameraWidget->filterQuads();
+}
+
+bool TaskWidgetBase::fastCheck() const
+{
+    return m_cameraWidget->fastCheck();
+}
+
 void TaskWidgetBase::updateParameters()
 {
-    m_cameraWidget->setType( m_parametersWidget->type() );
-    m_cameraWidget->setCount( m_parametersWidget->count() );
-    m_cameraWidget->setSize( m_parametersWidget->size() );
+    m_cameraWidget->setType( m_parametersWidget->templateType() );
+    m_cameraWidget->setCount( m_parametersWidget->templateCount() );
+    m_cameraWidget->setTemplateSize( m_parametersWidget->templateSize() );
 
     m_cameraWidget->setAdaptiveThreshold( m_parametersWidget->adaptiveThreshold() );
     m_cameraWidget->setNormalizeImage( m_parametersWidget->normalizeImage() );
@@ -41,15 +86,15 @@ void TaskWidgetBase::updateParameters()
 }
 
 // MonocularTaskWidget
-MonocularTaskWidget::MonocularTaskWidget( const int cameraIndex, QWidget* parent )
+MonocularTaskWidget::MonocularTaskWidget( const std::string &cameraIp, QWidget* parent )
     : TaskWidgetBase( parent )
 {
-    initialize( cameraIndex );
+    initialize( cameraIp );
 }
 
-void MonocularTaskWidget::initialize( const int cameraIndex )
+void MonocularTaskWidget::initialize(const std::string &cameraIp )
 {
-    m_cameraWidget = new MonocularCameraWidget( cameraIndex, this );
+    m_cameraWidget = new MonocularCameraWidget( cameraIp, this );
     m_layout->addWidget( m_cameraWidget );
 
     updateParameters();
@@ -70,16 +115,21 @@ const CvImage MonocularTaskWidget::previewImage() const
     return cameraWidget()->previewImage();
 }
 
-// StereoTaskWidget
-StereoTaskWidget::StereoTaskWidget( const int leftCameraIndex, const int rightCameraIndex, QWidget* parent )
-    : TaskWidgetBase( parent )
+bool MonocularTaskWidget::isTemplateExist() const
 {
-    initialize( leftCameraIndex, rightCameraIndex );
+    return cameraWidget()->isTemplateExist();
 }
 
-void StereoTaskWidget::initialize( const int leftCameraIndex, const int rightCameraIndex )
+// StereoTaskWidget
+StereoTaskWidget::StereoTaskWidget( const std::string &leftCameraIp, const std::string &rightCameraIp, QWidget* parent )
+    : TaskWidgetBase( parent )
 {
-    m_cameraWidget = new StereoCameraWidget( leftCameraIndex,  rightCameraIndex, this );
+    initialize( leftCameraIp, rightCameraIp );
+}
+
+void StereoTaskWidget::initialize( const std::string &leftCameraIp, const std::string &rightCameraIp )
+{
+    m_cameraWidget = new StereoCameraWidget( leftCameraIp,  rightCameraIp, this );
     m_layout->addWidget( m_cameraWidget );
 
     updateParameters();
@@ -108,6 +158,11 @@ const CvImage StereoTaskWidget::rightSourceImage() const
 const CvImage StereoTaskWidget::rightDisplayedImage() const
 {
     return cameraWidget()->rightDisplayedImage();
+}
+
+bool StereoTaskWidget::isTemplateExist() const
+{
+    return cameraWidget()->isTemplateExist();
 }
 
 void StereoTaskWidget::setLeftSourceImage( const CvImage image )

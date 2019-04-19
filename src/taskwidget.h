@@ -5,6 +5,8 @@
 
 #include "image.h"
 
+#include "templateprocessor.h"
+
 class QVBoxLayout;
 
 class ParametersWidget;
@@ -18,6 +20,17 @@ class TaskWidgetBase : public QWidget
 
 public:
     explicit TaskWidgetBase( QWidget* parent = nullptr );
+
+    TemplateProcessor::Type templateType() const;
+    const cv::Size &templateCount() const;
+    double templateSize() const;
+    bool resizeFlag() const;
+    unsigned int frameMaximumFlag() const;
+
+    bool adaptiveThreshold() const;
+    bool normalizeImage() const;
+    bool filterQuads() const;
+    bool fastCheck() const;
 
 protected slots:
     void updateParameters();
@@ -37,15 +50,17 @@ class MonocularTaskWidget : public TaskWidgetBase
     Q_OBJECT
 
 public:
-    explicit MonocularTaskWidget( const int cameraIndex, QWidget* parent = nullptr );
+    explicit MonocularTaskWidget( const std::string &cameraIp, QWidget* parent = nullptr );
 
     MonocularCameraWidget *cameraWidget() const;
 
     const CvImage sourceImage() const;
     const CvImage previewImage() const;
 
+    bool isTemplateExist() const;
+
 private:
-    void initialize (const int cameraIndex );
+    void initialize ( const std::string &cameraIp );
 
 };
 
@@ -55,7 +70,7 @@ class StereoTaskWidget : public TaskWidgetBase
     Q_OBJECT
 
 public:
-    explicit StereoTaskWidget( const int leftCameraIndex, const int rightCameraIndex, QWidget* parent = nullptr );
+    explicit StereoTaskWidget( const std::string &leftCameraIp, const std::string &rightCameraIp, QWidget* parent = nullptr );
 
     StereoCameraWidget *cameraWidget() const;
 
@@ -65,6 +80,8 @@ public:
     const CvImage rightSourceImage() const;
     const CvImage rightDisplayedImage() const;
 
+    bool isTemplateExist() const;
+
 public slots:
     void setLeftSourceImage( const CvImage image );
     void setLeftDisplayedImage( const CvImage image );
@@ -73,7 +90,7 @@ public slots:
     void setRightDisplayedImage( const CvImage image );
 
 private:
-    void initialize( const int leftCameraIndex, const int rightCameraIndex );
+    void initialize(const std::string &leftCameraIp, const std::string &rightCameraIp );
 
 };
 

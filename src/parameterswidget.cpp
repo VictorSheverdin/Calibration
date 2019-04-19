@@ -28,7 +28,10 @@ void ParametersWidget::initialize()
     countLayout->addWidget( new QLabel( tr( "Count:" ) ) );
 
     m_xCountSpinBox = new CountSpinBox( this );
+    m_xCountSpinBox->setValue( 9 );
     m_yCountSpinBox = new CountSpinBox( this );
+    m_yCountSpinBox->setValue( 6 );
+
     countLayout->addWidget( m_xCountSpinBox );
     countLayout->addWidget( m_yCountSpinBox );
 
@@ -47,7 +50,7 @@ void ParametersWidget::initialize()
 
     m_adaptiveThresholdCheckBox = new QCheckBox( tr( "Adaptive threshold" ), this );
     layout->addWidget( m_adaptiveThresholdCheckBox );
-    m_adaptiveThresholdCheckBox->setChecked( false );
+    m_adaptiveThresholdCheckBox->setChecked( true );
 
     m_normalizeImageCheckBox = new QCheckBox( tr( "Normalize" ), this );
     layout->addWidget( m_normalizeImageCheckBox );
@@ -65,7 +68,7 @@ void ParametersWidget::initialize()
 
     m_rescaleCheckBox = new QCheckBox( tr( "Rescale preview" ), this );
     layout->addWidget( m_rescaleCheckBox );
-    m_rescaleCheckBox->setChecked( false );
+    m_rescaleCheckBox->setChecked( true );
 
     QHBoxLayout *rescaleLayout = new QHBoxLayout();
 
@@ -91,7 +94,7 @@ void ParametersWidget::initialize()
 
 }
 
-TemplateProcessor::Type ParametersWidget::type() const
+TemplateProcessor::Type ParametersWidget::templateType() const
 {
     return m_typeCombo->currentType();
 }
@@ -106,12 +109,12 @@ unsigned int ParametersWidget::yCount() const
     return static_cast< unsigned int >( m_yCountSpinBox->value() );
 }
 
-const cv::Size ParametersWidget::count() const
+const cv::Size ParametersWidget::templateCount() const
 {
     return cv::Size( xCount(), yCount() );
 }
 
-double ParametersWidget::size() const
+double ParametersWidget::templateSize() const
 {
     return m_sizeSpinBox->value();
 }

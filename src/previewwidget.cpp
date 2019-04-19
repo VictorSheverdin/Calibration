@@ -27,6 +27,11 @@ const std::vector<cv::Point2f> &PreviewWidget::previewPoints() const
     return m_previewPoints;
 }
 
+bool PreviewWidget::isTemplateExist() const
+{
+    return !previewPoints().empty();
+}
+
 void PreviewWidget::setSourceImage(const CvImage image)
 {
     m_sourceImage = image;

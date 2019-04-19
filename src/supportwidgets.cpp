@@ -70,7 +70,7 @@ void RescaleSpinBox::initialize()
     setMinimum( 300 );
     setMaximum( 4000 );
 
-    setValue( 800 );
+    setValue( 600 );
 
     setAlignment( Qt::AlignRight );
 

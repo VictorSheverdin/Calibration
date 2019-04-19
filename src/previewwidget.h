@@ -19,6 +19,8 @@ public:
     const CvImage previewImage() const;
     const std::vector<cv::Point2f> &previewPoints() const;
 
+    bool isTemplateExist() const;
+
 public slots:
     void setSourceImage( const CvImage image );
     void setPreviewImage( const CvImage image );

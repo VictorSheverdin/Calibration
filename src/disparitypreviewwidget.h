@@ -5,17 +5,11 @@
 
 #include <opencv2/opencv.hpp>
 
+#include <pcl/visualization/cloud_viewer.h>
+
 class ImageWidget;
 class DisparityControlWidget;
 class QVTKWidget;
-
-class PreviewWidget : public QSplitter
-{
-    Q_OBJECT
-
-public:
-    QSplitter( QWidget* parent = nullptr );
-};
 
 class DisparityPreviewWidget : public QWidget
 {
@@ -58,12 +52,29 @@ protected:
     QPointer<ImageWidget> m_disparityView;
     QPointer<ImageWidget> m_filteredDisparityView;
     QPointer<DisparityControlWidget> m_controlWidget;
-    QPointer<QVTKWidget> m_3dViewWidget;
 
     cv::VideoCapture m_leftCapture;
     cv::VideoCapture m_rightCapture;
 
     virtual void timerEvent( QTimerEvent * ) override;
+
+private:
+    void initialize( const int leftCameraIndex, const int rightCameraIndex );
+
+};
+
+class PreviewWidget : public QSplitter
+{
+    Q_OBJECT
+
+public:
+    PreviewWidget( const int leftCameraIndex, const int rightCameraIndex, QWidget* parent = nullptr );
+
+protected:
+    DisparityPreviewWidget *m_disparityWidget;
+    QVTKWidget *m_3dWidget;
+
+    pcl::visualization::PCLVisualizer *m_visualizer;
 
 private:
     void initialize( const int leftCameraIndex, const int rightCameraIndex );

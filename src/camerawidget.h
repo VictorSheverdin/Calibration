@@ -7,6 +7,8 @@
 
 #include <opencv2/opencv.hpp>
 
+#include "VimbaCPP/Include/VimbaCPP.h"
+
 class PreviewWidget;
 
 class CameraWidgetBase : public QSplitter
@@ -18,7 +20,7 @@ public:
 
     void setType(const TemplateProcessor::Type type );
     void setCount( const cv::Size &count );
-    void setSize( const double value );
+    void setTemplateSize( const double value );
     void setResizeFlag( const bool value );
     void setFrameMaximumSize( const unsigned int value );
 
@@ -27,19 +29,21 @@ public:
     void setFilterQuads( const bool value );
     void setFastCheck( const bool value );
 
-    TemplateProcessor::Type type() const;
-    const cv::Size &count() const;
-    double size() const;
+    TemplateProcessor::Type templateType() const;
+    const cv::Size &templateCount() const;
+    double templateSize() const;
     bool resizeFlag() const;
     unsigned int frameMaximumFlag() const;
 
-    bool aptiveThreshold() const;
+    bool adaptiveThreshold() const;
     bool normalizeImage() const;
     bool filterQuads() const;
     bool fastCheck() const;
 
 protected:
     TemplateProcessor m_processor;
+
+    static const int m_aquireInterval = 30;
 
 private:
     void initialize();
@@ -50,16 +54,18 @@ class MonocularCameraWidget : public CameraWidgetBase
     Q_OBJECT
 
 public:
-    MonocularCameraWidget( const int cameraIndex, QWidget* parent = nullptr );
+    MonocularCameraWidget( const std::string &cameraIp, QWidget* parent = nullptr );
 
     const CvImage sourceImage() const;
     const CvImage previewImage() const;
     const std::vector<cv::Point2f> &previewPoints() const;
 
+    bool isTemplateExist() const;
+
 public slots:
     void setSourceImage(const CvImage image);
     void setPreviewImage(const CvImage image);
-    void setPreviewPoints( const std::vector<cv::Point2f> &points );
+    void setPreviewPoints(const std::vector<cv::Point2f> &points );
 
 protected slots:
     void updatePreview();
@@ -67,14 +73,16 @@ protected slots:
 protected:
     QPointer<PreviewWidget> m_previewWidget;
 
-    cv::VideoCapture m_capture;
+    AVT::VmbAPI::VimbaSystem &m_system;
+
+    AVT::VmbAPI::CameraPtr m_camera;
 
     virtual void timerEvent(QTimerEvent *event) override;
 
 
 
 private:
-    void initialize( const int cameraIndex );
+    void initialize( const std::string &cameraIp );
 
 };
 
@@ -83,7 +91,8 @@ class StereoCameraWidget : public CameraWidgetBase
     Q_OBJECT
 
 public:
-    StereoCameraWidget( const int leftCameraIndex, const int rightCameraIndex, QWidget* parent = nullptr );
+    StereoCameraWidget( const std::string &cameraIp, const std::string &rightCameraIp, QWidget* parent = nullptr );
+    ~StereoCameraWidget();
 
     const CvImage leftSourceImage() const;
     const CvImage leftDisplayedImage() const;
@@ -96,10 +105,12 @@ public:
     static CvImage makeOverlappedPreview( const CvImage &leftPreviewImage, const CvImage &rightPreviewImage );
     static CvImage makeStraightPreview( const CvImage &leftPreviewImage, const CvImage &rightPreviewImage );
 
+    bool isTemplateExist() const;
+
 public slots:
     void setLeftSourceImage( const CvImage image );
     void setLeftDisplayedImage( const CvImage image );
-    void setLeftPreviewPoints( const std::vector<cv::Point2f> &points );
+    void setLeftPreviewPoints(const std::vector<cv::Point2f> &points );
 
     void setRightSourceImage( const CvImage image );
     void setRightDisplayedImage( const CvImage image );
@@ -112,8 +123,10 @@ protected:
     QPointer<PreviewWidget> m_leftCameraWidget;
     QPointer<PreviewWidget> m_rightCameraWidget;
 
-    cv::VideoCapture m_leftCapture;
-    cv::VideoCapture m_rightCapture;
+    AVT::VmbAPI::VimbaSystem &m_system;
+
+    AVT::VmbAPI::CameraPtr m_leftCamera;
+    AVT::VmbAPI::CameraPtr m_rightCamera;
 
     virtual void timerEvent( QTimerEvent *event ) override;
 
@@ -123,7 +136,7 @@ protected:
     static CvImage makePreview( const CvImage &leftPreviewImage, const CvImage &rightPreviewImage, const double factor );
 
 private:
-    void initialize( const int leftCameraIndex, const int rightCameraIndex );
+    void initialize( const std::string &leftCameraIp, const std::string &rightCameraIp );
 };
 
 template <int NUM>

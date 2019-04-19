@@ -9,8 +9,8 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit MainWindow( const int cameraIndex, QWidget *parent = nullptr );
-    explicit MainWindow( const int leftCameraIndex, const int rightCameraIndex, QWidget *parent = nullptr );
+    explicit MainWindow( const std::string &cameraIp, QWidget *parent = nullptr );
+    explicit MainWindow( const std::string &leftCameraIp, const std::string &rightCameraIp, QWidget *parent = nullptr );
 
 public slots:
     void grabFrame();
@@ -47,9 +47,13 @@ protected:
     void setupToolBars();
     void setupStatusBar();
 
+    static const int m_grabInterval = 1500;
+
+    virtual void timerEvent( QTimerEvent * ) override;
+
 private:
-    void initialize( const int cameraIndex );
-    void initialize( const int leftCameraIndex, const int rightCameraIndex );
+    void initialize(const std::string &cameraIp );
+    void initialize(const std::string &leftCameraIp, const std::string &rightCameraIp );
     void initialize();
 
 };

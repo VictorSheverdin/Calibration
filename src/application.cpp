@@ -23,9 +23,7 @@ void Application::initialize( int &argc, char **argv )
 
     setWindowIcon( QIcon( ":/resources/images/checkerboard.ico" ) );
 
-    QCommandLineParser parser;
-
-    m_mainWindow = new MainWindow( 0, 2 );
+    m_mainWindow = new MainWindow( "169.254.142.79"/* , "169.254.171.30"*/ );
     m_mainWindow->showMaximized();
 
 }

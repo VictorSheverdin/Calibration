@@ -88,7 +88,7 @@ unsigned int TemplateProcessor::frameMaximumFlag() const
     return m_frameMaximumSize;
 }
 
-bool TemplateProcessor::aptiveThreshold() const
+bool TemplateProcessor::adaptiveThreshold() const
 {
     return m_flags & cv::CALIB_CB_ADAPTIVE_THRESH;
 }
@@ -144,12 +144,12 @@ void TemplateProcessor::setFastCheck( const bool value )
 
 }
 
-bool TemplateProcessor::processFrame(const CvImage &frame, CvImage *view, std::vector<cv::Point2f> *points )
+bool TemplateProcessor::processFrame(const CvImage &frame, CvImage *view, std::vector< cv::Point2f > *points )
 {
     bool ret = false;
 
     if ( !frame.empty() ) {
-        std::vector<cv::Point2f> pointsVec;
+        std::vector< cv::Point2f > pointsVec;
 
         ret = findPoints( frame, &pointsVec );
 
@@ -170,7 +170,7 @@ bool TemplateProcessor::processFrame(const CvImage &frame, CvImage *view, std::v
 
 }
 
-bool TemplateProcessor::processPreview( const CvImage &frame, CvImage *preview, std::vector<cv::Point2f> *points )
+bool TemplateProcessor::processPreview(const CvImage &frame, CvImage *preview, std::vector< cv::Point2f > *points )
 {
     bool ret = false;
 
@@ -196,7 +196,7 @@ bool TemplateProcessor::processPreview( const CvImage &frame, CvImage *preview, 
 
 bool TemplateProcessor::calcChessboardCorners( std::vector< cv::Point3f > *corners )
 {
-    corners->resize(0);
+    corners->clear();
 
     switch( m_templateType )
     {
@@ -226,7 +226,7 @@ bool TemplateProcessor::findPoints(const CvImage &frame, std::vector<cv::Point2f
     if ( m_templateType == CHECKERBOARD ) {
         ret = cv::findChessboardCorners( frame, m_count, *points, m_flags ) ;
 
-        if ( ret && m_subPixFlag ) {
+        if ( ret && !points->empty() && m_subPixFlag ) {
             cv::Mat gray;
             cv::cvtColor(frame, gray, cv::COLOR_BGR2GRAY);
             cv::cornerSubPix( gray, *points, m_subPixWinSize, m_subPixZeroZone, cv::TermCriteria( cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 30, 0.1 ) );

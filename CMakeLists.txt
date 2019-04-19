@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required( VERSION 2.6 )
 project ( Calibration )
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -63,20 +63,25 @@ set ( RESOURCES
 
 find_package(Qt5Widgets REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(Qt5Xml REQUIRED)
 find_package(Eigen3 REQUIRED)
-find_package(VTK 8 REQUIRED)
-
+find_package(VTK 7 REQUIRED)
+find_package(PCL REQUIRED)
 
 add_definitions( ${QT_DEFINITIONS} )
-include_directories( ${Qt5Widgets_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR} )
+include_directories( ${Qt5Widgets_INCLUDE_DIRS} ${Qt5Xml_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR} ${PCL_INCLUDE_DIRS} )
+link_directories(${PCL_LIBRARY_DIRS})
+add_definitions(${PCL_DEFINITIONS})
 
 QT5_ADD_RESOURCES( RES_SOURCES ${RESOURCES} )
 
 add_executable( ${PROJECT_NAME} ${CALIBRATION_SOURCES} ${RES_SOURCES} )
 add_executable( DisparityPreview ${DISPARITY_PREVIEW_SOURCES} ${RES_SOURCES} )
 
-target_link_libraries( ${PROJECT_NAME} ${Qt5Widgets_LIBRARIES} ${OpenCV_LIBS} ${EIGEN3_LIBS} )
-target_link_libraries( DisparityPreview ${Qt5Widgets_LIBRARIES} ${VTK_LIBRARIES} ${OpenCV_LIBS} ${EIGEN3_LIBS} )
+target_include_directories( ${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/vimba/include )
+
+target_link_libraries( ${PROJECT_NAME} ${Qt5Widgets_LIBRARIES} ${Qt5Xml_LIBRARIES} ${OpenCV_LIBS} ${EIGEN3_LIBS} ${CMAKE_CURRENT_SOURCE_DIR}/src/vimba/lib/libVimbaCPP.so )
+target_link_libraries( DisparityPreview ${Qt5Widgets_LIBRARIES} ${VTK_LIBRARIES} ${OpenCV_LIBS} ${EIGEN3_LIBS} ${PCL_LIBRARIES} )
 
 
 

@@ -15,7 +15,7 @@ public:
     MainWindow *mainWindow() const;
 
 protected:
-    QPointer<MainWindow> m_mainWindow;
+    QPointer< MainWindow > m_mainWindow;
 
 private:
     void initialize( int &argc, char **argv );

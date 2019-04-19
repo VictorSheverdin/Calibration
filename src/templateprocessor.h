@@ -39,13 +39,13 @@ public:
     bool resizeFlag() const;
     unsigned int frameMaximumFlag() const;
 
-    bool aptiveThreshold() const;
+    bool adaptiveThreshold() const;
     bool normalizeImage() const;
     bool filterQuads() const;
     bool fastCheck() const;
 
-    bool processFrame( const CvImage &frame, CvImage *view, std::vector<cv::Point2f> *points );
-    bool processPreview( const CvImage &frame, CvImage *preview, std::vector<cv::Point2f> *points );
+    bool processFrame( const CvImage &frame, CvImage *view, std::vector< cv::Point2f > *points );
+    bool processPreview( const CvImage &frame, CvImage *preview, std::vector< cv::Point2f > *points );
 
     bool calcChessboardCorners(std::vector< cv::Point3f > *corners);
 
