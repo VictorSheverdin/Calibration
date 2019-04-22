@@ -2,6 +2,8 @@
 
 #include <QPointer>
 
+#include "camerawidget.h"
+
 class CalibrationWidgetBase;
 
 class MainWindow : public QMainWindow
@@ -17,6 +19,8 @@ public slots:
     void calculate();
 
     void settingsDialog();
+
+    void setCameraDecimation( CameraWidgetBase::DecimationType type );
 
 protected:
     QPointer<CalibrationWidgetBase> m_widget;

@@ -69,6 +69,11 @@ bool TaskWidgetBase::fastCheck() const
     return m_cameraWidget->fastCheck();
 }
 
+void TaskWidgetBase::setCameraDecimation( CameraWidgetBase::DecimationType type )
+{
+    m_cameraWidget->setDecimation( type );
+}
+
 void TaskWidgetBase::updateParameters()
 {
     m_cameraWidget->setType( m_parametersWidget->templateType() );

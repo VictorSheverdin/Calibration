@@ -32,6 +32,12 @@ void ReportWidget::addDoubleBreak()
     addBreak();
 }
 
+void ReportWidget::addSpace( const int num )
+{
+    for ( auto i = 0; i < num; ++i )
+        addText( " " );
+}
+
 void ReportWidget::addNumber( const int num )
 {
     addText( QString::number( num ) );
@@ -129,6 +135,11 @@ void ReportDialog::addBreak()
 void ReportDialog::addDoubleBreak()
 {
     m_reportWidget->addDoubleBreak();
+}
+
+void ReportDialog::addSpace( const int num )
+{
+    m_reportWidget->addSpace( num );
 }
 
 void ReportDialog::addNumber( const int num )

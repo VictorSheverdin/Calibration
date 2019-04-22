@@ -6,88 +6,74 @@
 #include "iconswidget.h"
 #include "camerawidget.h"
 #include "reportwidget.h"
+#include "functions.h"
 
 #include "application.h"
 #include "mainwindow.h"
 
-// MonocularCalibrationResult
+// MonocularCalibrationResults
 MonocularCalibrationResult::MonocularCalibrationResult()
 {
 }
 
-void MonocularCalibrationResult::setFrameSize( const cv::Size &value )
+void MonocularCalibrationResult::setSourceView( const CvImage &value )
 {
-    m_frameSize = value;
+    m_sourceView = value;
 }
 
-const cv::Size &MonocularCalibrationResult::frameSize() const
+const CvImage &MonocularCalibrationResult::sourceView() const
 {
-    return m_frameSize;
+    return m_sourceView;
 }
 
-void MonocularCalibrationResult::setViews( std::vector< CvImage > &value )
+void MonocularCalibrationResult::setProcessedView( const CvImage &value )
 {
-    m_views = value;
+    m_processedView = value;
 }
 
-const std::vector<CvImage> &MonocularCalibrationResult::views() const
+const CvImage &MonocularCalibrationResult::processedView() const
 {
-    return m_views;
+    return m_processedView;
 }
 
-const CvImage &MonocularCalibrationResult::view( const unsigned int i ) const
+void MonocularCalibrationResult::setRVec( const cv::Mat &value )
 {
-    return m_views[i];
+    m_rVec = value;
 }
 
-void MonocularCalibrationResult::setCameraMatrix( const cv::Mat &value )
+const cv::Mat &MonocularCalibrationResult::rVec() const
 {
-    m_cameraMatrix = value;
+    return m_rVec;
 }
 
-const cv::Mat &MonocularCalibrationResult::cameraMatrix() const
+void MonocularCalibrationResult::setTVec( const cv::Mat &value )
 {
-    return m_cameraMatrix;
+    m_tVec = value;
 }
 
-void MonocularCalibrationResult::setDistorsionCoefficients( const cv::Mat &value )
+const cv::Mat &MonocularCalibrationResult::tVec() const
 {
-    m_distCoefficients = value;
+    return m_tVec;
 }
 
-const cv::Mat &MonocularCalibrationResult::distorsionCoefficients() const
+void MonocularCalibrationResult::setPoints2d( const std::vector< cv::Point2f > &value )
 {
-    return m_distCoefficients;
+    m_points2d = value;
 }
 
-void MonocularCalibrationResult::setRVecs( const std::vector< cv::Mat > &value )
+const std::vector< cv::Point2f > &MonocularCalibrationResult::points2d() const
 {
-    m_rVecs = value;
+    return m_points2d;
 }
 
-const std::vector< cv::Mat > &MonocularCalibrationResult::rVecs() const
+void MonocularCalibrationResult::setPoints3d( const std::vector< cv::Point3f > &value )
 {
-    return m_rVecs;
+    m_points3d = value;
 }
 
-const cv::Mat &MonocularCalibrationResult::rVec( const unsigned int i ) const
+const std::vector< cv::Point3f > &MonocularCalibrationResult::points3d() const
 {
-    return m_rVecs[i];
-}
-
-void MonocularCalibrationResult::setTVecs( const std::vector< cv::Mat > &value )
-{
-    m_tVecs = value;
-}
-
-const std::vector< cv::Mat > &MonocularCalibrationResult::tVecs() const
-{
-    return m_tVecs;
-}
-
-const cv::Mat &MonocularCalibrationResult::tVec( const unsigned int i ) const
-{
-    return m_tVecs[i];
+    return m_points3d;
 }
 
 void MonocularCalibrationResult::setOk( const bool value )
@@ -100,14 +86,284 @@ bool MonocularCalibrationResult::isOk() const
     return m_ok;
 }
 
-void MonocularCalibrationResult::setError( const double value )
+// MonocularCalibrationResults
+MonocularCalibrationResults::MonocularCalibrationResults()
+{
+}
+
+void MonocularCalibrationResults::setFrameSize( const cv::Size &value )
+{
+    m_frameSize = value;
+}
+
+const cv::Size &MonocularCalibrationResults::frameSize() const
+{
+    return m_frameSize;
+}
+
+void MonocularCalibrationResults::setCameraMatrix( const cv::Mat &value )
+{
+    m_cameraMatrix = value;
+}
+
+const cv::Mat &MonocularCalibrationResults::cameraMatrix() const
+{
+    return m_cameraMatrix;
+}
+
+void MonocularCalibrationResults::setDistorsionCoefficients( const cv::Mat &value )
+{
+    m_distCoefficients = value;
+}
+
+const cv::Mat &MonocularCalibrationResults::distorsionCoefficients() const
+{
+    return m_distCoefficients;
+}
+
+void MonocularCalibrationResults::setResults( std::vector< MonocularCalibrationResult > &value )
+{
+    m_results = value;
+}
+
+const std::vector< MonocularCalibrationResult > &MonocularCalibrationResults::results() const
+{
+    return m_results;
+}
+
+MonocularCalibrationResult &MonocularCalibrationResults::result( const unsigned int i )
+{
+    return m_results[i];
+}
+
+const MonocularCalibrationResult &MonocularCalibrationResults::result( const unsigned int i ) const
+{
+    return m_results[i];
+}
+
+void MonocularCalibrationResults::setOk( const bool value )
+{
+    m_ok = value;
+}
+
+bool MonocularCalibrationResults::isOk() const
+{
+    return m_ok;
+}
+
+void MonocularCalibrationResults::setError( const double value )
 {
     m_error = value;
 }
 
-double MonocularCalibrationResult::error() const
+double MonocularCalibrationResults::error() const
 {
     return m_error;
+}
+
+const unsigned int MonocularCalibrationResults::resultsSize() const
+{
+    return m_results.size();
+}
+
+// StereoCalibrationResults
+StereoCalibrationResults::StereoCalibrationResults()
+{
+}
+
+void StereoCalibrationResults::setLeftCameraResults( const MonocularCalibrationResults &value )
+{
+    m_leftCameraResults = value;
+}
+
+const MonocularCalibrationResults &StereoCalibrationResults::leftCameraResults() const
+{
+    return m_leftCameraResults;
+}
+
+void StereoCalibrationResults::setRightCameraResults( const MonocularCalibrationResults &value )
+{
+    m_rightCameraResults = value;
+}
+
+const MonocularCalibrationResults &StereoCalibrationResults::rightCameraResults() const
+{
+    return m_rightCameraResults;
+}
+
+unsigned int StereoCalibrationResults::leftResultsSize() const
+{
+    return m_leftCameraResults.resultsSize();
+}
+
+unsigned int StereoCalibrationResults::rightResultsSize() const
+{
+    return m_rightCameraResults.resultsSize();
+}
+
+void StereoCalibrationResults::setRotationMatrix( const cv::Mat &value )
+{
+    m_rotationMatrix = value;
+}
+
+const cv::Mat &StereoCalibrationResults::rotationMatrix() const
+{
+    return m_rotationMatrix;
+}
+
+void StereoCalibrationResults::setTranslationVector( const cv::Mat &value )
+{
+    m_translationVector = value;
+}
+
+const cv::Mat &StereoCalibrationResults::translationVector() const
+{
+    return m_translationVector;
+}
+
+void StereoCalibrationResults::setFundamentalMatrix( const cv::Mat &value )
+{
+    m_fundamentalMatrix = value;
+}
+
+const cv::Mat &StereoCalibrationResults::fundamentalMatrix() const
+{
+    return m_fundamentalMatrix;
+}
+
+void StereoCalibrationResults::setEssentialMatrix( const cv::Mat &value )
+{
+    m_essentialMatrix = value;
+}
+
+const cv::Mat &StereoCalibrationResults::essentialMatrix() const
+{
+    return m_essentialMatrix;
+}
+
+void StereoCalibrationResults::setLeftRectifyMatrix( const cv::Mat &value )
+{
+    m_leftRectifyMatrix = value;
+}
+
+const cv::Mat &StereoCalibrationResults::leftRectifyMatrix() const
+{
+    return m_leftRectifyMatrix;
+}
+
+void StereoCalibrationResults::setRightRectifyMatrix( const cv::Mat &value )
+{
+    m_rightRectifyMatrix = value;
+}
+
+const cv::Mat &StereoCalibrationResults::rightRectifyMatrix() const
+{
+    return m_rightRectifyMatrix;
+}
+
+void StereoCalibrationResults::setLeftProjectionMatrix( const cv::Mat &value )
+{
+    m_leftProjectionMatrix = value;
+}
+
+const cv::Mat &StereoCalibrationResults::leftProjectionMatrix() const
+{
+    return m_leftProjectionMatrix;
+}
+
+void StereoCalibrationResults::setRightProjectionMatrix( const cv::Mat &value )
+{
+    m_rightProjectionMatrix = value;
+}
+
+const cv::Mat &StereoCalibrationResults::rightProjectionMatrix() const
+{
+    return m_rightProjectionMatrix;
+}
+
+void StereoCalibrationResults::setDisparityToDepthMatrix( const cv::Mat &value )
+{
+    m_disparityToDepthMatrix = value;
+}
+
+const cv::Mat &StereoCalibrationResults::disparityToDepthMatrix() const
+{
+    return m_disparityToDepthMatrix;
+}
+
+void StereoCalibrationResults::setLeftROI( const cv::Rect &value )
+{
+    m_leftROI = value;
+}
+
+const cv::Rect &StereoCalibrationResults::leftROI() const
+{
+    return m_leftROI;
+}
+
+void StereoCalibrationResults::setRightROI( const cv::Rect &value )
+{
+    m_rightROI = value;
+}
+
+const cv::Rect &StereoCalibrationResults::rightROI() const
+{
+    return m_rightROI;
+}
+
+void StereoCalibrationResults::setLeftRMap( const cv::Mat &value )
+{
+    m_leftRMap = value;
+}
+
+const cv::Mat &StereoCalibrationResults::leftRMap() const
+{
+    return m_leftRMap;
+}
+
+void StereoCalibrationResults::setLeftDMap( const cv::Mat &value )
+{
+    m_leftDMap = value;
+}
+
+const cv::Mat &StereoCalibrationResults::leftDMap() const
+{
+    return m_leftDMap;
+}
+
+void StereoCalibrationResults::setRightRMap( const cv::Mat &value )
+{
+    m_rightRMap = value;
+}
+
+const cv::Mat &StereoCalibrationResults::rightRMap() const
+{
+    return m_rightRMap;
+}
+
+void StereoCalibrationResults::setRightDMap( const cv::Mat &value )
+{
+    m_rightDMap = value;
+}
+
+const cv::Mat &StereoCalibrationResults::rightDMap() const
+{
+    return m_rightDMap;
+}
+
+void StereoCalibrationResults::setError( const double value )
+{
+    m_error = value;
+}
+
+double StereoCalibrationResults::error() const
+{
+    return m_error;
+}
+
+bool StereoCalibrationResults::isOk() const
+{
+    return m_leftCameraResults.isOk() && m_rightCameraResults.isOk();
 }
 
 // CalibrationWidgetBase
@@ -132,47 +388,22 @@ void CalibrationWidgetBase::initialize()
 
 }
 
-MonocularCalibrationResult CalibrationWidgetBase::calcMonocularCalibration(  const std::vector< CvImage > &frames )
+void CalibrationWidgetBase::setCameraDecimation( CameraWidgetBase::DecimationType type )
 {
-    MonocularCalibrationResult ret;
+    m_taskWidget->setCameraDecimation( type );
+}
+
+MonocularCalibrationResults CalibrationWidgetBase::calcMonocularCalibration(  const std::vector< CvImage > &frames )
+{
+    MonocularCalibrationResults ret;
 
     m_processor.setCount( m_taskWidget->templateCount() );
     m_processor.setSize( m_taskWidget->templateSize() );
 
-    std::vector< std::vector< cv::Point2f > > points2d;
-    std::vector< std::vector< cv::Point3f > > points3d;
-
-    std::vector< CvImage > validFrames;
-
-    for ( auto i = frames.begin(); i != frames.end(); ++i ) {
-
-        if ( !i->empty() ) {
-            CvImage view;
-
-            std::vector< cv::Point2f > imagePoints;
-            m_processor.processFrame( *i, &view, &imagePoints );
-
-            if ( !imagePoints.empty() ) {
-
-                std::vector< cv::Point3f > objectPoints;
-                m_processor.calcChessboardCorners( &objectPoints );
-
-                if ( !objectPoints.empty() ) {
-                    validFrames.push_back( view );
-                    points2d.push_back( imagePoints );
-                    points3d.push_back( objectPoints );
-                }
-
-            }
-
-        }
-
-    }
-
     cv::Size frameSize;
 
     // Calculating image size
-    for ( auto &i : validFrames ) {
+    for ( auto &i : frames ) {
         auto currentSize = i.size();
 
         if ( frameSize.empty() )
@@ -186,34 +417,83 @@ MonocularCalibrationResult CalibrationWidgetBase::calcMonocularCalibration(  con
 
     ret.setFrameSize( frameSize );
 
-    ret.setViews( validFrames );
+    std::vector< MonocularCalibrationResult > results;
 
-    if ( points2d.size() > 0 && points3d.size() > 0 &&
-         points2d.size() == points3d.size() &&
-         points2d.size() == validFrames.size() ) {
+    for ( auto i = frames.begin(); i != frames.end(); ++i ) {
+        MonocularCalibrationResult result;
 
-        cv::Mat cameraMatrix = cv::Mat::eye(3, 3, CV_32F);
-        cv::Mat distCoeffs = cv::Mat::zeros(8, 1, CV_32F);
-        std::vector< cv::Mat > rvecs;
-        std::vector< cv::Mat > tvecs;
+        result.setSourceView( *i );
+        result.setOk( false );
 
-        double rms = cv::calibrateCamera( points3d, points2d, frameSize, cameraMatrix, distCoeffs, rvecs, tvecs );
+        if ( !i->empty() ) {
+            CvImage view;
 
-        bool ok = cv::checkRange( cameraMatrix ) && cv::checkRange( distCoeffs );
+            std::vector< cv::Point2f > imagePoints;
+            m_processor.processFrame( *i, &view, &imagePoints );
 
+            if ( !imagePoints.empty() ) {
 
-        ret.setCameraMatrix( cameraMatrix );
-        ret.setDistorsionCoefficients( distCoeffs );
+                std::vector< cv::Point3f > objectPoints;
+                m_processor.calcChessboardCorners( &objectPoints );
 
-        ret.setRVecs( rvecs );
-        ret.setTVecs( tvecs );
+                if ( !objectPoints.empty() ) {
 
-        ret.setError( rms );
-        ret.setOk( ok );
+                    result.setProcessedView( view );
+
+                    if ( objectPoints.size() == imagePoints.size() ) {
+                        result.setPoints3d( objectPoints );
+                        result.setPoints2d( imagePoints );
+                        result.setOk( true );
+                    }
+
+                }
+
+            }
+
+        }
+
+        results.push_back( result );
 
     }
-    else
+
+    std::vector< std::vector< cv::Point2f > > points2d;
+    std::vector< std::vector< cv::Point3f > > points3d;
+
+    for (auto &i : results ) {
+        if ( i.isOk() ) {
+            points2d.push_back( i.points2d() );
+            points3d.push_back( i.points3d() );
+        }
+
+    }
+
+    if ( points2d.size() < m_minimumCalibrationFrames || points3d.size() < m_minimumCalibrationFrames || points2d.size() != points3d.size() )
         throw std::exception();
+
+    cv::Mat cameraMatrix = cv::Mat::eye(3, 3, CV_64F);
+    cv::Mat distCoeffs = cv::Mat::zeros(8, 1, CV_64F);
+    std::vector< cv::Mat > rvecs;
+    std::vector< cv::Mat > tvecs;
+
+    double rms = cv::calibrateCamera( points3d, points2d, frameSize, cameraMatrix, distCoeffs, rvecs, tvecs, cv::CALIB_FIX_K3/* | cv::CALIB_FIX_K4 | cv::CALIB_FIX_K5*/ );
+
+    bool ok = cv::checkRange( cameraMatrix ) && cv::checkRange( distCoeffs );
+
+    ret.setCameraMatrix( cameraMatrix );
+    ret.setDistorsionCoefficients( distCoeffs );
+
+    int index = 0;
+    for (auto &i : results ) {
+        if (i.isOk() ) {
+            i.setRVec( rvecs[index] );
+            i.setTVec( tvecs[index] );
+        }
+
+    }
+
+    ret.setResults( results );
+    ret.setError( rms );
+    ret.setOk( ok );
 
     return ret;
 
@@ -286,21 +566,20 @@ void MonocularCalibrationWidget::calculate()
     m_reportDialog->addBreak();
 
 
-    for (  auto &i : calibrationResult.views() ) {
+    for (  auto &i : calibrationResult.results() ) {
 
-        if ( !i.empty() ) {
+        if ( !i.processedView().empty() ) {
 
             CvImage resized;
 
-            cv::resize( i, resized, cv::Size(), 0.25, 0.25, cv::INTER_LANCZOS4 );
+            cv::resize( i.processedView(), resized, cv::Size(), 0.25, 0.25, cv::INTER_LANCZOS4 );
             m_reportDialog->addImage( resized );
 
         }
 
     }
 
-    m_reportDialog->addBreak();
-    m_reportDialog->addBreak();
+    m_reportDialog->addDoubleBreak();
 
     m_reportDialog->addText( tr( "Results:" ) + "\n" );
     m_reportDialog->addBreak();
@@ -318,18 +597,24 @@ void MonocularCalibrationWidget::calculate()
     m_reportDialog->addText( tr( "Reprojection error:" ) +  " " + QString::number( calibrationResult.error() ) +"\n" );
     m_reportDialog->addBreak();
 
+    for ( auto &i : calibrationResult.results() ) {
 
-/*    for ( auto &i : views ) {
-        CvImage undistorted;
+        if ( !i.sourceView().empty() ) {
 
-        cv::undistort( i, undistorted, cameraMatrix, distCoeffs );
+            CvImage undistorted;
 
-        CvImage resizedView;
-        cv::resize( undistorted, resizedView, cv::Size(), 0.5, 0.5, cv::INTER_LANCZOS4 );
+            cv::undistort( i.sourceView(), undistorted, calibrationResult.cameraMatrix(), calibrationResult.distorsionCoefficients() );
 
-        m_reportDialog->addImage( resizedView );
-        m_reportDialog->addBreak();
-    }*/
+            CvImage resizedView;
+            cv::resize( undistorted, resizedView, cv::Size(), 0.25, 0.25, cv::INTER_LANCZOS4 );
+
+            m_reportDialog->addImage( resizedView );
+
+        }
+
+    }
+
+    m_reportDialog->addDoubleBreak();
 
     if ( calibrationResult.isOk() )
         m_reportDialog->addText( tr( "Calibration succesful!" ) + "\n" );
@@ -339,8 +624,6 @@ void MonocularCalibrationWidget::calculate()
 
 
 }
-
-
 
 // StereoCalibrationWidget
 StereoCalibrationWidget::StereoCalibrationWidget(const std::string &leftCameraIp, const std::string &rightCameraIp, QWidget *parent )
@@ -380,17 +663,17 @@ void StereoCalibrationWidget::showIcon( IconBase *icon )
 
 void StereoCalibrationWidget::grabFrame()
 {
-    if ( m_taskWidget->isTemplateExist() )
+    auto taskWidget = this->taskWidget();
+
+    if ( taskWidget->isTemplateExist() )
         m_iconsWidget->insertIcon( new StereoIcon(
-                                        StereoCameraWidget::makeOverlappedPreview( m_taskWidget->leftDisplayedImage(), m_taskWidget->rightDisplayedImage() ),
-                                        StereoCameraWidget::makeStraightPreview( m_taskWidget->leftDisplayedImage(), m_taskWidget->rightDisplayedImage() ),
-                                        m_taskWidget->leftSourceImage(), m_taskWidget->rightSourceImage(), this ) );
+                                        StereoCameraWidget::makeOverlappedPreview( taskWidget->leftDisplayedImage(), taskWidget->rightDisplayedImage() ),
+                                        StereoCameraWidget::makeStraightPreview( taskWidget->leftDisplayedImage(), taskWidget->rightDisplayedImage() ),
+                                        taskWidget->leftSourceImage(), taskWidget->rightSourceImage(), this ) );
 }
 
 void StereoCalibrationWidget::calculate()
 {
-    QDomElement docHead;
-
     m_processor.setCount( m_taskWidget->templateCount() );
     m_processor.setSize( m_taskWidget->templateSize() );
 
@@ -401,203 +684,120 @@ void StereoCalibrationWidget::calculate()
 
     m_reportDialog->addText( tr( "Stereo camera calibration." ) + "\n" );
     m_reportDialog->addBreak();
-    docHead.setAttribute("name", "Stereo camera calibration");
 
-    std::vector< std::vector< cv::Point2f > > leftPoints2d;
-    std::vector< std::vector< cv::Point2f > > rightPoints2d;
-    std::vector< std::vector< cv::Point3f > > points3d;
+    std::vector< CvImage > leftFrames;
+    std::vector< CvImage > rightFrames;
 
     auto icons = m_iconsWidget->icons();
 
-    cv::Size imageSize;
-
-    // Calculating image size
-    for ( auto &i : icons ) {
-        auto currentSize = i->toStereoIcon()->leftSourceImage().size();
-
-        if ( imageSize.empty() )
-            imageSize = currentSize;
-        else
-            if ( imageSize != currentSize ) {
-                m_reportDialog->addText( tr( "Error: image sizes must be the same." ) + "\n" );
-                return;
-            }
-
-    }
-
-    for ( auto &i : icons ) {
-        auto currentSize = i->toStereoIcon()->rightSourceImage().size();
-
-        if ( imageSize.empty() )
-            imageSize = currentSize;
-        else
-            if ( imageSize != currentSize ) {
-                m_reportDialog->addText( tr( "Error: image sizes must be the same." ) + "\n" );
-                return;
-            }
-
-    }
-
-    std::vector< CvImage > views;
-
-    for ( auto i = icons.begin(); i != icons.end(); ) {
+    for ( auto i = icons.begin(); i != icons.end(); ++i ) {
         auto leftImage = (*i)->toStereoIcon()->leftSourceImage();
         auto rightImage = (*i)->toStereoIcon()->rightSourceImage();
 
         if ( !leftImage.empty() && !rightImage.empty() ) {
-            CvImage leftView;
-            CvImage rightView;
-
-            std::vector<cv::Point2f > leftImagePoints;
-            std::vector<cv::Point2f > rightImagePoints;
-            m_processor.processFrame( leftImage, &leftView, &leftImagePoints );
-            m_processor.processFrame( rightImage, &rightView, &rightImagePoints );
-
-            if ( !leftImagePoints.empty() && !rightImagePoints.empty() ) {
-
-                std::vector< cv::Point3f > objectPoints;
-                m_processor.calcChessboardCorners( &objectPoints );
-
-                if ( !objectPoints.empty() ) {
-                    views.push_back( StereoCameraWidget::makeStraightPreview( leftView, rightView ) );
-                    leftPoints2d.push_back( leftImagePoints );
-                    rightPoints2d.push_back( rightImagePoints );
-                    points3d.push_back( objectPoints );
-                }
-                else {
-                    i = icons.erase( i );
-                    continue;
-
-                }
-
-            }
-            else {
-                i = icons.erase( i );
-                continue;
-            }
-
-        }
-        else {
-            i = icons.erase( i );
-            continue;
+            leftFrames.push_back( leftImage );
+            rightFrames.push_back( rightImage );
         }
 
-
-        ++i;
     }
 
-    if ( leftPoints2d.size() > 0 && rightPoints2d.size() > 0 && points3d.size() > 0 ) {
+    auto calibrationResult = calcStereoCalibration( leftFrames, rightFrames );
 
-        cv::Mat leftCameraMatrix = cv::Mat::eye(3, 3, CV_32F);
-        cv::Mat rightCameraMatrix = cv::Mat::eye(3, 3, CV_32F);
-        cv::Mat leftDistCoeffs = cv::Mat::zeros(8, 1, CV_32F);
-        cv::Mat rightDistCoeffs = cv::Mat::zeros(8, 1, CV_32F);
-        cv::Mat R;
-        cv::Mat T;
-        cv::Mat E;
-        cv::Mat F;
+    if ( calibrationResult.leftResultsSize() != calibrationResult.rightResultsSize() )
+        throw std::exception();
 
-        double rms = cv::stereoCalibrate( points3d, leftPoints2d, rightPoints2d, leftCameraMatrix, leftDistCoeffs, rightCameraMatrix, rightDistCoeffs, imageSize,
-                                          R, T, E, F, 0 );
+        for (  int i = 0; i < calibrationResult.leftCameraResults().resultsSize(); ++i ) {
+            if ( calibrationResult.leftCameraResults().result(i).isOk() &&  calibrationResult.rightCameraResults().result(i).isOk() ) {
 
-        bool ok = cv::checkRange(leftCameraMatrix) && cv::checkRange(rightCameraMatrix) && cv::checkRange(leftDistCoeffs) && cv::checkRange(rightDistCoeffs);
+                auto image1 = resizeTo( calibrationResult.leftCameraResults().result( i ).processedView(), m_reportFrameSize );
+                auto image2 = resizeTo( calibrationResult.rightCameraResults().result( i ).processedView(), m_reportFrameSize );
 
+                auto stitchedImage = StereoCameraWidget::makeStraightPreview( image1, image2 );
 
-        for (  int i = 0; i < views.size(); ++i ) {
-            auto view = views[i];
-
-            if ( !view.empty() ) {
-
-                m_reportDialog->addText( tr( "Image" ) + " " + QString::number( i + 1 ) + "\n" );
-                CvImage resizedView;
-                cv::resize( view, resizedView, cv::Size(), 0.25, 0.25, cv::INTER_LANCZOS4 );
-                m_reportDialog->addImage( resizedView );
-                m_reportDialog->addDoubleBreak();
+                if ( !stitchedImage.empty() ) {
+                    m_reportDialog->addImage( stitchedImage );
+                    m_reportDialog->addSpace();
+                }
 
             }
 
         }
 
-        if ( ok ) {
+        m_reportDialog->addDoubleBreak();
+
+        if ( calibrationResult.isOk() ) {
 
             m_reportDialog->addText( tr( "Left camera matrix:" ) + "\n" );
-            m_reportDialog->addMatrix( leftCameraMatrix );
+            m_reportDialog->addMatrix( calibrationResult.leftCameraResults().cameraMatrix() );
             m_reportDialog->addDoubleBreak();
 
             m_reportDialog->addText( tr( "Right camera matrix:" ) + "\n" );
-            m_reportDialog->addMatrix( rightCameraMatrix );
+            m_reportDialog->addMatrix( calibrationResult.rightCameraResults().cameraMatrix() );
             m_reportDialog->addDoubleBreak();
 
             m_reportDialog->addText( tr( "Left distorsion coefficients:" ) + " " );
-            m_reportDialog->addMatrix( leftDistCoeffs.t() );
+            m_reportDialog->addMatrix( calibrationResult.leftCameraResults().distorsionCoefficients().t() );
             m_reportDialog->addDoubleBreak();
 
             m_reportDialog->addText( tr( "Right distorsion coefficients:" ) + " " );
-            m_reportDialog->addMatrix( rightDistCoeffs.t() );
+            m_reportDialog->addMatrix( calibrationResult.rightCameraResults().distorsionCoefficients().t() );
             m_reportDialog->addDoubleBreak();
 
             m_reportDialog->addText( tr( "Rotation matrix:" ) + " " );
-            m_reportDialog->addMatrix( R );
+            m_reportDialog->addMatrix( calibrationResult.rotationMatrix() );
             m_reportDialog->addDoubleBreak();
 
             m_reportDialog->addText( tr( "Translation vector:" ) + " " );
-            m_reportDialog->addMatrix( T.t() );
+            m_reportDialog->addMatrix( calibrationResult.translationVector().t() );
             m_reportDialog->addDoubleBreak();
 
             m_reportDialog->addText( tr( "Fundamental matrix:" ) + " " );
-            m_reportDialog->addMatrix( F );
+            m_reportDialog->addMatrix( calibrationResult.fundamentalMatrix() );
             m_reportDialog->addDoubleBreak();
 
             m_reportDialog->addText( tr( "Essential matrix:" ) + " " );
-            m_reportDialog->addMatrix( E );
+            m_reportDialog->addMatrix( calibrationResult.essentialMatrix() );
             m_reportDialog->addDoubleBreak();
 
-            cv::Mat leftRMap, leftDMap, rightRMap, rightDMap;
-
-            cv::Mat R1, R2, P1, P2, Q;
-
-            cv::Rect leftValidROI;
-            cv::Rect rightValidROI;
-
-            cv::stereoRectify( leftCameraMatrix, leftDistCoeffs, rightCameraMatrix, rightDistCoeffs, imageSize,
-                               R, T, R1, R2, P1, P2, Q, cv::CALIB_ZERO_DISPARITY, 1, imageSize, &leftValidROI, &rightValidROI );
-
-            m_reportDialog->addText( tr( "Left camera rotation matrix:" ) + " " );
-            m_reportDialog->addMatrix( R1 );
+            m_reportDialog->addText( tr( "Left camera rectification matrix:" ) + " " );
+            m_reportDialog->addMatrix( calibrationResult.leftRectifyMatrix() );
             m_reportDialog->addDoubleBreak();
 
             m_reportDialog->addText( tr( "Left camera projection matrix:" ) + " " );
-            m_reportDialog->addMatrix( P1 );
+            m_reportDialog->addMatrix( calibrationResult.leftProjectionMatrix() );
             m_reportDialog->addDoubleBreak();
 
-            m_reportDialog->addText( tr( "Right camera rotation matrix:" ) + " " );
-            m_reportDialog->addMatrix( R2 );
+            m_reportDialog->addText( tr( "Right camera rectification matrix:" ) + " " );
+            m_reportDialog->addMatrix( calibrationResult.rightRectifyMatrix() );
             m_reportDialog->addDoubleBreak();
 
             m_reportDialog->addText( tr( "Right camera projection matrix:" ) + " " );
-            m_reportDialog->addMatrix( P2 );
+            m_reportDialog->addMatrix( calibrationResult.rightProjectionMatrix() );
             m_reportDialog->addDoubleBreak();
 
             m_reportDialog->addText( tr( "Left valid ROI:" ) + " " );
-            m_reportDialog->addRect( leftValidROI );
+            m_reportDialog->addRect( calibrationResult.leftROI() );
             m_reportDialog->addDoubleBreak();
 
             m_reportDialog->addText( tr( "Right valid ROI:" ) + " " );
-            m_reportDialog->addRect( rightValidROI );
+            m_reportDialog->addRect( calibrationResult.rightROI() );
             m_reportDialog->addDoubleBreak();
 
-            m_reportDialog->addText( tr( "Reprojection error:" ) +  " " + QString::number( rms ) +"\n" );
+            m_reportDialog->addText( tr( "Reprojection error:" ) +  " " + QString::number( calibrationResult.error() ) +"\n" );
             m_reportDialog->addBreak();
 
-            m_reportDialog->addText( tr( "Calibration succesful!" ) + "\n" );
-            m_reportDialog->addDoubleBreak();
+            cv::Mat leftRMap, leftDMap, rightRMap, rightDMap;
 
-            cv::initUndistortRectifyMap( leftCameraMatrix, leftDistCoeffs, R1, P1, imageSize, CV_16SC2, leftRMap, leftDMap );
-            cv::initUndistortRectifyMap( rightCameraMatrix, rightDistCoeffs, R2, P2, imageSize, CV_16SC2, rightRMap, rightDMap );
+            cv::initUndistortRectifyMap( calibrationResult.leftCameraResults().cameraMatrix(), calibrationResult.leftCameraResults().distorsionCoefficients(),
+                                         calibrationResult.leftRectifyMatrix(), calibrationResult.leftProjectionMatrix(), calibrationResult.leftCameraResults().frameSize(),
+                                         CV_32FC2, leftRMap, leftDMap );
+            cv::initUndistortRectifyMap( calibrationResult.rightCameraResults().cameraMatrix(), calibrationResult.rightCameraResults().distorsionCoefficients(),
+                                         calibrationResult.rightRectifyMatrix(), calibrationResult.rightProjectionMatrix(), calibrationResult.rightCameraResults().frameSize(),
+                                         CV_32FC2, rightRMap, rightDMap );
 
-            for ( auto i = icons.begin(); i != icons.end(); ++i ) {
-                auto leftImage = (*i)->toStereoIcon()->leftSourceImage();
-                auto rightImage = (*i)->toStereoIcon()->rightSourceImage();
+            for ( auto i = 0; i < calibrationResult.leftCameraResults().resultsSize(); ++i ) {
+                auto leftImage = calibrationResult.leftCameraResults().result(i).sourceView();
+                auto rightImage = calibrationResult.rightCameraResults().result(i).sourceView();
 
                 if ( !leftImage.empty() && !rightImage.empty() ) {
 
@@ -610,22 +810,113 @@ void StereoCalibrationWidget::calculate()
                     cv::flip( leftRectifiedImage, leftRectifiedImage, -1 );
                     cv::flip( rightRectifiedImage, rightRectifiedImage, -1 );
 
-                    auto preview = StereoCameraWidget::makeStraightPreview( leftRectifiedImage, rightRectifiedImage);
-                    CvImage resizedView;
-                    cv::resize( preview, resizedView, cv::Size(), 0.25, 0.25, cv::INTER_LANCZOS4 );
+                    auto image1 = resizeTo( leftRectifiedImage, m_reportFrameSize );
+                    auto image2 = resizeTo( rightRectifiedImage, m_reportFrameSize );
 
-                    m_reportDialog->addImage( resizedView );
+                    auto stitchedImage = StereoCameraWidget::makeStraightPreview( image1, image2 );
+
+                    if ( !stitchedImage.empty() ) {
+                        drawTraceLines( stitchedImage, 15 );
+
+                        m_reportDialog->addImage( stitchedImage );
+                        m_reportDialog->addSpace();
+
+                    }
+
 
                 }
 
             }
 
+            m_reportDialog->addDoubleBreak();
+
+            m_reportDialog->addText( tr( "Calibration succesful!" ) + "\n" );
+
         }
         else
             m_reportDialog->addText( tr( "Calibration error!" ) + "\n" );
 
-    }
+}
 
+StereoCalibrationResults StereoCalibrationWidget::calcStereoCalibration( const std::vector< CvImage > &leftFrames,
+                                               const std::vector< CvImage > &rightFrames )
+{
+    if ( leftFrames.size() != rightFrames.size() )
+        throw std::exception();
+
+    if ( leftFrames.size() < m_minimumCalibrationFrames )
+        throw std::exception();
+
+    StereoCalibrationResults ret;
+
+    ret.setLeftCameraResults( calcMonocularCalibration( leftFrames ) );
+    ret.setRightCameraResults( calcMonocularCalibration( rightFrames ) );
+
+    if ( ret.leftCameraResults().frameSize() != ret.rightCameraResults().frameSize() )
+        throw std::exception();
+
+    std::vector< std::vector< cv::Point2f > > leftPoints2d;
+    std::vector< std::vector< cv::Point2f > > rightPoints2d;
+    std::vector< std::vector< cv::Point3f > > points3d;
+
+    if ( ret.leftCameraResults().resultsSize() != ret.rightCameraResults().resultsSize() )
+        throw std::exception();
+
+    for ( auto i = 0; i < leftFrames.size(); ++i )
+        if ( ret.leftCameraResults().result(i).isOk() && ret.rightCameraResults().result(i).isOk() ) {
+            points3d.push_back( ret.leftCameraResults().result(i).points3d() );
+            leftPoints2d.push_back( ret.leftCameraResults().result(i).points2d() );
+            rightPoints2d.push_back( ret.rightCameraResults().result(i).points2d() );
+        }
+
+    cv::Mat R;
+    cv::Mat T;
+    cv::Mat E;
+    cv::Mat F;
+
+    double rms = cv::stereoCalibrate( points3d, leftPoints2d, rightPoints2d,
+                                      ret.leftCameraResults().cameraMatrix(), ret.leftCameraResults().distorsionCoefficients(),
+                                      ret.rightCameraResults().cameraMatrix(), ret.rightCameraResults().distorsionCoefficients(), ret.leftCameraResults().frameSize(),
+                                      R, T, E, F, cv::CALIB_FIX_INTRINSIC );
+
+    ret.setRotationMatrix( R );
+    ret.setTranslationVector( T );
+    ret.setFundamentalMatrix( F );
+    ret.setEssentialMatrix( E );
+    ret.setError( rms );
+
+    cv::Mat R1, R2, P1, P2, Q;
+
+    cv::Rect leftROI;
+    cv::Rect rightROI;
+
+    cv::stereoRectify( ret.leftCameraResults().cameraMatrix(), ret.leftCameraResults().distorsionCoefficients(),
+                       ret.rightCameraResults().cameraMatrix(), ret.rightCameraResults().distorsionCoefficients(), ret.leftCameraResults().frameSize(),
+                       R, T, R1, R2, P1, P2, Q, cv::CALIB_ZERO_DISPARITY, 1, cv::Size(), &leftROI, &rightROI );
+
+
+    ret.setLeftRectifyMatrix( R1 );
+    ret.setRightRectifyMatrix( R2 );
+    ret.setLeftProjectionMatrix( P1 );
+    ret.setRightProjectionMatrix( P2 );
+    ret.setDisparityToDepthMatrix( Q );
+    ret.setLeftROI( leftROI );
+    ret.setRightROI( rightROI );
+
+    cv::Mat leftRMap, leftDMap, rightRMap, rightDMap;
+
+    cv::initUndistortRectifyMap( ret.leftCameraResults().cameraMatrix(), ret.leftCameraResults().distorsionCoefficients(), R1, P1,
+                                 ret.leftCameraResults().frameSize(), CV_16SC2, leftRMap, leftDMap );
+    cv::initUndistortRectifyMap( ret.rightCameraResults().cameraMatrix(), ret.rightCameraResults().distorsionCoefficients(), R2, P2,
+                                 ret.leftCameraResults().frameSize(), CV_16SC2, rightRMap, rightDMap );
+
+
+    ret.setLeftRMap( leftRMap );
+    ret.setLeftDMap( leftDMap );
+    ret.setRightRMap( rightRMap );
+    ret.setRightDMap( rightDMap );
+
+    return ret;
 }
 
 

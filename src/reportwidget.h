@@ -17,6 +17,7 @@ public slots:
     void addText( const QString &text );
     void addBreak();
     void addDoubleBreak();
+    void addSpace( const int num = 1 );
     void addNumber( const int num );
     void addNumber( const double num );
     void addIcon( const IconBase& icon );
@@ -44,6 +45,7 @@ public slots:
     void addText( const QString &text );
     void addBreak();
     void addDoubleBreak();
+    void addSpace( const int num = 1 );
     void addNumber( const int num );
     void addNumber( const double num );
     void addIcon( const IconBase& icon );

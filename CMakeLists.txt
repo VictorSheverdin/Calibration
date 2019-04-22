@@ -36,6 +36,8 @@ set ( CALIBRATION_SOURCES
     "src/reportwidget.cpp"
     "src/vizwidget.h"
     "src/vizwidget.cpp"
+    "src/functions.h"
+    "src/functions.cpp"
     "src/disparitycontrolwidget.h"
     "src/disparitycontrolwidget.cpp"
     "src/calibrationapp.cpp"

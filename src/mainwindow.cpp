@@ -141,3 +141,8 @@ void MainWindow::calculate()
 void MainWindow::settingsDialog()
 {
 }
+
+void MainWindow::setCameraDecimation( CameraWidgetBase::DecimationType type )
+{
+    m_widget->setCameraDecimation( type );
+}

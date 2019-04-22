@@ -16,6 +16,8 @@ class CameraWidgetBase : public QSplitter
     Q_OBJECT
 
 public:
+    enum DecimationType { WHOLE = 1, HALF = 2, QUARTER = 4, EIGHTH = 8 };
+
     CameraWidgetBase( QWidget* parent = nullptr );
 
     void setType(const TemplateProcessor::Type type );
@@ -40,10 +42,15 @@ public:
     bool filterQuads() const;
     bool fastCheck() const;
 
+    virtual void setDecimation( const DecimationType type ) = 0;
+
 protected:
     TemplateProcessor m_processor;
 
     static const int m_aquireInterval = 30;
+    static const int m_originalFrameSize = 2048;
+
+    int m_timerId;
 
 private:
     void initialize();
@@ -62,6 +69,8 @@ public:
 
     bool isTemplateExist() const;
 
+    virtual void setDecimation( const DecimationType type ) override;
+
 public slots:
     void setSourceImage(const CvImage image);
     void setPreviewImage(const CvImage image);
@@ -78,8 +87,6 @@ protected:
     AVT::VmbAPI::CameraPtr m_camera;
 
     virtual void timerEvent(QTimerEvent *event) override;
-
-
 
 private:
     void initialize( const std::string &cameraIp );
@@ -107,6 +114,8 @@ public:
 
     bool isTemplateExist() const;
 
+    virtual void setDecimation( const DecimationType type ) override;
+
 public slots:
     void setLeftSourceImage( const CvImage image );
     void setLeftDisplayedImage( const CvImage image );
@@ -128,7 +137,7 @@ protected:
     AVT::VmbAPI::CameraPtr m_leftCamera;
     AVT::VmbAPI::CameraPtr m_rightCamera;
 
-    virtual void timerEvent( QTimerEvent *event ) override;
+    virtual void timerEvent( QTimerEvent * ) override;
 
     void updateLeftPreview();
     void updateRightPreview();

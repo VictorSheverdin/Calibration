@@ -7,12 +7,11 @@
 
 #include "templateprocessor.h"
 
+#include "camerawidget.h"
+
 class QVBoxLayout;
 
 class ParametersWidget;
-class CameraWidgetBase;
-class MonocularCameraWidget;
-class StereoCameraWidget;
 
 class TaskWidgetBase : public QWidget
 {
@@ -31,6 +30,8 @@ public:
     bool normalizeImage() const;
     bool filterQuads() const;
     bool fastCheck() const;
+
+    void setCameraDecimation( CameraWidgetBase::DecimationType type );
 
 protected slots:
     void updateParameters();

@@ -42,6 +42,7 @@ void ParametersWidget::initialize()
     sizeLayout->addWidget( new QLabel( tr( "Size:" ) ) );
 
     m_sizeSpinBox = new SizeSpinBox( this );
+    m_sizeSpinBox->setValue( 0.05 );
     sizeLayout->addWidget( m_sizeSpinBox );
 
     layout->addLayout( sizeLayout );
