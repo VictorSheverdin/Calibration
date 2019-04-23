@@ -4,14 +4,23 @@
 
 #include "mainwindow.h"
 
+#include "functions.h"
+
 Application::Application( int &argc, char **argv )
-    : QApplication(argc, argv)
+    : QApplication(argc, argv), m_vimbaSystem( AVT::VmbAPI::VimbaSystem::GetInstance() )
 {
     initialize( argc, argv );
 }
 
+Application::~Application()
+{
+    m_vimbaSystem.Shutdown();
+}
+
 void Application::initialize( int &argc, char **argv )
 {
+    checkVimbaStatus( m_vimbaSystem.Startup(), "Could not start Vimba system");
+
     QFile cssFile(":/resources/qss/style.css");
 
     if ( cssFile.open( QIODevice::ReadOnly ) ) {
@@ -23,8 +32,8 @@ void Application::initialize( int &argc, char **argv )
 
     setWindowIcon( QIcon( ":/resources/images/checkerboard.ico" ) );
 
-    m_mainWindow = new MainWindow( "169.254.142.79" , "169.254.171.30" );
-    mainWindow()->setCameraDecimation( CameraWidgetBase::WHOLE );
+    m_mainWindow = new MainWindow( /*"169.254.142.79", */"169.254.171.30" );
+    mainWindow()->setCameraDecimation( CameraWidgetBase::HALF );
     m_mainWindow->showMaximized();
 
 }
@@ -32,6 +41,11 @@ void Application::initialize( int &argc, char **argv )
 MainWindow *Application::mainWindow() const
 {
     return m_mainWindow;
+}
+
+AVT::VmbAPI::VimbaSystem &Application::vimbaSystem() const
+{
+    return m_vimbaSystem;
 }
 
 Application *application()

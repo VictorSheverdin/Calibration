@@ -3,27 +3,12 @@
 #include "camerawidget.h"
 
 #include "previewwidget.h"
+#include "application.h"
+
+#include "functions.h"
 
 // CameraWidgetBase
-void checkVimbaStatus(VmbErrorType status, std::string message)
-{
-    if (status != VmbErrorSuccess)
-    {
-        throw std::runtime_error(
-            message + "; status = " + std::to_string(status));
-    }
-}
-
-template<typename FeatureT>
-void setVimbaFeature( AVT::VmbAPI::CameraPtr camera, const std::string &key, FeatureT value )
-{
-    AVT::VmbAPI::FeaturePtr feature;
-    checkVimbaStatus( camera->GetFeatureByName(key.data(), feature ),
-        "Could not access " + key);
-    checkVimbaStatus( feature->SetValue(value), "Could not set " + key );
-}
-
-CameraWidgetBase::CameraWidgetBase( QWidget* parent )
+CameraWidgetBase::CameraWidgetBase(QWidget* parent )
     : QSplitter( Qt::Horizontal, parent )
 {
     initialize();
@@ -126,19 +111,57 @@ bool CameraWidgetBase::fastCheck() const
     return m_processor.fastCheck();
 }
 
+// FrameObserver
+MonocularFrameObserver::MonocularFrameObserver( AVT::VmbAPI::CameraPtr pCamera )
+    : AVT::VmbAPI::IFrameObserver( pCamera )
+{
+}
+
+void MonocularFrameObserver::FrameReceived ( const AVT::VmbAPI::FramePtr pFrame )
+{
+    VmbFrameStatusType eReceiveStatus ;
+
+    if( VmbErrorSuccess == pFrame->GetReceiveStatus ( eReceiveStatus ) )
+    {
+        if ( VmbFrameStatusComplete == eReceiveStatus )
+        {
+            // Put your code here to react on a successfully received frame
+        }
+        else
+        {
+            // Put your code here to react on an unsuccessfully received frame
+        }
+    }
+    // When you are finished copying the frame , re - queue it
+
+    m_pCamera->QueueFrame ( pFrame );
+}
+
 // MonocularCameraWidget
 MonocularCameraWidget::MonocularCameraWidget( const std::string &cameraIp, QWidget* parent )
-    : CameraWidgetBase( parent ), m_system(AVT::VmbAPI::VimbaSystem::GetInstance())
+    : CameraWidgetBase( parent )
 {
     initialize( cameraIp );
 }
 
+MonocularCameraWidget::~MonocularCameraWidget()
+{
+    m_camera->Close();
+}
+
 void MonocularCameraWidget::initialize(const std::string &cameraIp )
 {
-    checkVimbaStatus(m_system.Startup(), "Could not start Vimba system");
+    auto app = application();
 
-    checkVimbaStatus(m_system.OpenCameraByID( cameraIp.c_str(), VmbAccessModeFull, m_camera ),
+    checkVimbaStatus( app->vimbaSystem().OpenCameraByID( cameraIp.c_str(), VmbAccessModeFull, m_camera ),
         std::string( "Could not start open camera; ip = " ) + cameraIp );
+
+    setVimbaFeature( m_camera, "PixelFormat", VmbPixelFormatBgr8 );
+
+    AVT::VmbAPI::FramePtrVector frames( m_aquireCount ); // Мaссив кадров
+    AVT::VmbAPI::IFrameObserverPtr observer( new MonocularFrameObserver( m_camera ) );
+
+
 
     m_previewWidget = new PreviewWidget( this );
     addWidget( m_previewWidget );
@@ -241,24 +264,25 @@ void MonocularCameraWidget::timerEvent( QTimerEvent *event )
 
 // StereoCameraWidget
 StereoCameraWidget::StereoCameraWidget(const std::string &leftCameraIp, const std::string &rightCameraIp, QWidget* parent )
-    : CameraWidgetBase( parent ), m_system(AVT::VmbAPI::VimbaSystem::GetInstance())
+    : CameraWidgetBase( parent )
 {
     initialize( leftCameraIp, rightCameraIp );
 }
 
 StereoCameraWidget::~StereoCameraWidget()
 {
-    m_system.Shutdown();
+    m_leftCamera->Close();
+    m_rightCamera->Close();
 }
 
 void StereoCameraWidget::initialize( const std::string &leftCameraIp, const std::string &rightCameraIp )
 {
-    checkVimbaStatus(m_system.Startup(), "Could not start Vimba system");
+    auto app = application();
 
-    checkVimbaStatus(m_system.OpenCameraByID( leftCameraIp.c_str(), VmbAccessModeFull, m_leftCamera ),
+    checkVimbaStatus( app->vimbaSystem().OpenCameraByID( leftCameraIp.c_str(), VmbAccessModeFull, m_leftCamera ),
         "Could not start open camera; ip = " + leftCameraIp );
 
-    checkVimbaStatus(m_system.OpenCameraByID( rightCameraIp.c_str(), VmbAccessModeFull, m_rightCamera ),
+    checkVimbaStatus( app->vimbaSystem().OpenCameraByID( rightCameraIp.c_str(), VmbAccessModeFull, m_rightCamera ),
         "Could not start open camera; ip = " + rightCameraIp );
 
     setVimbaFeature( m_leftCamera, "PixelFormat", VmbPixelFormatBgr8 );

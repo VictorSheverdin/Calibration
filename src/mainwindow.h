@@ -44,7 +44,7 @@ protected:
 
     QPointer<QAction> m_aboutAction;
 
-    QPointer<QToolBar> m_toolBar;
+    QPointer< QToolBar > m_toolBar;
 
     void setupActions();
     void setupMenus();

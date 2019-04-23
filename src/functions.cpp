@@ -25,7 +25,7 @@ CvImage resizeTo( const CvImage &image, unsigned int size )
         if ( maxSize != 0 ) {
             double scaleFactor = static_cast<double>(size) / static_cast<double>(maxSize);
 
-            cv::resize( image, ret, cv::Size(), scaleFactor, scaleFactor );
+            cv::resize( image, ret, cv::Size(), scaleFactor, scaleFactor, cv::INTER_LANCZOS4 );
 
         }
 
@@ -34,3 +34,14 @@ CvImage resizeTo( const CvImage &image, unsigned int size )
     return ret;
 
 }
+
+void checkVimbaStatus(VmbErrorType status, std::string message)
+{
+    if (status != VmbErrorSuccess)
+    {
+        throw std::runtime_error(
+            message + "; status = " + std::to_string(status) );
+    }
+}
+
+

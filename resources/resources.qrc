@@ -12,5 +12,7 @@
         <file>images/open.ico</file>
         <file>images/export.ico</file>
         <file>images/new.ico</file>
+        <file>images/opencv.ico</file>
+        <file>images/xml.ico</file>
     </qresource>
 </RCC>

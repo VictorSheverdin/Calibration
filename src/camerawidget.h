@@ -50,10 +50,20 @@ protected:
     static const int m_aquireInterval = 30;
     static const int m_originalFrameSize = 2048;
 
+    static const int m_aquireCount = 10;
+
     int m_timerId;
 
 private:
     void initialize();
+};
+
+class MonocularFrameObserver : public AVT::VmbAPI::IFrameObserver
+{
+public :
+    MonocularFrameObserver( AVT::VmbAPI::CameraPtr pCamera );
+
+    virtual void FrameReceived( const AVT::VmbAPI::FramePtr pFrame ) override;
 };
 
 class MonocularCameraWidget : public CameraWidgetBase
@@ -62,6 +72,7 @@ class MonocularCameraWidget : public CameraWidgetBase
 
 public:
     MonocularCameraWidget( const std::string &cameraIp, QWidget* parent = nullptr );
+    ~MonocularCameraWidget();
 
     const CvImage sourceImage() const;
     const CvImage previewImage() const;
@@ -81,8 +92,6 @@ protected slots:
 
 protected:
     QPointer<PreviewWidget> m_previewWidget;
-
-    AVT::VmbAPI::VimbaSystem &m_system;
 
     AVT::VmbAPI::CameraPtr m_camera;
 
@@ -132,8 +141,6 @@ protected:
     QPointer<PreviewWidget> m_leftCameraWidget;
     QPointer<PreviewWidget> m_rightCameraWidget;
 
-    AVT::VmbAPI::VimbaSystem &m_system;
-
     AVT::VmbAPI::CameraPtr m_leftCamera;
     AVT::VmbAPI::CameraPtr m_rightCamera;
 
@@ -148,15 +155,15 @@ private:
     void initialize( const std::string &leftCameraIp, const std::string &rightCameraIp );
 };
 
-template <int NUM>
+template < int NUM >
 class NCameraWidgetCore
 {
 public:
     NCameraWidgetCore() = default;
 
 protected:
-    QPointer<PreviewWidget> m_cameraWidgets[NUM];
-    cv::VideoCapture m_videoCaptures[NUM];
+    QPointer< PreviewWidget > m_cameraWidgets[ NUM ];
+    cv::VideoCapture m_videoCaptures[ NUM ];
 };
 
 class TripleCameraWidget : public CameraWidgetBase, public NCameraWidgetCore< 3 >

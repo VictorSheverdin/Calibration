@@ -69,9 +69,11 @@ find_package(Qt5Xml REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(VTK 7 REQUIRED)
 find_package(PCL REQUIRED)
+find_package(PCL REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
 add_definitions( ${QT_DEFINITIONS} )
-include_directories( ${Qt5Widgets_INCLUDE_DIRS} ${Qt5Xml_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR} ${PCL_INCLUDE_DIRS} )
+include_directories( ${Qt5Widgets_INCLUDE_DIRS} ${Qt5Xml_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR} ${PCL_INCLUDE_DIRS} ${YAML_CPP_INCLUDE_DIR} )
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
@@ -82,7 +84,7 @@ add_executable( DisparityPreview ${DISPARITY_PREVIEW_SOURCES} ${RES_SOURCES} )
 
 target_include_directories( ${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/vimba/include )
 
-target_link_libraries( ${PROJECT_NAME} ${Qt5Widgets_LIBRARIES} ${Qt5Xml_LIBRARIES} ${OpenCV_LIBS} ${EIGEN3_LIBS} ${CMAKE_CURRENT_SOURCE_DIR}/src/vimba/lib/libVimbaCPP.so )
+target_link_libraries( ${PROJECT_NAME} ${Qt5Widgets_LIBRARIES} ${Qt5Xml_LIBRARIES} ${OpenCV_LIBS} ${EIGEN3_LIBS} ${CMAKE_CURRENT_SOURCE_DIR}/src/vimba/lib/libVimbaCPP.so ${YAML_CPP_LIBRARIES} )
 target_link_libraries( DisparityPreview ${Qt5Widgets_LIBRARIES} ${VTK_LIBRARIES} ${OpenCV_LIBS} ${EIGEN3_LIBS} ${PCL_LIBRARIES} )
 
 

@@ -8,5 +8,7 @@
 #include <QtXml/QDomDocument>
 #include <QtXml/QDomElement>
 
+#include <time.h>
+
 #include <opencv2/opencv.hpp>
 
