@@ -12,7 +12,7 @@ MainWindow::MainWindow( const std::string &leftCameraIp, const std::string &righ
 
 void MainWindow::initialize( const std::string &leftCameraIp, const std::string &rightCameraIp )
 {
-    m_widget = new DisparityPreviewWidget( leftCameraIp, rightCameraIp, this );
+    m_widget = new PreviewWidget( leftCameraIp, rightCameraIp, this );
 
     initialize();
 }
@@ -20,6 +20,7 @@ void MainWindow::initialize( const std::string &leftCameraIp, const std::string 
 void MainWindow::initialize()
 {
     setCentralWidget( m_widget );
+
     setAttribute( Qt::WA_DeleteOnClose );
 
 }

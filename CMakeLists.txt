@@ -61,8 +61,8 @@ set ( DISPARITY_SOURCES
     "src/common/functions.cpp"
     "src/common/supportwidgets.h"
     "src/common/supportwidgets.cpp"
-    "src/disparity/vizwidget.h"
-    "src/disparity/vizwidget.cpp"
+    "src/disparity/pclwidget.h"
+    "src/disparity/pclwidget.cpp"
     "src/disparity/main.cpp"
 )
 
@@ -74,8 +74,7 @@ find_package(Qt5Widgets REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(Qt5Xml REQUIRED)
 find_package(Eigen3 REQUIRED)
-find_package(VTK 7 REQUIRED)
-find_package(PCL REQUIRED)
+find_package(PCL 1.9 REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
 add_definitions( ${QT_DEFINITIONS} )
@@ -92,4 +91,4 @@ target_include_directories( calibration PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/
 target_include_directories( disparity PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/vimba/include )
 
 target_link_libraries( calibration ${Qt5Widgets_LIBRARIES} ${Qt5Xml_LIBRARIES} ${OpenCV_LIBS} ${EIGEN3_LIBS} ${CMAKE_CURRENT_SOURCE_DIR}/src/vimba/lib/libVimbaCPP.so ${YAML_CPP_LIBRARIES} )
-target_link_libraries( disparity ${Qt5Widgets_LIBRARIES} ${VTK_LIBRARIES} ${OpenCV_LIBS} ${EIGEN3_LIBS} ${PCL_LIBRARIES} ${CMAKE_CURRENT_SOURCE_DIR}/src/vimba/lib/libVimbaCPP.so ${YAML_CPP_LIBRARIES} )
+target_link_libraries( disparity ${Qt5Widgets_LIBRARIES} ${OpenCV_LIBS} ${EIGEN3_LIBS} ${PCL_LIBRARIES} ${CMAKE_CURRENT_SOURCE_DIR}/src/vimba/lib/libVimbaCPP.so ${YAML_CPP_LIBRARIES} )

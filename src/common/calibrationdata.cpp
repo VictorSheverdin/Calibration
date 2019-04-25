@@ -484,10 +484,6 @@ bool StereoCalibrationData::saveYaml( const std::string &fileName ) const
         fs << "disparityToDepthMatrix" << disparityToDepthMatrix();
         fs << "leftROI" << leftROI();
         fs << "rightROI" << rightROI();
-        fs << "leftRMap" << leftRMap();
-        fs << "leftDMap" << leftDMap();
-        fs << "rightRMap" << rightRMap();
-        fs << "rightDMap" << rightDMap();
 
         fs << "error" << error();
 
@@ -552,11 +548,6 @@ bool StereoCalibrationData::loadYaml( const std::string &fileName )
         cv::Rect leftROI;
         cv::Rect rightROI;
 
-        cv::Mat leftRMap;
-        cv::Mat leftDMap;
-        cv::Mat rightRMap;
-        cv::Mat rightDMap;
-
         double error;
 
         fs["rotationMatrix"] >> rotationMatrix;
@@ -570,10 +561,6 @@ bool StereoCalibrationData::loadYaml( const std::string &fileName )
         fs["disparityToDepthMatrix"] >> disparityToDepthMatrix;
         fs["leftROI"] >> leftROI;
         fs["rightROI"] >> rightROI;
-        fs["leftRMap"] >> leftRMap;
-        fs["leftDMap"] >> leftDMap;
-        fs["rightRMap"] >> rightRMap;
-        fs["rightDMap"] >> rightDMap;
 
         fs["error"] >> error;
 
@@ -591,10 +578,23 @@ bool StereoCalibrationData::loadYaml( const std::string &fileName )
         setLeftROI( leftROI );
         setRightROI( rightROI );
 
+        cv::Mat leftRMap, leftDMap;
+
+        cv::initUndistortRectifyMap( leftCameraMatrix, leftDistortionCoefficients,
+                                     leftRectifyMatrix, leftProjectionMatrix, frameSize,
+                                     CV_32FC2, leftRMap, leftDMap );
+
         setLeftRMap( leftRMap );
         setLeftDMap( leftDMap );
+
+        cv::Mat rightRMap, rightDMap;
+
+        cv::initUndistortRectifyMap( rightCameraMatrix, rightDistortionCoefficients,
+                                     rightRectifyMatrix, rightProjectionMatrix, frameSize,
+                                     CV_32FC2, rightRMap, rightDMap );
+
         setRightRMap( rightRMap );
-        setRightDMap( rightRMap );
+        setRightDMap( rightDMap );
 
         setError( error );
 

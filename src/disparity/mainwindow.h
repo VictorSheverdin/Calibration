@@ -6,7 +6,7 @@
 
 #include "src/common/defs.h"
 
-class DisparityPreviewWidget;
+class PreviewWidget;
 
 class MainWindow : public QMainWindow
 {
@@ -20,7 +20,7 @@ public slots:
     void loadCalibrationFile( const std::string &fileName );
 
 protected:
-    QPointer< DisparityPreviewWidget > m_widget;
+    QPointer< PreviewWidget > m_widget;
 
 private:
     void initialize(const std::string &leftCameraIp, const std::string &rightCameraIp );

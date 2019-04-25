@@ -288,15 +288,6 @@ void StereoReportWidget::report(const StereoCalibrationData &calibration )
         addText( tr( "Reprojection error:" ) +  " " + QString::number( calibration.error() ) +"\n" );
         addBreak();
 
-        cv::Mat leftRMap, leftDMap, rightRMap, rightDMap;
-
-        cv::initUndistortRectifyMap( calibration.leftCameraResults().cameraMatrix(), calibration.leftCameraResults().distortionCoefficients(),
-                                     calibration.leftRectifyMatrix(), calibration.leftProjectionMatrix(), calibration.leftCameraResults().frameSize(),
-                                     CV_32FC2, leftRMap, leftDMap );
-        cv::initUndistortRectifyMap( calibration.rightCameraResults().cameraMatrix(), calibration.rightCameraResults().distortionCoefficients(),
-                                     calibration.rightRectifyMatrix(), calibration.rightProjectionMatrix(), calibration.rightCameraResults().frameSize(),
-                                     CV_32FC2, rightRMap, rightDMap );
-
         for ( auto i = 0; i < calibration.leftCameraResults().resultsSize(); ++i ) {
             auto leftImage = calibration.leftCameraResults().result(i).sourceView();
             auto rightImage = calibration.rightCameraResults().result(i).sourceView();
@@ -306,8 +297,8 @@ void StereoReportWidget::report(const StereoCalibrationData &calibration )
                 cv::Mat leftRectifiedImage;
                 cv::Mat rightRectifiedImage;
 
-                cv::remap( leftImage, leftRectifiedImage, leftRMap, leftDMap, cv::INTER_LANCZOS4 );
-                cv::remap( rightImage, rightRectifiedImage, rightRMap, rightDMap, cv::INTER_LANCZOS4 );
+                cv::remap( leftImage, leftRectifiedImage, calibration.leftRMap(), calibration.leftDMap(), cv::INTER_LANCZOS4 );
+                cv::remap( rightImage, rightRectifiedImage, calibration.rightRMap(), calibration.rightDMap(), cv::INTER_LANCZOS4 );
 
                 cv::flip( leftRectifiedImage, leftRectifiedImage, -1 );
                 cv::flip( rightRectifiedImage, rightRectifiedImage, -1 );

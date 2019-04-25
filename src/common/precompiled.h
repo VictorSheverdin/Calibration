@@ -1,5 +1,6 @@
 #include <QApplication>
 #include <QtWidgets>
+#include <QStackedWidget>
 #include <QLabel>
 #include <QTextEdit>
 #include <QTextDocument>
