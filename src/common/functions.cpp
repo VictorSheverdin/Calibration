@@ -35,6 +35,40 @@ CvImage resizeTo( const CvImage &image, unsigned int size )
 
 }
 
+CvImage stackImages(const CvImage &leftImage, const CvImage &rightImage, const double factor )
+{
+    auto normFactor = std::max( 0.0, std::min( 1.0, factor ) );
+
+    CvImage result( std::max( leftImage.height(), rightImage.height() ),
+                    leftImage.width() * normFactor + rightImage.width(),
+                    leftImage.type(), cv::Scalar( 0, 0, 0, 0) );
+
+    leftImage.copyTo( result( cv::Rect( 0, 0, leftImage.width(), leftImage.height() ) ) );
+    rightImage.copyTo( result( cv::Rect( result.width() - rightImage.width(), 0, rightImage.width(), rightImage.height() ) ) );
+
+    return result;
+
+}
+
+CvImage colorizeDisparity( const cv::Mat &disparity )
+{
+    double min, max;
+
+    cv::minMaxIdx( disparity, &min, &max );
+    double multiplier = 255.0 / (max - min);
+
+    cv::Mat converted;
+
+    disparity.convertTo( converted, CV_8U, multiplier, -min * multiplier );
+
+    cv::Mat colored;
+
+    cv::applyColorMap( converted, colored, cv::COLORMAP_JET );
+
+    return colored;
+
+}
+
 void checkVimbaStatus(VmbErrorType status, std::string message)
 {
     if (status != VmbErrorSuccess)

@@ -160,6 +160,9 @@ public:
 signals:
     void iconActivated( IconBase *icon );
 
+public slots:
+    void clearIcons();
+
 private slots:
     void updateLayout();
 

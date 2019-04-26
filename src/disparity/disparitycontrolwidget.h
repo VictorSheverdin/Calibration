@@ -5,6 +5,8 @@
 #include <QBoxLayout>
 #include <QPointer>
 
+#include <opencv/cv.hpp>
+
 class QHBoxLayout;
 class QLabel;
 class QSlider;
@@ -80,6 +82,47 @@ private:
 
 };
 
+class GMTypeComboBox : public QComboBox
+{
+    Q_OBJECT
+
+public:
+    enum Type {         SGBM = cv::StereoSGBM::MODE_SGBM,
+                        HH   = cv::StereoSGBM::MODE_HH,
+                        SGBM_3WAY = cv::StereoSGBM::MODE_SGBM_3WAY,
+                        HH4  = cv::StereoSGBM::MODE_HH4
+              };
+
+    explicit GMTypeComboBox( QWidget *parent = nullptr );
+
+    Type currentType() const;
+
+private:
+    void initialize();
+
+};
+
+class GMTypeLayout : public QHBoxLayout
+{
+    Q_OBJECT
+
+public:
+    explicit GMTypeLayout( QWidget* parent = nullptr );
+
+    GMTypeComboBox::Type value() const;
+
+signals:
+    void currentIndexChanged(int index);
+
+protected:
+    QPointer< QLabel > m_label;
+    QPointer< GMTypeComboBox > m_typeComboBox;
+
+private:
+    void initialize();
+
+};
+
 class BMControlWidget : public QWidget
 {
     Q_OBJECT
@@ -97,9 +140,6 @@ public:
     int speckleWindowSize() const;
     int speckleRange() const;
     int disp12MaxDiff() const;
-    int smallerBlockSize() const;
-    int filterLambda() const;
-    int lrcThresh() const;
 
 public slots:
     void setPrefilterSize( const int value );
@@ -112,9 +152,6 @@ public slots:
     void setSpeckleWindowSize( const int value );
     void setSpeckleRange( const int value );
     void setDisp12MaxDiff( const int value );
-    void setSmallerBlockSize( const int value );
-    void setFilterLambda( const int value );
-    void setLrcThresh( const int value ) const;
 
 protected:
     QPointer< IntSliderLayout > m_preFilterSizeLayout;
@@ -127,9 +164,6 @@ protected:
     QPointer< IntSliderLayout > m_speckleWindowSizeLayout;
     QPointer< IntSliderLayout > m_speckleRangeLayout;
     QPointer< IntSliderLayout > m_disp12MaxDiffLayout;
-    QPointer< IntSliderLayout > m_smallerBlockSizeLayout;
-    QPointer< IntSliderLayout > m_filterLambdaLayout;
-    QPointer< IntSliderLayout > m_lrcThreshLayout;
 
 private:
     void initialize();
@@ -142,49 +176,42 @@ class GMControlWidget : public QWidget
 public:
     GMControlWidget( QWidget* parent = nullptr );
 
-    int prefilterSize() const;
+    GMTypeComboBox::Type mode() const;
     int prefilterCap() const;
     int sadWindowSize() const;
     int minDisparity() const;
     int numDisparities() const;
-    int textureThreshold() const;
     int uniquessRatio() const;
     int speckleWindowSize() const;
     int speckleRange() const;
     int disp12MaxDiff() const;
-    int smallerBlockSize() const;
-    int filterLambda() const;
-    int lrcThresh() const;
+    int p1() const;
+    int p2() const;
 
 public slots:
-    void setPrefilterSize( const int value );
     void setPrefilterCap( const int value );
     void setSadWindowSize( const int value );
     void setMinDisparity( const int value );
     void setNumDisparities( const int value );
-    void setTextureThreshold( const int value );
     void setUniquessRatio( const int value );
     void setSpeckleWindowSize( const int value );
     void setSpeckleRange( const int value );
     void setDisp12MaxDiff( const int value );
-    void setSmallerBlockSize( const int value );
-    void setFilterLambda( const int value );
-    void setLrcThresh( const int value ) const;
+    void setP1(int p1);
+    void setP2(int p2);
 
 protected:
-    QPointer< IntSliderLayout > m_preFilterSizeLayout;
+    QPointer< GMTypeLayout > m_modeLayout;
     QPointer< IntSliderLayout > m_preFilterCapLayout;
     QPointer< IntSliderLayout > m_sadWindowSizeLayout;
     QPointer< IntSliderLayout > m_minDisparityLayout;
     QPointer< IntSliderLayout > m_numDisparitiesLayout;
-    QPointer< IntSliderLayout > m_textureThresholdLayout;
     QPointer< IntSliderLayout > m_uniquessRatioLayout;
     QPointer< IntSliderLayout > m_speckleWindowSizeLayout;
     QPointer< IntSliderLayout > m_speckleRangeLayout;
     QPointer< IntSliderLayout > m_disp12MaxDiffLayout;
-    QPointer< IntSliderLayout > m_smallerBlockSizeLayout;
-    QPointer< IntSliderLayout > m_filterLambdaLayout;
-    QPointer< IntSliderLayout > m_lrcThreshLayout;
+    QPointer< IntSliderLayout > m_p1Layout;
+    QPointer< IntSliderLayout > m_p2Layout;
 
 private:
     void initialize();
@@ -210,6 +237,9 @@ public:
 
     BMControlWidget *bmControlWidget() const;
     GMControlWidget *gmControlWidget() const;
+
+    bool isBmMethod() const;
+    bool isGmMethod() const;
 
 public slots:
     void activateBmWidget() const;

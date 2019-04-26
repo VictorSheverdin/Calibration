@@ -348,13 +348,12 @@ void StereoCameraWidget::setRightPreviewPoints(const std::vector<cv::Point2f> &p
 
 CvImage StereoCameraWidget::makeOverlappedPreview( const CvImage &leftPreviewImage, const CvImage &rightPreviewImage )
 {
-    return makePreview( leftPreviewImage, rightPreviewImage, 0.5 );
-
+    return stackImages( leftPreviewImage, rightPreviewImage, 0.5 );
 }
 
 CvImage StereoCameraWidget::makeStraightPreview( const CvImage &leftPreviewImage, const CvImage &rightPreviewImage )
 {
-    return makePreview( leftPreviewImage, rightPreviewImage, 1 );
+    return stackImages( leftPreviewImage, rightPreviewImage, 1 );
 }
 
 bool StereoCameraWidget::isTemplateExist() const
@@ -379,19 +378,6 @@ void StereoCameraWidget::setDecimation( const VimbaDecimationType type )
     setVimbaFeature( m_rightCamera, "OffsetY",  0 );
     setVimbaFeature( m_rightCamera, "Width", VIMBA_ORIGINAL_FRAME_SIZE / decimationFactor );
     setVimbaFeature( m_rightCamera, "Height", VIMBA_ORIGINAL_FRAME_SIZE / decimationFactor );
-
-}
-
-CvImage StereoCameraWidget::makePreview( const CvImage &leftPreviewImage, const CvImage &rightPreviewImage, const double factor )
-{
-    CvImage result( std::max( leftPreviewImage.height(), rightPreviewImage.height() ),
-                    leftPreviewImage.width() * factor + rightPreviewImage.width(),
-                    leftPreviewImage.type(), cv::Scalar( 0, 0, 0, 0) );
-
-    leftPreviewImage.copyTo( result( cv::Rect( 0, 0, leftPreviewImage.width(), leftPreviewImage.height() ) ) );
-    rightPreviewImage.copyTo( result( cv::Rect( result.width() - rightPreviewImage.width(), 0, rightPreviewImage.width(), rightPreviewImage.height() ) ) );
-
-    return result;
 
 }
 

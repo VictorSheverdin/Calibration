@@ -24,6 +24,8 @@ public slots:
 
     void setCameraDecimation( VimbaDecimationType type );
 
+    void clearIcons();
+
 protected:
     QPointer<CalibrationWidgetBase> m_widget;
 

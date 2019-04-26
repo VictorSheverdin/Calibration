@@ -147,8 +147,6 @@ protected:
     void updateLeftPreview();
     void updateRightPreview();
 
-    static CvImage makePreview( const CvImage &leftPreviewImage, const CvImage &rightPreviewImage, const double factor );
-
 private:
     void initialize( const std::string &leftCameraIp, const std::string &rightCameraIp );
 };

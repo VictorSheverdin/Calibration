@@ -63,6 +63,7 @@ void MainWindow::setupActions()
     m_exitAction = new QAction( QIcon( ":/resources/images/power.ico" ), tr( "Exit" ), this );
     m_aboutAction = new QAction( QIcon( ":/resources/images/help.ico" ), tr( "About" ), this );
 
+    connect( m_newAction, &QAction::triggered, this, &MainWindow::clearIcons );
     connect( m_grabAction, &QAction::triggered, this, &MainWindow::grabFrame );
     connect( m_calculateAction, &QAction::triggered, this, &MainWindow::calculate );
     connect( m_settingsAction, &QAction::triggered, this, &MainWindow::settingsDialog );
@@ -145,4 +146,9 @@ void MainWindow::settingsDialog()
 void MainWindow::setCameraDecimation( VimbaDecimationType type )
 {
     m_widget->setCameraDecimation( type );
+}
+
+void MainWindow::clearIcons()
+{
+    m_widget->clearIcons();
 }

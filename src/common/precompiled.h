@@ -11,5 +11,6 @@
 
 #include <time.h>
 
-#include <opencv2/opencv.hpp>
+#include <opencv/cv.hpp>
+#include <opencv2/ximgproc.hpp>
 

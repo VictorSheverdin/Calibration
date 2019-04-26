@@ -61,6 +61,8 @@ set ( DISPARITY_SOURCES
     "src/common/functions.cpp"
     "src/common/supportwidgets.h"
     "src/common/supportwidgets.cpp"
+    "src/disparity/stereoprocessor.h"
+    "src/disparity/stereoprocessor.cpp"
     "src/disparity/pclwidget.h"
     "src/disparity/pclwidget.cpp"
     "src/disparity/main.cpp"

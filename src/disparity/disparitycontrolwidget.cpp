@@ -125,6 +125,50 @@ TypeComboBox::Type TypeLayout::value() const
     return m_typeComboBox->currentType();
 }
 
+// GMTypeComboBox
+GMTypeComboBox::GMTypeComboBox( QWidget *parent )
+    : QComboBox( parent )
+{
+    initialize();
+}
+
+void GMTypeComboBox::initialize()
+{
+    addItem( tr( "SGBM" ), Type::SGBM );
+    addItem( tr( "HH" ), Type::HH );
+    addItem( tr( "SGBM_3WAY" ), Type::SGBM_3WAY );
+    addItem( tr( "HH4" ), Type::HH4 );
+
+}
+
+GMTypeComboBox::Type GMTypeComboBox::currentType() const
+{
+    return static_cast<Type>( currentData().toInt() );
+}
+
+// GMTypeLayout
+GMTypeLayout::GMTypeLayout( QWidget* parent )
+    : QHBoxLayout( parent )
+{
+    initialize();
+}
+
+void GMTypeLayout::initialize()
+{
+    m_label = new QLabel( tr("Mode") );
+    addWidget( m_label );
+
+    m_typeComboBox = new GMTypeComboBox();
+    addWidget( m_typeComboBox );
+
+    connect( m_typeComboBox, static_cast< void ( GMTypeComboBox::* )( int ) >( &GMTypeComboBox::currentIndexChanged ), this, &GMTypeLayout::currentIndexChanged );
+}
+
+GMTypeComboBox::Type GMTypeLayout::value() const
+{
+    return m_typeComboBox->currentType();
+}
+
 // BMControlWidget
 BMControlWidget::BMControlWidget( QWidget* parent )
     : QWidget( parent )
@@ -173,17 +217,7 @@ void BMControlWidget::initialize()
     m_disp12MaxDiffLayout->setRange( 0, 1000 );
     layout->addLayout( m_disp12MaxDiffLayout );
 
-    m_smallerBlockSizeLayout = new IntSliderLayout( tr( "Smaller block size" ) );
-    m_smallerBlockSizeLayout->setRange( 0, 100 );
-    layout->addLayout( m_smallerBlockSizeLayout );
-
-    m_filterLambdaLayout = new IntSliderLayout( tr( "Filter lambda" ) );
-    m_filterLambdaLayout->setRange( 0, 50000 );
-    layout->addLayout( m_filterLambdaLayout );
-
-    m_lrcThreshLayout = new IntSliderLayout( tr( "LRC Threshold" ) );
-    m_lrcThreshLayout->setRange( 0, 100 );
-    layout->addLayout( m_lrcThreshLayout );
+    layout->addStretch();
 
     setSadWindowSize( 12 );
     setPrefilterSize( 100 );
@@ -195,7 +229,6 @@ void BMControlWidget::initialize()
     setSpeckleWindowSize( 15 );
     setSpeckleRange( 50 );
     setDisp12MaxDiff( 0 );
-    setSmallerBlockSize( 0 );
 }
 
 int BMControlWidget::prefilterSize() const
@@ -248,21 +281,6 @@ int BMControlWidget::disp12MaxDiff() const
     return m_disp12MaxDiffLayout->value();
 }
 
-int BMControlWidget::smallerBlockSize() const
-{
-    return m_smallerBlockSizeLayout->value();
-}
-
-int BMControlWidget::filterLambda() const
-{
-    return m_filterLambdaLayout->value();
-}
-
-int BMControlWidget::lrcThresh() const
-{
-    return m_lrcThreshLayout->value();
-}
-
 void BMControlWidget::setPrefilterSize( const int value )
 {
     m_preFilterSizeLayout->setValue( value );
@@ -313,21 +331,6 @@ void BMControlWidget::setDisp12MaxDiff( const int value )
     m_disp12MaxDiffLayout->setValue( value );
 }
 
-void BMControlWidget::setSmallerBlockSize( const int value )
-{
-    m_smallerBlockSizeLayout->setValue( value );
-}
-
-void BMControlWidget::setFilterLambda( const int value )
-{
-    m_filterLambdaLayout->setValue( value );
-}
-
-void BMControlWidget::setLrcThresh( const int value ) const
-{
-    m_lrcThreshLayout->setValue( value );
-}
-
 // GMControlWidget
 GMControlWidget::GMControlWidget( QWidget* parent )
     : QWidget( parent )
@@ -339,9 +342,8 @@ void GMControlWidget::initialize()
 {
     auto layout = new QVBoxLayout( this );
 
-    m_preFilterSizeLayout = new IntSliderLayout( tr("Prefilter size" ) );
-    m_preFilterSizeLayout->setRange( 5, 255, 2 );
-    layout->addLayout( m_preFilterSizeLayout );
+    m_modeLayout = new GMTypeLayout();
+    layout->addLayout( m_modeLayout );
 
     m_preFilterCapLayout = new IntSliderLayout( tr("Prefilter cap" ) );
     layout->addLayout( m_preFilterCapLayout );
@@ -359,10 +361,6 @@ void GMControlWidget::initialize()
     m_numDisparitiesLayout->setRange( 16, 256, 16 );
     layout->addLayout( m_numDisparitiesLayout );
 
-    m_textureThresholdLayout = new IntSliderLayout( tr( "Texture threshold" ) );
-    m_textureThresholdLayout->setRange( 0, 1000 );
-    layout->addLayout( m_textureThresholdLayout );
-
     m_uniquessRatioLayout = new IntSliderLayout( tr( "Uniquess ratio" ) );
     layout->addLayout( m_uniquessRatioLayout );
 
@@ -376,34 +374,32 @@ void GMControlWidget::initialize()
     m_disp12MaxDiffLayout->setRange( 0, 1000 );
     layout->addLayout( m_disp12MaxDiffLayout );
 
-    m_smallerBlockSizeLayout = new IntSliderLayout( tr( "Smaller block size" ) );
-    m_smallerBlockSizeLayout->setRange( 0, 100 );
-    layout->addLayout( m_smallerBlockSizeLayout );
+    m_p1Layout = new IntSliderLayout( tr( "P1" ) );
+    m_p1Layout->setRange( 0, 1000 );
+    layout->addLayout( m_p1Layout );
 
-    m_filterLambdaLayout = new IntSliderLayout( tr( "Filter lambda" ) );
-    m_filterLambdaLayout->setRange( 0, 50000 );
-    layout->addLayout( m_filterLambdaLayout );
+    m_p2Layout = new IntSliderLayout( tr( "P2" ) );
+    m_p2Layout->setRange( 0, 1000 );
+    layout->addLayout( m_p2Layout );
 
-    m_lrcThreshLayout = new IntSliderLayout( tr( "LRC Threshold" ) );
-    m_lrcThreshLayout->setRange( 0, 100 );
-    layout->addLayout( m_lrcThreshLayout );
+    layout->addStretch();
 
     setSadWindowSize( 12 );
-    setPrefilterSize( 100 );
     setPrefilterCap( 50 );
     setMinDisparity( -128 );
     setNumDisparities( 256 );
-    setTextureThreshold( 700 );
     setUniquessRatio( 10 );
     setSpeckleWindowSize( 15 );
     setSpeckleRange( 50 );
     setDisp12MaxDiff( 0 );
-    setSmallerBlockSize( 0 );
+    setP1(0);
+    setP2(0);
+
 }
 
-int GMControlWidget::prefilterSize() const
+GMTypeComboBox::Type GMControlWidget::mode() const
 {
-    return m_preFilterSizeLayout->value();
+    return m_modeLayout->value();
 }
 
 int GMControlWidget::prefilterCap() const
@@ -426,11 +422,6 @@ int GMControlWidget::numDisparities() const
     return m_numDisparitiesLayout->value();
 }
 
-int GMControlWidget::textureThreshold() const
-{
-    return m_textureThresholdLayout->value();
-}
-
 int GMControlWidget::uniquessRatio() const
 {
     return m_uniquessRatioLayout->value();
@@ -451,24 +442,14 @@ int GMControlWidget::disp12MaxDiff() const
     return m_disp12MaxDiffLayout->value();
 }
 
-int GMControlWidget::smallerBlockSize() const
+int GMControlWidget::p1() const
 {
-    return m_smallerBlockSizeLayout->value();
+    return m_p1Layout->value();
 }
 
-int GMControlWidget::filterLambda() const
+int GMControlWidget::p2() const
 {
-    return m_filterLambdaLayout->value();
-}
-
-int GMControlWidget::lrcThresh() const
-{
-    return m_lrcThreshLayout->value();
-}
-
-void GMControlWidget::setPrefilterSize( const int value )
-{
-    m_preFilterSizeLayout->setValue( value );
+    return m_p2Layout->value();
 }
 
 void GMControlWidget::setPrefilterCap( const int value )
@@ -491,11 +472,6 @@ void GMControlWidget::setNumDisparities( const int value )
     m_numDisparitiesLayout->setValue( value );
 }
 
-void GMControlWidget::setTextureThreshold( const int value )
-{
-    m_textureThresholdLayout->setValue( value );
-}
-
 void GMControlWidget::setUniquessRatio( const int value )
 {
     m_uniquessRatioLayout->setValue( value );
@@ -516,19 +492,14 @@ void GMControlWidget::setDisp12MaxDiff( const int value )
     m_disp12MaxDiffLayout->setValue( value );
 }
 
-void GMControlWidget::setSmallerBlockSize( const int value )
+void GMControlWidget::setP1(int p1)
 {
-    m_smallerBlockSizeLayout->setValue( value );
+    m_p1Layout->setValue( p1 );
 }
 
-void GMControlWidget::setFilterLambda( const int value )
+void GMControlWidget::setP2(int p2)
 {
-    m_filterLambdaLayout->setValue( value );
-}
-
-void GMControlWidget::setLrcThresh( const int value ) const
-{
-    m_lrcThreshLayout->setValue( value );
+    m_p2Layout->setValue( p2 );
 }
 
 // FilterControlWidget
@@ -573,8 +544,6 @@ void DisparityControlWidget::initialize()
 
     layout->addWidget( m_stack );
 
-    layout->addStretch();
-
     connect( m_typeLayout, &TypeLayout::currentIndexChanged, this, &DisparityControlWidget::updateStackedWidget );
 
     updateStackedWidget();
@@ -589,6 +558,16 @@ BMControlWidget *DisparityControlWidget::bmControlWidget() const
 GMControlWidget *DisparityControlWidget::gmControlWidget() const
 {
     return m_gmControlWidget;
+}
+
+bool DisparityControlWidget::isBmMethod() const
+{
+    return m_typeLayout->value() == TypeComboBox::BM;
+}
+
+bool DisparityControlWidget::isGmMethod() const
+{
+    return m_typeLayout->value() == TypeComboBox::GM;
 }
 
 void DisparityControlWidget::activateBmWidget() const

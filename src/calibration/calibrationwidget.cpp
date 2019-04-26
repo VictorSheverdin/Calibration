@@ -36,6 +36,11 @@ void CalibrationWidgetBase::setCameraDecimation( VimbaDecimationType type )
     m_taskWidget->setCameraDecimation( type );
 }
 
+void CalibrationWidgetBase::clearIcons()
+{
+    m_iconsWidget->clearIcons();
+}
+
 MonocularCalibrationData CalibrationWidgetBase::calcMonocularCalibration(  const std::vector< CvImage > &frames )
 {
     MonocularCalibrationData ret;
@@ -262,9 +267,6 @@ void StereoCalibrationWidget::grabFrame()
 
 void StereoCalibrationWidget::calculate()
 {
-    m_reportDialog->showMaximized();
-    m_reportDialog->activateWindow();
-
     std::vector< CvImage > leftFrames;
     std::vector< CvImage > rightFrames;
 
@@ -282,6 +284,9 @@ void StereoCalibrationWidget::calculate()
     }
 
     auto calibrationResult = calcStereoCalibration( leftFrames, rightFrames );
+
+    m_reportDialog->showMaximized();
+    m_reportDialog->activateWindow();
 
     m_reportDialog->report( calibrationResult );
 

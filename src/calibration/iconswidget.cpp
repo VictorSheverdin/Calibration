@@ -325,6 +325,11 @@ QList< IconBase* > IconsWidget::icons() const
     return layoutWidget()->icons();
 }
 
+void IconsWidget::clearIcons()
+{
+    layoutWidget()->clear();
+}
+
 void IconsWidget::addIcon(IconBase *icon)
 {
     auto layout = layoutWidget();

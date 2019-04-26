@@ -29,6 +29,8 @@ public slots:
     virtual void grabFrame() = 0;
     virtual void calculate() = 0;
 
+    void clearIcons();
+
 protected slots:
     virtual void showIcon( IconBase *icon ) = 0;
 

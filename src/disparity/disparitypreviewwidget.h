@@ -4,8 +4,7 @@
 #include <QSplitter>
 
 #include "src/common/defs.h"
-
-#include <opencv2/opencv.hpp>
+#include "stereoprocessor.h"
 
 #include "VimbaCPP/Include/VimbaCPP.h"
 
@@ -51,8 +50,8 @@ public:
 
 protected:
     QPointer< DisparityPreviewWidget > m_view;
-    QPointer<DisparityControlWidget> m_controlWidget;
-    QPointer<PCLViewer> m_3dWidget;
+    QPointer< DisparityControlWidget > m_controlWidget;
+    QPointer< PCLViewer > m_3dWidget;
 
     AVT::VmbAPI::CameraPtr m_leftCamera;
     AVT::VmbAPI::CameraPtr m_rightCamera;
@@ -60,6 +59,9 @@ protected:
     virtual void timerEvent( QTimerEvent * ) override;
 
     StereoCalibrationData m_calibration;
+
+    BMProcessor m_bmProcessor;
+    GMProcessor m_gmProcessor;
 
 private:
     void initialize( const std::string &leftCameraIp, const std::string &rightCameraIp );
