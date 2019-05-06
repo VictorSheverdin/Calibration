@@ -14,6 +14,8 @@ TaskWidgetBase::TaskWidgetBase( QWidget* parent )
 
 void TaskWidgetBase::initialize()
 {
+    setSizePolicy( QSizePolicy::Expanding, QSizePolicy::Expanding );
+
     m_layout = new QVBoxLayout( this );
 
     m_parametersWidget = new ParametersWidget( this );
@@ -71,6 +73,7 @@ bool TaskWidgetBase::fastCheck() const
 
 void TaskWidgetBase::setCameraDecimation( VimbaDecimationType type )
 {
+    m_cameraWidget->setDecimation( VimbaDecimationType::WHOLE );
     m_cameraWidget->setDecimation( type );
 }
 

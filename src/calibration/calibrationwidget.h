@@ -12,7 +12,7 @@ class TaskWidgetBase;
 class MonocularTaskWidget;
 class StereoTaskWidget;
 class IconBase;
-class IconsWidget;
+class IconsList;
 class ImageWidget;
 class ImageDialog;
 
@@ -35,7 +35,7 @@ protected slots:
     virtual void showIcon( IconBase *icon ) = 0;
 
 protected:
-    QPointer< IconsWidget > m_iconsWidget;
+    QPointer< IconsList > m_iconsList;
     QPointer< ImageDialog > m_iconViewDialog;
 
     TemplateProcessor m_processor;
@@ -45,6 +45,8 @@ protected:
     static const int m_minimumCalibrationFrames = 5;
 
     MonocularCalibrationData calcMonocularCalibration( const std::vector< CvImage > &frames );
+
+    int m_iconCount;
 
 private:
     void initialize();

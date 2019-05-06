@@ -7,9 +7,9 @@
 
 #include "src/common/defs.h"
 
-#include <opencv2/opencv.hpp>
+#include "src/common/vimbacamera.h"
 
-#include "VimbaCPP/Include/VimbaCPP.h"
+#include <opencv2/opencv.hpp>
 
 class PreviewWidget;
 

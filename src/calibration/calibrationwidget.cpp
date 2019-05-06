@@ -20,6 +20,8 @@ CalibrationWidgetBase::CalibrationWidgetBase( QWidget *parent )
 
 void CalibrationWidgetBase::initialize()
 {
+    m_iconCount = 1;
+
     m_processor.setAdaptiveThreshold( true );
     m_processor.setFastCheck( false );
     m_processor.setFilterQuads( true );
@@ -38,7 +40,7 @@ void CalibrationWidgetBase::setCameraDecimation( VimbaDecimationType type )
 
 void CalibrationWidgetBase::clearIcons()
 {
-    m_iconsWidget->clearIcons();
+    m_iconsList->clear();
 }
 
 MonocularCalibrationData CalibrationWidgetBase::calcMonocularCalibration(  const std::vector< CvImage > &frames )
@@ -157,15 +159,18 @@ MonocularCalibrationWidget::MonocularCalibrationWidget( const std::string &camer
 void MonocularCalibrationWidget::initialize(const std::string &cameraIp )
 {
     m_taskWidget = new MonocularTaskWidget( cameraIp, this );
-    m_iconsWidget = new IconsWidget( this );
+    m_iconsList = new IconsList( this );
 
     addWidget( m_taskWidget );
-    addWidget( m_iconsWidget );
+    addWidget( m_iconsList );
+
+    m_taskWidget->resize( 800, 600 );
 
     m_reportDialog = new MonocularReportDialog( application()->mainWindow() );
     m_reportDialog->resize( 800, 600 );
 
-    connect( m_iconsWidget, SIGNAL( iconActivated( IconBase* ) ), this, SLOT( showIcon( IconBase* ) ) );
+    // TODO:
+    // connect( m_iconsWidget, SIGNAL( iconActivated( IconBase* ) ), this, SLOT( showIcon( IconBase* ) ) );
 
 }
 
@@ -186,15 +191,17 @@ void MonocularCalibrationWidget::grabFrame()
 {
     auto taskWidget = this->taskWidget();
 
-    if ( taskWidget->isTemplateExist() )
-        m_iconsWidget->insertIcon( new MonocularIcon( taskWidget->previewImage(), taskWidget->sourceImage(), this ) );
+    if ( taskWidget->isTemplateExist() ) {
+        m_iconsList->insertIcon( new MonocularIcon( taskWidget->previewImage(), taskWidget->sourceImage(), m_iconCount ) );
+        ++m_iconCount;
+    }
 }
 
 void MonocularCalibrationWidget::calculate()
 {
     std::vector< CvImage > frames;
 
-    auto icons = m_iconsWidget->icons();
+    auto icons = m_iconsList->icons();
 
     for ( auto &i : icons ) {
 
@@ -225,15 +232,18 @@ StereoCalibrationWidget::StereoCalibrationWidget(const std::string &leftCameraIp
 void StereoCalibrationWidget::initialize( const std::string &leftCameraIp, const std::string &rightCameraIp )
 {
     m_taskWidget = new StereoTaskWidget( leftCameraIp, rightCameraIp, this );
-    m_iconsWidget = new IconsWidget( this );
+    m_iconsList = new IconsList( this );
 
     addWidget( m_taskWidget );
-    addWidget( m_iconsWidget );
+    addWidget( m_iconsList );
+
+    m_taskWidget->resize( 800, 600 );
 
     m_reportDialog = new StereoReportDialog( application()->mainWindow() );
     m_reportDialog->resize( 800, 600 );
 
-    connect( m_iconsWidget, SIGNAL( iconActivated( IconBase* ) ), this, SLOT( showIcon( IconBase* ) ) );
+    // TODO:
+    // connect( m_iconsWidget, SIGNAL( iconActivated( IconBase* ) ), this, SLOT( showIcon( IconBase* ) ) );
 }
 
 void StereoCalibrationWidget::saveXMLCalibration()
@@ -258,11 +268,16 @@ void StereoCalibrationWidget::grabFrame()
 {
     auto taskWidget = this->taskWidget();
 
-    if ( taskWidget->isTemplateExist() )
-        m_iconsWidget->insertIcon( new StereoIcon(
+    if ( taskWidget->isTemplateExist() ) {
+        m_iconsList->insertIcon( new StereoIcon(
                                         StereoCameraWidget::makeOverlappedPreview( taskWidget->leftDisplayedImage(), taskWidget->rightDisplayedImage() ),
                                         StereoCameraWidget::makeStraightPreview( taskWidget->leftDisplayedImage(), taskWidget->rightDisplayedImage() ),
-                                        taskWidget->leftSourceImage(), taskWidget->rightSourceImage(), this ) );
+                                        taskWidget->leftSourceImage(), taskWidget->rightSourceImage(), m_iconCount ) );
+
+        ++m_iconCount;
+
+    }
+
 }
 
 void StereoCalibrationWidget::calculate()
@@ -270,7 +285,7 @@ void StereoCalibrationWidget::calculate()
     std::vector< CvImage > leftFrames;
     std::vector< CvImage > rightFrames;
 
-    auto icons = m_iconsWidget->icons();
+    auto icons = m_iconsList->icons();
 
     for ( auto i = icons.begin(); i != icons.end(); ++i ) {
         auto leftImage = (*i)->toStereoIcon()->leftSourceImage();

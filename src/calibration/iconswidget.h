@@ -2,32 +2,23 @@
 
 #include <QScrollArea>
 #include <QPixmap>
+#include <QListWidget>
 
 #include "src/common/imagewidget.h"
 
 class QLabel;
 class QBoxLayout;
 
-class IconData
-{
-public:
-    IconData();
-
-};
-
 class MonocularIcon;
 class StereoIcon;
 
-class IconBase : public ImageWidget
+class IconBase : public QListWidgetItem
 {
-    Q_OBJECT
 
 public:
-    IconBase( QWidget* parent = nullptr );
-    IconBase( const CvImage frame, QWidget* parent = nullptr );
+    using SuperCalss = QListWidget;
 
-    void setPreviewImage( const CvImage &image );
-    const CvImage previewImage() const;
+    IconBase( const CvImage image, const int number );
 
     bool isMonocularIcon() const;
     bool isStereoIcon() const;
@@ -38,12 +29,10 @@ public:
     const MonocularIcon *toMonocularIcon() const;
     const StereoIcon *toStereoIcon() const;
 
-protected:
-    virtual void paintEvent( QPaintEvent *event ) override;
-    virtual void mouseDoubleClickEvent(QMouseEvent *event) override;
+    const CvImage &previewImage() const;
 
-signals:
-    void iconActivated( IconBase *icon );
+protected:
+    CvImage m_previewImage;
 
 private:
     void initialize();
@@ -52,10 +41,11 @@ private:
 
 class MonocularIcon : public IconBase
 {
-    Q_OBJECT
 
 public:
-    MonocularIcon( const CvImage previewImage, const CvImage sourceImage, QWidget* parent = nullptr );
+    using SuperCalss = IconBase;
+
+    MonocularIcon( const CvImage previewImage, const CvImage sourceImage, const int number );
 
     void setSourceImage( const CvImage &image );
     const CvImage sourceImage() const;
@@ -74,10 +64,11 @@ private:
 
 class StereoIcon : public IconBase
 {
-    Q_OBJECT
 
 public:
-    StereoIcon( const CvImage previewImage, const CvImage straightPreviewImage, const CvImage leftSourceImage, const CvImage rightSourceImage, QWidget* parent = nullptr );
+    using SuperCalss = IconBase;
+
+    StereoIcon( const CvImage previewImage, const CvImage straightPreviewImage, const CvImage leftSourceImage, const CvImage rightSourceImage, const int number );
 
     void setStraightPreview(const CvImage &image);
     void setLeftSourceImage( const CvImage &image );
@@ -107,71 +98,24 @@ private:
 
 };
 
-class IconsLayout : public QWidget
+class IconsList : public QListWidget
 {
     Q_OBJECT
 
 public:
-    explicit IconsLayout( QWidget *parent = nullptr );
+    using SuperCalss = QListWidget;
 
-    void setOrientation( const Qt::Orientation value );
-    Qt::Orientation orientation() const;
-
-    void insertIcon( IconBase *icon );
-    void addIcon( IconBase *icon );
-
-    unsigned int iconsCount() const;
-
-    double maximumAspectRatio() const;
-
-    QList< IconBase* > icons() const;
-    IconBase *iconAt( const size_t i ) const;
-
-    void clear();
-
-signals:
-    void iconActivated( IconBase *icon );
-
-private:
-    void initialize();
-
-    QBoxLayout *m_layout;
-
-};
-
-
-class IconsWidget : public QScrollArea
-{
-    Q_OBJECT
-
-public:
-    explicit IconsWidget( QWidget *parent = nullptr );
+    explicit IconsList( QWidget *parent = nullptr );
 
     void addIcon( IconBase *icon );
     void insertIcon( IconBase *icon );
 
-    void setOrientation( const Qt::Orientation value );
-    Qt::Orientation orientation() const;
-
-    IconsLayout *layoutWidget() const;
-
     QList< IconBase* > icons() const;
-
-signals:
-    void iconActivated( IconBase *icon );
-
-public slots:
-    void clearIcons();
-
-private slots:
-    void updateLayout();
 
 protected:
-    virtual void resizeEvent(QResizeEvent *event) override;
+    static const QSize m_iconSize;
 
 private:
     void initialize();
 
 };
-
-
