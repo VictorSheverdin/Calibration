@@ -300,9 +300,6 @@ void StereoReportWidget::report(const StereoCalibrationData &calibration )
                 cv::remap( leftImage, leftRectifiedImage, calibration.leftRMap(), calibration.leftDMap(), cv::INTER_LANCZOS4 );
                 cv::remap( rightImage, rightRectifiedImage, calibration.rightRMap(), calibration.rightDMap(), cv::INTER_LANCZOS4 );
 
-                cv::flip( leftRectifiedImage, leftRectifiedImage, -1 );
-                cv::flip( rightRectifiedImage, rightRectifiedImage, -1 );
-
                 auto image1 = resizeTo( leftRectifiedImage, m_reportFrameSize );
                 auto image2 = resizeTo( rightRectifiedImage, m_reportFrameSize );
 

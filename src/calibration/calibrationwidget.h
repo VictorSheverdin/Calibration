@@ -12,7 +12,7 @@ class TaskWidgetBase;
 class MonocularTaskWidget;
 class StereoTaskWidget;
 class IconBase;
-class IconsList;
+class IconsWidget;
 class ImageWidget;
 class ImageDialog;
 
@@ -22,8 +22,6 @@ class CalibrationWidgetBase : public QSplitter
 
 public:
     CalibrationWidgetBase( QWidget *parent = nullptr );
-
-    void setCameraDecimation( VimbaDecimationType type );
 
 public slots:
     virtual void grabFrame() = 0;
@@ -35,7 +33,7 @@ protected slots:
     virtual void showIcon( IconBase *icon ) = 0;
 
 protected:
-    QPointer< IconsList > m_iconsList;
+    QPointer< IconsWidget > m_iconsList;
     QPointer< ImageDialog > m_iconViewDialog;
 
     TemplateProcessor m_processor;
@@ -83,8 +81,6 @@ class StereoCalibrationWidget : public CalibrationWidgetBase
 
 public:
     StereoCalibrationWidget( const std::string &leftCameraIp, const std::string &rightCameraIp, QWidget *parent = nullptr );
-
-    void saveXMLCalibration();
 
     StereoTaskWidget *taskWidget() const;
 

@@ -32,8 +32,7 @@ void Application::initialize( int &, char ** )
 
     setWindowIcon( QIcon( ":/resources/images/checkerboard.ico" ) );
 
-    m_mainWindow = new MainWindow( "169.254.142.79", "169.254.171.30" );
-    mainWindow()->setCameraDecimation( VimbaDecimationType::QUARTER );
+    m_mainWindow = new MainWindow( "169.254.70.179", "169.254.38.91" );
     mainWindow()->loadCalibrationFile( "/home/sheverdin/calibration.yaml" );
 
     m_mainWindow->showMaximized();

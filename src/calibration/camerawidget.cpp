@@ -3,7 +3,6 @@
 #include "camerawidget.h"
 
 #include "previewwidget.h"
-#include "application.h"
 
 #include "src/common/functions.h"
 
@@ -17,8 +16,6 @@ CameraWidgetBase::CameraWidgetBase(QWidget* parent )
 void CameraWidgetBase::initialize()
 {
     setSizePolicy( QSizePolicy::Expanding, QSizePolicy::Expanding );
-
-    m_timerId = startTimer( m_aquireInterval );
 }
 
 void CameraWidgetBase::setType( const TemplateProcessor::Type type )
@@ -111,60 +108,20 @@ bool CameraWidgetBase::fastCheck() const
     return m_processor.fastCheck();
 }
 
-// FrameObserver
-MonocularFrameObserver::MonocularFrameObserver( AVT::VmbAPI::CameraPtr pCamera )
-    : AVT::VmbAPI::IFrameObserver( pCamera )
-{
-}
-
-void MonocularFrameObserver::FrameReceived ( const AVT::VmbAPI::FramePtr pFrame )
-{
-    VmbFrameStatusType eReceiveStatus ;
-
-    if( VmbErrorSuccess == pFrame->GetReceiveStatus ( eReceiveStatus ) )
-    {
-        if ( VmbFrameStatusComplete == eReceiveStatus )
-        {
-            // Put your code here to react on a successfully received frame
-        }
-        else
-        {
-            // Put your code here to react on an unsuccessfully received frame
-        }
-    }
-    // When you are finished copying the frame , re - queue it
-
-    m_pCamera->QueueFrame ( pFrame );
-}
-
 // MonocularCameraWidget
 MonocularCameraWidget::MonocularCameraWidget( const std::string &cameraIp, QWidget* parent )
-    : CameraWidgetBase( parent )
+    : CameraWidgetBase( parent ), m_camera( cameraIp )
 {
-    initialize( cameraIp );
+    initialize();
 }
 
-MonocularCameraWidget::~MonocularCameraWidget()
+void MonocularCameraWidget::initialize()
 {
-    m_camera->Close();
-}
-
-void MonocularCameraWidget::initialize(const std::string &cameraIp )
-{
-    auto app = application();
-
-    checkVimbaStatus( app->vimbaSystem().OpenCameraByID( cameraIp.c_str(), VmbAccessModeFull, m_camera ),
-        std::string( "Could not start open camera; ip = " ) + cameraIp );
-
-    setVimbaFeature( m_camera, "PixelFormat", VmbPixelFormatBgr8 );
-
-    AVT::VmbAPI::FramePtrVector frames( m_aquireCount ); // Мaссив кадров
-    AVT::VmbAPI::IFrameObserverPtr observer( new MonocularFrameObserver( m_camera ) );
-
-
-
     m_previewWidget = new PreviewWidget( this );
     addWidget( m_previewWidget );
+
+    connect( &m_camera, &VimbaCamera::receivedFrame, this, &MonocularCameraWidget::updateFrame );
+
 }
 
 void MonocularCameraWidget::setSourceImage(const CvImage image)
@@ -202,24 +159,13 @@ bool MonocularCameraWidget::isTemplateExist() const
     return m_previewWidget->isTemplateExist();
 }
 
-void MonocularCameraWidget::setDecimation( const VimbaDecimationType type )
+void MonocularCameraWidget::updateFrame()
 {
-    int decimationFactor = static_cast<int>( type );
+    auto frame = m_camera.getFrame();
 
-    setVimbaFeature( m_camera, "DecimationHorizontal",  decimationFactor );
-    setVimbaFeature( m_camera, "DecimationVertical",  decimationFactor );
-    setVimbaFeature( m_camera, "OffsetX",  0 );
-    setVimbaFeature( m_camera, "OffsetY",  0 );
-    setVimbaFeature( m_camera, "Width",  VIMBA_ORIGINAL_FRAME_SIZE / decimationFactor );
-    setVimbaFeature( m_camera, "Height", VIMBA_ORIGINAL_FRAME_SIZE / decimationFactor );
+    if ( !frame.empty() ) {
+        setSourceImage( frame );
 
-}
-
-void MonocularCameraWidget::updatePreview()
-{
-    auto frame = sourceImage();
-
-    if (!frame.empty()) {
         CvImage procFrame;
         std::vector< cv::Point2f > previewPoints;
 
@@ -232,67 +178,23 @@ void MonocularCameraWidget::updatePreview()
 
 }
 
-void MonocularCameraWidget::timerEvent( QTimerEvent *event )
-{
-    CvImage frame;
-
-    AVT::VmbAPI::FramePtr pFrame;
-    VmbUchar_t *pImage;
-    VmbUint32_t timeout = 500;
-    VmbUint32_t nWidth = 0;
-    VmbUint32_t nHeight = 0;
-
-    VmbFrameStatusType status;
-
-    checkVimbaStatus( m_camera->AcquireSingleImage( pFrame, timeout ), "FAILED to aquire frame!" );
-    checkVimbaStatus( pFrame->GetReceiveStatus(status), "FAILED to aquire frame!" );
-    checkVimbaStatus( pFrame->GetWidth( nWidth ), "FAILED to aquire width of frame!" );
-    checkVimbaStatus( pFrame->GetHeight( nHeight ), "FAILED to aquire height of frame!" );
-    checkVimbaStatus( pFrame->GetImage( pImage ), "FAILED to acquire image data of frame!" );
-
-    auto mat = cv::Mat( nHeight, nWidth, CV_8UC3, pImage );
-    mat.copyTo( frame );
-
-    if ( !frame.empty() ) {
-        setSourceImage( frame );
-
-        updatePreview();
-
-    }
-
-}
-
 // StereoCameraWidget
 StereoCameraWidget::StereoCameraWidget(const std::string &leftCameraIp, const std::string &rightCameraIp, QWidget* parent )
-    : CameraWidgetBase( parent )
+    : CameraWidgetBase( parent ), m_leftCamera( leftCameraIp ), m_rightCamera( rightCameraIp )
 {
-    initialize( leftCameraIp, rightCameraIp );
+    initialize();
 }
 
-StereoCameraWidget::~StereoCameraWidget()
+void StereoCameraWidget::initialize()
 {
-    m_leftCamera->Close();
-    m_rightCamera->Close();
-}
-
-void StereoCameraWidget::initialize( const std::string &leftCameraIp, const std::string &rightCameraIp )
-{
-    auto app = application();
-
-    checkVimbaStatus( app->vimbaSystem().OpenCameraByID( leftCameraIp.c_str(), VmbAccessModeFull, m_leftCamera ),
-        "Could not start open camera; ip = " + leftCameraIp );
-
-    checkVimbaStatus( app->vimbaSystem().OpenCameraByID( rightCameraIp.c_str(), VmbAccessModeFull, m_rightCamera ),
-        "Could not start open camera; ip = " + rightCameraIp );
-
-    setVimbaFeature( m_leftCamera, "PixelFormat", VmbPixelFormatBgr8 );
-    setVimbaFeature( m_rightCamera, "PixelFormat", VmbPixelFormatBgr8 );
-
     m_leftCameraWidget = new PreviewWidget( this );
     m_rightCameraWidget = new PreviewWidget( this );
 
     addWidget( m_leftCameraWidget );
     addWidget( m_rightCameraWidget );
+
+    connect( &m_leftCamera, &VimbaCamera::receivedFrame, this, &StereoCameraWidget::updateLeftFrame );
+    connect( &m_rightCamera, &VimbaCamera::receivedFrame, this, &StereoCameraWidget::updateRightFrame );
 
 }
 
@@ -361,114 +263,57 @@ bool StereoCameraWidget::isTemplateExist() const
     return m_leftCameraWidget->isTemplateExist() || m_rightCameraWidget->isTemplateExist();
 }
 
-void StereoCameraWidget::setDecimation( const VimbaDecimationType type )
+void StereoCameraWidget::updateLeftFrame()
 {
-    int decimationFactor = static_cast<int>( type );
+    if ( m_leftUpdateMutex.tryLock() ) {
 
-    setVimbaFeature( m_leftCamera, "DecimationHorizontal",  decimationFactor );
-    setVimbaFeature( m_leftCamera, "DecimationVertical",  decimationFactor );
-    setVimbaFeature( m_leftCamera, "OffsetX",  0 );
-    setVimbaFeature( m_leftCamera, "OffsetY",  0 );
-    setVimbaFeature( m_leftCamera, "Width", VIMBA_ORIGINAL_FRAME_SIZE / decimationFactor );
-    setVimbaFeature( m_leftCamera, "Height", VIMBA_ORIGINAL_FRAME_SIZE / decimationFactor );
+        auto frame = m_leftCamera.getFrame();
 
-    setVimbaFeature( m_rightCamera, "DecimationHorizontal",  decimationFactor );
-    setVimbaFeature( m_rightCamera, "DecimationVertical",  decimationFactor );
-    setVimbaFeature( m_rightCamera, "OffsetX",  0 );
-    setVimbaFeature( m_rightCamera, "OffsetY",  0 );
-    setVimbaFeature( m_rightCamera, "Width", VIMBA_ORIGINAL_FRAME_SIZE / decimationFactor );
-    setVimbaFeature( m_rightCamera, "Height", VIMBA_ORIGINAL_FRAME_SIZE / decimationFactor );
+        if ( !frame.empty() ) {
 
-}
+            m_leftCameraWidget->setSourceImage( frame );
 
-void StereoCameraWidget::updatePreview()
-{
-    updateLeftPreview();
-    updateRightPreview();
-}
+            CvImage procFrame;
+            std::vector< cv::Point2f > previewPoints;
 
-void StereoCameraWidget::updateLeftPreview()
-{
-    CvImage frame = m_leftCameraWidget->sourceImage();
+            m_processor.processPreview( frame, &procFrame, &previewPoints );
 
-    if ( !frame.empty() ) {
-        CvImage procFrame;
-        std::vector< cv::Point2f > previewPoints;
+            m_leftCameraWidget->setPreviewImage( procFrame );
+            m_leftCameraWidget->setPreviewPoints( previewPoints );
 
-        m_processor.processPreview( frame, &procFrame, &previewPoints );
+        }
 
-        m_leftCameraWidget->setPreviewImage( procFrame );
-        m_leftCameraWidget->setPreviewPoints( previewPoints );
+        m_leftUpdateMutex.unlock();
 
     }
 
 }
 
-void StereoCameraWidget::updateRightPreview()
+void StereoCameraWidget::updateRightFrame()
 {
-    CvImage frame = m_rightCameraWidget->sourceImage();
+    if ( m_rightUpdateMutex.tryLock() ) {
+        auto frame = m_rightCamera.getFrame();
 
-    if ( !frame.empty() ) {
-        CvImage procFrame;
-        std::vector< cv::Point2f > previewPoints;
+        if ( !frame.empty() ) {
 
-        m_processor.processPreview( frame, &procFrame, &previewPoints );
+            m_rightCameraWidget->setSourceImage( frame );
 
-        m_rightCameraWidget->setPreviewImage( procFrame );
-        m_rightCameraWidget->setPreviewPoints( previewPoints );
+            CvImage procFrame;
+            std::vector< cv::Point2f > previewPoints;
+
+            m_processor.processPreview( frame, &procFrame, &previewPoints );
+
+            m_rightCameraWidget->setPreviewImage( procFrame );
+            m_rightCameraWidget->setPreviewPoints( previewPoints );
+
+        }
+
+        m_rightUpdateMutex.unlock();
 
     }
 
 }
 
-void StereoCameraWidget::timerEvent( QTimerEvent * )
-{
-    CvImage leftFrame;
-    CvImage rightFrame;
-
-    AVT::VmbAPI::FramePtr leftPFrame;
-    AVT::VmbAPI::FramePtr rightPFrame;
-    VmbUchar_t *leftPImage;
-    VmbUchar_t *rightPImage;
-    VmbUint32_t timeout = 500;
-    VmbUint32_t nWidth = 0;
-    VmbUint32_t nHeight = 0;
-
-    VmbFrameStatusType status;
-
-    checkVimbaStatus( m_leftCamera->AcquireSingleImage( leftPFrame, timeout ), "FAILED to aquire frame!" );
-    checkVimbaStatus( m_rightCamera->AcquireSingleImage( rightPFrame, timeout ), "FAILED to aquire frame!" );
-
-    checkVimbaStatus( leftPFrame->GetReceiveStatus( status ), "FAILED to aquire frame!" );
-    checkVimbaStatus( rightPFrame->GetReceiveStatus( status ), "FAILED to aquire frame!" );
-
-    checkVimbaStatus( leftPFrame->GetWidth( nWidth ), "FAILED to aquire width of frame!" );
-    checkVimbaStatus( rightPFrame->GetWidth( nWidth ), "FAILED to aquire width of frame!" );
-
-    checkVimbaStatus( leftPFrame->GetHeight( nHeight ), "FAILED to aquire height of frame!" );
-    checkVimbaStatus( rightPFrame->GetHeight( nHeight ), "FAILED to aquire height of frame!" );
-
-    checkVimbaStatus( leftPFrame->GetImage( leftPImage ), "FAILED to acquire image data of frame!" );
-    checkVimbaStatus( rightPFrame->GetImage( rightPImage ), "FAILED to acquire image data of frame!" );
-
-    auto leftMat = cv::Mat( nHeight, nWidth, CV_8UC3, leftPImage );
-    leftMat.copyTo( leftFrame );
-
-    auto rightMat = cv::Mat( nHeight, nWidth, CV_8UC3, rightPImage );
-    rightMat.copyTo( rightFrame );
-
-    if ( !leftFrame.empty() ) {
-        m_leftCameraWidget->setSourceImage( leftFrame );
-        updateLeftPreview();
-    }
-
-    if ( !rightFrame.empty() ) {
-        m_rightCameraWidget->setSourceImage( rightFrame );
-        updateRightPreview();
-
-    }
-
-}
 
 // TripleCameraWidget
 TripleCameraWidget::TripleCameraWidget( const int camera1Index, const int camera2Index, const int camera3Index, QWidget* parent )

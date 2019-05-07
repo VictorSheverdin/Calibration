@@ -147,33 +147,44 @@ std::vector< cv::Point2f > StereoIcon::rightPreviewPoints() const
     return m_previewRightPoints;
 }
 
-// IconsList
-const QSize IconsList::m_iconSize( 200, 200 );
+// IconsWidget
+const QSize IconsWidget::m_iconSize( 200, 200 );
 
-IconsList::IconsList( QWidget *parent )
+IconsWidget::IconsWidget( QWidget *parent )
     : SuperCalss( parent )
 {
     initialize();
 }
 
-void IconsList::initialize()
+void IconsWidget::initialize()
 {
     setIconSize( m_iconSize );
     setViewMode( IconMode );
     setWrapping( true );
+
+    connect( this, &IconsWidget::itemDoubleClicked,
+                [&]( QListWidgetItem *item ) {
+                    auto itemCast = dynamic_cast< IconBase * >( item );
+
+                    if ( itemCast )
+                        emit iconActivated( itemCast );
+
+                }
+
+    );
 }
 
-void IconsList::addIcon( IconBase *icon )
+void IconsWidget::addIcon( IconBase *icon )
 {
     addItem( icon );
 }
 
-void IconsList::insertIcon(IconBase *icon )
+void IconsWidget::insertIcon(IconBase *icon )
 {
     insertItem( 0, icon );
 }
 
-QList< IconBase* > IconsList::icons() const
+QList< IconBase* > IconsWidget::icons() const
 {
     QList< IconBase* > ret;
 

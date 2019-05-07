@@ -98,19 +98,22 @@ private:
 
 };
 
-class IconsList : public QListWidget
+class IconsWidget : public QListWidget
 {
     Q_OBJECT
 
 public:
     using SuperCalss = QListWidget;
 
-    explicit IconsList( QWidget *parent = nullptr );
+    explicit IconsWidget( QWidget *parent = nullptr );
 
     void addIcon( IconBase *icon );
     void insertIcon( IconBase *icon );
 
     QList< IconBase* > icons() const;
+
+signals:
+    void iconActivated( IconBase *icon );
 
 protected:
     static const QSize m_iconSize;

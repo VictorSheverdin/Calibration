@@ -166,13 +166,7 @@ void PreviewWidget::timerEvent( QTimerEvent * )
             cv::remap( leftFrame, leftRectifiedImage, m_calibration.leftRMap(), m_calibration.leftDMap(), cv::INTER_LINEAR );
             cv::remap( rightFrame, rightRectifiedImage, m_calibration.rightRMap(), m_calibration.rightDMap(), cv::INTER_LINEAR );
 
-            CvImage leftFlipped;
-            CvImage rightFlipped;
-
-            cv::flip( leftRectifiedImage, leftFlipped, -1 );
-            cv::flip( rightRectifiedImage, rightFlipped, -1 );
-
-            CvImage previewImage = stackImages( leftFlipped, rightFlipped );
+            CvImage previewImage = stackImages( leftFrame, rightFrame );
             drawTraceLines( previewImage, 15 );
             m_view->rectifyView()->setImage( previewImage );
 
@@ -190,7 +184,7 @@ void PreviewWidget::timerEvent( QTimerEvent * )
                 m_bmProcessor.setSpeckleRange( m_controlWidget->bmControlWidget()->speckleRange() );
                 m_bmProcessor.setDisp12MaxDiff( m_controlWidget->bmControlWidget()->disp12MaxDiff() );
 
-                disp = m_bmProcessor.processDisparity( leftFlipped, rightFlipped );
+                disp = m_bmProcessor.processDisparity( leftFrame, rightFrame );
             }
             else if ( m_controlWidget->isGmMethod() ) {
                 m_gmProcessor.setMode( m_controlWidget->gmControlWidget()->mode() );
@@ -205,7 +199,7 @@ void PreviewWidget::timerEvent( QTimerEvent * )
                 m_gmProcessor.setP1( m_controlWidget->gmControlWidget()->p1() );
                 m_gmProcessor.setP2( m_controlWidget->gmControlWidget()->p2() );
 
-                disp = m_gmProcessor.processDisparity( leftFlipped, rightFlipped );
+                disp = m_gmProcessor.processDisparity( leftFrame, rightFrame );
 
             }
 
@@ -220,21 +214,19 @@ void PreviewWidget::timerEvent( QTimerEvent * )
             for (int rows = 0; rows < points.rows; ++rows) {
                 for (int cols = 0; cols < points.cols; ++cols) {
 
-                    double dispValue = disp.at<short>( rows, cols );
-
                     cv::Point3f point = points.at< cv::Point3f >(rows, cols);
 
-                    if ( point.x > -10 && point.y > -10 && point.z > -10 && point.x < 10 && point.y < 10 && point.z < 10 ) {
+//                    if ( point.x > -10 && point.y > -10 && point.z > -10 && point.x < 10 && point.y < 10 && point.z < 10 ) {
                         pcl::PointXYZRGB pclPoint;
                         pclPoint.x = point.x;
                         pclPoint.y = point.y;
                         pclPoint.z = point.z;
 
-                        cv::Vec3b intensity = leftFlipped.at<cv::Vec3b>(rows,cols); //BGR
+                        cv::Vec3b intensity = leftFrame.at<cv::Vec3b>(rows,cols); //BGR
                         uint32_t rgb = (static_cast<uint32_t>(intensity[2]) << 16 | static_cast<uint32_t>(intensity[1]) << 8 | static_cast<uint32_t>(intensity[0]));
                         pclPoint.rgb = *reinterpret_cast<float*>(&rgb);
                         cloud->push_back( pclPoint );
-                    }
+//                    }
 
                 }
             }

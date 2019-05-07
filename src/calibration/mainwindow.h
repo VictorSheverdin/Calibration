@@ -22,8 +22,6 @@ public slots:
 
     void settingsDialog();
 
-    void setCameraDecimation( VimbaDecimationType type );
-
     void clearIcons();
 
 protected:

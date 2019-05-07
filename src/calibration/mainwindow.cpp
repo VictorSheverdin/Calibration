@@ -143,11 +143,6 @@ void MainWindow::settingsDialog()
 {
 }
 
-void MainWindow::setCameraDecimation( VimbaDecimationType type )
-{
-    m_widget->setCameraDecimation( type );
-}
-
 void MainWindow::clearIcons()
 {
     m_widget->clearIcons();

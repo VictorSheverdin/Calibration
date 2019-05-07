@@ -783,7 +783,6 @@ QListWidget::item
 {
     background-color: transparent;
     border: 1px transparent gray;
-    max-height: 10px;
     color: rgb(140, 140, 140);
 }
 

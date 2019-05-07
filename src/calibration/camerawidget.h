@@ -1,7 +1,7 @@
 #pragma once
 
-#include <QThread>
 #include <QSplitter>
+#include <QMutex>
 
 #include "templateprocessor.h"
 
@@ -42,26 +42,14 @@ public:
     bool filterQuads() const;
     bool fastCheck() const;
 
-    virtual void setDecimation( const VimbaDecimationType type ) = 0;
-
 protected:
     TemplateProcessor m_processor;
 
     static const int m_aquireInterval = 30;
     static const int m_aquireCount = 10;
 
-    int m_timerId;
-
 private:
     void initialize();
-};
-
-class MonocularFrameObserver : public AVT::VmbAPI::IFrameObserver
-{
-public :
-    MonocularFrameObserver( AVT::VmbAPI::CameraPtr pCamera );
-
-    virtual void FrameReceived( const AVT::VmbAPI::FramePtr pFrame ) override;
 };
 
 class MonocularCameraWidget : public CameraWidgetBase
@@ -70,7 +58,6 @@ class MonocularCameraWidget : public CameraWidgetBase
 
 public:
     MonocularCameraWidget( const std::string &cameraIp, QWidget* parent = nullptr );
-    ~MonocularCameraWidget();
 
     const CvImage sourceImage() const;
     const CvImage previewImage() const;
@@ -78,25 +65,21 @@ public:
 
     bool isTemplateExist() const;
 
-    virtual void setDecimation( const VimbaDecimationType type ) override;
-
 public slots:
     void setSourceImage(const CvImage image);
     void setPreviewImage(const CvImage image);
     void setPreviewPoints(const std::vector<cv::Point2f> &points );
 
 protected slots:
-    void updatePreview();
+    void updateFrame();
 
 protected:
     QPointer<PreviewWidget> m_previewWidget;
 
-    AVT::VmbAPI::CameraPtr m_camera;
-
-    virtual void timerEvent(QTimerEvent *event) override;
+    VimbaCamera m_camera;
 
 private:
-    void initialize( const std::string &cameraIp );
+    void initialize();
 
 };
 
@@ -106,7 +89,6 @@ class StereoCameraWidget : public CameraWidgetBase
 
 public:
     StereoCameraWidget( const std::string &cameraIp, const std::string &rightCameraIp, QWidget* parent = nullptr );
-    ~StereoCameraWidget();
 
     const CvImage leftSourceImage() const;
     const CvImage leftDisplayedImage() const;
@@ -121,8 +103,6 @@ public:
 
     bool isTemplateExist() const;
 
-    virtual void setDecimation( const VimbaDecimationType type ) override;
-
 public slots:
     void setLeftSourceImage( const CvImage image );
     void setLeftDisplayedImage( const CvImage image );
@@ -133,22 +113,21 @@ public slots:
     void setRightPreviewPoints( const std::vector<cv::Point2f> &points );
 
 protected slots:
-    void updatePreview();
+    void updateLeftFrame();
+    void updateRightFrame();
 
 protected:
     QPointer<PreviewWidget> m_leftCameraWidget;
     QPointer<PreviewWidget> m_rightCameraWidget;
 
-    AVT::VmbAPI::CameraPtr m_leftCamera;
-    AVT::VmbAPI::CameraPtr m_rightCamera;
+    VimbaCamera m_leftCamera;
+    VimbaCamera m_rightCamera;
 
-    virtual void timerEvent( QTimerEvent * ) override;
-
-    void updateLeftPreview();
-    void updateRightPreview();
+    QMutex m_leftUpdateMutex;
+    QMutex m_rightUpdateMutex;
 
 private:
-    void initialize( const std::string &leftCameraIp, const std::string &rightCameraIp );
+    void initialize();
 };
 
 template < int NUM >

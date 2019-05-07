@@ -33,11 +33,6 @@ void CalibrationWidgetBase::initialize()
 
 }
 
-void CalibrationWidgetBase::setCameraDecimation( VimbaDecimationType type )
-{
-    m_taskWidget->setCameraDecimation( type );
-}
-
 void CalibrationWidgetBase::clearIcons()
 {
     m_iconsList->clear();
@@ -156,10 +151,10 @@ MonocularCalibrationWidget::MonocularCalibrationWidget( const std::string &camer
     initialize( cameraIp );
 }
 
-void MonocularCalibrationWidget::initialize(const std::string &cameraIp )
+void MonocularCalibrationWidget::initialize( const std::string &cameraIp )
 {
     m_taskWidget = new MonocularTaskWidget( cameraIp, this );
-    m_iconsList = new IconsList( this );
+    m_iconsList = new IconsWidget( this );
 
     addWidget( m_taskWidget );
     addWidget( m_iconsList );
@@ -169,8 +164,7 @@ void MonocularCalibrationWidget::initialize(const std::string &cameraIp )
     m_reportDialog = new MonocularReportDialog( application()->mainWindow() );
     m_reportDialog->resize( 800, 600 );
 
-    // TODO:
-    // connect( m_iconsWidget, SIGNAL( iconActivated( IconBase* ) ), this, SLOT( showIcon( IconBase* ) ) );
+    connect( m_iconsList, SIGNAL( iconActivated( IconBase* ) ), this, SLOT( showIcon( IconBase* ) ) );
 
 }
 
@@ -232,7 +226,7 @@ StereoCalibrationWidget::StereoCalibrationWidget(const std::string &leftCameraIp
 void StereoCalibrationWidget::initialize( const std::string &leftCameraIp, const std::string &rightCameraIp )
 {
     m_taskWidget = new StereoTaskWidget( leftCameraIp, rightCameraIp, this );
-    m_iconsList = new IconsList( this );
+    m_iconsList = new IconsWidget( this );
 
     addWidget( m_taskWidget );
     addWidget( m_iconsList );
@@ -242,13 +236,7 @@ void StereoCalibrationWidget::initialize( const std::string &leftCameraIp, const
     m_reportDialog = new StereoReportDialog( application()->mainWindow() );
     m_reportDialog->resize( 800, 600 );
 
-    // TODO:
-    // connect( m_iconsWidget, SIGNAL( iconActivated( IconBase* ) ), this, SLOT( showIcon( IconBase* ) ) );
-}
-
-void StereoCalibrationWidget::saveXMLCalibration()
-{
-
+    connect( m_iconsList, SIGNAL( iconActivated( IconBase* ) ), this, SLOT( showIcon( IconBase* ) ) );
 }
 
 StereoTaskWidget *StereoCalibrationWidget::taskWidget() const

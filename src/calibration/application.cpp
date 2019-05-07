@@ -21,19 +21,18 @@ void Application::initialize( int &, char ** )
 {
     checkVimbaStatus( m_vimbaSystem.Startup(), "Could not start Vimba system");
 
-/*    QFile cssFile(":/resources/qss/style.css");
+    QFile cssFile(":/resources/qss/style.css");
 
     if ( cssFile.open( QIODevice::ReadOnly ) ) {
         QString cssString( cssFile.readAll() );
         setStyleSheet( cssString );
     }
     else
-        QMessageBox::critical( nullptr, tr( "Error"), tr( "Can't load css file:" ) + cssFile.fileName() );*/
+        QMessageBox::critical( nullptr, tr( "Error"), tr( "Can't load css file:" ) + cssFile.fileName() );
 
     setWindowIcon( QIcon( ":/resources/images/checkerboard.ico" ) );
 
-    m_mainWindow = new MainWindow( "169.254.70.179"/*, "169.254.38.91"*/ );
-    mainWindow()->setCameraDecimation( VimbaDecimationType::QUARTER );
+    m_mainWindow = new MainWindow( "169.254.70.179", "169.254.38.91" );
 
     m_mainWindow->showMaximized();
 

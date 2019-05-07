@@ -31,8 +31,6 @@ public:
     bool filterQuads() const;
     bool fastCheck() const;
 
-    void setCameraDecimation( VimbaDecimationType type );
-
 protected slots:
     void updateParameters();
 
