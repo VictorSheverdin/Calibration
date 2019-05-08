@@ -38,3 +38,21 @@ public:
     double revAspectRatio() const;
 
 };
+
+class StereoImage
+{
+public:
+    StereoImage();
+    StereoImage( const CvImage &leftImage, const CvImage &rightImage );
+
+    const CvImage &leftImage() const;
+    void setLeftImage( const CvImage &img );
+
+    const CvImage &rightImage() const;
+    void setRightImage( const CvImage &img );
+
+protected:
+    CvImage m_leftImage;
+    CvImage m_rightImage;
+
+};

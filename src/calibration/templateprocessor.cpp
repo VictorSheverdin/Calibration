@@ -243,5 +243,17 @@ bool TemplateProcessor::findPoints(const CvImage &frame, std::vector<cv::Point2f
 
 }
 
+// ProcessorThread
+ProcessorThread::ProcessorThread( QObject *parent )
+    : QThread( parent )
+{
+    initialize();
+}
 
+void ProcessorThread::initialize()
+{
+}
 
+void ProcessorThread::run()
+{
+}

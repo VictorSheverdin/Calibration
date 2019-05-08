@@ -140,3 +140,33 @@ double CvImage::revAspectRatio() const
 
 }
 
+// StereoImage
+StereoImage::StereoImage()
+{
+}
+
+StereoImage::StereoImage( const CvImage &leftImage, const CvImage &rightImage )
+{
+    setLeftImage( leftImage );
+    setRightImage( rightImage );
+}
+
+const CvImage &StereoImage::leftImage() const
+{
+    return m_leftImage;
+}
+
+void StereoImage::setLeftImage( const CvImage &img )
+{
+    m_leftImage = img;
+}
+
+const CvImage &StereoImage::rightImage() const
+{
+    return m_rightImage;
+}
+
+void StereoImage::setRightImage( const CvImage &img )
+{
+    m_rightImage = img;
+}

@@ -14,8 +14,6 @@ void PCLViewer::initialize()
     SetRenderWindow( pclviewer->getRenderWindow() );
     pclviewer->initCameraParameters ();
 
-    pclviewer->setBackgroundColor( 32.0/256.0, 162.0/256.0, 186.0/256.0 );
-
     pclviewer->addPointCloud( pcl::PointCloud<pcl::PointXYZRGB>::Ptr( new pcl::PointCloud<pcl::PointXYZRGB> ), "disparity" );
 
     pclviewer->setPointCloudRenderingProperties( pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, "disparity" );

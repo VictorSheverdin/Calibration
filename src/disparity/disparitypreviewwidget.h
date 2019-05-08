@@ -6,7 +6,7 @@
 #include "src/common/defs.h"
 #include "stereoprocessor.h"
 
-#include "VimbaCPP/Include/VimbaCPP.h"
+#include "src/common/vimbacamera.h"
 
 #include "src/common/calibrationdata.h"
 
@@ -40,11 +40,8 @@ class PreviewWidget : public QSplitter
 
 public:
     explicit PreviewWidget( const std::string &leftCameraIp, const std::string &rightCameraIp, QWidget* parent = nullptr );
-    ~PreviewWidget();
 
     BMControlWidget *bmControlWidget() const;
-
-    void setDecimation( const VimbaDecimationType type );
 
     bool loadCalibrationFile( const std::string &fileName );
 
@@ -53,15 +50,15 @@ protected:
     QPointer< DisparityControlWidget > m_controlWidget;
     QPointer< PCLViewer > m_3dWidget;
 
-    AVT::VmbAPI::CameraPtr m_leftCamera;
-    AVT::VmbAPI::CameraPtr m_rightCamera;
+    VimbaCamera m_leftCam;
+    VimbaCamera m_rightCam;
 
-    virtual void timerEvent( QTimerEvent * ) override;
+    void updateFrame();
 
-    StereoCalibrationData m_calibration;
+    std::shared_ptr<BMDisparityProcessor> m_bmProcessor;
+    std::shared_ptr<GMDisparityProcessor> m_gmProcessor;
 
-    BMProcessor m_bmProcessor;
-    GMProcessor m_gmProcessor;
+    StereoProcessor m_processor;
 
 private:
     void initialize( const std::string &leftCameraIp, const std::string &rightCameraIp );

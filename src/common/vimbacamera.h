@@ -3,7 +3,7 @@
 #include <QObject>
 #include <QMutex>
 
-#include <queue>
+#include <deque>
 
 #include "VimbaCPP/Include/VimbaCPP.h"
 
@@ -22,8 +22,10 @@ public :
     CvImage getFrame();
 
 protected:
-    CvImage m_frame;
+    std::deque< CvImage > m_frames;
     QMutex m_framesMutex;
+
+    static const int m_maxDequeSize = 10;
 
 signals:
     void receivedFrame();

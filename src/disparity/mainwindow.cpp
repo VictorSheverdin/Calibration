@@ -25,11 +25,6 @@ void MainWindow::initialize()
 
 }
 
-void MainWindow::setCameraDecimation( VimbaDecimationType type )
-{
-    m_widget->setDecimation( type );
-}
-
 void MainWindow::loadCalibrationFile( const std::string &fileName )
 {
     m_widget->loadCalibrationFile( fileName );

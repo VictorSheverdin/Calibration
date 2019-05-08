@@ -1,6 +1,6 @@
 #pragma once
 
-#include <opencv2/opencv.hpp>
+#include <QThread>
 #include <QComboBox>
 
 #include "src/common/image.h"
@@ -69,4 +69,17 @@ private:
     void initialize();
 };
 
+class ProcessorThread : public QThread
+{
+    Q_OBJECT
 
+public:
+    explicit ProcessorThread( QObject *parent = nullptr );
+
+protected:
+    virtual void run() override;
+
+private:
+    void initialize();
+
+};

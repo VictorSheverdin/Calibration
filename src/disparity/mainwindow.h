@@ -16,7 +16,6 @@ public:
     explicit MainWindow( const std::string &leftCameraIp, const std::string &rightCameraIp, QWidget *parent = nullptr );
 
 public slots:
-    void setCameraDecimation( VimbaDecimationType type );
     void loadCalibrationFile( const std::string &fileName );
 
 protected:

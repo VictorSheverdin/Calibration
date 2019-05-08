@@ -26,7 +26,7 @@ void ImageWidget::setImage(const CvImage image)
 {
     m_image = image;
 
-    update();
+    repaint();
 }
 
 const CvImage ImageWidget::image() const
@@ -52,6 +52,7 @@ double ImageWidget::imageAspect() const
         return static_cast<double>( imageWidth() ) / height;
     else
         return 0.0;
+
 }
 
 void ImageWidget::paintEvent(QPaintEvent *event )

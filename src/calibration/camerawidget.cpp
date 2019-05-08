@@ -292,6 +292,7 @@ void StereoCameraWidget::updateLeftFrame()
 void StereoCameraWidget::updateRightFrame()
 {
     if ( m_rightUpdateMutex.tryLock() ) {
+
         auto frame = m_rightCamera.getFrame();
 
         if ( !frame.empty() ) {

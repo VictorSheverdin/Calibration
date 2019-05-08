@@ -4,6 +4,8 @@
 
 #include "functions.h"
 
+#include <unistd.h>
+
 // FrameObserver
 FrameObserver::FrameObserver( AVT::VmbAPI::CameraPtr pCamera )
     : AVT::VmbAPI::IFrameObserver( pCamera )
@@ -34,8 +36,12 @@ void FrameObserver::FrameReceived ( const AVT::VmbAPI::FramePtr pFrame )
 
             // Lock the frame queue
             m_framesMutex.lock();
+
+            if ( m_frames.size() >= m_maxDequeSize )
+                m_frames.resize( m_maxDequeSize - 1 );
+
             // Add frame to queue
-            m_frame = frame;
+            m_frames.push_front( frame );
             // Unlock frame queue
             m_framesMutex.unlock();
 
@@ -56,12 +62,12 @@ CvImage FrameObserver::getFrame()
     // Pop frame from queue
     CvImage res;
 
-//    if( !m_frames.empty() )
-//    {
-        res = m_frame;
-        m_frame = CvImage();
-//    }
-    // Unlock frame queue
+    if( !m_frames.empty() )
+    {
+        res = m_frames.front();
+        m_frames.pop_back();
+    }
+
     m_framesMutex.unlock();
 
     return res;
@@ -90,7 +96,7 @@ void VimbaCamera::initialize( const std::string &ip )
 
     SP_SET( m_frameObserver, new FrameObserver( m_camera ) );
 
-    checkVimbaStatus( SP_ACCESS( m_camera )->StartContinuousImageAcquisition( m_numFrames,  m_frameObserver ), "Can not start image acquisition" );
+    checkVimbaStatus( SP_ACCESS( m_camera )->StartContinuousImageAcquisition( m_numFrames,  m_frameObserver ), "Can't start image acquisition" );
 
     connect( m_frameObserver.get(), &FrameObserver::receivedFrame, this, &VimbaCamera::receivedFrame );
 
