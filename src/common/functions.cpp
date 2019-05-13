@@ -78,4 +78,15 @@ void checkVimbaStatus(VmbErrorType status, std::string message)
     }
 }
 
+void vimbaRunCommand( AVT::VmbAPI::VimbaSystem &system, const std::string &key )
+{
+    AVT::VmbAPI::FeaturePtr feature;
+    checkVimbaStatus( system.GetFeatureByName( key.data(), feature ),
+        "Could not access " + key );
+
+    checkVimbaStatus( feature->RunCommand(), "Could run command " + key );
+
+}
+
+
 

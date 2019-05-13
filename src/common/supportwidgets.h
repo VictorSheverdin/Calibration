@@ -4,6 +4,8 @@
 #include <QSpinBox>
 #include <QPointer>
 
+#include <QDialog>
+
 class QHBoxLayout;
 class QLabel;
 
@@ -43,4 +45,14 @@ private:
 
 };
 
+class DialogBase : public QDialog
+{
+    Q_OBJECT
 
+public:
+    explicit DialogBase( QWidget *parent = nullptr );
+
+private:
+    void initialize();
+
+};

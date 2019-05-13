@@ -19,7 +19,7 @@ Application::~Application()
 
 void Application::initialize( int &, char ** )
 {
-    checkVimbaStatus( m_vimbaSystem.Startup(), "Could not start Vimba system");
+    checkVimbaStatus( m_vimbaSystem.Startup(), "Could not start Vimba system" );
 
     QFile cssFile(":/resources/qss/style.css");
 

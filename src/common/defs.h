@@ -2,6 +2,8 @@
 
 #include <limits>
 
+#include <VimbaCPP/Include/VimbaCPP.h>
+
 static const auto DOUBLE_EPS = std::numeric_limits< double >::epsilon();
 static const auto FLOAT_EPS = std::numeric_limits< float >::epsilon();
 
@@ -14,4 +16,8 @@ static const auto FLOAT_MIN = std::numeric_limits< float >::min();
 static const int VIMBA_ORIGINAL_FRAME_SIZE = 2048;
 
 enum class VimbaDecimationType { WHOLE = 1, HALF = 2, QUARTER = 4, EIGHTH = 8 };
+
+static const VmbInt64_t ACTION_DEVICE_KEY = 1;
+static const VmbInt64_t ACTION_GROUP_KEY = 1;
+static const VmbInt64_t ACTION_GROUP_MASK = 1;
 

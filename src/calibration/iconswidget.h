@@ -16,7 +16,7 @@ class IconBase : public QListWidgetItem
 {
 
 public:
-    using SuperCalss = QListWidget;
+    using SuperClass = QListWidget;
 
     IconBase( const CvImage image, const int number );
 
@@ -43,7 +43,7 @@ class MonocularIcon : public IconBase
 {
 
 public:
-    using SuperCalss = IconBase;
+    using SuperClass = IconBase;
 
     MonocularIcon( const CvImage previewImage, const CvImage sourceImage, const int number );
 
@@ -66,7 +66,7 @@ class StereoIcon : public IconBase
 {
 
 public:
-    using SuperCalss = IconBase;
+    using SuperClass = IconBase;
 
     StereoIcon( const CvImage previewImage, const CvImage straightPreviewImage, const CvImage leftSourceImage, const CvImage rightSourceImage, const int number );
 
@@ -103,7 +103,7 @@ class IconsWidget : public QListWidget
     Q_OBJECT
 
 public:
-    using SuperCalss = QListWidget;
+    using SuperClass = QListWidget;
 
     explicit IconsWidget( QWidget *parent = nullptr );
 

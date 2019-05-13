@@ -34,15 +34,8 @@ void FrameObserver::FrameReceived ( const AVT::VmbAPI::FramePtr pFrame )
 
             mat.copyTo( frame );
 
-            // Lock the frame queue
             m_framesMutex.lock();
-
-            if ( m_frames.size() >= m_maxDequeSize )
-                m_frames.resize( m_maxDequeSize - 1 );
-
-            // Add frame to queue
-            m_frames.push_front( frame );
-            // Unlock frame queue
+            m_framesQueue.push( frame );
             m_framesMutex.unlock();
 
             emit receivedFrame();
@@ -50,9 +43,9 @@ void FrameObserver::FrameReceived ( const AVT::VmbAPI::FramePtr pFrame )
         }
 
     }
-    // When you are finished copying the frame , re - queue it
 
     m_pCamera->QueueFrame ( pFrame );
+
 }
 
 CvImage FrameObserver::getFrame()
@@ -62,10 +55,10 @@ CvImage FrameObserver::getFrame()
     // Pop frame from queue
     CvImage res;
 
-    if( !m_frames.empty() )
+    if( !m_framesQueue.empty() )
     {
-        res = m_frames.front();
-        m_frames.pop_back();
+        res = m_framesQueue.front();
+        m_framesQueue.pop();
     }
 
     m_framesMutex.unlock();
@@ -93,6 +86,14 @@ void VimbaCamera::initialize( const std::string &ip )
         std::string( "Could not start open camera; ip = " ) + ip );
 
     setVimbaFeature( m_camera, "PixelFormat", VmbPixelFormatBgr8 );
+
+    setVimbaFeature( m_camera, "TriggerSelector", "FrameStart" );
+    setVimbaFeature( m_camera, "TriggerSource", "Action0" );
+    setVimbaFeature( m_camera, "TriggerMode", "On" );
+
+    setVimbaFeature( m_camera, "ActionDeviceKey", ACTION_DEVICE_KEY );
+    setVimbaFeature( m_camera, "ActionGroupKey", ACTION_GROUP_KEY );
+    setVimbaFeature( m_camera, "ActionGroupMask", ACTION_GROUP_MASK );
 
     SP_SET( m_frameObserver, new FrameObserver( m_camera ) );
 
@@ -123,3 +124,4 @@ void VimbaCamera::setMaxValue( const char* const name )
     checkVimbaStatus( SP_ACCESS( feature )->SetValue ( value_max ), "Coldn't set maximum value" );
 
 }
+

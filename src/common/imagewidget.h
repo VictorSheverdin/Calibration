@@ -6,6 +6,8 @@
 
 #include "image.h"
 
+#include "supportwidgets.h"
+
 class ImageWidget : public QWidget
 {
     Q_OBJECT
@@ -38,7 +40,7 @@ private:
 
 };
 
-class ImageDialog : public QDialog
+class ImageDialog : public DialogBase
 {
     Q_OBJECT
 

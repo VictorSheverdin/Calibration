@@ -151,7 +151,7 @@ std::vector< cv::Point2f > StereoIcon::rightPreviewPoints() const
 const QSize IconsWidget::m_iconSize( 200, 200 );
 
 IconsWidget::IconsWidget( QWidget *parent )
-    : SuperCalss( parent )
+    : SuperClass( parent )
 {
     initialize();
 }

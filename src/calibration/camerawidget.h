@@ -78,6 +78,8 @@ protected:
 
     VimbaCamera m_camera;
 
+    virtual void timerEvent( QTimerEvent * ) override;
+
 private:
     void initialize();
 
@@ -125,6 +127,8 @@ protected:
 
     QMutex m_leftUpdateMutex;
     QMutex m_rightUpdateMutex;
+
+    virtual void timerEvent( QTimerEvent * ) override;
 
 private:
     void initialize();

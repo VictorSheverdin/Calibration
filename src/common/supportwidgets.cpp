@@ -56,3 +56,14 @@ void RescaleSpinBox::initialize()
     setAlignment( Qt::AlignRight );
 
 }
+
+// DialogBase
+DialogBase::DialogBase( QWidget *parent )
+    : QDialog( parent )
+{
+    initialize();
+}
+
+void DialogBase::initialize()
+{
+}

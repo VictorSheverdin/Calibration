@@ -3,6 +3,7 @@
 #include "mainwindow.h"
 
 #include "calibrationwidget.h"
+#include "documentarea.h"
 
 MainWindow::MainWindow( const std::string &cameraIp, QWidget *parent)
     : QMainWindow(parent)
@@ -18,22 +19,27 @@ MainWindow::MainWindow( const std::string &leftCameraIp, const std::string &righ
 
 void MainWindow::initialize( const std::string &cameraIp )
 {
+    initialize();
+
     m_widget = new MonocularCalibrationWidget( cameraIp, this );
 
-    initialize();
+    m_documentArea->addWindow( m_widget );
+
 }
 
 void MainWindow::initialize( const std::string &leftCameraIp, const std::string &rightCameraIp )
 {
+    initialize();
+
     m_widget = new StereoCalibrationWidget( leftCameraIp, rightCameraIp, this );
 
-    initialize();
+    m_documentArea->addWindow( m_widget );
+
 }
 
 void MainWindow::initialize()
 {
-    setCentralWidget( m_widget );
-
+    setupDocuments();
     setupActions();
     setupMenus();
     setupToolBars();
@@ -42,6 +48,48 @@ void MainWindow::initialize()
     startTimer( m_grabInterval );
     setAttribute( Qt::WA_DeleteOnClose );
 
+}
+
+void MainWindow::addDocument( DocumentBase *document )
+{
+    m_documentArea->addDocument( document );
+}
+
+void MainWindow::addMonocularCalibrationDocument( const std::string &cameraIp )
+{
+    addDocument( new MonocularCalibrationDocument( cameraIp, this ) );
+}
+
+void MainWindow::addStereoCalibrationDocument( const std::string &leftCameraIp, const std::string &rightCameraIp )
+{
+    addDocument( new StereoCalibrationDocument( leftCameraIp, rightCameraIp, this ) );
+}
+
+MonocularCalibrationDocument *MainWindow::currentMonocularCalibrationDocument() const
+{
+    return getCurrentDocument< MonocularCalibrationDocument >();
+}
+
+StereoCalibrationDocument *MainWindow::currentStereoCalibrationDocument() const
+{
+    return getCurrentDocument< StereoCalibrationDocument >();
+}
+
+TrippleCalibrationDocument *MainWindow::currentTrippleCalibrationDocument() const
+{
+    return getCurrentDocument< TrippleCalibrationDocument >();
+}
+
+ReportDocument *MainWindow::currentReportDocument() const
+{
+    return getCurrentDocument< ReportDocument >();
+}
+
+void MainWindow::setupDocuments()
+{
+    m_documentArea = new DocumentArea( this );
+
+    setCentralWidget( m_documentArea );
 }
 
 void MainWindow::setupActions()

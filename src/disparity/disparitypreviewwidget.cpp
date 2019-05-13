@@ -41,6 +41,7 @@ ImageWidget *DisparityPreviewWidget::disparityView() const
     return m_disparityView;
 }
 
+
 // PreviewWidget
 PreviewWidget::PreviewWidget( const std::string &leftCameraIp, const std::string &rightCameraIp, QWidget* parent )
     : QSplitter( Qt::Horizontal, parent ), m_leftCam( leftCameraIp ), m_rightCam( rightCameraIp )
@@ -68,6 +69,8 @@ void PreviewWidget::initialize( const std::string &leftCameraIp, const std::stri
     addWidget( m_controlWidget );
 
     connect( &m_rightCam, &VimbaCamera::receivedFrame, this, &PreviewWidget::updateFrame );
+
+    startTimer( 1000 / 10 );
 
 }
 
@@ -130,5 +133,16 @@ void PreviewWidget::updateFrame()
 
     }
 
+}
+
+void PreviewWidget::timerEvent( QTimerEvent * )
+{
+    auto &vimbaSystem = AVT::VmbAPI::VimbaSystem::GetInstance();
+
+    setVimbaFeature( vimbaSystem, "ActionDeviceKey", ACTION_DEVICE_KEY );
+    setVimbaFeature( vimbaSystem, "ActionGroupKey", ACTION_GROUP_KEY );
+    setVimbaFeature( vimbaSystem, "ActionGroupMask", ACTION_GROUP_MASK );
+
+    vimbaRunCommand( vimbaSystem, "ActionCommand" );
 }
 

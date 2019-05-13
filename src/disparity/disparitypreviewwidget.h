@@ -26,8 +26,8 @@ public:
     ImageWidget *disparityView() const;
 
 protected:
-    QPointer<ImageWidget> m_rectifyView;
-    QPointer<ImageWidget> m_disparityView;
+    QPointer< ImageWidget > m_rectifyView;
+    QPointer< ImageWidget > m_disparityView;
 
 private:
     void initialize();
@@ -59,6 +59,8 @@ protected:
     std::shared_ptr<GMDisparityProcessor> m_gmProcessor;
 
     StereoProcessor m_processor;
+
+    virtual void timerEvent( QTimerEvent * ) override;
 
 private:
     void initialize( const std::string &leftCameraIp, const std::string &rightCameraIp );

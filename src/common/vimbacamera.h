@@ -1,9 +1,10 @@
 #pragma once
 
 #include <QObject>
+
 #include <QMutex>
 
-#include <deque>
+#include "limitedqueue.h"
 
 #include "VimbaCPP/Include/VimbaCPP.h"
 
@@ -21,14 +22,12 @@ public :
 
     CvImage getFrame();
 
-protected:
-    std::deque< CvImage > m_frames;
-    QMutex m_framesMutex;
-
-    static const int m_maxDequeSize = 10;
-
 signals:
     void receivedFrame();
+
+protected:
+    QMutex m_framesMutex;
+    LimitedQueue< CvImage > m_framesQueue;
 
 };
 
@@ -55,4 +54,5 @@ protected:
 
 private:
     void initialize( const std::string &ip );
+
 };

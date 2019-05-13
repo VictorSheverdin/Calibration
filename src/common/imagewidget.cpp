@@ -84,7 +84,7 @@ void ImageWidget::resizeEvent(QResizeEvent *event)
 
 // ImageDialog
 ImageDialog::ImageDialog( QWidget *parent )
-    : QDialog( parent )
+    : DialogBase( parent )
 {
     initialize();
 }

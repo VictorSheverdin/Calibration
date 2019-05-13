@@ -429,7 +429,7 @@ StereoResult StereoProcessor::process( const CvImage &leftFrame, const CvImage &
             cv::remap( rightFrame, rightRectifiedImage, m_calibration.rightRMap(), m_calibration.rightDMap(), cv::INTER_LINEAR );
 
 
-            auto previewImage = stackImages( leftFrame, rightFrame );
+            auto previewImage = stackImages( leftRectifiedImage, rightRectifiedImage );
             drawTraceLines( previewImage, 20 );
 
             ret.setPreviewImage( previewImage );
@@ -463,7 +463,7 @@ StereoResult StereoProcessor::process( const CvImage &leftFrame, const CvImage &
                             pclPoint.y = point.y;
                             pclPoint.z = point.z;
 
-                            cv::Vec3b intensity = leftFrame.at<cv::Vec3b>(rows,cols); //BGR
+                            cv::Vec3b intensity = leftRectifiedImage.at<cv::Vec3b>(rows,cols); //BGR
                             uint32_t rgb = (static_cast<uint32_t>(intensity[2]) << 16 | static_cast<uint32_t>(intensity[1]) << 8 | static_cast<uint32_t>(intensity[0]));
                             pclPoint.rgb = *reinterpret_cast<float*>(&rgb);
                             pointCloud->push_back( pclPoint );

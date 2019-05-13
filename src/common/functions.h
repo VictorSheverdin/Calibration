@@ -12,13 +12,28 @@ CvImage colorizeDisparity( const cv::Mat &disparity );
 
 void checkVimbaStatus( VmbErrorType status, std::string message );
 
-template<typename FeatureT>
+template <typename FeatureT>
 void setVimbaFeature( AVT::VmbAPI::CameraPtr camera, const std::string &key, FeatureT value )
 {
     AVT::VmbAPI::FeaturePtr feature;
+
     checkVimbaStatus( camera->GetFeatureByName( key.data(), feature ),
         "Could not access " + key);
+
     checkVimbaStatus( feature->SetValue(value), "Could not set " + key );
 
 }
 
+template <typename FeatureT>
+void setVimbaFeature( AVT::VmbAPI::VimbaSystem &system, const std::string &key, FeatureT value )
+{
+    AVT::VmbAPI::FeaturePtr feature;
+
+    checkVimbaStatus( system.GetFeatureByName( key.data(), feature ),
+        "Could not access " + key);
+
+    checkVimbaStatus( feature->SetValue(value), "Could not set " + key );
+
+}
+
+void vimbaRunCommand( AVT::VmbAPI::VimbaSystem &system, const std::string &key );
