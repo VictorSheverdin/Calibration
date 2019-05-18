@@ -4,6 +4,11 @@
 
 class QVBoxLayout;
 
+class CalibrationWidgetBase;
+class MonocularCalibrationWidget;
+class StereoCalibrationWidget;
+
+class CalibrationDocumentBase;
 class MonocularCalibrationDocument;
 class StereoCalibrationDocument;
 class TrippleCalibrationDocument;
@@ -15,6 +20,10 @@ class DocumentBase : public QWidget
 
 public:
     explicit DocumentBase( QWidget *widget, QWidget* parent = nullptr );
+
+    CalibrationDocumentBase *toCalibrationDocument();
+    const CalibrationDocumentBase *toCalibrationDocument() const;
+    bool isCalibrationDocument() const;
 
     MonocularCalibrationDocument *toMonocularCalibrationDocument();
     const MonocularCalibrationDocument *toMonocularCalibrationDocument() const;
@@ -32,7 +41,8 @@ public:
     const ReportDocument *toReportDocument() const;
     bool isReportDocument() const;
 
-    void setWidget(QWidget *widget );
+    void setWidget( QWidget *widget );
+    QWidget *widget() const;
 
 protected:
     QVBoxLayout *m_layout;
@@ -44,31 +54,55 @@ private:
 
 };
 
-class MonocularCalibrationDocument : public DocumentBase
+class CalibrationDocumentBase : public DocumentBase
 {
     Q_OBJECT
 
 public:
-    explicit MonocularCalibrationDocument( const std::string &cameraIp, QWidget* parent = nullptr );
+    explicit CalibrationDocumentBase( QWidget* parent = nullptr );
+
+    CalibrationWidgetBase *widget() const;
+
+public slots:
+    void grabFrame();
+    void calculate();
+
+    void clearIcons();
 
 private:
-    void initialize( const std::string &cameraIp );
+    void initialize();
 
 };
 
-class StereoCalibrationDocument : public DocumentBase
+class MonocularCalibrationDocument : public CalibrationDocumentBase
 {
     Q_OBJECT
 
 public:
-    explicit StereoCalibrationDocument( const std::string &leftCameraIp, const std::string &rightCameraIp, QWidget* parent = nullptr );
+    explicit MonocularCalibrationDocument( const QString &cameraIp, QWidget* parent = nullptr );
+
+    MonocularCalibrationWidget *widget() const;
 
 private:
-    void initialize( const std::string &leftCameraIp, const std::string &rightCameraIp );
+    void initialize( const QString &cameraIp );
 
 };
 
-class TrippleCalibrationDocument : public DocumentBase
+class StereoCalibrationDocument : public CalibrationDocumentBase
+{
+    Q_OBJECT
+
+public:
+    explicit StereoCalibrationDocument( const QString &leftCameraIp, const QString &rightCameraIp, QWidget* parent = nullptr );
+
+    StereoCalibrationWidget *widget() const;
+
+private:
+    void initialize( const QString &leftCameraIp, const QString &rightCameraIp );
+
+};
+
+class TrippleCalibrationDocument : public CalibrationDocumentBase
 {
     Q_OBJECT
 

@@ -16,6 +16,21 @@ void DocumentBase::initialize()
     m_layout = new QVBoxLayout( this );
 }
 
+CalibrationDocumentBase *DocumentBase::toCalibrationDocument()
+{
+    return dynamic_cast< CalibrationDocumentBase * >( this );
+}
+
+const CalibrationDocumentBase *DocumentBase::toCalibrationDocument() const
+{
+    return dynamic_cast< const CalibrationDocumentBase * >( this );
+}
+
+bool DocumentBase::isCalibrationDocument() const
+{
+    return toCalibrationDocument();
+}
+
 MonocularCalibrationDocument *DocumentBase::toMonocularCalibrationDocument()
 {
     return dynamic_cast< MonocularCalibrationDocument * >( this );
@@ -83,34 +98,92 @@ void DocumentBase::setWidget( QWidget *widget )
     m_layout->addWidget( widget );
 }
 
-// MonocularCalibrationDocument
-MonocularCalibrationDocument::MonocularCalibrationDocument( const std::string &cameraIp, QWidget* parent )
+QWidget *DocumentBase::widget() const
+{
+    return m_widget;
+}
+
+// CalibrationDocumentBase
+CalibrationDocumentBase::CalibrationDocumentBase( QWidget* parent )
     : DocumentBase( parent )
+{
+    initialize();
+}
+
+void CalibrationDocumentBase::initialize()
+{
+}
+
+CalibrationWidgetBase *CalibrationDocumentBase::widget() const
+{
+    return dynamic_cast< CalibrationWidgetBase * >( m_widget );
+}
+
+void CalibrationDocumentBase::grabFrame()
+{
+    auto widget = this->widget();
+
+    if ( widget )
+        widget->grabFrame();
+
+}
+
+void CalibrationDocumentBase::calculate()
+{
+    auto widget = this->widget();
+
+    if ( widget )
+        widget->calculate();
+
+}
+
+void CalibrationDocumentBase::clearIcons()
+{
+    auto widget = this->widget();
+
+    if ( widget )
+        widget->clearIcons();
+
+}
+
+// MonocularCalibrationDocument
+MonocularCalibrationDocument::MonocularCalibrationDocument( const QString &cameraIp, QWidget* parent )
+    : CalibrationDocumentBase( parent )
 {
     initialize( cameraIp );
 }
 
-void MonocularCalibrationDocument::initialize( const std::string &cameraIp )
+void MonocularCalibrationDocument::initialize( const QString &cameraIp )
 {
     setWidget( new MonocularCalibrationWidget( cameraIp, this ) );
 
 }
 
+MonocularCalibrationWidget *MonocularCalibrationDocument::widget() const
+{
+    return dynamic_cast< MonocularCalibrationWidget * >( m_widget );
+}
+
 // StereoCalibrationDocument
-StereoCalibrationDocument::StereoCalibrationDocument( const std::string &leftCameraIp, const std::string &rightCameraIp, QWidget* parent )
-    : DocumentBase( parent )
+StereoCalibrationDocument::StereoCalibrationDocument( const QString &leftCameraIp, const QString &rightCameraIp, QWidget* parent )
+    : CalibrationDocumentBase( parent )
 {
     initialize( leftCameraIp, rightCameraIp );
 }
 
-void StereoCalibrationDocument::initialize( const std::string &leftCameraIp, const std::string &rightCameraIp )
+void StereoCalibrationDocument::initialize( const QString &leftCameraIp, const QString &rightCameraIp )
 {
     setWidget( new StereoCalibrationWidget( leftCameraIp, rightCameraIp, this ) );
 }
 
+StereoCalibrationWidget *StereoCalibrationDocument::widget() const
+{
+    return dynamic_cast< StereoCalibrationWidget * >( m_widget );
+}
+
 // StereoCalibrationDocument
 TrippleCalibrationDocument::TrippleCalibrationDocument( QWidget* parent )
-    : DocumentBase( parent )
+    : CalibrationDocumentBase( parent )
 {
     initialize();
 }

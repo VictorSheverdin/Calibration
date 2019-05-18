@@ -57,7 +57,7 @@ class MonocularCameraWidget : public CameraWidgetBase
     Q_OBJECT
 
 public:
-    MonocularCameraWidget( const std::string &cameraIp, QWidget* parent = nullptr );
+    MonocularCameraWidget( const QString &cameraIp, QWidget* parent = nullptr );
 
     const CvImage sourceImage() const;
     const CvImage previewImage() const;
@@ -90,7 +90,7 @@ class StereoCameraWidget : public CameraWidgetBase
     Q_OBJECT
 
 public:
-    StereoCameraWidget( const std::string &cameraIp, const std::string &rightCameraIp, QWidget* parent = nullptr );
+    StereoCameraWidget( const QString &cameraIp, const QString &rightCameraIp, QWidget* parent = nullptr );
 
     const CvImage leftSourceImage() const;
     const CvImage leftDisplayedImage() const;

@@ -93,15 +93,16 @@ void ImageDialog::initialize()
 {
     setWindowTitle( tr( "Image Viewer" ) );
 
-    m_imageWidget = new ImageWidget( this );
+    setWidget( new ImageWidget( this ) );
 
-    QVBoxLayout *layout = new QVBoxLayout( this );
+}
 
-    layout->addWidget( m_imageWidget );
-
+ImageWidget *ImageDialog::widget() const
+{
+    return dynamic_cast< ImageWidget * >( m_widget.data() );
 }
 
 void ImageDialog::setImage(const CvImage image)
 {
-    m_imageWidget->setImage( image );
+    widget()->setImage( image );
 }

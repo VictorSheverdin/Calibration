@@ -6,6 +6,8 @@
 #include <QTextDocument>
 #include <QPointer>
 #include <QGridLayout>
+#include <QDialog>
+#include <QDialogButtonBox>
 #include <QtXml/QDomDocument>
 #include <QtXml/QDomElement>
 

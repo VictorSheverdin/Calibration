@@ -49,7 +49,7 @@ class MonocularTaskWidget : public TaskWidgetBase
     Q_OBJECT
 
 public:
-    explicit MonocularTaskWidget( const std::string &cameraIp, QWidget* parent = nullptr );
+    explicit MonocularTaskWidget( const QString &cameraIp, QWidget* parent = nullptr );
 
     MonocularCameraWidget *cameraWidget() const;
 
@@ -59,7 +59,7 @@ public:
     bool isTemplateExist() const;
 
 private:
-    void initialize ( const std::string &cameraIp );
+    void initialize (const QString &cameraIp );
 
 };
 
@@ -69,7 +69,7 @@ class StereoTaskWidget : public TaskWidgetBase
     Q_OBJECT
 
 public:
-    explicit StereoTaskWidget( const std::string &leftCameraIp, const std::string &rightCameraIp, QWidget* parent = nullptr );
+    explicit StereoTaskWidget( const QString &leftCameraIp, const QString &rightCameraIp, QWidget* parent = nullptr );
 
     StereoCameraWidget *cameraWidget() const;
 
@@ -89,7 +89,7 @@ public slots:
     void setRightDisplayedImage( const CvImage image );
 
 private:
-    void initialize(const std::string &leftCameraIp, const std::string &rightCameraIp );
+    void initialize( const QString &leftCameraIp, const QString &rightCameraIp );
 
 };
 

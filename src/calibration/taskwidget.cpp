@@ -88,13 +88,13 @@ void TaskWidgetBase::updateParameters()
 }
 
 // MonocularTaskWidget
-MonocularTaskWidget::MonocularTaskWidget( const std::string &cameraIp, QWidget* parent )
+MonocularTaskWidget::MonocularTaskWidget( const QString &cameraIp, QWidget* parent )
     : TaskWidgetBase( parent )
 {
     initialize( cameraIp );
 }
 
-void MonocularTaskWidget::initialize(const std::string &cameraIp )
+void MonocularTaskWidget::initialize( const QString &cameraIp )
 {
     m_cameraWidget = new MonocularCameraWidget( cameraIp, this );
     m_layout->addWidget( m_cameraWidget );
@@ -123,13 +123,13 @@ bool MonocularTaskWidget::isTemplateExist() const
 }
 
 // StereoTaskWidget
-StereoTaskWidget::StereoTaskWidget( const std::string &leftCameraIp, const std::string &rightCameraIp, QWidget* parent )
+StereoTaskWidget::StereoTaskWidget( const QString &leftCameraIp, const QString &rightCameraIp, QWidget* parent )
     : TaskWidgetBase( parent )
 {
     initialize( leftCameraIp, rightCameraIp );
 }
 
-void StereoTaskWidget::initialize( const std::string &leftCameraIp, const std::string &rightCameraIp )
+void StereoTaskWidget::initialize( const QString &leftCameraIp, const QString &rightCameraIp )
 {
     m_cameraWidget = new StereoCameraWidget( leftCameraIp,  rightCameraIp, this );
     m_layout->addWidget( m_cameraWidget );

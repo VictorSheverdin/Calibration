@@ -12,6 +12,7 @@ class CalibrationWidgetBase;
 class DocumentArea;
 
 class DocumentBase;
+class CalibrationDocumentBase;
 class MonocularCalibrationDocument;
 class StereoCalibrationDocument;
 class TrippleCalibrationDocument;
@@ -22,17 +23,20 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit MainWindow( const std::string &cameraIp, QWidget *parent = nullptr );
-    explicit MainWindow( const std::string &leftCameraIp, const std::string &rightCameraIp, QWidget *parent = nullptr );
+    explicit MainWindow( QWidget *parent = nullptr );
+    explicit MainWindow( const QString &cameraIp, QWidget *parent = nullptr );
+    explicit MainWindow( const QString &leftCameraIp, const QString &rightCameraIp, QWidget *parent = nullptr );
 
     void addDocument( DocumentBase *document );
-    void addMonocularCalibrationDocument( const std::string &cameraIp );
-    void addStereoCalibrationDocument( const std::string &leftCameraIp, const std::string &rightCameraIp );
+    void addMonocularCalibrationDocument( const QString &cameraIp );
+    void addStereoCalibrationDocument( const QString &leftCameraIp, const QString &rightCameraIp );
 
+    CalibrationDocumentBase *currentCalibrationDocument() const;
     MonocularCalibrationDocument *currentMonocularCalibrationDocument() const;
     StereoCalibrationDocument *currentStereoCalibrationDocument() const;
     TrippleCalibrationDocument *currentTrippleCalibrationDocument() const;
     ReportDocument *currentReportDocument() const;
+
 
 public slots:
     void grabFrame();
@@ -42,15 +46,17 @@ public slots:
 
     void clearIcons();
 
-protected:
-    QPointer<CalibrationWidgetBase> m_widget;
+    void addMonocularCalibrationDialog();
+    void addStereoCalibrationDialog();
 
+protected:
     QPointer< QMenuBar > m_menuBar;
     QPointer< QStatusBar > m_statusBar;
 
     QPointer< DocumentArea > m_documentArea;
 
-    QPointer< QAction > m_newAction;
+    QPointer< QAction > m_newMonocularDocumentAction;
+    QPointer< QAction > m_newStereoDocumentAction;
     QPointer< QAction > m_openAction;
     QPointer< QAction > m_saveAction;
 
@@ -59,6 +65,7 @@ protected:
     QPointer< QAction > m_grabAction;
     QPointer< QAction > m_autoGrabAction;
     QPointer< QAction > m_calculateAction;
+    QPointer< QAction > m_clearIconsAction;
 
     QPointer< QAction > m_settingsAction;
 
@@ -81,8 +88,8 @@ protected:
     template <class T> T* getCurrentDocument() const;
 
 private:
-    void initialize(const std::string &cameraIp );
-    void initialize(const std::string &leftCameraIp, const std::string &rightCameraIp );
+    void initialize( const QString &cameraIp );
+    void initialize( const QString &leftCameraIp, const QString &rightCameraIp );
     void initialize();
 
 };

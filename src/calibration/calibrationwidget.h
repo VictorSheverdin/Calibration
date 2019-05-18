@@ -56,7 +56,7 @@ class MonocularCalibrationWidget : public CalibrationWidgetBase
     Q_OBJECT
 
 public:
-    MonocularCalibrationWidget( const std::string &cameraIp, QWidget *parent = nullptr );
+    MonocularCalibrationWidget( const QString &cameraIp, QWidget *parent = nullptr );
 
     MonocularTaskWidget *taskWidget() const;
 
@@ -71,7 +71,7 @@ protected:
     QPointer< MonocularReportDialog > m_reportDialog;
 
 private:
-    void initialize( const std::string &cameraIp );
+    void initialize( const QString &cameraIp );
 
 };
 
@@ -80,7 +80,7 @@ class StereoCalibrationWidget : public CalibrationWidgetBase
     Q_OBJECT
 
 public:
-    StereoCalibrationWidget( const std::string &leftCameraIp, const std::string &rightCameraIp, QWidget *parent = nullptr );
+    StereoCalibrationWidget( const QString &leftCameraIp, const QString &rightCameraIp, QWidget *parent = nullptr );
 
     StereoTaskWidget *taskWidget() const;
 
@@ -98,6 +98,6 @@ protected:
     QPointer< StereoReportDialog > m_reportDialog;
 
 private:
-    void initialize( const std::string &leftCameraIp, const std::string &rightCameraIp );
+    void initialize( const QString &leftCameraIp, const QString &rightCameraIp );
 
 };

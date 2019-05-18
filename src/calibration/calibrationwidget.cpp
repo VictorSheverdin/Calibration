@@ -145,13 +145,13 @@ MonocularCalibrationData CalibrationWidgetBase::calcMonocularCalibration(  const
 }
 
 // MonocularCalibrationWidget
-MonocularCalibrationWidget::MonocularCalibrationWidget( const std::string &cameraIp, QWidget *parent )
+MonocularCalibrationWidget::MonocularCalibrationWidget( const QString &cameraIp, QWidget *parent )
     : CalibrationWidgetBase( parent )
 {
     initialize( cameraIp );
 }
 
-void MonocularCalibrationWidget::initialize( const std::string &cameraIp )
+void MonocularCalibrationWidget::initialize( const QString &cameraIp )
 {
     m_taskWidget = new MonocularTaskWidget( cameraIp, this );
     m_iconsList = new IconsWidget( this );
@@ -175,9 +175,8 @@ MonocularTaskWidget *MonocularCalibrationWidget::taskWidget() const
 
 void MonocularCalibrationWidget::showIcon( IconBase *icon )
 {
-    m_iconViewDialog->show();
-    m_iconViewDialog->activateWindow();
     m_iconViewDialog->setImage( icon->previewImage() );
+    m_iconViewDialog->exec();
 
 }
 
@@ -217,13 +216,13 @@ void MonocularCalibrationWidget::calculate()
 }
 
 // StereoCalibrationWidget
-StereoCalibrationWidget::StereoCalibrationWidget(const std::string &leftCameraIp, const std::string &rightCameraIp, QWidget *parent )
+StereoCalibrationWidget::StereoCalibrationWidget( const QString &leftCameraIp, const QString &rightCameraIp, QWidget *parent )
     : CalibrationWidgetBase( parent )
 {
     initialize( leftCameraIp, rightCameraIp );
 }
 
-void StereoCalibrationWidget::initialize( const std::string &leftCameraIp, const std::string &rightCameraIp )
+void StereoCalibrationWidget::initialize( const QString &leftCameraIp, const QString &rightCameraIp )
 {
     m_taskWidget = new StereoTaskWidget( leftCameraIp, rightCameraIp, this );
     m_iconsList = new IconsWidget( this );

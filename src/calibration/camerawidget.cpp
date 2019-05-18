@@ -109,8 +109,8 @@ bool CameraWidgetBase::fastCheck() const
 }
 
 // MonocularCameraWidget
-MonocularCameraWidget::MonocularCameraWidget( const std::string &cameraIp, QWidget* parent )
-    : CameraWidgetBase( parent ), m_camera( cameraIp )
+MonocularCameraWidget::MonocularCameraWidget( const QString &cameraIp, QWidget* parent )
+    : CameraWidgetBase( parent ), m_camera( cameraIp.toStdString() )
 {
     initialize();
 }
@@ -193,8 +193,8 @@ void MonocularCameraWidget::timerEvent( QTimerEvent * )
 }
 
 // StereoCameraWidget
-StereoCameraWidget::StereoCameraWidget(const std::string &leftCameraIp, const std::string &rightCameraIp, QWidget* parent )
-    : CameraWidgetBase( parent ), m_leftCamera( leftCameraIp ), m_rightCamera( rightCameraIp )
+StereoCameraWidget::StereoCameraWidget( const QString &leftCameraIp, const QString &rightCameraIp, QWidget* parent )
+    : CameraWidgetBase( parent ), m_leftCamera( leftCameraIp.toStdString() ), m_rightCamera( rightCameraIp.toStdString() )
 {
     initialize();
 }

@@ -64,6 +64,34 @@ DialogBase::DialogBase( QWidget *parent )
     initialize();
 }
 
+DialogBase::DialogBase( const QDialogButtonBox::StandardButtons buttons, QWidget *parent )
+    : QDialog( parent )
+{
+    initialize( buttons );
+}
+
 void DialogBase::initialize()
 {
+    m_layout = new QVBoxLayout( this );
 }
+
+void DialogBase::initialize( const QDialogButtonBox::StandardButtons buttons )
+{
+    initialize();
+
+    m_buttons = new QDialogButtonBox( buttons, Qt::Horizontal, this );
+    m_layout->addWidget( m_buttons );
+
+    connect( m_buttons, &QDialogButtonBox::accepted, this, &DialogBase::accept );
+    connect( m_buttons, &QDialogButtonBox::rejected, this, &DialogBase::reject );
+
+}
+
+void DialogBase::setWidget( QWidget *widget )
+{
+    if ( !m_widget && widget ) {
+        m_widget = widget;
+        m_layout->insertWidget( 0, widget );
+    }
+}
+
