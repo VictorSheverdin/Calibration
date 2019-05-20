@@ -49,6 +49,8 @@ set ( CALIBRATION_SOURCES
     "src/calibration/documentarea.cpp"
     "src/calibration/documentwidget.h"
     "src/calibration/documentwidget.cpp"
+    "src/calibration/fileslistwidget.h"
+    "src/calibration/fileslistwidget.cpp"
     "src/calibration/main.cpp"
 )
 set ( DISPARITY_SOURCES

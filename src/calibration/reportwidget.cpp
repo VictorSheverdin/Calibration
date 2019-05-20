@@ -214,7 +214,7 @@ void StereoReportWidget::report(const StereoCalibrationData &calibration )
             auto image1 = resizeTo( calibration.leftCameraResults().result( i ).processedView(), m_reportFrameSize );
             auto image2 = resizeTo( calibration.rightCameraResults().result( i ).processedView(), m_reportFrameSize );
 
-            auto stitchedImage = StereoCameraWidget::makeStraightPreview( image1, image2 );
+            auto stitchedImage = StereoIcon::makeStraightPreview( image1, image2 );
 
             if ( !stitchedImage.empty() ) {
                 addImage( stitchedImage );
@@ -303,7 +303,7 @@ void StereoReportWidget::report(const StereoCalibrationData &calibration )
                 auto image1 = resizeTo( leftRectifiedImage, m_reportFrameSize );
                 auto image2 = resizeTo( rightRectifiedImage, m_reportFrameSize );
 
-                auto stitchedImage = StereoCameraWidget::makeStraightPreview( image1, image2 );
+                auto stitchedImage = StereoIcon::makeStraightPreview( image1, image2 );
 
                 if ( !stitchedImage.empty() ) {
                     drawTraceLines( stitchedImage, 15 );

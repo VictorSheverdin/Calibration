@@ -13,8 +13,9 @@ class DocumentArea;
 
 class DocumentBase;
 class CalibrationDocumentBase;
-class MonocularCalibrationDocument;
-class StereoCalibrationDocument;
+class CameraCalibrationDocumentBase;
+class MonocularCameraCalibrationDocument;
+class StereoCameraCalibrationDocument;
 class TrippleCalibrationDocument;
 class ReportDocument;
 
@@ -28,17 +29,24 @@ public:
     explicit MainWindow( const QString &leftCameraIp, const QString &rightCameraIp, QWidget *parent = nullptr );
 
     void addDocument( DocumentBase *document );
-    void addMonocularCalibrationDocument( const QString &cameraIp );
-    void addStereoCalibrationDocument( const QString &leftCameraIp, const QString &rightCameraIp );
+    void addMonocularCameraCalibrationDocument( const QString &cameraIp );
+    void addStereoCameraCalibrationDocument( const QString &leftCameraIp, const QString &rightCameraIp );
+
+    void addMonocularCalibrationDocument();
+    void addStereoCalibrationDocument();
 
     CalibrationDocumentBase *currentCalibrationDocument() const;
-    MonocularCalibrationDocument *currentMonocularCalibrationDocument() const;
-    StereoCalibrationDocument *currentStereoCalibrationDocument() const;
+    CameraCalibrationDocumentBase *currentCameraCalibrationDocument() const;
+    MonocularCameraCalibrationDocument *currentMonocularCalibrationDocument() const;
+    StereoCameraCalibrationDocument *currentStereoCalibrationDocument() const;
     TrippleCalibrationDocument *currentTrippleCalibrationDocument() const;
     ReportDocument *currentReportDocument() const;
 
 
 public slots:
+    void importDialog();
+    void exportDialog();
+
     void grabFrame();
     void calculate();
 
@@ -49,6 +57,9 @@ public slots:
     void addMonocularCalibrationDialog();
     void addStereoCalibrationDialog();
 
+    void addMonocularCameraCalibrationDialog();
+    void addStereoCameraCalibrationDialog();
+
 protected:
     QPointer< QMenuBar > m_menuBar;
     QPointer< QStatusBar > m_statusBar;
@@ -57,9 +68,12 @@ protected:
 
     QPointer< QAction > m_newMonocularDocumentAction;
     QPointer< QAction > m_newStereoDocumentAction;
+    QPointer< QAction > m_newMonocularCameraDocumentAction;
+    QPointer< QAction > m_newStereoCameraDocumentAction;
     QPointer< QAction > m_openAction;
     QPointer< QAction > m_saveAction;
 
+    QPointer< QAction > m_importAction;
     QPointer< QAction > m_exportAction;
 
     QPointer< QAction > m_grabAction;

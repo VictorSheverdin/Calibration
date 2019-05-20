@@ -100,9 +100,6 @@ public:
     const CvImage rightDisplayedImage() const;
     const std::vector<cv::Point2f> &rightPreviewPoints() const;
 
-    static CvImage makeOverlappedPreview( const CvImage &leftPreviewImage, const CvImage &rightPreviewImage );
-    static CvImage makeStraightPreview( const CvImage &leftPreviewImage, const CvImage &rightPreviewImage );
-
     bool isTemplateExist() const;
 
 public slots:

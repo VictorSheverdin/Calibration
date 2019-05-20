@@ -10,6 +10,7 @@
 #include <QDialogButtonBox>
 #include <QtXml/QDomDocument>
 #include <QtXml/QDomElement>
+#include <QModelIndex>
 
 #include <time.h>
 
@@ -17,3 +18,5 @@
 #include <opencv2/ximgproc.hpp>
 
 #include <VimbaCPP/Include/VimbaCPP.h>
+
+#include <set>

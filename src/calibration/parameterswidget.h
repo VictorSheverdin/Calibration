@@ -9,6 +9,8 @@ class SizeSpinBox;
 class QCheckBox;
 class RescaleSpinBox;
 
+class QHBoxLayout;
+
 class TypeComboBox : public QComboBox
 {
     Q_OBJECT
@@ -38,6 +40,29 @@ public:
     const cv::Size templateCount() const;
     double templateSize() const;
 
+signals:
+    void parametersChanges();
+
+protected:
+    QPointer<QHBoxLayout> m_layout;
+
+    QPointer<TypeComboBox> m_typeCombo;
+    QPointer<CountSpinBox> m_xCountSpinBox;
+    QPointer<CountSpinBox> m_yCountSpinBox;
+    QPointer<SizeSpinBox> m_sizeSpinBox;
+
+private:
+    void initialize();
+
+};
+
+class CameraParametersWidget : public ParametersWidget
+{
+    Q_OBJECT
+
+public:
+    explicit CameraParametersWidget( QWidget* parent = nullptr );
+
     bool adaptiveThreshold() const;
     bool normalizeImage() const;
     bool filterQuads() const;
@@ -47,15 +72,7 @@ public:
 
     unsigned int rescaleSize() const;
 
-signals:
-    void parametersChanges();
-
 protected:
-    QPointer<TypeComboBox> m_typeCombo;
-    QPointer<CountSpinBox> m_xCountSpinBox;
-    QPointer<CountSpinBox> m_yCountSpinBox;
-    QPointer<SizeSpinBox> m_sizeSpinBox;
-
     QPointer<QCheckBox> m_adaptiveThresholdCheckBox;
     QPointer<QCheckBox> m_normalizeImageCheckBox;
     QPointer<QCheckBox> m_filterQuadsCheckBox;

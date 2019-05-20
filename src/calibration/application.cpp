@@ -32,7 +32,7 @@ void Application::initialize( int &, char ** )
 
     setWindowIcon( QIcon( ":/resources/images/checkerboard.ico" ) );
 
-    m_mainWindow = new MainWindow( "192.168.80.82"/*, "192.168.80.66"*/ );
+    m_mainWindow = new MainWindow( /*"192.168.80.82", "192.168.80.66"*/ );
 
     m_mainWindow->showMaximized();
 

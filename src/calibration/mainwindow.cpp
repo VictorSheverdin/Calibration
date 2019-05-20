@@ -29,7 +29,7 @@ void MainWindow::initialize( const QString &cameraIp )
 {
     initialize();
 
-    addMonocularCalibrationDocument( cameraIp );
+    addMonocularCameraCalibrationDocument( cameraIp );
 
 }
 
@@ -37,7 +37,7 @@ void MainWindow::initialize( const QString &leftCameraIp, const QString &rightCa
 {
     initialize();
 
-    addStereoCalibrationDocument( leftCameraIp, rightCameraIp );
+    addStereoCameraCalibrationDocument( leftCameraIp, rightCameraIp );
 
 }
 
@@ -59,14 +59,24 @@ void MainWindow::addDocument( DocumentBase *document )
     m_documentArea->addDocument( document );
 }
 
-void MainWindow::addMonocularCalibrationDocument(const QString &cameraIp )
+void MainWindow::addMonocularCameraCalibrationDocument(const QString &cameraIp )
 {
-    addDocument( new MonocularCalibrationDocument( cameraIp, this ) );
+    addDocument( new MonocularCameraCalibrationDocument( cameraIp, this ) );
 }
 
-void MainWindow::addStereoCalibrationDocument( const QString &leftCameraIp, const QString &rightCameraIp )
+void MainWindow::addStereoCameraCalibrationDocument( const QString &leftCameraIp, const QString &rightCameraIp )
 {
-    addDocument( new StereoCalibrationDocument( leftCameraIp, rightCameraIp, this ) );
+    addDocument( new StereoCameraCalibrationDocument( leftCameraIp, rightCameraIp, this ) );
+}
+
+void MainWindow::addMonocularCalibrationDocument()
+{
+    addDocument( new MonocularCalibrationDocument( this ) );
+}
+
+void MainWindow::addStereoCalibrationDocument()
+{
+    addDocument( new StereoCalibrationDocument( this ) );
 }
 
 CalibrationDocumentBase *MainWindow::currentCalibrationDocument() const
@@ -74,14 +84,19 @@ CalibrationDocumentBase *MainWindow::currentCalibrationDocument() const
     return getCurrentDocument< CalibrationDocumentBase >();
 }
 
-MonocularCalibrationDocument *MainWindow::currentMonocularCalibrationDocument() const
+CameraCalibrationDocumentBase *MainWindow::currentCameraCalibrationDocument() const
 {
-    return getCurrentDocument< MonocularCalibrationDocument >();
+    return getCurrentDocument< CameraCalibrationDocumentBase >();
 }
 
-StereoCalibrationDocument *MainWindow::currentStereoCalibrationDocument() const
+MonocularCameraCalibrationDocument *MainWindow::currentMonocularCalibrationDocument() const
 {
-    return getCurrentDocument< StereoCalibrationDocument >();
+    return getCurrentDocument< MonocularCameraCalibrationDocument >();
+}
+
+StereoCameraCalibrationDocument *MainWindow::currentStereoCalibrationDocument() const
+{
+    return getCurrentDocument< StereoCameraCalibrationDocument >();
 }
 
 TrippleCalibrationDocument *MainWindow::currentTrippleCalibrationDocument() const
@@ -105,10 +120,13 @@ void MainWindow::setupActions()
 {
     m_newMonocularDocumentAction = new QAction( QIcon( ":/resources/images/new.ico" ), tr( "New monocular calibration" ), this );
     m_newStereoDocumentAction = new QAction( QIcon( ":/resources/images/new.ico" ), tr( "New stereo calibration" ), this );
+    m_newMonocularCameraDocumentAction = new QAction( QIcon( ":/resources/images/new.ico" ), tr( "New monocular camera calibration" ), this );
+    m_newStereoCameraDocumentAction = new QAction( QIcon( ":/resources/images/new.ico" ), tr( "New stereo camera calibration" ), this );
     m_openAction = new QAction( QIcon( ":/resources/images/open.ico" ), tr( "Open" ), this );
     m_saveAction = new QAction( QIcon( ":/resources/images/save.ico" ), tr( "Save" ), this );
 
-    m_exportAction = new QAction( QIcon( ":/resources/images/export.ico" ), tr( "Export" ), this );
+    m_importAction = new QAction( QIcon( ":/resources/images/export.ico" ), tr( "Import" ), this );
+    m_exportAction = new QAction( QIcon( ":/resources/images/import.ico" ), tr( "Export" ), this );
 
     m_grabAction = new QAction( QIcon( ":/resources/images/grab.ico" ), tr( "Grab" ), this );
 
@@ -127,6 +145,12 @@ void MainWindow::setupActions()
     connect( m_newMonocularDocumentAction, &QAction::triggered, this, &MainWindow::addMonocularCalibrationDialog );
     connect( m_newStereoDocumentAction, &QAction::triggered, this, &MainWindow::addStereoCalibrationDialog );
 
+    connect( m_newMonocularCameraDocumentAction, &QAction::triggered, this, &MainWindow::addMonocularCameraCalibrationDialog );
+    connect( m_newStereoCameraDocumentAction, &QAction::triggered, this, &MainWindow::addStereoCameraCalibrationDialog );
+
+    connect( m_importAction, &QAction::triggered, this, &MainWindow::importDialog );
+    connect( m_exportAction, &QAction::triggered, this, &MainWindow::exportDialog );
+
     connect( m_grabAction, &QAction::triggered, this, &MainWindow::grabFrame );
     connect( m_calculateAction, &QAction::triggered, this, &MainWindow::calculate );
     connect( m_clearIconsAction, &QAction::triggered, this, &MainWindow::clearIcons );
@@ -143,9 +167,13 @@ void MainWindow::setupMenus()
     fileMenu->addAction( m_newMonocularDocumentAction );
     fileMenu->addAction( m_newStereoDocumentAction );
     fileMenu->addSeparator();
+    fileMenu->addAction( m_newMonocularCameraDocumentAction );
+    fileMenu->addAction( m_newStereoCameraDocumentAction );
+    fileMenu->addSeparator();
     fileMenu->addAction( m_openAction );
     fileMenu->addAction( m_saveAction );
     fileMenu->addSeparator();
+    fileMenu->addAction( m_importAction );
     fileMenu->addAction( m_exportAction );
     fileMenu->addSeparator();
     fileMenu->addAction( m_exitAction );
@@ -176,6 +204,9 @@ void MainWindow::setupToolBars()
     m_toolBar->addAction( m_newMonocularDocumentAction );
     m_toolBar->addAction( m_newStereoDocumentAction );
     m_toolBar->addSeparator();
+    m_toolBar->addAction( m_newMonocularCameraDocumentAction );
+    m_toolBar->addAction( m_newStereoCameraDocumentAction );
+    m_toolBar->addSeparator();
     m_toolBar->addAction( m_openAction );
     m_toolBar->addAction( m_saveAction );
     m_toolBar->addSeparator();
@@ -199,9 +230,27 @@ void MainWindow::timerEvent( QTimerEvent * )
 
 }
 
-void MainWindow::grabFrame()
+void MainWindow::importDialog()
 {
     auto doc = currentCalibrationDocument();
+
+    if (doc)
+        doc->importDialog();
+
+}
+
+void MainWindow::exportDialog()
+{
+    auto doc = currentCalibrationDocument();
+
+    if (doc)
+        doc->exportDialog();
+
+}
+
+void MainWindow::grabFrame()
+{
+    auto doc = currentCameraCalibrationDocument();
 
     if (doc)
         doc->grabFrame();
@@ -229,17 +278,27 @@ void MainWindow::clearIcons()
 
 void MainWindow::addMonocularCalibrationDialog()
 {
-    CameraIPDialog dialog( this );
-
-    if (dialog.exec() == DialogBase::Accepted)
-        addMonocularCalibrationDocument( dialog.ip() );
+    addMonocularCalibrationDocument();
 }
 
 void MainWindow::addStereoCalibrationDialog()
 {
+    addStereoCalibrationDocument();
+}
+
+void MainWindow::addMonocularCameraCalibrationDialog()
+{
+    CameraIPDialog dialog( this );
+
+    if ( dialog.exec() == DialogBase::Accepted )
+        addMonocularCameraCalibrationDocument( dialog.ip() );
+}
+
+void MainWindow::addStereoCameraCalibrationDialog()
+{
     StereoIPDialog dialog( this );
 
-    if (dialog.exec() == DialogBase::Accepted)
-        addStereoCalibrationDocument( dialog.leftIp(), dialog.rightIp() );
+    if ( dialog.exec() == DialogBase::Accepted )
+        addStereoCameraCalibrationDocument( dialog.leftIp(), dialog.rightIp() );
 
 }

@@ -5,12 +5,15 @@
 class QVBoxLayout;
 
 class CalibrationWidgetBase;
-class MonocularCalibrationWidget;
-class StereoCalibrationWidget;
+class MonocularCameraCalibrationWidget;
+class StereoCameraCalibrationWidget;
 
 class CalibrationDocumentBase;
-class MonocularCalibrationDocument;
-class StereoCalibrationDocument;
+class MonocularCalibrationWidget;
+class StereoCalibrationWidget;
+class CameraCalibrationWidgetBase;
+class MonocularCameraCalibrationDocument;
+class StereoCameraCalibrationDocument;
 class TrippleCalibrationDocument;
 class ReportDocument;
 
@@ -25,12 +28,12 @@ public:
     const CalibrationDocumentBase *toCalibrationDocument() const;
     bool isCalibrationDocument() const;
 
-    MonocularCalibrationDocument *toMonocularCalibrationDocument();
-    const MonocularCalibrationDocument *toMonocularCalibrationDocument() const;
+    MonocularCameraCalibrationDocument *toMonocularCalibrationDocument();
+    const MonocularCameraCalibrationDocument *toMonocularCalibrationDocument() const;
     bool isMonocularCalibrationDocument() const;
 
-    StereoCalibrationDocument *toStereoCalibrationDocument();
-    const StereoCalibrationDocument *toStereoCalibrationDocument() const;
+    StereoCameraCalibrationDocument *toStereoCalibrationDocument();
+    const StereoCameraCalibrationDocument *toStereoCalibrationDocument() const;
     bool isStereoCalibrationDocument() const;
 
     TrippleCalibrationDocument *toTrippleCalibrationDocument();
@@ -64,6 +67,28 @@ public:
     CalibrationWidgetBase *widget() const;
 
 public slots:
+    void importDialog();
+    void exportDialog();
+
+    void calculate();
+
+    void clearIcons();
+
+private:
+    void initialize();
+
+};
+
+class CameraCalibrationDocumentBase : public DocumentBase
+{
+    Q_OBJECT
+
+public:
+    explicit CameraCalibrationDocumentBase( QWidget* parent = nullptr );
+
+    CameraCalibrationWidgetBase *widget() const;
+
+public slots:
     void grabFrame();
     void calculate();
 
@@ -79,12 +104,12 @@ class MonocularCalibrationDocument : public CalibrationDocumentBase
     Q_OBJECT
 
 public:
-    explicit MonocularCalibrationDocument( const QString &cameraIp, QWidget* parent = nullptr );
+    explicit MonocularCalibrationDocument( QWidget* parent = nullptr );
 
     MonocularCalibrationWidget *widget() const;
 
 private:
-    void initialize( const QString &cameraIp );
+    void initialize();
 
 };
 
@@ -93,16 +118,44 @@ class StereoCalibrationDocument : public CalibrationDocumentBase
     Q_OBJECT
 
 public:
-    explicit StereoCalibrationDocument( const QString &leftCameraIp, const QString &rightCameraIp, QWidget* parent = nullptr );
+    explicit StereoCalibrationDocument( QWidget* parent = nullptr );
 
     StereoCalibrationWidget *widget() const;
+
+private:
+    void initialize();
+
+};
+
+class MonocularCameraCalibrationDocument : public CameraCalibrationDocumentBase
+{
+    Q_OBJECT
+
+public:
+    explicit MonocularCameraCalibrationDocument( const QString &cameraIp, QWidget* parent = nullptr );
+
+    MonocularCameraCalibrationWidget *widget() const;
+
+private:
+    void initialize( const QString &cameraIp );
+
+};
+
+class StereoCameraCalibrationDocument : public CameraCalibrationDocumentBase
+{
+    Q_OBJECT
+
+public:
+    explicit StereoCameraCalibrationDocument( const QString &leftCameraIp, const QString &rightCameraIp, QWidget* parent = nullptr );
+
+    StereoCameraCalibrationWidget *widget() const;
 
 private:
     void initialize( const QString &leftCameraIp, const QString &rightCameraIp );
 
 };
 
-class TrippleCalibrationDocument : public CalibrationDocumentBase
+class TrippleCalibrationDocument : public CameraCalibrationDocumentBase
 {
     Q_OBJECT
 

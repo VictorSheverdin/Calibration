@@ -2,6 +2,7 @@
 
 #include "iconswidget.h"
 #include "src/common/defs.h"
+#include "src/common/functions.h"
 
 // IconBase
 IconBase::IconBase( const CvImage image, const int number )
@@ -83,10 +84,10 @@ std::vector< cv::Point2f > MonocularIcon::previewPoints() const
 }
 
 // StereoIcon
-StereoIcon::StereoIcon( const CvImage previewImage, const CvImage straightPreviewImage, const CvImage leftSourceImage, const CvImage rightSourceImage, const int number )
-    : IconBase( previewImage, number )
+StereoIcon::StereoIcon( const CvImage leftPreviewImage, const CvImage rightPreviewImage, const CvImage leftSourceImage, const CvImage rightSourceImage, const int number )
+    : IconBase( makeOverlappedPreview( leftPreviewImage, rightPreviewImage ), number )
 {
-    setStraightPreview( straightPreviewImage );
+    setStraightPreview( makeStraightPreview( leftPreviewImage, rightPreviewImage ) );
     setLeftSourceImage( leftSourceImage );
     setRightSourceImage( rightSourceImage );
 
@@ -145,6 +146,16 @@ void StereoIcon::setRightPreviewPoints( std::vector< cv::Point2f > &points )
 std::vector< cv::Point2f > StereoIcon::rightPreviewPoints() const
 {
     return m_previewRightPoints;
+}
+
+CvImage StereoIcon::makeOverlappedPreview( const CvImage &leftPreviewImage, const CvImage &rightPreviewImage )
+{
+    return stackImages( leftPreviewImage, rightPreviewImage, 0.5 );
+}
+
+CvImage StereoIcon::makeStraightPreview( const CvImage &leftPreviewImage, const CvImage &rightPreviewImage )
+{
+    return stackImages( leftPreviewImage, rightPreviewImage, 1 );
 }
 
 // IconsWidget

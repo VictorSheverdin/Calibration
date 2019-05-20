@@ -11,14 +11,14 @@
 
 class QVBoxLayout;
 
-class ParametersWidget;
+class CameraParametersWidget;
 
-class TaskWidgetBase : public QWidget
+class GrabWidgetBase : public QWidget
 {
     Q_OBJECT
 
 public:
-    explicit TaskWidgetBase( QWidget* parent = nullptr );
+    explicit GrabWidgetBase( QWidget* parent = nullptr );
 
     TemplateProcessor::Type templateType() const;
     const cv::Size &templateCount() const;
@@ -36,20 +36,20 @@ protected slots:
 
 protected:
     QPointer<QVBoxLayout> m_layout;
-    QPointer<ParametersWidget> m_parametersWidget;
-    QPointer<CameraWidgetBase> m_cameraWidget;
+    QPointer< CameraParametersWidget > m_parametersWidget;
+    QPointer< CameraWidgetBase > m_cameraWidget;
 
 private:
     void initialize();
 
 };
 
-class MonocularTaskWidget : public TaskWidgetBase
+class MonocularGrabWidget : public GrabWidgetBase
 {
     Q_OBJECT
 
 public:
-    explicit MonocularTaskWidget( const QString &cameraIp, QWidget* parent = nullptr );
+    explicit MonocularGrabWidget( const QString &cameraIp, QWidget* parent = nullptr );
 
     MonocularCameraWidget *cameraWidget() const;
 
@@ -64,12 +64,12 @@ private:
 };
 
 
-class StereoTaskWidget : public TaskWidgetBase
+class StereoGrabWidget : public GrabWidgetBase
 {
     Q_OBJECT
 
 public:
-    explicit StereoTaskWidget( const QString &leftCameraIp, const QString &rightCameraIp, QWidget* parent = nullptr );
+    explicit StereoGrabWidget( const QString &leftCameraIp, const QString &rightCameraIp, QWidget* parent = nullptr );
 
     StereoCameraWidget *cameraWidget() const;
 

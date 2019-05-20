@@ -264,16 +264,6 @@ void StereoCameraWidget::setRightPreviewPoints(const std::vector<cv::Point2f> &p
     m_rightCameraWidget->setPreviewPoints( points );
 }
 
-CvImage StereoCameraWidget::makeOverlappedPreview( const CvImage &leftPreviewImage, const CvImage &rightPreviewImage )
-{
-    return stackImages( leftPreviewImage, rightPreviewImage, 0.5 );
-}
-
-CvImage StereoCameraWidget::makeStraightPreview( const CvImage &leftPreviewImage, const CvImage &rightPreviewImage )
-{
-    return stackImages( leftPreviewImage, rightPreviewImage, 1 );
-}
-
 bool StereoCameraWidget::isTemplateExist() const
 {
     return m_leftCameraWidget->isTemplateExist() || m_rightCameraWidget->isTemplateExist();

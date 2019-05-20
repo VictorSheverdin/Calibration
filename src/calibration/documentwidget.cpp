@@ -31,14 +31,14 @@ bool DocumentBase::isCalibrationDocument() const
     return toCalibrationDocument();
 }
 
-MonocularCalibrationDocument *DocumentBase::toMonocularCalibrationDocument()
+MonocularCameraCalibrationDocument *DocumentBase::toMonocularCalibrationDocument()
 {
-    return dynamic_cast< MonocularCalibrationDocument * >( this );
+    return dynamic_cast< MonocularCameraCalibrationDocument * >( this );
 }
 
-const MonocularCalibrationDocument *DocumentBase::toMonocularCalibrationDocument() const
+const MonocularCameraCalibrationDocument *DocumentBase::toMonocularCalibrationDocument() const
 {
-    return dynamic_cast< const MonocularCalibrationDocument * >( this );
+    return dynamic_cast< const MonocularCameraCalibrationDocument * >( this );
 }
 
 bool DocumentBase::isMonocularCalibrationDocument() const
@@ -46,14 +46,14 @@ bool DocumentBase::isMonocularCalibrationDocument() const
     return toMonocularCalibrationDocument();
 }
 
-StereoCalibrationDocument *DocumentBase::toStereoCalibrationDocument()
+StereoCameraCalibrationDocument *DocumentBase::toStereoCalibrationDocument()
 {
-    return dynamic_cast< StereoCalibrationDocument * >( this );
+    return dynamic_cast< StereoCameraCalibrationDocument * >( this );
 }
 
-const StereoCalibrationDocument *DocumentBase::toStereoCalibrationDocument() const
+const StereoCameraCalibrationDocument *DocumentBase::toStereoCalibrationDocument() const
 {
-    return dynamic_cast< const StereoCalibrationDocument * >( this );
+    return dynamic_cast< const StereoCameraCalibrationDocument * >( this );
 }
 
 bool DocumentBase::isStereoCalibrationDocument() const
@@ -119,12 +119,21 @@ CalibrationWidgetBase *CalibrationDocumentBase::widget() const
     return dynamic_cast< CalibrationWidgetBase * >( m_widget );
 }
 
-void CalibrationDocumentBase::grabFrame()
+void CalibrationDocumentBase::importDialog()
 {
     auto widget = this->widget();
 
     if ( widget )
-        widget->grabFrame();
+        widget->importDialog();
+
+}
+
+void CalibrationDocumentBase::exportDialog()
+{
+    auto widget = this->widget();
+
+    if ( widget )
+        widget->exportDialog();
 
 }
 
@@ -146,17 +155,59 @@ void CalibrationDocumentBase::clearIcons()
 
 }
 
-// MonocularCalibrationDocument
-MonocularCalibrationDocument::MonocularCalibrationDocument( const QString &cameraIp, QWidget* parent )
-    : CalibrationDocumentBase( parent )
+// CameraCalibrationDocumentBase
+CameraCalibrationDocumentBase::CameraCalibrationDocumentBase( QWidget* parent )
+    : DocumentBase( parent )
 {
-    initialize( cameraIp );
+    initialize();
 }
 
-void MonocularCalibrationDocument::initialize( const QString &cameraIp )
+void CameraCalibrationDocumentBase::initialize()
 {
-    setWidget( new MonocularCalibrationWidget( cameraIp, this ) );
+}
 
+CameraCalibrationWidgetBase *CameraCalibrationDocumentBase::widget() const
+{
+    return dynamic_cast< CameraCalibrationWidgetBase * >( m_widget );
+}
+
+void CameraCalibrationDocumentBase::grabFrame()
+{
+    auto widget = this->widget();
+
+    if ( widget )
+        widget->grabFrame();
+
+}
+
+void CameraCalibrationDocumentBase::calculate()
+{
+    auto widget = this->widget();
+
+    if ( widget )
+        widget->calculate();
+
+}
+
+void CameraCalibrationDocumentBase::clearIcons()
+{
+    auto widget = this->widget();
+
+    if ( widget )
+        widget->clearIcons();
+
+}
+
+// MonocularCalibrationDocument
+MonocularCalibrationDocument::MonocularCalibrationDocument( QWidget* parent )
+    : CalibrationDocumentBase( parent )
+{
+    initialize();
+}
+
+void MonocularCalibrationDocument::initialize()
+{
+    setWidget( new MonocularCalibrationWidget( this ) );
 }
 
 MonocularCalibrationWidget *MonocularCalibrationDocument::widget() const
@@ -165,15 +216,15 @@ MonocularCalibrationWidget *MonocularCalibrationDocument::widget() const
 }
 
 // StereoCalibrationDocument
-StereoCalibrationDocument::StereoCalibrationDocument( const QString &leftCameraIp, const QString &rightCameraIp, QWidget* parent )
+StereoCalibrationDocument::StereoCalibrationDocument( QWidget* parent )
     : CalibrationDocumentBase( parent )
 {
-    initialize( leftCameraIp, rightCameraIp );
+    initialize();
 }
 
-void StereoCalibrationDocument::initialize( const QString &leftCameraIp, const QString &rightCameraIp )
+void StereoCalibrationDocument::initialize()
 {
-    setWidget( new StereoCalibrationWidget( leftCameraIp, rightCameraIp, this ) );
+    setWidget( new StereoCalibrationWidget( this ) );
 }
 
 StereoCalibrationWidget *StereoCalibrationDocument::widget() const
@@ -181,9 +232,44 @@ StereoCalibrationWidget *StereoCalibrationDocument::widget() const
     return dynamic_cast< StereoCalibrationWidget * >( m_widget );
 }
 
-// StereoCalibrationDocument
+// MonocularCameraCalibrationDocument
+MonocularCameraCalibrationDocument::MonocularCameraCalibrationDocument( const QString &cameraIp, QWidget* parent )
+    : CameraCalibrationDocumentBase( parent )
+{
+    initialize( cameraIp );
+}
+
+void MonocularCameraCalibrationDocument::initialize( const QString &cameraIp )
+{
+    setWidget( new MonocularCameraCalibrationWidget( cameraIp, this ) );
+
+}
+
+MonocularCameraCalibrationWidget *MonocularCameraCalibrationDocument::widget() const
+{
+    return dynamic_cast< MonocularCameraCalibrationWidget * >( m_widget );
+}
+
+// StereoCameraCalibrationDocument
+StereoCameraCalibrationDocument::StereoCameraCalibrationDocument( const QString &leftCameraIp, const QString &rightCameraIp, QWidget* parent )
+    : CameraCalibrationDocumentBase( parent )
+{
+    initialize( leftCameraIp, rightCameraIp );
+}
+
+void StereoCameraCalibrationDocument::initialize( const QString &leftCameraIp, const QString &rightCameraIp )
+{
+    setWidget( new StereoCameraCalibrationWidget( leftCameraIp, rightCameraIp, this ) );
+}
+
+StereoCameraCalibrationWidget *StereoCameraCalibrationDocument::widget() const
+{
+    return dynamic_cast< StereoCameraCalibrationWidget * >( m_widget );
+}
+
+// StereoCameraCalibrationDocument
 TrippleCalibrationDocument::TrippleCalibrationDocument( QWidget* parent )
-    : CalibrationDocumentBase( parent )
+    : CameraCalibrationDocumentBase( parent )
 {
     initialize();
 }

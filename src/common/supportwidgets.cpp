@@ -57,6 +57,31 @@ void RescaleSpinBox::initialize()
 
 }
 
+// FilesListWidget
+FilesListWidget::FilesListWidget( QWidget *parent )
+    : QListWidget( parent )
+{
+    initialize();
+}
+
+void FilesListWidget::initialize()
+{
+    setSelectionMode( ExtendedSelection );
+}
+
+void FilesListWidget::removeSelected()
+{
+    auto selected = selectedIndexes();
+
+    std::set< int > sorted;
+
+    for ( auto &i : selected )
+        sorted.insert( i.row() );
+
+    for ( auto i = sorted.rbegin(); i != sorted.rend(); ++i )
+        takeItem( *i );
+}
+
 // DialogBase
 DialogBase::DialogBase( QWidget *parent )
     : QDialog( parent )
@@ -82,7 +107,6 @@ void DialogBase::initialize( const QDialogButtonBox::StandardButtons buttons )
     m_buttons = new QDialogButtonBox( buttons, Qt::Horizontal, this );
     m_layout->addWidget( m_buttons );
 
-    connect( m_buttons, &QDialogButtonBox::accepted, this, &DialogBase::accept );
     connect( m_buttons, &QDialogButtonBox::rejected, this, &DialogBase::reject );
 
 }

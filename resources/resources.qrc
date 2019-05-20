@@ -1,6 +1,5 @@
 <RCC>
     <qresource prefix="/resources">
-        <file>qss/style.css</file>
         <file>images/settings.ico</file>
         <file>images/grab.ico</file>
         <file>images/power.ico</file>
@@ -15,5 +14,9 @@
         <file>images/opencv.ico</file>
         <file>images/xml.ico</file>
         <file>images/trash.ico</file>
+        <file>images/import.ico</file>
+        <file>qss/style.css</file>
+        <file>images/plus.ico</file>
+        <file>images/remove.ico</file>
     </qresource>
 </RCC>

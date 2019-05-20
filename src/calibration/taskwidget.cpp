@@ -5,73 +5,73 @@
 #include "parameterswidget.h"
 #include "camerawidget.h"
 
-// TaskWidgetBase
-TaskWidgetBase::TaskWidgetBase( QWidget* parent )
+// GrabWidgetBase
+GrabWidgetBase::GrabWidgetBase( QWidget* parent )
     : QWidget( parent )
 {
     initialize();
 }
 
-void TaskWidgetBase::initialize()
+void GrabWidgetBase::initialize()
 {
     setSizePolicy( QSizePolicy::Expanding, QSizePolicy::Expanding );
 
     m_layout = new QVBoxLayout( this );
 
-    m_parametersWidget = new ParametersWidget( this );
+    m_parametersWidget = new CameraParametersWidget( this );
 
     m_layout->addWidget( m_parametersWidget );
 
-    connect (m_parametersWidget, &ParametersWidget::parametersChanges, this, &TaskWidgetBase::updateParameters );
+    connect (m_parametersWidget, &CameraParametersWidget::parametersChanges, this, &GrabWidgetBase::updateParameters );
 
 }
 
-TemplateProcessor::Type TaskWidgetBase::templateType() const
+TemplateProcessor::Type GrabWidgetBase::templateType() const
 {
     return m_cameraWidget->templateType();
 }
 
-const cv::Size &TaskWidgetBase::templateCount() const
+const cv::Size &GrabWidgetBase::templateCount() const
 {
     return m_cameraWidget->templateCount();
 }
 
-double TaskWidgetBase::templateSize() const
+double GrabWidgetBase::templateSize() const
 {
     return m_cameraWidget->templateSize();
 }
 
-bool TaskWidgetBase::resizeFlag() const
+bool GrabWidgetBase::resizeFlag() const
 {
     return m_cameraWidget->resizeFlag();
 }
 
-unsigned int TaskWidgetBase::frameMaximumFlag() const
+unsigned int GrabWidgetBase::frameMaximumFlag() const
 {
     return m_cameraWidget->frameMaximumFlag();
 }
 
-bool TaskWidgetBase::adaptiveThreshold() const
+bool GrabWidgetBase::adaptiveThreshold() const
 {
     return m_cameraWidget->adaptiveThreshold();
 }
 
-bool TaskWidgetBase::normalizeImage() const
+bool GrabWidgetBase::normalizeImage() const
 {
     return m_cameraWidget->normalizeImage();
 }
 
-bool TaskWidgetBase::filterQuads() const
+bool GrabWidgetBase::filterQuads() const
 {
     return m_cameraWidget->filterQuads();
 }
 
-bool TaskWidgetBase::fastCheck() const
+bool GrabWidgetBase::fastCheck() const
 {
     return m_cameraWidget->fastCheck();
 }
 
-void TaskWidgetBase::updateParameters()
+void GrabWidgetBase::updateParameters()
 {
     m_cameraWidget->setType( m_parametersWidget->templateType() );
     m_cameraWidget->setCount( m_parametersWidget->templateCount() );
@@ -87,14 +87,14 @@ void TaskWidgetBase::updateParameters()
 
 }
 
-// MonocularTaskWidget
-MonocularTaskWidget::MonocularTaskWidget( const QString &cameraIp, QWidget* parent )
-    : TaskWidgetBase( parent )
+// MonocularGrabWidget
+MonocularGrabWidget::MonocularGrabWidget( const QString &cameraIp, QWidget* parent )
+    : GrabWidgetBase( parent )
 {
     initialize( cameraIp );
 }
 
-void MonocularTaskWidget::initialize( const QString &cameraIp )
+void MonocularGrabWidget::initialize( const QString &cameraIp )
 {
     m_cameraWidget = new MonocularCameraWidget( cameraIp, this );
     m_layout->addWidget( m_cameraWidget );
@@ -102,34 +102,34 @@ void MonocularTaskWidget::initialize( const QString &cameraIp )
     updateParameters();
 }
 
-MonocularCameraWidget *MonocularTaskWidget::cameraWidget() const
+MonocularCameraWidget *MonocularGrabWidget::cameraWidget() const
 {
     return dynamic_cast< MonocularCameraWidget * >( m_cameraWidget.data() );
 }
 
-const CvImage MonocularTaskWidget::sourceImage() const
+const CvImage MonocularGrabWidget::sourceImage() const
 {
     return cameraWidget()->sourceImage();
 }
 
-const CvImage MonocularTaskWidget::previewImage() const
+const CvImage MonocularGrabWidget::previewImage() const
 {
     return cameraWidget()->previewImage();
 }
 
-bool MonocularTaskWidget::isTemplateExist() const
+bool MonocularGrabWidget::isTemplateExist() const
 {
     return cameraWidget()->isTemplateExist();
 }
 
-// StereoTaskWidget
-StereoTaskWidget::StereoTaskWidget( const QString &leftCameraIp, const QString &rightCameraIp, QWidget* parent )
-    : TaskWidgetBase( parent )
+// StereoGrabWidget
+StereoGrabWidget::StereoGrabWidget( const QString &leftCameraIp, const QString &rightCameraIp, QWidget* parent )
+    : GrabWidgetBase( parent )
 {
     initialize( leftCameraIp, rightCameraIp );
 }
 
-void StereoTaskWidget::initialize( const QString &leftCameraIp, const QString &rightCameraIp )
+void StereoGrabWidget::initialize( const QString &leftCameraIp, const QString &rightCameraIp )
 {
     m_cameraWidget = new StereoCameraWidget( leftCameraIp,  rightCameraIp, this );
     m_layout->addWidget( m_cameraWidget );
@@ -137,52 +137,52 @@ void StereoTaskWidget::initialize( const QString &leftCameraIp, const QString &r
     updateParameters();
 }
 
-StereoCameraWidget *StereoTaskWidget::cameraWidget() const
+StereoCameraWidget *StereoGrabWidget::cameraWidget() const
 {
     return dynamic_cast< StereoCameraWidget * >( m_cameraWidget.data() );
 }
 
-const CvImage StereoTaskWidget::leftSourceImage() const
+const CvImage StereoGrabWidget::leftSourceImage() const
 {
     return cameraWidget()->leftSourceImage();
 }
 
-const CvImage StereoTaskWidget::leftDisplayedImage() const
+const CvImage StereoGrabWidget::leftDisplayedImage() const
 {
     return cameraWidget()->leftDisplayedImage();
 }
 
-const CvImage StereoTaskWidget::rightSourceImage() const
+const CvImage StereoGrabWidget::rightSourceImage() const
 {
     return cameraWidget()->rightSourceImage();
 }
 
-const CvImage StereoTaskWidget::rightDisplayedImage() const
+const CvImage StereoGrabWidget::rightDisplayedImage() const
 {
     return cameraWidget()->rightDisplayedImage();
 }
 
-bool StereoTaskWidget::isTemplateExist() const
+bool StereoGrabWidget::isTemplateExist() const
 {
     return cameraWidget()->isTemplateExist();
 }
 
-void StereoTaskWidget::setLeftSourceImage( const CvImage image )
+void StereoGrabWidget::setLeftSourceImage( const CvImage image )
 {
     return cameraWidget()->setLeftSourceImage( image );
 }
 
-void StereoTaskWidget::setLeftDisplayedImage( const CvImage image )
+void StereoGrabWidget::setLeftDisplayedImage( const CvImage image )
 {
     return cameraWidget()->setLeftDisplayedImage( image );
 }
 
-void StereoTaskWidget::setRightSourceImage( const CvImage image )
+void StereoGrabWidget::setRightSourceImage( const CvImage image )
 {
     return cameraWidget()->setRightSourceImage( image );
 }
 
-void StereoTaskWidget::setRightDisplayedImage( const CvImage image )
+void StereoGrabWidget::setRightDisplayedImage( const CvImage image )
 {
     return cameraWidget()->setRightDisplayedImage( image );
 }

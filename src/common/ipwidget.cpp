@@ -75,6 +75,9 @@ CameraIPDialog::CameraIPDialog( QWidget* parent )
 void CameraIPDialog::initialize()
 {
     setWidget( new CameraIPWidget( this ) );
+
+    connect( m_buttons, &QDialogButtonBox::accepted, this, &DialogBase::accept );
+
 }
 
 CameraIPWidget *CameraIPDialog::widget() const
@@ -97,6 +100,8 @@ StereoIPDialog::StereoIPDialog( QWidget* parent )
 void StereoIPDialog::initialize()
 {
     setWidget( new StereoIPWidget( this ) );
+
+    connect( m_buttons, &QDialogButtonBox::accepted, this, &DialogBase::accept );
 }
 
 StereoIPWidget *StereoIPDialog::widget() const

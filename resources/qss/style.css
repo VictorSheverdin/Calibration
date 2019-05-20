@@ -60,7 +60,7 @@ QAbstractSpinBox::up-button:pressed, QAbstractSpinBox::down-button:pressed
     padding-right: 1px;
     padding-bottom: px;
     color: white;
-	border-image: url(:/images/ToolBarButtonChecked.png) 6 6 6 6 stretch stretch;
+	/*border-image: url(:/images/ToolBarButtonChecked.png) 6 6 6 6 stretch stretch;*/
 }
 
 /* /////////////////////////////////////////////////////////////////////////////////////////////////////////// */
@@ -90,7 +90,7 @@ QDialog QPushButton:default
     background: solid rgb(48, 48, 48);
     border-radius: 4px;
     padding: 3px;
-    border-image: url(:/DefaultPushButton.png) 6 6 6 6 stretch stretch;
+    /*border-image: url(:/DefaultPushButton.png) 6 6 6 6 stretch stretch;*/
     color: white;
 }
 
@@ -201,7 +201,7 @@ QPushButton:pressed
     padding-right: 1px;
     padding-bottom: px;
     color: white;
-	border-image: url(:/images/ToolBarButtonChecked.png) 6 6 6 6 stretch stretch;
+	/*border-image: url(:/images/ToolBarButtonChecked.png) 6 6 6 6 stretch stretch;*/
 }
 
 QPushButton#scaleBackward
@@ -216,17 +216,17 @@ QPushButton#scaleBackward
     padding-right: 0px;
     padding-bottom: 0px;
     padding: 0px;
-    border-image: url(:/ScaleButtonHoverImageDefault.png);
+    /*border-image: url(:/ScaleButtonHoverImageDefault.png);*/
 }
 
 QPushButton#scaleBackward:hover
 {
-    border-image: url(:/ScaleButtonHoverImage.png);
+    /*border-image: url(:/ScaleButtonHoverImage.png);*/
 }
 
 QPushButton#scaleBackward:pressed
 {
-    border-image: url(:/ScaleButtonHoverImagePressed.png);
+    /*border-image: url(:/ScaleButtonHoverImagePressed.png);*/
 }
 
 QPushButton#scaleForward
@@ -240,17 +240,17 @@ QPushButton#scaleForward
     padding-top: 0px;
     padding-right: 0px;
     padding-bottom: 0px;
-    border-image: url(:/ScaleButtonHoverImageDefault.png);
+    /*border-image: url(:/ScaleButtonHoverImageDefault.png);*/
 }
 
 QPushButton#scaleForward:hover
 {
-    border-image: url(:/ScaleButtonHoverImage.png);
+    /*border-image: url(:/ScaleButtonHoverImage.png);*/
 }
 
 QPushButton#scaleForward:pressed
 {
-    border-image: url(:/ScaleButtonHoverImagePressed.png);
+    /*border-image: url(:/ScaleButtonHoverImagePressed.png);*/
 }
 
 QWidget
@@ -288,7 +288,7 @@ QComboBox::drop-down
 
 QComboBox::down-arrow
 {
-    image: url(:/images/BottomScrollBarArrow.png);
+    /*image: url(:/images/BottomScrollBarArrow.png);*/
 }
 
 QComboBox::down-arrow:on
@@ -350,16 +350,16 @@ QScrollBar:horizontal
 
 QScrollBar:left-arrow:horizontal
 {
-    image: url(:/images/LeftScrollBarArrow.png);
+    /*image: url(:/images/LeftScrollBarArrow.png);*/
 }
 
 QScrollBar::handle:horizontal
 {
     background: solid rgb(32, 32, 32);
-	border-image: url(:/images/VerticalScrollBarBorderImage.png) 4 4 4 4 stretch stretch;
+	/*border-image: url(:/images/VerticalScrollBarBorderImage.png) 4 4 4 4 stretch stretch;*/
     min-width: 48px;
     border-radius: 3px;
-	image: url(:/images/HorisontalScrollBarHandle.png);
+	/*image: url(:/images/HorisontalScrollBarHandle.png);*/
 }
 
 QScrollBar::handle:horizontal:hover
@@ -369,13 +369,13 @@ QScrollBar::handle:horizontal:hover
 
 QScrollBar:right-arrow:horizontal
 {
-    image: url(:/images/RightScrollBarArrow.png);
+    /*image: url(:/images/RightScrollBarArrow.png);*/
 }
 
 QScrollBar::sub-line:horizontal
 {
     background: solid rgb(64, 64, 64);
-    border-image: url(:/VerticalScrollBarBorderImage.png) 4 4 4 4 stretch stretch;
+    /*border-image: url(:/VerticalScrollBarBorderImage.png) 4 4 4 4 stretch stretch;*/
     width: 14px;
     border-radius: 3px;
     subcontrol-position: left;
@@ -395,7 +395,7 @@ QScrollBar::sub-line:horizontal:pressed
 QScrollBar::add-line:horizontal
 {
     background: solid rgb(36, 36, 36);
-    border-image: url(:/VerticalScrollBarBorderImage.png) 4 4 4 4 stretch stretch;
+    /*border-image: url(:/VerticalScrollBarBorderImage.png) 4 4 4 4 stretch stretch;*/
     width: 14px;
     border-radius: 3px;
     subcontrol-origin: margin;
@@ -409,7 +409,7 @@ QScrollBar::add-line:horizontal:hover
 QScrollBar::add-line:horizontal:pressed
 {
     background: solid rgb(36, 36, 36);
-    border-image: url(:/VerticalScrollBarBorderImagePressed.png) 3 3 3 3 stretch stretch;
+    /*border-image: url(:/VerticalScrollBarBorderImagePressed.png) 3 3 3 3 stretch stretch;*/
 }
 
 QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal
@@ -432,8 +432,8 @@ QScrollBar:up-arrow:vertical
 QScrollBar::handle:vertical
 {
     background: solid rgb(32, 32, 32);
-    border-image: url(:/VerticalScrollBarBorderImage.png) 4 4 4 4 stretch stretch;
-	image: url(:/images/VerticalScrollBarHandle.png);
+    /*border-image: url(:/VerticalScrollBarBorderImage.png) 4 4 4 4 stretch stretch;
+	image: url(:/images/VerticalScrollBarHandle.png);*/
     min-height: 48px;
     border-radius: 3px;
 }
@@ -445,13 +445,13 @@ QScrollBar::handle:vertical:hover
 
 QScrollBar:down-arrow:vertical
 {
-    image: url(:/images/BottomScrollBarArrow.png);
+    /*image: url(:/images/BottomScrollBarArrow.png);*/
 }
 
 QScrollBar::sub-line:vertical
 {
     background: solid rgb(36, 36, 36);
-    border-image: url(:/VerticalScrollBarBorderImage.png) 3 3 3 3 stretch stretch;
+    /*border-image: url(:/VerticalScrollBarBorderImage.png) 3 3 3 3 stretch stretch;*/
     height: 14px;
     border-radius: 3px;
     subcontrol-position: top;
@@ -461,19 +461,19 @@ QScrollBar::sub-line:vertical
 QScrollBar::sub-line:vertical:hover
 {
     background: solid rgb(64, 64, 64);
-    border-image: url(:/VerticalScrollBarBorderImage.png) 3 3 3 3 stretch stretch;
+    /*border-image: url(:/VerticalScrollBarBorderImage.png) 3 3 3 3 stretch stretch;*/
 }
 
 QScrollBar::sub-line:vertical:pressed
 {
     background: solid rgb(36, 36, 36);
-    border-image: url(:/VerticalScrollBarBorderImagePressed.png) 3 3 3 3 stretch stretch;
+    /*border-image: url(:/VerticalScrollBarBorderImagePressed.png) 3 3 3 3 stretch stretch;*/
 }
 
 QScrollBar::add-line:vertical
 {
     background: solid rgb(36, 36, 36);
-    border-image: url(:/VerticalScrollBarBorderImage.png) 3 3 3 3 stretch stretch;
+    /*border-image: url(:/VerticalScrollBarBorderImage.png) 3 3 3 3 stretch stretch;*/
     height: 14px;
     border-radius: 2px;
     subcontrol-position: bottom;
@@ -488,7 +488,7 @@ QScrollBar::add-line:vertical:hover
 QScrollBar::add-line:vertical:pressed
 {
     background: solid rgb(36, 36, 36);
-    border-image: url(:/VerticalScrollBarBorderImagePressed.png) 3 3 3 3 stretch stretch;
+    /*border-image: url(:/VerticalScrollBarBorderImagePressed.png) 3 3 3 3 stretch stretch;*/
 }
 
 QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical
@@ -566,24 +566,24 @@ QToolBar:left, QToolBar:right
 
 QToolBar::handle:horisontal
 {
-    image: url(:/images/VerticalToolBarHandle.png);
+    /*image: url(:/images/VerticalToolBarHandle.png);*/
     width: 10px;
 }
 
 QToolBar::handle:vertical
 {
-    image: url(:/images/HorisontalToolBarHandle.png);
+    /*image: url(:/images/HorisontalToolBarHandle.png);*/
     height: 10px;
 }
 
 QToolBar::separator:horizontal
 {
-    image: url(:/images/SeparatorHorisontal.png);
+    /*image: url(:/images/SeparatorHorisontal.png);*/
 }
 
 QToolBar::separator:vertical
 {
-    image: url(:/images/SeparatorVertical.png);
+    /*image: url(:/images/SeparatorVertical.png);*/
 }
 
 /* /////////////////////////////////////////////////////////////////////////////////////////////////////////// */
@@ -614,7 +614,7 @@ QToolButton:hover
 {
     background: transparent;
     color: white;
-	border-image: url(:/images/ToolBarButtonHover.png) 6 6 6 6 stretch stretch;
+	/*border-image: url(:/images/ToolBarButtonHover.png) 6 6 6 6 stretch stretch;*/
 }
 
 QToolButton:pressed
@@ -625,13 +625,13 @@ QToolButton:pressed
     padding-right: 2px;
     padding-bottom: 2px;
     color: #acacac;
-	border-image: url(:/images/ToolBarButtonChecked.png) 6 6 6 6 stretch stretch;
+	/*border-image: url(:/images/ToolBarButtonChecked.png) 6 6 6 6 stretch stretch;*/
 }
 
 QToolButton:checked
 {
     background: rgb(88, 95, 109);
-	border-image: url(:/images/ToolBarButtonChecked.png) 6 6 6 6 stretch stretch;
+	/*border-image: url(:/images/ToolBarButtonChecked.png) 6 6 6 6 stretch stretch;*/
 }
 
 /* /////////////////////////////////////////////////////////////////////////////////////////////////////////// */
@@ -670,13 +670,13 @@ QSplitter:vertical
 QSplitter::handle:horizontal
 {
     border: 0px transparent #9999AA;
-	image: url(:/images/splitter_vertical.png);
+	/*image: url(:/images/splitter_vertical.png);*/
 }
 
 QSplitter::handle:vertical
 {
     border: 0px transparent #9999AA;
-	image: url(:/images/splitter_horizontal.png);
+	/*image: url(:/images/splitter_horizontal.png);*/
 }
 
 /* /////////////////////////////////////////////////////////////////////////////////////////////////////////// */
@@ -809,12 +809,12 @@ QListView::item:focus
 
 QListWidget::indicator:enabled
 {
-    image: url(:/Radio.png);
+    /*image: url(:/Radio.png);*/
 }
 
 QListWidget::indicator:checked
 {
-    image: url(:/Slider.png);
+    /*image: url(:/Slider.png);*/
 }
 
 QTableWidget

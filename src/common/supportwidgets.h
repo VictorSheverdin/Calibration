@@ -6,6 +6,7 @@
 
 #include <QDialog>
 #include <QDialogButtonBox>
+#include <QListWidget>
 
 class QHBoxLayout;
 class QVBoxLayout;
@@ -45,6 +46,20 @@ public:
 private:
     void initialize();
 
+};
+
+class FilesListWidget : public QListWidget
+{
+    Q_OBJECT
+
+public:
+    explicit FilesListWidget( QWidget *parent = nullptr );
+
+public slots:
+    void removeSelected();
+
+private:
+    void initialize();
 };
 
 class DialogBase : public QDialog

@@ -34,7 +34,7 @@ ParametersWidget::ParametersWidget( QWidget* parent )
 
 void ParametersWidget::initialize()
 {
-    QHBoxLayout *layout = new QHBoxLayout( this );
+    m_layout = new QHBoxLayout( this );
 
     QHBoxLayout *typeLayout = new QHBoxLayout();
 
@@ -43,7 +43,7 @@ void ParametersWidget::initialize()
     m_typeCombo = new TypeComboBox(this);
     typeLayout->addWidget( m_typeCombo );
 
-    layout->addLayout( typeLayout );
+    m_layout->addLayout( typeLayout );
 
     QHBoxLayout *countLayout = new QHBoxLayout();
 
@@ -57,7 +57,7 @@ void ParametersWidget::initialize()
     countLayout->addWidget( m_xCountSpinBox );
     countLayout->addWidget( m_yCountSpinBox );
 
-    layout->addLayout( countLayout );
+    m_layout->addLayout( countLayout );
 
     QHBoxLayout *sizeLayout = new QHBoxLayout();
 
@@ -67,53 +67,9 @@ void ParametersWidget::initialize()
     m_sizeSpinBox->setValue( 0.05 );
     sizeLayout->addWidget( m_sizeSpinBox );
 
-    layout->addLayout( sizeLayout );
+    m_layout->addLayout( sizeLayout );
 
-    layout->addStretch();
-
-    m_adaptiveThresholdCheckBox = new QCheckBox( tr( "Adaptive threshold" ), this );
-    layout->addWidget( m_adaptiveThresholdCheckBox );
-    m_adaptiveThresholdCheckBox->setChecked( true );
-
-    m_normalizeImageCheckBox = new QCheckBox( tr( "Normalize" ), this );
-    layout->addWidget( m_normalizeImageCheckBox );
-    m_normalizeImageCheckBox->setChecked( true );
-
-    m_filterQuadsCheckBox = new QCheckBox( tr( "Filter quads" ), this );
-    layout->addWidget( m_filterQuadsCheckBox );
-    m_filterQuadsCheckBox->setChecked( false );
-
-    m_fastCheckCheckBox = new QCheckBox( tr( "Fast check" ), this );
-    layout->addWidget( m_fastCheckCheckBox );
-    m_fastCheckCheckBox->setChecked( true );
-
-    layout->addStretch();
-
-    m_rescaleCheckBox = new QCheckBox( tr( "Rescale preview" ), this );
-    layout->addWidget( m_rescaleCheckBox );
-    m_rescaleCheckBox->setChecked( true );
-
-    QHBoxLayout *rescaleLayout = new QHBoxLayout();
-
-    m_rescaleSizeSpinBox = new RescaleSpinBox( this );
-
-    rescaleLayout->addWidget( new QLabel( tr( "Maximum size:" ) ) );
-    rescaleLayout->addWidget( m_rescaleSizeSpinBox );
-
-    layout->addLayout( rescaleLayout );
-
-    connect( m_typeCombo, static_cast< void ( TypeComboBox::* )( int ) >( &TypeComboBox::currentIndexChanged ), this, &ParametersWidget::parametersChanges );
-    connect( m_xCountSpinBox, static_cast< void ( CountSpinBox::* )( int ) >( &CountSpinBox::valueChanged ), this, &ParametersWidget::parametersChanges );
-    connect( m_yCountSpinBox, static_cast< void ( CountSpinBox::* )( int ) >( &CountSpinBox::valueChanged ), this, &ParametersWidget::parametersChanges );
-    connect( m_sizeSpinBox, static_cast< void ( SizeSpinBox::* )( double ) >( &SizeSpinBox::valueChanged ), this, &ParametersWidget::parametersChanges );
-
-    connect( m_adaptiveThresholdCheckBox, &QCheckBox::stateChanged , this, &ParametersWidget::parametersChanges );
-    connect( m_normalizeImageCheckBox, &QCheckBox::stateChanged , this, &ParametersWidget::parametersChanges );
-    connect( m_filterQuadsCheckBox, &QCheckBox::stateChanged , this, &ParametersWidget::parametersChanges );
-    connect( m_fastCheckCheckBox, &QCheckBox::stateChanged , this, &ParametersWidget::parametersChanges );
-
-    connect( m_rescaleCheckBox, &QCheckBox::stateChanged , this, &ParametersWidget::parametersChanges );
-    connect( m_rescaleSizeSpinBox, static_cast< void ( RescaleSpinBox::* )( int ) >( &RescaleSpinBox::valueChanged ), this, &ParametersWidget::parametersChanges );
+    m_layout->addStretch();
 
 }
 
@@ -142,32 +98,87 @@ double ParametersWidget::templateSize() const
     return m_sizeSpinBox->value();
 }
 
-bool ParametersWidget::adaptiveThreshold() const
+// CameraParametersWidget
+CameraParametersWidget::CameraParametersWidget( QWidget* parent )
+    : ParametersWidget( parent )
+{
+    initialize();
+}
+
+void CameraParametersWidget::initialize()
+{
+    m_adaptiveThresholdCheckBox = new QCheckBox( tr( "Adaptive threshold" ), this );
+    m_layout->addWidget( m_adaptiveThresholdCheckBox );
+    m_adaptiveThresholdCheckBox->setChecked( true );
+
+    m_normalizeImageCheckBox = new QCheckBox( tr( "Normalize" ), this );
+    m_layout->addWidget( m_normalizeImageCheckBox );
+    m_normalizeImageCheckBox->setChecked( true );
+
+    m_filterQuadsCheckBox = new QCheckBox( tr( "Filter quads" ), this );
+    m_layout->addWidget( m_filterQuadsCheckBox );
+    m_filterQuadsCheckBox->setChecked( false );
+
+    m_fastCheckCheckBox = new QCheckBox( tr( "Fast check" ), this );
+    m_layout->addWidget( m_fastCheckCheckBox );
+    m_fastCheckCheckBox->setChecked( true );
+
+    m_layout->addStretch();
+
+    m_rescaleCheckBox = new QCheckBox( tr( "Rescale preview" ), this );
+    m_layout->addWidget( m_rescaleCheckBox );
+    m_rescaleCheckBox->setChecked( true );
+
+    QHBoxLayout *rescaleLayout = new QHBoxLayout();
+
+    m_rescaleSizeSpinBox = new RescaleSpinBox( this );
+
+    rescaleLayout->addWidget( new QLabel( tr( "Maximum size:" ) ) );
+    rescaleLayout->addWidget( m_rescaleSizeSpinBox );
+
+    m_layout->addLayout( rescaleLayout );
+
+    connect( m_typeCombo, static_cast< void ( TypeComboBox::* )( int ) >( &TypeComboBox::currentIndexChanged ), this, &CameraParametersWidget::parametersChanges );
+    connect( m_xCountSpinBox, static_cast< void ( CountSpinBox::* )( int ) >( &CountSpinBox::valueChanged ), this, &CameraParametersWidget::parametersChanges );
+    connect( m_yCountSpinBox, static_cast< void ( CountSpinBox::* )( int ) >( &CountSpinBox::valueChanged ), this, &CameraParametersWidget::parametersChanges );
+    connect( m_sizeSpinBox, static_cast< void ( SizeSpinBox::* )( double ) >( &SizeSpinBox::valueChanged ), this, &CameraParametersWidget::parametersChanges );
+
+    connect( m_adaptiveThresholdCheckBox, &QCheckBox::stateChanged , this, &CameraParametersWidget::parametersChanges );
+    connect( m_normalizeImageCheckBox, &QCheckBox::stateChanged , this, &CameraParametersWidget::parametersChanges );
+    connect( m_filterQuadsCheckBox, &QCheckBox::stateChanged , this, &CameraParametersWidget::parametersChanges );
+    connect( m_fastCheckCheckBox, &QCheckBox::stateChanged , this, &CameraParametersWidget::parametersChanges );
+
+    connect( m_rescaleCheckBox, &QCheckBox::stateChanged , this, &CameraParametersWidget::parametersChanges );
+    connect( m_rescaleSizeSpinBox, static_cast< void ( RescaleSpinBox::* )( int ) >( &RescaleSpinBox::valueChanged ), this, &CameraParametersWidget::parametersChanges );
+
+}
+
+bool CameraParametersWidget::adaptiveThreshold() const
 {
     return m_adaptiveThresholdCheckBox->isChecked();
 }
 
-bool ParametersWidget::normalizeImage() const
+bool CameraParametersWidget::normalizeImage() const
 {
     return m_normalizeImageCheckBox->isChecked();
 }
 
-bool ParametersWidget::filterQuads() const
+bool CameraParametersWidget::filterQuads() const
 {
     return m_filterQuadsCheckBox->isChecked();
 }
 
-bool ParametersWidget::fastCheck() const
+bool CameraParametersWidget::fastCheck() const
 {
     m_fastCheckCheckBox->isChecked();
 }
 
-bool ParametersWidget::rescaleFlag() const
+bool CameraParametersWidget::rescaleFlag() const
 {
     return m_rescaleCheckBox->isChecked();
 }
 
-unsigned int ParametersWidget::rescaleSize() const
+unsigned int CameraParametersWidget::rescaleSize() const
 {
     return static_cast< unsigned int >( m_rescaleSizeSpinBox->value() );
 }

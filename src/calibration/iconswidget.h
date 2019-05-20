@@ -68,7 +68,7 @@ class StereoIcon : public IconBase
 public:
     using SuperClass = IconBase;
 
-    StereoIcon( const CvImage previewImage, const CvImage straightPreviewImage, const CvImage leftSourceImage, const CvImage rightSourceImage, const int number );
+    StereoIcon( const CvImage leftPreviewImage, const CvImage rightPreviewImage, const CvImage leftSourceImage, const CvImage rightSourceImage, const int number );
 
     void setStraightPreview(const CvImage &image);
     void setLeftSourceImage( const CvImage &image );
@@ -83,6 +83,9 @@ public:
 
     void setRightPreviewPoints( std::vector< cv::Point2f > &points );
     std::vector< cv::Point2f > rightPreviewPoints() const;
+
+    static CvImage makeOverlappedPreview( const CvImage &leftPreviewImage, const CvImage &rightPreviewImage );
+    static CvImage makeStraightPreview( const CvImage &leftPreviewImage, const CvImage &rightPreviewImage );
 
 protected:
     CvImage m_straightPreview;
