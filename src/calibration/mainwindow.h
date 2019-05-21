@@ -6,7 +6,7 @@
 
 #include "src/common/defs.h"
 
-#include "documentarea.h"
+#include "src/common/documentarea.h"
 
 class CalibrationWidgetBase;
 class DocumentArea;

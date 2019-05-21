@@ -19,13 +19,9 @@ class ImageWidget;
 class ImageDialog;
 class ParametersWidget;
 
-
-class CalibrationWidgetBase : public QSplitter
+class CalibrationWidgetBase : public QWidget
 {
     Q_OBJECT
-
-public:
-    CalibrationWidgetBase( QWidget *parent = nullptr );
 
 public slots:
     virtual void importDialog() = 0;
@@ -39,6 +35,9 @@ protected slots:
     virtual void showIcon( IconBase *icon ) = 0;
 
 protected:
+    CalibrationWidgetBase( QWidget *parent = nullptr );
+
+    QPointer< QVBoxLayout > m_layout;
     QPointer< IconsWidget > m_iconsList;
     QPointer< ImageDialog > m_iconViewDialog;
 
@@ -46,7 +45,10 @@ protected:
 
     static const int m_minimumCalibrationFrames = 5;
 
-    MonocularCalibrationData calcMonocularCalibration( const std::vector< CvImage > &frames , const cv::Size &count, const double size );
+    MonocularCalibrationData calcMonocularCalibration( const std::vector< CvImage > &frames, const cv::Size &count, const double size );
+
+    StereoCalibrationData calcStereoCalibration( const std::vector< CvImage > &leftFrames, const std::vector< CvImage > &rightFrames,
+                                                 const cv::Size &count, const double size );
 
     int m_iconCount;
 
@@ -60,21 +62,52 @@ private:
 
 };
 
-class MonocularCalibrationWidget : public CalibrationWidgetBase
+class MonocularCalibrationWidgetBase : public CalibrationWidgetBase
+{
+    Q_OBJECT
+
+protected slots:
+    virtual void showIcon( IconBase *icon ) override;
+
+protected:
+    MonocularCalibrationWidgetBase( QWidget *parent = nullptr );
+
+    QPointer< MonocularReportDialog > m_reportDialog;
+
+private:
+    void initialize();
+
+};
+
+class StereoCalibrationWidgetBase : public CalibrationWidgetBase
+{
+    Q_OBJECT
+
+protected slots:
+    virtual void showIcon( IconBase *icon ) override;
+
+protected:
+    StereoCalibrationWidgetBase( QWidget *parent = nullptr );
+
+    QPointer< StereoReportDialog > m_reportDialog;
+
+private:
+    void initialize();
+
+};
+
+class MonocularImageCalibrationWidget : public MonocularCalibrationWidgetBase
 {
     Q_OBJECT
 
 public:
-    MonocularCalibrationWidget( QWidget *parent = nullptr );
+    MonocularImageCalibrationWidget( QWidget *parent = nullptr );
 
 public slots:
     virtual void importDialog() override;
     virtual void exportDialog() override;
 
     virtual void calculate() override;
-
-protected slots:
-    virtual void showIcon( IconBase *icon ) override;
 
     void addIcon( const CvImage &image );
     void insertIcon( const CvImage &image );
@@ -88,15 +121,14 @@ protected:
 
 private:
     void initialize();
-
 };
 
-class StereoCalibrationWidget : public CalibrationWidgetBase
+class StereoImageCalibrationWidget : public StereoCalibrationWidgetBase
 {
     Q_OBJECT
 
 public:
-    StereoCalibrationWidget( QWidget *parent = nullptr );
+    StereoImageCalibrationWidget( QWidget *parent = nullptr );
 
 public slots:
     virtual void importDialog() override;
@@ -109,9 +141,6 @@ public slots:
 
     void loadIcon( const QString &leftFileName, const QString &rightFileName );
 
-protected slots:
-    virtual void showIcon( IconBase *icon ) override;
-
 protected:
     QPointer< ParametersWidget > m_parametersWidget;
 
@@ -119,17 +148,13 @@ protected:
 
 private:
     void initialize();
-
 };
 
-class CameraCalibrationWidgetBase : public CalibrationWidgetBase
+class CameraCalibrationWidgetBase
 {
-    Q_OBJECT
-
 public:
-    CameraCalibrationWidgetBase( QWidget *parent = nullptr );
+    CameraCalibrationWidgetBase();
 
-public slots:
     virtual void grabFrame() = 0;
 
 private:
@@ -137,7 +162,7 @@ private:
 
 };
 
-class MonocularCameraCalibrationWidget : public CameraCalibrationWidgetBase
+class MonocularCameraCalibrationWidget : public MonocularCalibrationWidgetBase, public CameraCalibrationWidgetBase
 {
     Q_OBJECT
 
@@ -153,20 +178,23 @@ public slots:
     virtual void grabFrame() override;
     virtual void calculate() override;
 
-protected slots:
-    virtual void showIcon( IconBase *icon ) override;
+    void addIcon( const CvImage &image );
+    void insertIcon( const CvImage &image );
+
+    void loadIcon( const QString &fileName );
 
 protected:
+    QPointer< QSplitter > m_splitter;
     QPointer< MonocularGrabWidget > m_taskWidget;
 
-    QPointer< MonocularReportDialog > m_reportDialog;
+    MonocularIcon *createIcon( const CvImage &image );
 
 private:
     void initialize( const QString &cameraIp );
 
 };
 
-class StereoCameraCalibrationWidget : public CameraCalibrationWidgetBase
+class StereoCameraCalibrationWidget : public StereoCalibrationWidgetBase, public CameraCalibrationWidgetBase
 {
     Q_OBJECT
 
@@ -182,16 +210,16 @@ public slots:
     virtual void grabFrame() override;
     virtual void calculate() override;
 
-protected slots:
-    virtual void showIcon( IconBase *icon ) override;
+    void addIcon( const CvImage &leftImage, const CvImage &rightImage );
+    void insertIcon( const CvImage &leftImage, const CvImage &rightImage );
+
+    void loadIcon( const QString &leftFileName, const QString &rightFileName );
 
 protected:
-    StereoCalibrationData calcStereoCalibration( const std::vector< CvImage > &leftFrames,
-                                                   const std::vector< CvImage > &rightFrames );
-
+    QPointer< QSplitter > m_splitter;
     QPointer< StereoGrabWidget > m_taskWidget;
 
-    QPointer< StereoReportDialog > m_reportDialog;
+    StereoIcon *createIcon( const CvImage &leftImage, const CvImage &rightImage );
 
 private:
     void initialize( const QString &leftCameraIp, const QString &rightCameraIp );

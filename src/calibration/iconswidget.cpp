@@ -183,6 +183,7 @@ void IconsWidget::initialize()
                 }
 
     );
+
 }
 
 void IconsWidget::addIcon( IconBase *icon )

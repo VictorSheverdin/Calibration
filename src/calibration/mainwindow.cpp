@@ -3,7 +3,7 @@
 #include "mainwindow.h"
 
 #include "calibrationwidget.h"
-#include "documentarea.h"
+#include "documentwidget.h"
 
 #include "src/common/ipwidget.h"
 
@@ -71,12 +71,12 @@ void MainWindow::addStereoCameraCalibrationDocument( const QString &leftCameraIp
 
 void MainWindow::addMonocularCalibrationDocument()
 {
-    addDocument( new MonocularCalibrationDocument( this ) );
+    addDocument( new MonocularImageCalibrationDocument( this ) );
 }
 
 void MainWindow::addStereoCalibrationDocument()
 {
-    addDocument( new StereoCalibrationDocument( this ) );
+    addDocument( new StereoImageCalibrationDocument( this ) );
 }
 
 CalibrationDocumentBase *MainWindow::currentCalibrationDocument() const

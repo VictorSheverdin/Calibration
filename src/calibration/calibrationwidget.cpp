@@ -15,15 +15,16 @@
 
 // CalibrationWidgetBase
 CalibrationWidgetBase::CalibrationWidgetBase( QWidget *parent )
-    : QSplitter( Qt::Vertical, parent )
+    : QWidget( parent )
 {
     initialize();
 }
 
 void CalibrationWidgetBase::initialize()
 {
+    m_layout = new QVBoxLayout( this );
+
     m_iconsList = new IconsWidget( this );
-    addWidget( m_iconsList );
 
     connect( m_iconsList, SIGNAL( iconActivated( IconBase* ) ), this, SLOT( showIcon( IconBase* ) ) );
 
@@ -170,346 +171,11 @@ MonocularCalibrationData CalibrationWidgetBase::calcMonocularCalibration(  const
 
 }
 
-// MonocularCalibrationWidget
-MonocularCalibrationWidget::MonocularCalibrationWidget( QWidget *parent )
-    : CalibrationWidgetBase( parent )
+StereoCalibrationData CalibrationWidgetBase::calcStereoCalibration( const std::vector< CvImage > &leftFrames,
+                                               const std::vector< CvImage > &rightFrames, const cv::Size &count, const double size )
 {
-    initialize();
-}
-
-void MonocularCalibrationWidget::initialize()
-{
-    m_parametersWidget = new ParametersWidget( this );
-
-    insertWidget( 0, m_parametersWidget );
-}
-
-void MonocularCalibrationWidget::importDialog()
-{
-    auto files = QFileDialog::getOpenFileNames(
-                            this,
-                            tr( "Select images for calibration" ),
-                            QString(),
-                            "Image files (*.png *.xpm *.jpg)" );
-
-    for ( auto &i : files )
-        loadIcon( i );
-
-}
-
-void MonocularCalibrationWidget::exportDialog()
-{
-
-}
-
-void MonocularCalibrationWidget::calculate()
-{
-
-}
-
-void MonocularCalibrationWidget::showIcon( IconBase *icon )
-{
-    m_iconViewDialog->setImage( icon->previewImage() );
-    m_iconViewDialog->exec();
-
-}
-
-MonocularIcon *MonocularCalibrationWidget::createIcon( const CvImage &image )
-{
-    m_processor.setCount( m_parametersWidget->templateCount() );
-    m_processor.setSize( m_parametersWidget->templateSize() );
-
-    std::vector< cv::Point2f > points;
-    CvImage preview;
-
-    m_processor.processFrame( image, &preview, &points );
-
-    return new MonocularIcon( preview, image, m_iconCount );
-}
-
-void MonocularCalibrationWidget::addIcon( const CvImage &image )
-{
-    CalibrationWidgetBase::addIcon( createIcon( image ) );
-
-}
-
-void MonocularCalibrationWidget::insertIcon( const CvImage &image )
-{
-    CalibrationWidgetBase::insertIcon( createIcon( image ) );
-}
-
-void MonocularCalibrationWidget::loadIcon( const QString &fileName )
-{
-    CvImage img = cv::imread( fileName.toStdString() );
-
-    if ( !img.empty() ) {
-        addIcon( img );
-
-    }
-
-}
-
-// StereoCalibrationWidget
-StereoCalibrationWidget::StereoCalibrationWidget( QWidget *parent )
-    : CalibrationWidgetBase( parent )
-{
-    initialize();
-}
-
-void StereoCalibrationWidget::initialize()
-{
-    m_parametersWidget = new ParametersWidget( this );
-
-    insertWidget( 0, m_parametersWidget );
-
-}
-
-void StereoCalibrationWidget::importDialog()
-{
-    StereoFilesListDialog dlg( this );
-
-    if ( dlg.exec() == StereoFilesListDialog::Accepted ) {
-        auto leftFileNames = dlg.leftFileNames();
-        auto rightFileNames = dlg.rightFileNames();
-
-        for ( auto i = 0; i < leftFileNames.size(); ++i ) {
-            loadIcon( leftFileNames[i], rightFileNames[i] );
-        }
-
-    }
-
-}
-
-void StereoCalibrationWidget::exportDialog()
-{
-
-}
-
-void StereoCalibrationWidget::calculate()
-{
-
-}
-
-void StereoCalibrationWidget::addIcon( const CvImage &leftImage, const CvImage &rightImage )
-{
-    CalibrationWidgetBase::addIcon( createIcon( leftImage, rightImage ) );
-}
-
-void StereoCalibrationWidget::insertIcon( const CvImage &leftImage, const CvImage &rightImage )
-{
-    CalibrationWidgetBase::insertIcon( createIcon( leftImage, rightImage ) );
-}
-
-void StereoCalibrationWidget::loadIcon( const QString &leftFileName, const QString &rightFileName )
-{
-    CvImage leftImg = cv::imread( leftFileName.toStdString() );
-    CvImage rightImg = cv::imread( rightFileName.toStdString() );
-
-    if ( !leftImg.empty() && !rightImg.empty() ) {
-        addIcon( leftImg, rightImg );
-
-    }
-
-}
-
-StereoIcon *StereoCalibrationWidget::createIcon( const CvImage &leftImage, const CvImage &rightImage )
-{
-    m_processor.setCount( m_parametersWidget->templateCount() );
-    m_processor.setSize( m_parametersWidget->templateSize() );
-
-    std::vector< cv::Point2f > points;
-    CvImage leftPreview;
-    CvImage rightPreview;
-
-    m_processor.processFrame( leftImage, &leftPreview, &points );
-    m_processor.processFrame( rightImage, &rightPreview, &points );
-
-    return new StereoIcon( leftPreview, rightPreview, leftImage, rightImage, m_iconCount );
-
-}
-
-void StereoCalibrationWidget::showIcon( IconBase *icon )
-{
-    m_iconViewDialog->show();
-    m_iconViewDialog->activateWindow();
-    m_iconViewDialog->setImage( icon->toStereoIcon()->straightPreview() );
-}
-
-// CameraCalibrationWidgetBase
-CameraCalibrationWidgetBase::CameraCalibrationWidgetBase( QWidget *parent )
-    : CalibrationWidgetBase( parent )
-{
-    initialize();
-}
-
-void CameraCalibrationWidgetBase::initialize()
-{
-}
-
-// MonocularCameraCalibrationWidget
-MonocularCameraCalibrationWidget::MonocularCameraCalibrationWidget( const QString &cameraIp, QWidget *parent )
-    : CameraCalibrationWidgetBase( parent )
-{
-    initialize( cameraIp );
-}
-
-void MonocularCameraCalibrationWidget::initialize( const QString &cameraIp )
-{
-    m_taskWidget = new MonocularGrabWidget( cameraIp, this );
-
-    insertWidget( 0, m_taskWidget );
-    m_taskWidget->resize( 800, 600 );
-
-    m_reportDialog = new MonocularReportDialog( application()->mainWindow() );
-    m_reportDialog->resize( 800, 600 );
-
-}
-
-MonocularGrabWidget *MonocularCameraCalibrationWidget::taskWidget() const
-{
-    return dynamic_cast<MonocularGrabWidget *>( m_taskWidget.data() );
-}
-
-void MonocularCameraCalibrationWidget::showIcon( IconBase *icon )
-{
-    m_iconViewDialog->setImage( icon->previewImage() );
-    m_iconViewDialog->exec();
-
-}
-
-void MonocularCameraCalibrationWidget::importDialog()
-{
-
-}
-
-void MonocularCameraCalibrationWidget::exportDialog()
-{
-
-}
-
-void MonocularCameraCalibrationWidget::grabFrame()
-{
-    auto taskWidget = this->taskWidget();
-
-    if ( taskWidget->isTemplateExist() ) {
-        m_iconsList->insertIcon( new MonocularIcon( taskWidget->previewImage(), taskWidget->sourceImage(), m_iconCount ) );
-        ++m_iconCount;
-    }
-}
-
-void MonocularCameraCalibrationWidget::calculate()
-{
-    std::vector< CvImage > frames;
-
-    auto icons = m_iconsList->icons();
-
-    for ( auto &i : icons ) {
-
-        auto image = i->toMonocularIcon()->sourceImage();
-
-        if ( !image.empty() ) {
-            frames.push_back( image );
-        }
-
-    }
-
-    auto calibrationResult = calcMonocularCalibration( frames, m_taskWidget->templateCount(), m_taskWidget->templateSize() );
-
-    m_reportDialog->showMaximized();
-    m_reportDialog->activateWindow();
-
-    m_reportDialog->report( calibrationResult );
-
-}
-
-// StereoCameraCalibrationWidget
-StereoCameraCalibrationWidget::StereoCameraCalibrationWidget( const QString &leftCameraIp, const QString &rightCameraIp, QWidget *parent )
-    : CameraCalibrationWidgetBase( parent )
-{
-    initialize( leftCameraIp, rightCameraIp );
-}
-
-void StereoCameraCalibrationWidget::initialize( const QString &leftCameraIp, const QString &rightCameraIp )
-{
-    m_taskWidget = new StereoGrabWidget( leftCameraIp, rightCameraIp, this );
-
-    insertWidget( 0, m_taskWidget );
-
-    m_taskWidget->resize( 800, 600 );
-
-    m_reportDialog = new StereoReportDialog( application()->mainWindow() );
-    m_reportDialog->resize( 800, 600 );
-
-}
-
-StereoGrabWidget *StereoCameraCalibrationWidget::taskWidget() const
-{
-    return dynamic_cast< StereoGrabWidget * >( m_taskWidget.data() );
-}
-
-void StereoCameraCalibrationWidget::showIcon( IconBase *icon )
-{
-    m_iconViewDialog->show();
-    m_iconViewDialog->activateWindow();
-    m_iconViewDialog->setImage( icon->toStereoIcon()->straightPreview() );
-}
-
-void StereoCameraCalibrationWidget::importDialog()
-{
-
-}
-
-void StereoCameraCalibrationWidget::exportDialog()
-{
-
-}
-
-void StereoCameraCalibrationWidget::grabFrame()
-{
-    auto taskWidget = this->taskWidget();
-
-    if ( taskWidget->isTemplateExist() ) {
-        m_iconsList->insertIcon( new StereoIcon( taskWidget->leftDisplayedImage(), taskWidget->rightDisplayedImage(),
-                                        taskWidget->leftSourceImage(), taskWidget->rightSourceImage(), m_iconCount ) );
-
-        ++m_iconCount;
-
-    }
-
-}
-
-void StereoCameraCalibrationWidget::calculate()
-{
-    std::vector< CvImage > leftFrames;
-    std::vector< CvImage > rightFrames;
-
-    auto icons = m_iconsList->icons();
-
-    for ( auto i = icons.begin(); i != icons.end(); ++i ) {
-        auto leftImage = (*i)->toStereoIcon()->leftSourceImage();
-        auto rightImage = (*i)->toStereoIcon()->rightSourceImage();
-
-        if ( !leftImage.empty() && !rightImage.empty() ) {
-            leftFrames.push_back( leftImage );
-            rightFrames.push_back( rightImage );
-        }
-
-    }
-
-    auto calibrationResult = calcStereoCalibration( leftFrames, rightFrames );
-
-    m_reportDialog->showMaximized();
-    m_reportDialog->activateWindow();
-
-    m_reportDialog->report( calibrationResult );
-
-}
-
-StereoCalibrationData StereoCameraCalibrationWidget::calcStereoCalibration( const std::vector< CvImage > &leftFrames,
-                                               const std::vector< CvImage > &rightFrames )
-{
-    m_processor.setCount( m_taskWidget->templateCount() );
-    m_processor.setSize( m_taskWidget->templateSize() );
+    m_processor.setCount( count );
+    m_processor.setSize( size );
 
     if ( leftFrames.size() != rightFrames.size() )
         throw std::exception();
@@ -519,8 +185,8 @@ StereoCalibrationData StereoCameraCalibrationWidget::calcStereoCalibration( cons
 
     StereoCalibrationData ret;
 
-    ret.setLeftCameraResults( calcMonocularCalibration( leftFrames, m_taskWidget->templateCount(), m_taskWidget->templateSize() ) );
-    ret.setRightCameraResults( calcMonocularCalibration( rightFrames, m_taskWidget->templateCount(), m_taskWidget->templateSize() ) );
+    ret.setLeftCameraResults( calcMonocularCalibration( leftFrames, count, size ) );
+    ret.setRightCameraResults( calcMonocularCalibration( rightFrames, count, size ) );
 
     if ( ret.leftCameraResults().frameSize() != ret.rightCameraResults().frameSize() )
         throw std::exception();
@@ -589,6 +255,495 @@ StereoCalibrationData StereoCameraCalibrationWidget::calcStereoCalibration( cons
     ret.setRightDMap( rightDMap );
 
     return ret;
+
 }
 
+// MonocularCalibrationWidgetBase
+MonocularCalibrationWidgetBase::MonocularCalibrationWidgetBase( QWidget *parent )
+    : CalibrationWidgetBase( parent )
+{
+    initialize();
+}
+
+void MonocularCalibrationWidgetBase::initialize()
+{
+    m_reportDialog = new MonocularReportDialog( application()->mainWindow() );
+    m_reportDialog->resize( 800, 600 );
+
+}
+
+void MonocularCalibrationWidgetBase::showIcon( IconBase *icon )
+{
+    m_iconViewDialog->setImage( icon->previewImage() );
+    m_iconViewDialog->exec();
+
+}
+
+
+// StereoCalibrationWidgetBase
+StereoCalibrationWidgetBase::StereoCalibrationWidgetBase( QWidget *parent )
+    : CalibrationWidgetBase( parent )
+{
+    initialize();
+}
+
+void StereoCalibrationWidgetBase::initialize()
+{
+    m_reportDialog = new StereoReportDialog( application()->mainWindow() );
+    m_reportDialog->resize( 800, 600 );
+
+}
+
+void StereoCalibrationWidgetBase::showIcon( IconBase *icon )
+{
+    m_iconViewDialog->show();
+    m_iconViewDialog->activateWindow();
+    m_iconViewDialog->setImage( icon->toStereoIcon()->straightPreview() );
+}
+
+// MonocularImageCalibrationWidget
+MonocularImageCalibrationWidget::MonocularImageCalibrationWidget( QWidget *parent )
+    : MonocularCalibrationWidgetBase( parent )
+{
+    initialize();
+}
+
+void MonocularImageCalibrationWidget::initialize()
+{
+    m_parametersWidget = new ParametersWidget( this );
+
+    m_layout->addWidget( m_parametersWidget );
+    m_layout->addWidget( m_iconsList );
+
+}
+
+void MonocularImageCalibrationWidget::importDialog()
+{
+    auto files = QFileDialog::getOpenFileNames(
+                            this,
+                            tr( "Select images for calibration" ),
+                            QString(),
+                            "Image files (*.png *.xpm *.jpg)" );
+
+    for ( auto &i : files )
+        loadIcon( i );
+
+}
+
+void MonocularImageCalibrationWidget::exportDialog()
+{
+
+}
+
+void MonocularImageCalibrationWidget::calculate()
+{
+    std::vector< CvImage > frames;
+
+    auto icons = m_iconsList->icons();
+
+    for ( auto &i : icons ) {
+
+        auto image = i->toMonocularIcon()->sourceImage();
+
+        if ( !image.empty() ) {
+            frames.push_back( image );
+        }
+
+    }
+
+    auto calibrationResult = calcMonocularCalibration( frames, m_parametersWidget->templateCount(), m_parametersWidget->templateSize() );
+
+    m_reportDialog->showMaximized();
+    m_reportDialog->activateWindow();
+
+    m_reportDialog->report( calibrationResult );
+
+}
+
+MonocularIcon *MonocularImageCalibrationWidget::createIcon( const CvImage &image )
+{
+    m_processor.setCount( m_parametersWidget->templateCount() );
+    m_processor.setSize( m_parametersWidget->templateSize() );
+
+    std::vector< cv::Point2f > points;
+    CvImage preview;
+
+    m_processor.processFrame( image, &preview, &points );
+
+    return new MonocularIcon( preview, image, m_iconCount );
+}
+
+void MonocularImageCalibrationWidget::addIcon( const CvImage &image )
+{
+    CalibrationWidgetBase::addIcon( createIcon( image ) );
+
+}
+
+void MonocularImageCalibrationWidget::insertIcon( const CvImage &image )
+{
+    CalibrationWidgetBase::insertIcon( createIcon( image ) );
+}
+
+void MonocularImageCalibrationWidget::loadIcon( const QString &fileName )
+{
+    CvImage img = cv::imread( fileName.toStdString() );
+
+    if ( !img.empty() ) {
+        addIcon( img );
+
+    }
+
+}
+
+// StereoImageCalibrationWidget
+StereoImageCalibrationWidget::StereoImageCalibrationWidget( QWidget *parent )
+    : StereoCalibrationWidgetBase( parent )
+{
+    initialize();
+}
+
+void StereoImageCalibrationWidget::initialize()
+{
+    m_parametersWidget = new ParametersWidget( this );
+
+    m_layout->addWidget( m_parametersWidget );
+    m_layout->addWidget( m_iconsList );
+
+}
+
+void StereoImageCalibrationWidget::importDialog()
+{
+    StereoFilesListDialog dlg( this );
+
+    if ( dlg.exec() == StereoFilesListDialog::Accepted ) {
+        auto leftFileNames = dlg.leftFileNames();
+        auto rightFileNames = dlg.rightFileNames();
+
+        for ( auto i = 0; i < leftFileNames.size(); ++i ) {
+            loadIcon( leftFileNames[i], rightFileNames[i] );
+        }
+
+    }
+
+}
+
+void StereoImageCalibrationWidget::exportDialog()
+{
+
+}
+
+void StereoImageCalibrationWidget::calculate()
+{
+    std::vector< CvImage > leftFrames;
+    std::vector< CvImage > rightFrames;
+
+    auto icons = m_iconsList->icons();
+
+    for ( auto i = icons.begin(); i != icons.end(); ++i ) {
+        auto leftImage = (*i)->toStereoIcon()->leftSourceImage();
+        auto rightImage = (*i)->toStereoIcon()->rightSourceImage();
+
+        if ( !leftImage.empty() && !rightImage.empty() ) {
+            leftFrames.push_back( leftImage );
+            rightFrames.push_back( rightImage );
+        }
+
+    }
+
+    auto calibrationResult = calcStereoCalibration( leftFrames, rightFrames, m_parametersWidget->templateCount(), m_parametersWidget->templateSize() );
+
+    m_reportDialog->showMaximized();
+    m_reportDialog->activateWindow();
+
+    m_reportDialog->report( calibrationResult );
+
+}
+
+void StereoImageCalibrationWidget::addIcon( const CvImage &leftImage, const CvImage &rightImage )
+{
+    CalibrationWidgetBase::addIcon( createIcon( leftImage, rightImage ) );
+}
+
+void StereoImageCalibrationWidget::insertIcon( const CvImage &leftImage, const CvImage &rightImage )
+{
+    CalibrationWidgetBase::insertIcon( createIcon( leftImage, rightImage ) );
+}
+
+void StereoImageCalibrationWidget::loadIcon( const QString &leftFileName, const QString &rightFileName )
+{
+    CvImage leftImg = cv::imread( leftFileName.toStdString() );
+    CvImage rightImg = cv::imread( rightFileName.toStdString() );
+
+    if ( !leftImg.empty() && !rightImg.empty() ) {
+        addIcon( leftImg, rightImg );
+
+    }
+
+}
+
+StereoIcon *StereoImageCalibrationWidget::createIcon( const CvImage &leftImage, const CvImage &rightImage )
+{
+    m_processor.setCount( m_parametersWidget->templateCount() );
+    m_processor.setSize( m_parametersWidget->templateSize() );
+
+    std::vector< cv::Point2f > points;
+    CvImage leftPreview;
+    CvImage rightPreview;
+
+    m_processor.processFrame( leftImage, &leftPreview, &points );
+    m_processor.processFrame( rightImage, &rightPreview, &points );
+
+    return new StereoIcon( leftPreview, rightPreview, leftImage, rightImage, m_iconCount );
+
+}
+
+// CameraCalibrationWidgetBase
+CameraCalibrationWidgetBase::CameraCalibrationWidgetBase()
+{
+    initialize();
+}
+
+void CameraCalibrationWidgetBase::initialize()
+{
+}
+
+// MonocularCameraCalibrationWidget
+MonocularCameraCalibrationWidget::MonocularCameraCalibrationWidget( const QString &cameraIp, QWidget *parent )
+    : MonocularCalibrationWidgetBase( parent )
+{
+    initialize( cameraIp );
+}
+
+void MonocularCameraCalibrationWidget::initialize( const QString &cameraIp )
+{
+    m_splitter = new QSplitter( Qt::Vertical, this );
+
+    m_layout->addWidget( m_splitter );
+
+    m_taskWidget = new MonocularGrabWidget( cameraIp, this );
+    m_taskWidget->resize( 800, 600 );
+
+    m_splitter->addWidget( m_taskWidget );
+    m_splitter->addWidget( m_iconsList );
+
+}
+
+MonocularGrabWidget *MonocularCameraCalibrationWidget::taskWidget() const
+{
+    return dynamic_cast<MonocularGrabWidget *>( m_taskWidget.data() );
+}
+
+void MonocularCameraCalibrationWidget::importDialog()
+{
+    auto files = QFileDialog::getOpenFileNames(
+                            this,
+                            tr( "Select images for calibration" ),
+                            QString(),
+                            "Image files (*.png *.xpm *.jpg)" );
+
+    for ( auto &i : files )
+        loadIcon( i );
+
+}
+
+void MonocularCameraCalibrationWidget::exportDialog()
+{
+
+}
+
+void MonocularCameraCalibrationWidget::calculate()
+{
+    std::vector< CvImage > frames;
+
+    auto icons = m_iconsList->icons();
+
+    for ( auto &i : icons ) {
+
+        auto image = i->toMonocularIcon()->sourceImage();
+
+        if ( !image.empty() ) {
+            frames.push_back( image );
+        }
+
+    }
+
+    auto calibrationResult = calcMonocularCalibration( frames, m_taskWidget->templateCount(), m_taskWidget->templateSize() );
+
+    m_reportDialog->showMaximized();
+    m_reportDialog->activateWindow();
+
+    m_reportDialog->report( calibrationResult );
+
+}
+
+void MonocularCameraCalibrationWidget::grabFrame()
+{
+    auto taskWidget = this->taskWidget();
+
+    if ( taskWidget->isTemplateExist() ) {
+        m_iconsList->insertIcon( new MonocularIcon( taskWidget->previewImage(), taskWidget->sourceImage(), m_iconCount ) );
+        ++m_iconCount;
+    }
+}
+
+MonocularIcon *MonocularCameraCalibrationWidget::createIcon( const CvImage &image )
+{
+    m_processor.setCount( m_taskWidget->templateCount() );
+    m_processor.setSize( m_taskWidget->templateSize() );
+
+    std::vector< cv::Point2f > points;
+    CvImage preview;
+
+    m_processor.processFrame( image, &preview, &points );
+
+    return new MonocularIcon( preview, image, m_iconCount );
+}
+
+void MonocularCameraCalibrationWidget::addIcon( const CvImage &image )
+{
+    CalibrationWidgetBase::addIcon( createIcon( image ) );
+
+}
+
+void MonocularCameraCalibrationWidget::insertIcon( const CvImage &image )
+{
+    CalibrationWidgetBase::insertIcon( createIcon( image ) );
+}
+
+void MonocularCameraCalibrationWidget::loadIcon( const QString &fileName )
+{
+    CvImage img = cv::imread( fileName.toStdString() );
+
+    if ( !img.empty() ) {
+        addIcon( img );
+
+    }
+
+}
+
+// StereoCameraCalibrationWidget
+StereoCameraCalibrationWidget::StereoCameraCalibrationWidget( const QString &leftCameraIp, const QString &rightCameraIp, QWidget *parent )
+    : StereoCalibrationWidgetBase( parent )
+{
+    initialize( leftCameraIp, rightCameraIp );
+}
+
+void StereoCameraCalibrationWidget::initialize( const QString &leftCameraIp, const QString &rightCameraIp )
+{
+    m_splitter = new QSplitter( Qt::Vertical, this );
+
+    m_layout->addWidget( m_splitter );
+
+    m_taskWidget = new StereoGrabWidget( leftCameraIp, rightCameraIp, this );
+    m_taskWidget->resize( 800, 600 );
+
+    m_splitter->addWidget( m_taskWidget );
+    m_splitter->addWidget( m_iconsList );
+
+}
+
+StereoGrabWidget *StereoCameraCalibrationWidget::taskWidget() const
+{
+    return dynamic_cast< StereoGrabWidget * >( m_taskWidget.data() );
+}
+
+void StereoCameraCalibrationWidget::importDialog()
+{
+    StereoFilesListDialog dlg( this );
+
+    if ( dlg.exec() == StereoFilesListDialog::Accepted ) {
+        auto leftFileNames = dlg.leftFileNames();
+        auto rightFileNames = dlg.rightFileNames();
+
+        for ( auto i = 0; i < leftFileNames.size(); ++i ) {
+            loadIcon( leftFileNames[i], rightFileNames[i] );
+        }
+
+    }
+
+}
+
+void StereoCameraCalibrationWidget::exportDialog()
+{
+
+}
+
+void StereoCameraCalibrationWidget::grabFrame()
+{
+    auto taskWidget = this->taskWidget();
+
+    if ( taskWidget->isTemplateExist() ) {
+        m_iconsList->insertIcon( new StereoIcon( taskWidget->leftDisplayedImage(), taskWidget->rightDisplayedImage(),
+                                        taskWidget->leftSourceImage(), taskWidget->rightSourceImage(), m_iconCount ) );
+
+        ++m_iconCount;
+
+    }
+
+}
+
+void StereoCameraCalibrationWidget::calculate()
+{
+    std::vector< CvImage > leftFrames;
+    std::vector< CvImage > rightFrames;
+
+    auto icons = m_iconsList->icons();
+
+    for ( auto i = icons.begin(); i != icons.end(); ++i ) {
+        auto leftImage = (*i)->toStereoIcon()->leftSourceImage();
+        auto rightImage = (*i)->toStereoIcon()->rightSourceImage();
+
+        if ( !leftImage.empty() && !rightImage.empty() ) {
+            leftFrames.push_back( leftImage );
+            rightFrames.push_back( rightImage );
+        }
+
+    }
+
+    auto calibrationResult = calcStereoCalibration( leftFrames, rightFrames, m_taskWidget->templateCount(), m_taskWidget->templateSize() );
+
+    m_reportDialog->showMaximized();
+    m_reportDialog->activateWindow();
+
+    m_reportDialog->report( calibrationResult );
+
+}
+
+void StereoCameraCalibrationWidget::addIcon( const CvImage &leftImage, const CvImage &rightImage )
+{
+    CalibrationWidgetBase::addIcon( createIcon( leftImage, rightImage ) );
+}
+
+void StereoCameraCalibrationWidget::insertIcon( const CvImage &leftImage, const CvImage &rightImage )
+{
+    CalibrationWidgetBase::insertIcon( createIcon( leftImage, rightImage ) );
+}
+
+void StereoCameraCalibrationWidget::loadIcon( const QString &leftFileName, const QString &rightFileName )
+{
+    CvImage leftImg = cv::imread( leftFileName.toStdString() );
+    CvImage rightImg = cv::imread( rightFileName.toStdString() );
+
+    if ( !leftImg.empty() && !rightImg.empty() ) {
+        addIcon( leftImg, rightImg );
+
+    }
+
+}
+
+StereoIcon *StereoCameraCalibrationWidget::createIcon( const CvImage &leftImage, const CvImage &rightImage )
+{
+    m_processor.setCount( m_taskWidget->templateCount() );
+    m_processor.setSize( m_taskWidget->templateSize() );
+
+    std::vector< cv::Point2f > points;
+    CvImage leftPreview;
+    CvImage rightPreview;
+
+    m_processor.processFrame( leftImage, &leftPreview, &points );
+    m_processor.processFrame( rightImage, &rightPreview, &points );
+
+    return new StereoIcon( leftPreview, rightPreview, leftImage, rightImage, m_iconCount );
+
+}
 

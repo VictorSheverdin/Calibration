@@ -604,3 +604,5 @@ bool StereoCalibrationData::loadYaml( const std::string &fileName )
     return false;
 
 }
+
+

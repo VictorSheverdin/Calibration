@@ -37,3 +37,4 @@ void setVimbaFeature( AVT::VmbAPI::VimbaSystem &system, const std::string &key, 
 }
 
 void vimbaRunCommand( AVT::VmbAPI::VimbaSystem &system, const std::string &key );
+

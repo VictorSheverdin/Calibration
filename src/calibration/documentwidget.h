@@ -2,6 +2,8 @@
 
 #include <QWidget>
 
+#include "src/common/supportwidgets.h"
+
 class QVBoxLayout;
 
 class CalibrationWidgetBase;
@@ -9,24 +11,25 @@ class MonocularCameraCalibrationWidget;
 class StereoCameraCalibrationWidget;
 
 class CalibrationDocumentBase;
-class MonocularCalibrationWidget;
-class StereoCalibrationWidget;
+class MonocularCalibrationWidgetBase;
+class StereoCalibrationWidgetBase;
 class CameraCalibrationWidgetBase;
+class MonocularImageCalibrationWidget;
+class StereoImageCalibrationWidget;
 class MonocularCameraCalibrationDocument;
 class StereoCameraCalibrationDocument;
 class TrippleCalibrationDocument;
 class ReportDocument;
 
-class DocumentBase : public QWidget
+
+class CalibrationDocumentBase : public DocumentBase
 {
     Q_OBJECT
 
 public:
-    explicit DocumentBase( QWidget *widget, QWidget* parent = nullptr );
+    explicit CalibrationDocumentBase( QWidget* parent = nullptr );
 
-    CalibrationDocumentBase *toCalibrationDocument();
-    const CalibrationDocumentBase *toCalibrationDocument() const;
-    bool isCalibrationDocument() const;
+    CalibrationWidgetBase *widget() const;
 
     MonocularCameraCalibrationDocument *toMonocularCalibrationDocument();
     const MonocularCameraCalibrationDocument *toMonocularCalibrationDocument() const;
@@ -44,28 +47,6 @@ public:
     const ReportDocument *toReportDocument() const;
     bool isReportDocument() const;
 
-    void setWidget( QWidget *widget );
-    QWidget *widget() const;
-
-protected:
-    QVBoxLayout *m_layout;
-
-    QWidget *m_widget;
-
-private:
-    void initialize();
-
-};
-
-class CalibrationDocumentBase : public DocumentBase
-{
-    Q_OBJECT
-
-public:
-    explicit CalibrationDocumentBase( QWidget* parent = nullptr );
-
-    CalibrationWidgetBase *widget() const;
-
 public slots:
     void importDialog();
     void exportDialog();
@@ -79,16 +60,19 @@ private:
 
 };
 
-class CameraCalibrationDocumentBase : public DocumentBase
+class CameraCalibrationDocumentBase : public CalibrationDocumentBase
 {
     Q_OBJECT
 
 public:
     explicit CameraCalibrationDocumentBase( QWidget* parent = nullptr );
 
-    CameraCalibrationWidgetBase *widget() const;
+    CalibrationWidgetBase *widget() const;
 
 public slots:
+    void importDialog();
+    void exportDialog();
+
     void grabFrame();
     void calculate();
 
@@ -99,28 +83,28 @@ private:
 
 };
 
-class MonocularCalibrationDocument : public CalibrationDocumentBase
+class MonocularImageCalibrationDocument : public CalibrationDocumentBase
 {
     Q_OBJECT
 
 public:
-    explicit MonocularCalibrationDocument( QWidget* parent = nullptr );
+    explicit MonocularImageCalibrationDocument( QWidget* parent = nullptr );
 
-    MonocularCalibrationWidget *widget() const;
+    MonocularImageCalibrationWidget *widget() const;
 
 private:
     void initialize();
 
 };
 
-class StereoCalibrationDocument : public CalibrationDocumentBase
+class StereoImageCalibrationDocument : public CalibrationDocumentBase
 {
     Q_OBJECT
 
 public:
-    explicit StereoCalibrationDocument( QWidget* parent = nullptr );
+    explicit StereoImageCalibrationDocument( QWidget* parent = nullptr );
 
-    StereoCalibrationWidget *widget() const;
+    StereoImageCalibrationWidget *widget() const;
 
 private:
     void initialize();

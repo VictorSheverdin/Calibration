@@ -4,105 +4,6 @@
 
 #include "calibrationwidget.h"
 
-// DocumentBase
-DocumentBase::DocumentBase( QWidget *widget, QWidget* parent )
-    : QWidget( parent )
-{
-    initialize();
-}
-
-void DocumentBase::initialize()
-{
-    m_layout = new QVBoxLayout( this );
-}
-
-CalibrationDocumentBase *DocumentBase::toCalibrationDocument()
-{
-    return dynamic_cast< CalibrationDocumentBase * >( this );
-}
-
-const CalibrationDocumentBase *DocumentBase::toCalibrationDocument() const
-{
-    return dynamic_cast< const CalibrationDocumentBase * >( this );
-}
-
-bool DocumentBase::isCalibrationDocument() const
-{
-    return toCalibrationDocument();
-}
-
-MonocularCameraCalibrationDocument *DocumentBase::toMonocularCalibrationDocument()
-{
-    return dynamic_cast< MonocularCameraCalibrationDocument * >( this );
-}
-
-const MonocularCameraCalibrationDocument *DocumentBase::toMonocularCalibrationDocument() const
-{
-    return dynamic_cast< const MonocularCameraCalibrationDocument * >( this );
-}
-
-bool DocumentBase::isMonocularCalibrationDocument() const
-{
-    return toMonocularCalibrationDocument();
-}
-
-StereoCameraCalibrationDocument *DocumentBase::toStereoCalibrationDocument()
-{
-    return dynamic_cast< StereoCameraCalibrationDocument * >( this );
-}
-
-const StereoCameraCalibrationDocument *DocumentBase::toStereoCalibrationDocument() const
-{
-    return dynamic_cast< const StereoCameraCalibrationDocument * >( this );
-}
-
-bool DocumentBase::isStereoCalibrationDocument() const
-{
-    return toStereoCalibrationDocument();
-}
-
-TrippleCalibrationDocument *DocumentBase::toTrippleCalibrationDocument()
-{
-    return dynamic_cast< TrippleCalibrationDocument * >( this );
-}
-
-const TrippleCalibrationDocument *DocumentBase::toTrippleCalibrationDocument() const
-{
-    return dynamic_cast< const TrippleCalibrationDocument * >( this );
-}
-
-bool DocumentBase::isTrippleCalibrationDocument() const
-{
-    return toTrippleCalibrationDocument();
-}
-
-ReportDocument *DocumentBase::toReportDocument()
-{
-    return dynamic_cast< ReportDocument * >( this );
-}
-
-const ReportDocument *DocumentBase::toReportDocument() const
-{
-    return dynamic_cast< const ReportDocument * >( this );
-}
-
-bool DocumentBase::isReportDocument() const
-{
-    return toReportDocument();
-}
-
-void DocumentBase::setWidget( QWidget *widget )
-{
-    m_widget = widget;
-
-    m_layout->addWidget( widget );
-}
-
-QWidget *DocumentBase::widget() const
-{
-    return m_widget;
-}
-
 // CalibrationDocumentBase
 CalibrationDocumentBase::CalibrationDocumentBase( QWidget* parent )
     : DocumentBase( parent )
@@ -112,6 +13,66 @@ CalibrationDocumentBase::CalibrationDocumentBase( QWidget* parent )
 
 void CalibrationDocumentBase::initialize()
 {
+}
+
+MonocularCameraCalibrationDocument *CalibrationDocumentBase::toMonocularCalibrationDocument()
+{
+    return dynamic_cast< MonocularCameraCalibrationDocument * >( this );
+}
+
+const MonocularCameraCalibrationDocument *CalibrationDocumentBase::toMonocularCalibrationDocument() const
+{
+    return dynamic_cast< const MonocularCameraCalibrationDocument * >( this );
+}
+
+bool CalibrationDocumentBase::isMonocularCalibrationDocument() const
+{
+    return toMonocularCalibrationDocument();
+}
+
+StereoCameraCalibrationDocument *CalibrationDocumentBase::toStereoCalibrationDocument()
+{
+    return dynamic_cast< StereoCameraCalibrationDocument * >( this );
+}
+
+const StereoCameraCalibrationDocument *CalibrationDocumentBase::toStereoCalibrationDocument() const
+{
+    return dynamic_cast< const StereoCameraCalibrationDocument * >( this );
+}
+
+bool CalibrationDocumentBase::isStereoCalibrationDocument() const
+{
+    return toStereoCalibrationDocument();
+}
+
+TrippleCalibrationDocument *CalibrationDocumentBase::toTrippleCalibrationDocument()
+{
+    return dynamic_cast< TrippleCalibrationDocument * >( this );
+}
+
+const TrippleCalibrationDocument *CalibrationDocumentBase::toTrippleCalibrationDocument() const
+{
+    return dynamic_cast< const TrippleCalibrationDocument * >( this );
+}
+
+bool CalibrationDocumentBase::isTrippleCalibrationDocument() const
+{
+    return toTrippleCalibrationDocument();
+}
+
+ReportDocument *CalibrationDocumentBase::toReportDocument()
+{
+    return dynamic_cast< ReportDocument * >( this );
+}
+
+const ReportDocument *CalibrationDocumentBase::toReportDocument() const
+{
+    return dynamic_cast< const ReportDocument * >( this );
+}
+
+bool CalibrationDocumentBase::isReportDocument() const
+{
+    return toReportDocument();
 }
 
 CalibrationWidgetBase *CalibrationDocumentBase::widget() const
@@ -157,7 +118,7 @@ void CalibrationDocumentBase::clearIcons()
 
 // CameraCalibrationDocumentBase
 CameraCalibrationDocumentBase::CameraCalibrationDocumentBase( QWidget* parent )
-    : DocumentBase( parent )
+    : CalibrationDocumentBase( parent )
 {
     initialize();
 }
@@ -166,14 +127,24 @@ void CameraCalibrationDocumentBase::initialize()
 {
 }
 
-CameraCalibrationWidgetBase *CameraCalibrationDocumentBase::widget() const
+CalibrationWidgetBase *CameraCalibrationDocumentBase::widget() const
 {
-    return dynamic_cast< CameraCalibrationWidgetBase * >( m_widget );
+    return dynamic_cast< CalibrationWidgetBase * >( m_widget );
+}
+
+void CameraCalibrationDocumentBase::importDialog()
+{
+
+}
+
+void CameraCalibrationDocumentBase::exportDialog()
+{
+
 }
 
 void CameraCalibrationDocumentBase::grabFrame()
 {
-    auto widget = this->widget();
+    auto widget = dynamic_cast< CameraCalibrationWidgetBase * >( m_widget );
 
     if ( widget )
         widget->grabFrame();
@@ -198,38 +169,38 @@ void CameraCalibrationDocumentBase::clearIcons()
 
 }
 
-// MonocularCalibrationDocument
-MonocularCalibrationDocument::MonocularCalibrationDocument( QWidget* parent )
+// MonocularImageCalibrationDocument
+MonocularImageCalibrationDocument::MonocularImageCalibrationDocument( QWidget* parent )
     : CalibrationDocumentBase( parent )
 {
     initialize();
 }
 
-void MonocularCalibrationDocument::initialize()
+void MonocularImageCalibrationDocument::initialize()
 {
-    setWidget( new MonocularCalibrationWidget( this ) );
+    setWidget( new MonocularImageCalibrationWidget( this ) );
 }
 
-MonocularCalibrationWidget *MonocularCalibrationDocument::widget() const
+MonocularImageCalibrationWidget *MonocularImageCalibrationDocument::widget() const
 {
-    return dynamic_cast< MonocularCalibrationWidget * >( m_widget );
+    return dynamic_cast< MonocularImageCalibrationWidget * >( m_widget );
 }
 
-// StereoCalibrationDocument
-StereoCalibrationDocument::StereoCalibrationDocument( QWidget* parent )
+// StereoImageCalibrationDocument
+StereoImageCalibrationDocument::StereoImageCalibrationDocument( QWidget* parent )
     : CalibrationDocumentBase( parent )
 {
     initialize();
 }
 
-void StereoCalibrationDocument::initialize()
+void StereoImageCalibrationDocument::initialize()
 {
-    setWidget( new StereoCalibrationWidget( this ) );
+    setWidget( new StereoImageCalibrationWidget( this ) );
 }
 
-StereoCalibrationWidget *StereoCalibrationDocument::widget() const
+StereoImageCalibrationWidget *StereoImageCalibrationDocument::widget() const
 {
-    return dynamic_cast< StereoCalibrationWidget * >( m_widget );
+    return dynamic_cast< StereoImageCalibrationWidget * >( m_widget );
 }
 
 // MonocularCameraCalibrationDocument

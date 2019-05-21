@@ -62,6 +62,26 @@ private:
     void initialize();
 };
 
+class DocumentBase : public QWidget
+{
+    Q_OBJECT
+
+public:
+    explicit DocumentBase( QWidget *widget, QWidget* parent = nullptr );
+
+    void setWidget( QWidget *widget );
+    QWidget *widget() const;
+
+protected:
+    QVBoxLayout *m_layout;
+
+    QWidget *m_widget;
+
+private:
+    void initialize();
+
+};
+
 class DialogBase : public QDialog
 {
     Q_OBJECT

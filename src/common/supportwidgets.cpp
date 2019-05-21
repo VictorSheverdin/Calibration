@@ -82,6 +82,30 @@ void FilesListWidget::removeSelected()
         takeItem( *i );
 }
 
+// DocumentBase
+DocumentBase::DocumentBase( QWidget *widget, QWidget* parent )
+    : QWidget( parent )
+{
+    initialize();
+}
+
+void DocumentBase::initialize()
+{
+    m_layout = new QVBoxLayout( this );
+}
+
+void DocumentBase::setWidget( QWidget *widget )
+{
+    m_widget = widget;
+
+    m_layout->addWidget( widget );
+}
+
+QWidget *DocumentBase::widget() const
+{
+    return m_widget;
+}
+
 // DialogBase
 DialogBase::DialogBase( QWidget *parent )
     : QDialog( parent )
