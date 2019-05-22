@@ -8,6 +8,9 @@ CvImage resizeTo( const CvImage &image, unsigned int size );
 
 CvImage stackImages( const CvImage &leftImage, const CvImage &rightImage, const double factor = 1.0 );
 
+CvImage makeOverlappedPreview( const CvImage &leftPreviewImage, const CvImage &rightPreviewImage );
+CvImage makeStraightPreview( const CvImage &leftPreviewImage, const CvImage &rightPreviewImage );
+
 CvImage colorizeDisparity( const cv::Mat &disparity );
 
 void checkVimbaStatus( VmbErrorType status, std::string message );

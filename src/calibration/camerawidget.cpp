@@ -117,7 +117,7 @@ MonocularCameraWidget::MonocularCameraWidget( const QString &cameraIp, QWidget* 
 
 void MonocularCameraWidget::initialize()
 {
-    m_previewWidget = new PreviewWidget( this );
+    m_previewWidget = new CameraPreviewWidget( this );
     addWidget( m_previewWidget );
 
     connect( &m_camera, &VimbaCamera::receivedFrame, this, &MonocularCameraWidget::updateFrame );
@@ -201,8 +201,8 @@ StereoCameraWidget::StereoCameraWidget( const QString &leftCameraIp, const QStri
 
 void StereoCameraWidget::initialize()
 {
-    m_leftCameraWidget = new PreviewWidget( this );
-    m_rightCameraWidget = new PreviewWidget( this );
+    m_leftCameraWidget = new CameraPreviewWidget( this );
+    m_rightCameraWidget = new CameraPreviewWidget( this );
 
     addWidget( m_leftCameraWidget );
     addWidget( m_rightCameraWidget );
@@ -347,9 +347,9 @@ void TripleCameraWidget::initialize( const int camera1Index, const int camera2In
     m_videoCaptures[1].open( camera2Index );
     m_videoCaptures[2].open( camera3Index );
 
-    m_cameraWidgets[0] = new PreviewWidget( this );
-    m_cameraWidgets[1] = new PreviewWidget( this );
-    m_cameraWidgets[2] = new PreviewWidget( this );
+    m_cameraWidgets[0] = new CameraPreviewWidget( this );
+    m_cameraWidgets[1] = new CameraPreviewWidget( this );
+    m_cameraWidgets[2] = new CameraPreviewWidget( this );
 
     addWidget( m_cameraWidgets[0] );
     addWidget( m_cameraWidgets[1] );

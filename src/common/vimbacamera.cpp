@@ -75,7 +75,10 @@ VimbaCamera::VimbaCamera( const std::string &ip )
 
 VimbaCamera::~VimbaCamera()
 {
+    setVimbaFeature( m_camera, "TriggerMode", "Off" );
+
     m_camera->Close();
+
 }
 
 void VimbaCamera::initialize( const std::string &ip )
@@ -106,7 +109,6 @@ void VimbaCamera::initialize( const std::string &ip )
 CvImage VimbaCamera::getFrame()
 {
     return m_frameObserver->getFrame();
-
 }
 
 void VimbaCamera::setMaxValue( const char* const name )

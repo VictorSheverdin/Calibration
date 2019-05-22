@@ -8,19 +8,19 @@
 #include "src/common/ipwidget.h"
 
 MainWindow::MainWindow( QWidget *parent )
-    : QMainWindow(parent)
+    : MainWindowBase( parent )
 {
     initialize();
 }
 
 MainWindow::MainWindow( const QString &cameraIp, QWidget *parent )
-    : QMainWindow(parent)
+    : MainWindowBase( parent )
 {
     initialize( cameraIp );
 }
 
 MainWindow::MainWindow( const QString &leftCameraIp, const QString &rightCameraIp, QWidget *parent )
-    : QMainWindow(parent)
+    : MainWindowBase( parent )
 {
     initialize( leftCameraIp, rightCameraIp );
 }
@@ -30,7 +30,6 @@ void MainWindow::initialize( const QString &cameraIp )
     initialize();
 
     addMonocularCameraCalibrationDocument( cameraIp );
-
 }
 
 void MainWindow::initialize( const QString &leftCameraIp, const QString &rightCameraIp )
@@ -43,7 +42,6 @@ void MainWindow::initialize( const QString &leftCameraIp, const QString &rightCa
 
 void MainWindow::initialize()
 {
-    setupDocuments();
     setupActions();
     setupMenus();
     setupToolBars();
@@ -52,11 +50,6 @@ void MainWindow::initialize()
     startTimer( m_grabInterval );
     setAttribute( Qt::WA_DeleteOnClose );
 
-}
-
-void MainWindow::addDocument( DocumentBase *document )
-{
-    m_documentArea->addDocument( document );
 }
 
 void MainWindow::addMonocularCameraCalibrationDocument(const QString &cameraIp )
@@ -109,17 +102,10 @@ ReportDocument *MainWindow::currentReportDocument() const
     return getCurrentDocument< ReportDocument >();
 }
 
-void MainWindow::setupDocuments()
-{
-    m_documentArea = new DocumentArea( this );
-
-    setCentralWidget( m_documentArea );
-}
-
 void MainWindow::setupActions()
 {
-    m_newMonocularDocumentAction = new QAction( QIcon( ":/resources/images/new.ico" ), tr( "New monocular calibration" ), this );
-    m_newStereoDocumentAction = new QAction( QIcon( ":/resources/images/new.ico" ), tr( "New stereo calibration" ), this );
+    m_newMonocularImageDocumentAction = new QAction( QIcon( ":/resources/images/new.ico" ), tr( "New monocular image calibration" ), this );
+    m_newStereoImageDocumentAction = new QAction( QIcon( ":/resources/images/new.ico" ), tr( "New stereo image calibration" ), this );
     m_newMonocularCameraDocumentAction = new QAction( QIcon( ":/resources/images/new.ico" ), tr( "New monocular camera calibration" ), this );
     m_newStereoCameraDocumentAction = new QAction( QIcon( ":/resources/images/new.ico" ), tr( "New stereo camera calibration" ), this );
     m_openAction = new QAction( QIcon( ":/resources/images/open.ico" ), tr( "Open" ), this );
@@ -142,8 +128,8 @@ void MainWindow::setupActions()
     m_exitAction = new QAction( QIcon( ":/resources/images/power.ico" ), tr( "Exit" ), this );
     m_aboutAction = new QAction( QIcon( ":/resources/images/help.ico" ), tr( "About" ), this );
 
-    connect( m_newMonocularDocumentAction, &QAction::triggered, this, &MainWindow::addMonocularCalibrationDialog );
-    connect( m_newStereoDocumentAction, &QAction::triggered, this, &MainWindow::addStereoCalibrationDialog );
+    connect( m_newMonocularImageDocumentAction, &QAction::triggered, this, &MainWindow::addMonocularCalibrationDialog );
+    connect( m_newStereoImageDocumentAction, &QAction::triggered, this, &MainWindow::addStereoCalibrationDialog );
 
     connect( m_newMonocularCameraDocumentAction, &QAction::triggered, this, &MainWindow::addMonocularCameraCalibrationDialog );
     connect( m_newStereoCameraDocumentAction, &QAction::triggered, this, &MainWindow::addStereoCameraCalibrationDialog );
@@ -164,8 +150,8 @@ void MainWindow::setupMenus()
     m_menuBar = new QMenuBar(this);
 
     auto fileMenu = m_menuBar->addMenu( tr( "File" ) );
-    fileMenu->addAction( m_newMonocularDocumentAction );
-    fileMenu->addAction( m_newStereoDocumentAction );
+    fileMenu->addAction( m_newMonocularImageDocumentAction );
+    fileMenu->addAction( m_newStereoImageDocumentAction );
     fileMenu->addSeparator();
     fileMenu->addAction( m_newMonocularCameraDocumentAction );
     fileMenu->addAction( m_newStereoCameraDocumentAction );
@@ -201,8 +187,8 @@ void MainWindow::setupToolBars()
     m_toolBar = new QToolBar( tr( "Project tool bar" ), this );
     addToolBar( m_toolBar );
 
-    m_toolBar->addAction( m_newMonocularDocumentAction );
-    m_toolBar->addAction( m_newStereoDocumentAction );
+    m_toolBar->addAction( m_newMonocularImageDocumentAction );
+    m_toolBar->addAction( m_newStereoImageDocumentAction );
     m_toolBar->addSeparator();
     m_toolBar->addAction( m_newMonocularCameraDocumentAction );
     m_toolBar->addAction( m_newStereoCameraDocumentAction );
@@ -214,12 +200,6 @@ void MainWindow::setupToolBars()
     m_toolBar->addAction( m_autoGrabAction );
     m_toolBar->addSeparator();
     m_toolBar->addAction( m_calculateAction );
-}
-
-void MainWindow::setupStatusBar()
-{
-    m_statusBar = new QStatusBar( this );
-    setStatusBar( m_statusBar );
 }
 
 void MainWindow::timerEvent( QTimerEvent * )

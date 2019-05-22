@@ -8,12 +8,12 @@
 
 #include <opencv2/opencv.hpp>
 
-class PreviewWidget : public ImageWidget
+class CameraPreviewWidget : public ImageWidget
 {
     Q_OBJECT
 
 public:
-    PreviewWidget( QWidget* parent = nullptr );
+    CameraPreviewWidget( QWidget* parent = nullptr );
 
     const CvImage sourceImage() const;
     const CvImage previewImage() const;

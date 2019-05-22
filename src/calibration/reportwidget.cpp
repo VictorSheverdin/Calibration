@@ -2,7 +2,7 @@
 
 #include "reportwidget.h"
 
-#include "iconswidget.h"
+#include "calibrationiconswidget.h"
 #include "camerawidget.h"
 #include "src/common/functions.h"
 
@@ -40,7 +40,7 @@ void ReportWidget::addSpace( const int num )
         addText( " " );
 }
 
-void ReportWidget::addIcon( const IconBase& icon )
+void ReportWidget::addIcon( const CalibrationIconBase& icon )
 {
     addImage( icon.previewImage() );
 }
@@ -214,7 +214,7 @@ void StereoReportWidget::report(const StereoCalibrationData &calibration )
             auto image1 = resizeTo( calibration.leftCameraResults().result( i ).processedView(), m_reportFrameSize );
             auto image2 = resizeTo( calibration.rightCameraResults().result( i ).processedView(), m_reportFrameSize );
 
-            auto stitchedImage = StereoIcon::makeStraightPreview( image1, image2 );
+            auto stitchedImage = makeStraightPreview( image1, image2 );
 
             if ( !stitchedImage.empty() ) {
                 addImage( stitchedImage );
@@ -303,7 +303,7 @@ void StereoReportWidget::report(const StereoCalibrationData &calibration )
                 auto image1 = resizeTo( leftRectifiedImage, m_reportFrameSize );
                 auto image2 = resizeTo( rightRectifiedImage, m_reportFrameSize );
 
-                auto stitchedImage = StereoIcon::makeStraightPreview( image1, image2 );
+                auto stitchedImage = makeStraightPreview( image1, image2 );
 
                 if ( !stitchedImage.empty() ) {
                     drawTraceLines( stitchedImage, 15 );

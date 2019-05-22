@@ -1,58 +1,55 @@
 #include "src/common/precompiled.h"
 
-#include "iconswidget.h"
+#include "calibrationiconswidget.h"
+
 #include "src/common/defs.h"
 #include "src/common/functions.h"
 
-// IconBase
-IconBase::IconBase( const CvImage image, const int number )
-    : QListWidgetItem( QPixmap::fromImage( QtImage( image ) ) , QObject::tr("Frame") + " " + QString::number( number ) ), m_previewImage( image )
+// CalibrationIconBase
+CalibrationIconBase::CalibrationIconBase( const CvImage image, const int number )
+    : IconBase( image, number )
 {
     initialize();
 }
 
-void IconBase::initialize()
+void CalibrationIconBase::initialize()
 {
 }
 
-bool IconBase::isMonocularIcon() const
+bool CalibrationIconBase::isMonocularIcon() const
 {
     return toMonocularIcon();
 }
 
-bool IconBase::isStereoIcon() const
+bool CalibrationIconBase::isStereoIcon() const
 {
     return toStereoIcon();
 }
 
-MonocularIcon *IconBase::toMonocularIcon()
+MonocularIcon *CalibrationIconBase::toMonocularIcon()
 {
     return dynamic_cast< MonocularIcon * >( this );
 }
 
-StereoIcon *IconBase::toStereoIcon()
+StereoIcon *CalibrationIconBase::toStereoIcon()
 {
     return dynamic_cast< StereoIcon * >( this );
 }
 
-const MonocularIcon *IconBase::toMonocularIcon() const
+const MonocularIcon *CalibrationIconBase::toMonocularIcon() const
 {
     return dynamic_cast< const MonocularIcon * >( this );
 }
 
-const StereoIcon *IconBase::toStereoIcon() const
+const StereoIcon *CalibrationIconBase::toStereoIcon() const
 {
     return dynamic_cast< const StereoIcon * >( this );
 }
 
-const CvImage &IconBase::previewImage() const
-{
-    return m_previewImage;
-}
 
 // MonocularIcon
 MonocularIcon::MonocularIcon( const CvImage previewImage, const CvImage sourceImage, const int number )
-    : IconBase( previewImage, number )
+    : CalibrationIconBase( previewImage, number )
 {
     setSourceImage( sourceImage );
 
@@ -85,7 +82,7 @@ std::vector< cv::Point2f > MonocularIcon::previewPoints() const
 
 // StereoIcon
 StereoIcon::StereoIcon( const CvImage leftPreviewImage, const CvImage rightPreviewImage, const CvImage leftSourceImage, const CvImage rightSourceImage, const int number )
-    : IconBase( makeOverlappedPreview( leftPreviewImage, rightPreviewImage ), number )
+    : CalibrationIconBase( makeOverlappedPreview( leftPreviewImage, rightPreviewImage ), number )
 {
     setStraightPreview( makeStraightPreview( leftPreviewImage, rightPreviewImage ) );
     setLeftSourceImage( leftSourceImage );
@@ -148,34 +145,18 @@ std::vector< cv::Point2f > StereoIcon::rightPreviewPoints() const
     return m_previewRightPoints;
 }
 
-CvImage StereoIcon::makeOverlappedPreview( const CvImage &leftPreviewImage, const CvImage &rightPreviewImage )
-{
-    return stackImages( leftPreviewImage, rightPreviewImage, 0.5 );
-}
-
-CvImage StereoIcon::makeStraightPreview( const CvImage &leftPreviewImage, const CvImage &rightPreviewImage )
-{
-    return stackImages( leftPreviewImage, rightPreviewImage, 1 );
-}
-
 // IconsWidget
-const QSize IconsWidget::m_iconSize( 200, 200 );
-
-IconsWidget::IconsWidget( QWidget *parent )
+CalibrationIconsWidget::CalibrationIconsWidget( QWidget *parent )
     : SuperClass( parent )
 {
     initialize();
 }
 
-void IconsWidget::initialize()
+void CalibrationIconsWidget::initialize()
 {
-    setIconSize( m_iconSize );
-    setViewMode( IconMode );
-    setWrapping( true );
-
-    connect( this, &IconsWidget::itemDoubleClicked,
+    connect( this, &CalibrationIconsWidget::itemDoubleClicked,
                 [&]( QListWidgetItem *item ) {
-                    auto itemCast = dynamic_cast< IconBase * >( item );
+                    auto itemCast = dynamic_cast< CalibrationIconBase * >( item );
 
                     if ( itemCast )
                         emit iconActivated( itemCast );
@@ -186,32 +167,29 @@ void IconsWidget::initialize()
 
 }
 
-void IconsWidget::addIcon( IconBase *icon )
+void CalibrationIconsWidget::addIcon( CalibrationIconBase *icon )
 {
-    addItem( icon );
+    SuperClass::addIcon( icon );
 }
 
-void IconsWidget::insertIcon(IconBase *icon )
+void CalibrationIconsWidget::insertIcon( CalibrationIconBase *icon )
 {
-    insertItem( 0, icon );
+    SuperClass::insertIcon( icon );
 }
 
-QList< IconBase* > IconsWidget::icons() const
+QList< CalibrationIconBase* > CalibrationIconsWidget::icons() const
 {
-    QList< IconBase* > ret;
+    QList< CalibrationIconBase* > ret;
 
-    for ( auto i = 0; i < count(); ++i ) {
-        auto item = this->item( i );
-        if ( item ) {
-            auto itemCast = dynamic_cast< IconBase* >( item );
-            if ( itemCast )
-                ret.push_back( itemCast );
-        }
+    auto list = SuperClass::icons();
 
+    for ( auto &i : list ) {
+        auto itemCast = dynamic_cast< CalibrationIconBase* >( i );
+        if ( itemCast )
+            ret.push_back( itemCast );
     }
 
     return ret;
 
 }
-
 

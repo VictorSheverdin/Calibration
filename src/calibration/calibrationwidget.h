@@ -11,8 +11,8 @@
 class GrabWidgetBase;
 class MonocularGrabWidget;
 class StereoGrabWidget;
-class IconBase;
-class IconsWidget;
+class CalibrationIconBase;
+class CalibrationIconsWidget;
 class MonocularIcon;
 class StereoIcon;
 class ImageWidget;
@@ -32,13 +32,13 @@ public slots:
     void clearIcons();
 
 protected slots:
-    virtual void showIcon( IconBase *icon ) = 0;
+    virtual void showIcon( CalibrationIconBase *icon ) = 0;
 
 protected:
     CalibrationWidgetBase( QWidget *parent = nullptr );
 
     QPointer< QVBoxLayout > m_layout;
-    QPointer< IconsWidget > m_iconsList;
+    QPointer< CalibrationIconsWidget > m_iconsList;
     QPointer< ImageDialog > m_iconViewDialog;
 
     TemplateProcessor m_processor;
@@ -54,8 +54,8 @@ protected:
 
     void dropIconCount();
 
-    void addIcon( IconBase *icon );
-    void insertIcon( IconBase *icon );
+    void addIcon( CalibrationIconBase *icon );
+    void insertIcon( CalibrationIconBase *icon );
 
 private:
     void initialize();
@@ -67,7 +67,7 @@ class MonocularCalibrationWidgetBase : public CalibrationWidgetBase
     Q_OBJECT
 
 protected slots:
-    virtual void showIcon( IconBase *icon ) override;
+    virtual void showIcon( CalibrationIconBase *icon ) override;
 
 protected:
     MonocularCalibrationWidgetBase( QWidget *parent = nullptr );
@@ -84,7 +84,7 @@ class StereoCalibrationWidgetBase : public CalibrationWidgetBase
     Q_OBJECT
 
 protected slots:
-    virtual void showIcon( IconBase *icon ) override;
+    virtual void showIcon( CalibrationIconBase *icon ) override;
 
 protected:
     StereoCalibrationWidgetBase( QWidget *parent = nullptr );

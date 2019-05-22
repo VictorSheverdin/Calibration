@@ -2,7 +2,7 @@
 
 #include <QMdiArea>
 
-#include "supportwidgets.h"
+class DocumentBase;
 
 class DocumentArea : public QMdiArea
 {

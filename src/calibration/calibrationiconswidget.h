@@ -1,10 +1,6 @@
 #pragma once
 
-#include <QScrollArea>
-#include <QPixmap>
-#include <QListWidget>
-
-#include "src/common/imagewidget.h"
+#include "src/common/iconswidget.h"
 
 class QLabel;
 class QBoxLayout;
@@ -12,13 +8,13 @@ class QBoxLayout;
 class MonocularIcon;
 class StereoIcon;
 
-class IconBase : public QListWidgetItem
+class CalibrationIconBase : public IconBase
 {
 
 public:
-    using SuperClass = QListWidget;
+    using SuperClass = IconBase;
 
-    IconBase( const CvImage image, const int number );
+    CalibrationIconBase( const CvImage image, const int number );
 
     bool isMonocularIcon() const;
     bool isStereoIcon() const;
@@ -29,21 +25,16 @@ public:
     const MonocularIcon *toMonocularIcon() const;
     const StereoIcon *toStereoIcon() const;
 
-    const CvImage &previewImage() const;
-
-protected:
-    CvImage m_previewImage;
-
 private:
     void initialize();
 
 };
 
-class MonocularIcon : public IconBase
+class MonocularIcon : public CalibrationIconBase
 {
 
 public:
-    using SuperClass = IconBase;
+    using SuperClass = CalibrationIconBase;
 
     MonocularIcon( const CvImage previewImage, const CvImage sourceImage, const int number );
 
@@ -62,11 +53,11 @@ private:
 
 };
 
-class StereoIcon : public IconBase
+class StereoIcon : public CalibrationIconBase
 {
 
 public:
-    using SuperClass = IconBase;
+    using SuperClass = CalibrationIconBase;
 
     StereoIcon( const CvImage leftPreviewImage, const CvImage rightPreviewImage, const CvImage leftSourceImage, const CvImage rightSourceImage, const int number );
 
@@ -84,9 +75,6 @@ public:
     void setRightPreviewPoints( std::vector< cv::Point2f > &points );
     std::vector< cv::Point2f > rightPreviewPoints() const;
 
-    static CvImage makeOverlappedPreview( const CvImage &leftPreviewImage, const CvImage &rightPreviewImage );
-    static CvImage makeStraightPreview( const CvImage &leftPreviewImage, const CvImage &rightPreviewImage );
-
 protected:
     CvImage m_straightPreview;
 
@@ -101,25 +89,22 @@ private:
 
 };
 
-class IconsWidget : public QListWidget
+class CalibrationIconsWidget : public IconsWidget
 {
     Q_OBJECT
 
 public:
-    using SuperClass = QListWidget;
+    using SuperClass = IconsWidget;
 
-    explicit IconsWidget( QWidget *parent = nullptr );
+    explicit CalibrationIconsWidget( QWidget *parent = nullptr );
 
-    void addIcon( IconBase *icon );
-    void insertIcon( IconBase *icon );
+    void addIcon( CalibrationIconBase *icon );
+    void insertIcon( CalibrationIconBase *icon );
 
-    QList< IconBase* > icons() const;
+    QList< CalibrationIconBase* > icons() const;
 
 signals:
-    void iconActivated( IconBase *icon );
-
-protected:
-    static const QSize m_iconSize;
+    void iconActivated( CalibrationIconBase *icon );
 
 private:
     void initialize();

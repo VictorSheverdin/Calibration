@@ -3,6 +3,8 @@
 #include "supportwidgets.h"
 #include "src/common/defs.h"
 
+#include "documentarea.h"
+
 // CountSpinBox
 CountSpinBox::CountSpinBox( QWidget *parent )
     : QSpinBox( parent )
@@ -143,3 +145,42 @@ void DialogBase::setWidget( QWidget *widget )
     }
 }
 
+// MainWindowBase
+MainWindowBase::MainWindowBase( QWidget *parent )
+    : QMainWindow( parent )
+{
+    initialize();
+}
+
+void MainWindowBase::initialize()
+{
+    setAttribute( Qt::WA_DeleteOnClose );
+
+    setupDocuments();
+    setupStatusBar();
+
+}
+
+void MainWindowBase::addDocument( DocumentBase *document )
+{
+    m_documentArea->addDocument( document );
+}
+
+DocumentBase *MainWindowBase::currentDocument() const
+{
+    m_documentArea->currentDocument();
+}
+
+void MainWindowBase::setupDocuments()
+{
+    m_documentArea = new DocumentArea( this );
+
+    setCentralWidget( m_documentArea );
+}
+
+void MainWindowBase::setupStatusBar()
+{
+    m_statusBar = new QStatusBar( this );
+    setStatusBar( m_statusBar );
+
+}

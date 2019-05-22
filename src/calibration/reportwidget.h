@@ -5,7 +5,7 @@
 
 #include "src/common/calibrationdata.h"
 
-class IconBase;
+class CalibrationIconBase;
 class QVBoxLayout;
 class QToolBar;
 
@@ -22,7 +22,7 @@ public:
     void addSpace( const int num = 1 );
     template <class T>
     void addNumber( const T num ) { addText( QString::number( num ) ); }
-    void addIcon( const IconBase& icon );
+    void addIcon( const CalibrationIconBase& icon );
     void addImage( const CvImage& image );
     void addSize( const cv::Size& size );
     void addMatrix( const cv::Mat& mat );

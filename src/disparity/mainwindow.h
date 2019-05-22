@@ -5,24 +5,64 @@
 #include <QPointer>
 
 #include "src/common/defs.h"
+#include "src/common/supportwidgets.h"
 
-class PreviewWidget;
+class CameraDisparityWidget;
+class CameraDisparityDocument;
 
-class MainWindow : public QMainWindow
+class MainWindow : public MainWindowBase
 {
     Q_OBJECT
 
 public:
-    explicit MainWindow( const std::string &leftCameraIp, const std::string &rightCameraIp, QWidget *parent = nullptr );
+    explicit MainWindow( QWidget *parent = nullptr );
+    explicit MainWindow( const QString &leftCameraIp, const QString &rightCameraIp, QWidget *parent = nullptr );
+
+    void addImageDisparityDocument();
+    void addCameraDisparityDocument( const QString &leftCameraIp, const QString &rightCameraIp );
+
+    CameraDisparityDocument *currentCameraDisparityDocument() const;
+
+    void loadCalibrationFile( const QString &fileName );
 
 public slots:
-    void loadCalibrationFile( const std::string &fileName );
+    void addImageDisparity();
+    void addCameraDisparityDialog();
+
+    void loadCalibrationDialog();
+
+    void importDialog();
+    void exportDialog();
+
+    void clearIcons();
+    void settingsDialog();
 
 protected:
-    QPointer< PreviewWidget > m_widget;
+    QPointer< QMenuBar > m_menuBar;
+
+    QPointer< QAction > m_newImageDocumentAction;
+    QPointer< QAction > m_newCameraDocumentAction;
+    QPointer< QAction > m_loadCalibrationAction;
+
+    QPointer< QAction > m_importAction;
+    QPointer< QAction > m_exportAction;
+
+    QPointer< QAction > m_clearIconsAction;
+
+    QPointer< QAction > m_settingsAction;
+
+    QPointer< QAction > m_exitAction;
+
+    QPointer< QAction > m_aboutAction;
+
+    QPointer< QToolBar > m_toolBar;
+
+    void setupActions();
+    void setupMenus();
+    void setupToolBars();
 
 private:
-    void initialize(const std::string &leftCameraIp, const std::string &rightCameraIp );
     void initialize();
 
 };
+

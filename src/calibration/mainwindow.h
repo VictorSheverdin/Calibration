@@ -6,6 +6,7 @@
 
 #include "src/common/defs.h"
 
+#include "src/common/supportwidgets.h"
 #include "src/common/documentarea.h"
 
 class CalibrationWidgetBase;
@@ -19,7 +20,7 @@ class StereoCameraCalibrationDocument;
 class TrippleCalibrationDocument;
 class ReportDocument;
 
-class MainWindow : public QMainWindow
+class MainWindow : public MainWindowBase
 {
     Q_OBJECT
 
@@ -28,7 +29,6 @@ public:
     explicit MainWindow( const QString &cameraIp, QWidget *parent = nullptr );
     explicit MainWindow( const QString &leftCameraIp, const QString &rightCameraIp, QWidget *parent = nullptr );
 
-    void addDocument( DocumentBase *document );
     void addMonocularCameraCalibrationDocument( const QString &cameraIp );
     void addStereoCameraCalibrationDocument( const QString &leftCameraIp, const QString &rightCameraIp );
 
@@ -41,7 +41,6 @@ public:
     StereoCameraCalibrationDocument *currentStereoCalibrationDocument() const;
     TrippleCalibrationDocument *currentTrippleCalibrationDocument() const;
     ReportDocument *currentReportDocument() const;
-
 
 public slots:
     void importDialog();
@@ -62,12 +61,9 @@ public slots:
 
 protected:
     QPointer< QMenuBar > m_menuBar;
-    QPointer< QStatusBar > m_statusBar;
 
-    QPointer< DocumentArea > m_documentArea;
-
-    QPointer< QAction > m_newMonocularDocumentAction;
-    QPointer< QAction > m_newStereoDocumentAction;
+    QPointer< QAction > m_newMonocularImageDocumentAction;
+    QPointer< QAction > m_newStereoImageDocumentAction;
     QPointer< QAction > m_newMonocularCameraDocumentAction;
     QPointer< QAction > m_newStereoCameraDocumentAction;
     QPointer< QAction > m_openAction;
@@ -89,17 +85,13 @@ protected:
 
     QPointer< QToolBar > m_toolBar;
 
-    void setupDocuments();
     void setupActions();
     void setupMenus();
     void setupToolBars();
-    void setupStatusBar();
 
     static const int m_grabInterval = 1500;
 
     virtual void timerEvent( QTimerEvent * ) override;
-
-    template <class T> T* getCurrentDocument() const;
 
 private:
     void initialize( const QString &cameraIp );
@@ -107,5 +99,3 @@ private:
     void initialize();
 
 };
-
-#include "mainwindow.inl"

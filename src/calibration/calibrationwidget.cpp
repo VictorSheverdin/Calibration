@@ -3,7 +3,7 @@
 #include "calibrationwidget.h"
 
 #include "taskwidget.h"
-#include "iconswidget.h"
+#include "calibrationiconswidget.h"
 #include "camerawidget.h"
 #include "reportwidget.h"
 #include "parameterswidget.h"
@@ -24,9 +24,9 @@ void CalibrationWidgetBase::initialize()
 {
     m_layout = new QVBoxLayout( this );
 
-    m_iconsList = new IconsWidget( this );
+    m_iconsList = new CalibrationIconsWidget( this );
 
-    connect( m_iconsList, SIGNAL( iconActivated( IconBase* ) ), this, SLOT( showIcon( IconBase* ) ) );
+    connect( m_iconsList, SIGNAL( iconActivated( CalibrationIconBase* ) ), this, SLOT( showIcon( CalibrationIconBase* ) ) );
 
     m_processor.setAdaptiveThreshold( true );
     m_processor.setFastCheck( false );
@@ -53,13 +53,13 @@ void CalibrationWidgetBase::dropIconCount()
     m_iconCount = 1;
 }
 
-void CalibrationWidgetBase::addIcon( IconBase *icon )
+void CalibrationWidgetBase::addIcon( CalibrationIconBase *icon )
 {
     m_iconsList->addIcon( icon );
     ++m_iconCount;
 }
 
-void CalibrationWidgetBase::insertIcon( IconBase *icon )
+void CalibrationWidgetBase::insertIcon( CalibrationIconBase *icon )
 {
     m_iconsList->insertIcon( icon );
     ++m_iconCount;
@@ -272,7 +272,7 @@ void MonocularCalibrationWidgetBase::initialize()
 
 }
 
-void MonocularCalibrationWidgetBase::showIcon( IconBase *icon )
+void MonocularCalibrationWidgetBase::showIcon( CalibrationIconBase *icon )
 {
     m_iconViewDialog->setImage( icon->previewImage() );
     m_iconViewDialog->exec();
@@ -294,7 +294,7 @@ void StereoCalibrationWidgetBase::initialize()
 
 }
 
-void StereoCalibrationWidgetBase::showIcon( IconBase *icon )
+void StereoCalibrationWidgetBase::showIcon( CalibrationIconBase *icon )
 {
     m_iconViewDialog->show();
     m_iconViewDialog->activateWindow();

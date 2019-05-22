@@ -8,9 +8,14 @@
 #include <QDialogButtonBox>
 #include <QListWidget>
 
+#include <QMainWindow>
+
+#include "documentarea.h"
+
 class QHBoxLayout;
 class QVBoxLayout;
 class QLabel;
+class QStatusBar;
 
 class CountSpinBox : public QSpinBox
 {
@@ -102,3 +107,30 @@ private:
     void initialize( const QDialogButtonBox::StandardButtons buttons );
 
 };
+
+class MainWindowBase : public QMainWindow
+{
+    Q_OBJECT
+
+public:
+    explicit MainWindowBase( QWidget *parent = nullptr );
+
+    void addDocument( DocumentBase *document );
+
+    DocumentBase *currentDocument() const;
+
+protected:
+    QPointer< DocumentArea > m_documentArea;
+    QPointer< QStatusBar > m_statusBar;
+
+    template <class T> T* getCurrentDocument() const;
+
+    void setupDocuments();
+    void setupStatusBar();
+
+private:
+    void initialize();
+
+};
+
+#include "supportwidgets.inl"

@@ -2,6 +2,8 @@
 
 #include "documentarea.h"
 
+#include "supportwidgets.h"
+
 DocumentArea::DocumentArea( QWidget *parent )
     : QMdiArea( parent )
 {

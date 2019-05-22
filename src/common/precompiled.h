@@ -1,3 +1,5 @@
+#pragma once
+
 #include <QApplication>
 #include <QtWidgets>
 #include <QStackedWidget>
@@ -7,6 +9,7 @@
 #include <QPointer>
 #include <QGridLayout>
 #include <QDialog>
+#include <QPixmap>
 #include <QDialogButtonBox>
 #include <QtXml/QDomDocument>
 #include <QtXml/QDomElement>

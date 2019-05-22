@@ -50,6 +50,16 @@ CvImage stackImages(const CvImage &leftImage, const CvImage &rightImage, const d
 
 }
 
+CvImage makeOverlappedPreview( const CvImage &leftPreviewImage, const CvImage &rightPreviewImage )
+{
+    return stackImages( leftPreviewImage, rightPreviewImage, 0.5 );
+}
+
+CvImage makeStraightPreview( const CvImage &leftPreviewImage, const CvImage &rightPreviewImage )
+{
+    return stackImages( leftPreviewImage, rightPreviewImage, 1 );
+}
+
 CvImage colorizeDisparity( const cv::Mat &disparity )
 {
     double min, max;

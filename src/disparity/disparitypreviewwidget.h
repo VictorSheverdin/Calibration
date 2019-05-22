@@ -14,6 +14,8 @@ class ImageWidget;
 class DisparityControlWidget;
 class PCLViewer;
 class BMControlWidget;
+class GMControlWidget;
+class DisparityIconsWidget;
 
 class DisparityPreviewWidget : public QSplitter
 {
@@ -34,36 +36,73 @@ private:
 
 };
 
-class PreviewWidget : public QSplitter
+class DisparityWidgetBase : public QSplitter
 {
     Q_OBJECT
 
 public:
-    explicit PreviewWidget( const std::string &leftCameraIp, const std::string &rightCameraIp, QWidget* parent = nullptr );
+    explicit DisparityWidgetBase( QWidget* parent = nullptr );
 
     BMControlWidget *bmControlWidget() const;
+    GMControlWidget *gmControlWidget() const;
 
-    bool loadCalibrationFile( const std::string &fileName );
+    bool loadCalibrationFile( const QString &fileName );
 
 protected:
     QPointer< DisparityPreviewWidget > m_view;
     QPointer< DisparityControlWidget > m_controlWidget;
     QPointer< PCLViewer > m_3dWidget;
 
+    void updateFrame( const CvImage leftFrame, const CvImage rightFrame );
+
+    std::shared_ptr< BMDisparityProcessor > m_bmProcessor;
+    std::shared_ptr< GMDisparityProcessor > m_gmProcessor;
+
+    StereoProcessor m_processor;
+
+private:
+    void initialize();
+
+};
+
+class CameraDisparityWidget : public DisparityWidgetBase
+{
+    Q_OBJECT
+
+public:
+    explicit CameraDisparityWidget( const QString &leftCameraIp, const QString &rightCameraIp, QWidget* parent = nullptr );
+
+protected:
     VimbaCamera m_leftCam;
     VimbaCamera m_rightCam;
 
     void updateFrame();
 
-    std::shared_ptr<BMDisparityProcessor> m_bmProcessor;
-    std::shared_ptr<GMDisparityProcessor> m_gmProcessor;
-
-    StereoProcessor m_processor;
-
     virtual void timerEvent( QTimerEvent * ) override;
 
 private:
-    void initialize( const std::string &leftCameraIp, const std::string &rightCameraIp );
+    void initialize();
 
 };
+
+class ImageDisparityWidget : public QSplitter
+{
+    Q_OBJECT
+
+public:
+    explicit ImageDisparityWidget( QWidget* parent = nullptr );
+
+    BMControlWidget *bmControlWidget() const;
+    GMControlWidget *gmControlWidget() const;
+
+    bool loadCalibrationFile( const QString &fileName );
+
+protected:
+    QPointer< DisparityWidgetBase > m_disparityWidget;
+    QPointer< DisparityIconsWidget > m_iconsWidget;
+private:
+    void initialize();
+
+};
+
 

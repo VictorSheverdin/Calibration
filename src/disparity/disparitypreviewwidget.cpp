@@ -4,6 +4,7 @@
 
 #include "src/common/imagewidget.h"
 #include "disparitycontrolwidget.h"
+#include "disparityiconswidget.h"
 
 #include <opencv2/ximgproc.hpp>
 
@@ -42,14 +43,14 @@ ImageWidget *DisparityPreviewWidget::disparityView() const
 }
 
 
-// PreviewWidget
-PreviewWidget::PreviewWidget( const std::string &leftCameraIp, const std::string &rightCameraIp, QWidget* parent )
-    : QSplitter( Qt::Horizontal, parent ), m_leftCam( leftCameraIp ), m_rightCam( rightCameraIp )
+// DisparityWidgetBase
+DisparityWidgetBase::DisparityWidgetBase( QWidget* parent )
+    : QSplitter( Qt::Horizontal, parent )
 {
-    initialize( leftCameraIp, rightCameraIp );
+    initialize();
 }
 
-void PreviewWidget::initialize( const std::string &leftCameraIp, const std::string &rightCameraIp )
+void DisparityWidgetBase::initialize()
 {
     m_bmProcessor = std::shared_ptr<BMDisparityProcessor>( new BMDisparityProcessor );
     m_gmProcessor = std::shared_ptr<GMDisparityProcessor>( new GMDisparityProcessor );
@@ -67,29 +68,26 @@ void PreviewWidget::initialize( const std::string &leftCameraIp, const std::stri
 
     addWidget( tabWidget );
     addWidget( m_controlWidget );
-
-    connect( &m_rightCam, &VimbaCamera::receivedFrame, this, &PreviewWidget::updateFrame );
-
-    startTimer( 1000 / 10 );
-
 }
 
-BMControlWidget *PreviewWidget::bmControlWidget() const
+BMControlWidget *DisparityWidgetBase::bmControlWidget() const
 {
     return m_controlWidget->bmControlWidget();
 }
 
-bool PreviewWidget::loadCalibrationFile( const std::string &fileName )
+GMControlWidget *DisparityWidgetBase::gmControlWidget() const
 {
-    m_processor.loadYaml( fileName );
+    return m_controlWidget->gmControlWidget();
 }
 
-void PreviewWidget::updateFrame()
+bool DisparityWidgetBase::loadCalibrationFile( const QString &fileName )
 {
-    auto leftFrame = m_leftCam.getFrame();
-    auto rightFrame = m_rightCam.getFrame();
+    m_processor.loadYaml( fileName.toStdString() );
+}
 
-    if ( !leftFrame.empty() && !rightFrame.empty() ) {
+void DisparityWidgetBase::updateFrame(const CvImage leftFrame, const CvImage rightFrame)
+{
+     if ( !leftFrame.empty() && !rightFrame.empty() ) {
 
         if ( m_controlWidget->isBmMethod() ) {
             m_bmProcessor->setBlockSize( m_controlWidget->bmControlWidget()->sadWindowSize() );
@@ -128,14 +126,36 @@ void PreviewWidget::updateFrame()
 
         m_view->disparityView()->setImage( stereoResult.colorizedDisparity() );
 
-        m_3dWidget->pclviewer->updatePointCloud( stereoResult.pointCloud(), "disparity" );
+        if ( stereoResult.pointCloud() )
+            m_3dWidget->pclviewer->updatePointCloud( stereoResult.pointCloud(), "disparity" );
+
         m_3dWidget->repaint();
 
     }
 
 }
 
-void PreviewWidget::timerEvent( QTimerEvent * )
+// CameraDisparityWidget
+CameraDisparityWidget::CameraDisparityWidget( const QString &leftCameraIp, const QString &rightCameraIp, QWidget* parent )
+    : DisparityWidgetBase( parent ), m_leftCam( leftCameraIp.toStdString() ), m_rightCam( rightCameraIp.toStdString() )
+{
+    initialize();
+}
+
+void CameraDisparityWidget::initialize()
+{
+    connect( &m_rightCam, &VimbaCamera::receivedFrame, this, &CameraDisparityWidget::updateFrame );
+
+    startTimer( 1000 / 10 );
+
+}
+
+void CameraDisparityWidget::updateFrame()
+{
+    DisparityWidgetBase::updateFrame( m_leftCam.getFrame(), m_rightCam.getFrame() );
+}
+
+void CameraDisparityWidget::timerEvent( QTimerEvent * )
 {
     auto &vimbaSystem = AVT::VmbAPI::VimbaSystem::GetInstance();
 
@@ -145,4 +165,39 @@ void PreviewWidget::timerEvent( QTimerEvent * )
 
     vimbaRunCommand( vimbaSystem, "ActionCommand" );
 }
+
+// ImageDisparityWidget
+ImageDisparityWidget::ImageDisparityWidget( QWidget* parent )
+    : QSplitter( Qt::Vertical, parent )
+{
+    initialize();
+}
+
+void ImageDisparityWidget::initialize()
+{
+    m_disparityWidget = new DisparityWidgetBase( this );
+    m_iconsWidget = new DisparityIconsWidget( this );
+
+    addWidget( m_disparityWidget );
+    addWidget( m_iconsWidget );
+
+    connect( m_iconsWidget, SIGNAL( iconActivated( DisparityIcon* ) ), this, SLOT( updateFrame( DisparityIcon* ) ) );
+
+}
+
+BMControlWidget *ImageDisparityWidget::bmControlWidget() const
+{
+    return m_disparityWidget->bmControlWidget();
+}
+
+GMControlWidget *ImageDisparityWidget::gmControlWidget() const
+{
+    return m_disparityWidget->gmControlWidget();
+}
+
+bool ImageDisparityWidget::loadCalibrationFile( const QString &fileName )
+{
+    m_disparityWidget->loadCalibrationFile( fileName );
+}
+
 

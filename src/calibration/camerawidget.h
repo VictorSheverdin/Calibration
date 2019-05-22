@@ -11,7 +11,7 @@
 
 #include <opencv2/opencv.hpp>
 
-class PreviewWidget;
+class CameraPreviewWidget;
 
 class CameraWidgetBase : public QSplitter
 {
@@ -74,7 +74,7 @@ protected slots:
     void updateFrame();
 
 protected:
-    QPointer<PreviewWidget> m_previewWidget;
+    QPointer< CameraPreviewWidget > m_previewWidget;
 
     VimbaCamera m_camera;
 
@@ -116,8 +116,8 @@ protected slots:
     void updateRightFrame();
 
 protected:
-    QPointer<PreviewWidget> m_leftCameraWidget;
-    QPointer<PreviewWidget> m_rightCameraWidget;
+    QPointer<CameraPreviewWidget> m_leftCameraWidget;
+    QPointer<CameraPreviewWidget> m_rightCameraWidget;
 
     VimbaCamera m_leftCamera;
     VimbaCamera m_rightCamera;
@@ -138,7 +138,7 @@ public:
     NCameraWidgetCore() = default;
 
 protected:
-    QPointer< PreviewWidget > m_cameraWidgets[ NUM ];
+    QPointer< CameraPreviewWidget > m_cameraWidgets[ NUM ];
     cv::VideoCapture m_videoCaptures[ NUM ];
 };
 
