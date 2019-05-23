@@ -25,12 +25,12 @@ private:
 
 };
 
-class DisparityIconsWidget : public IconsWidget
+class DisparityIconsWidget : public IconsListWidget
 {
     Q_OBJECT
 
 public:
-    using SuperClass = IconsWidget;
+    using SuperClass = IconsListWidget;
 
     explicit DisparityIconsWidget( QWidget *parent = nullptr );
 
@@ -38,6 +38,8 @@ public:
     void insertIcon( DisparityIcon *icon );
 
     QList< DisparityIcon* > icons() const;
+
+    DisparityIcon *currentIcon() const;
 
 signals:
     void iconActivated( DisparityIcon *icon );

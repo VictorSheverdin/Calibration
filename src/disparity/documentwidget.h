@@ -9,7 +9,23 @@ class QVBoxLayout;
 class CameraDisparityWidget;
 class ImageDisparityWidget;
 
-class CameraDisparityDocument : public DocumentBase
+class DisparityDocumentBase : public DocumentBase
+{
+    Q_OBJECT
+
+public:
+    explicit DisparityDocumentBase( QWidget* parent = nullptr );
+
+public slots:
+    virtual void loadCalibrationDialog() = 0;
+
+private:
+    void initialize();
+
+};
+
+
+class CameraDisparityDocument : public DisparityDocumentBase
 {
     Q_OBJECT
 
@@ -20,12 +36,15 @@ public:
 
     bool loadCalibrationFile( const QString &fileName );
 
+public slots:
+    virtual void loadCalibrationDialog() override;
+
 private:
     void initialize( const QString &leftCameraIp, const QString &rightCameraIp );
 
 };
 
-class ImageDisparityDocument : public DocumentBase
+class ImageDisparityDocument : public DisparityDocumentBase
 {
     Q_OBJECT
 
@@ -35,6 +54,10 @@ public:
     ImageDisparityWidget *widget() const;
 
     bool loadCalibrationFile( const QString &fileName );
+
+public slots:
+    virtual void loadCalibrationDialog() override;
+    void importDialog();
 
 private:
     void initialize();

@@ -18,7 +18,7 @@ public:
     VideoIconWidget( const CvImage &icon, QWidget* parent = nullptr );
 
 signals:
-    void iconActivated( const CvImage frame );
+    void iconActivated( const VideoIconWidget *frame );
 
 protected:
     virtual void paintEvent( QPaintEvent *event ) override;
@@ -38,8 +38,10 @@ public:
     void setOrientation( const Qt::Orientation value );
     Qt::Orientation orientation() const;
 
-    void addFrame( const CvImage frame );
-    void addFrames( const std::vector< CvImage > &frames );
+    void addIcon( VideoIconWidget *icon );
+    void addIcons( const std::vector< VideoIconWidget* > &icons );
+
+    QList< VideoIconWidget* > icons() const;
 
     unsigned int framesCount() const;
 
@@ -50,7 +52,7 @@ public:
     void clear();
 
 signals:
-    void iconActivated( const CvImage frame );
+    void iconActivated( const VideoIconWidget *icon );
 
 private:
     void initialize();
@@ -60,22 +62,28 @@ private:
 };
 
 
-class FrameIconsWidget : public QScrollArea
+class VideoIconsWidget : public QScrollArea
 {
     Q_OBJECT
 
 public:
-    explicit FrameIconsWidget( QWidget *parent = nullptr );
+    explicit VideoIconsWidget( QWidget *parent = nullptr );
 
-    void setIcons( const std::vector< CvImage > &icons );
+    void setIcons( const std::vector< VideoIconWidget* > &icons );
+
+    void addIcon( VideoIconWidget *icon );
+    void addIcons( const std::vector< VideoIconWidget* > &icons );
+
+    QList< VideoIconWidget* > icons() const;
 
     void setOrientation( const Qt::Orientation value );
     Qt::Orientation orientation() const;
 
     VideoIconsLayout *layoutWidget() const;
 
+
 signals:
-    void iconActivated( const CvImage frame );
+    void iconActivated( const VideoIconWidget* icon );
 
 private slots:
     void updateLayout();

@@ -145,7 +145,7 @@ std::vector< cv::Point2f > StereoIcon::rightPreviewPoints() const
     return m_previewRightPoints;
 }
 
-// IconsWidget
+// IconsListWidget
 CalibrationIconsWidget::CalibrationIconsWidget( QWidget *parent )
     : SuperClass( parent )
 {
@@ -154,6 +154,8 @@ CalibrationIconsWidget::CalibrationIconsWidget( QWidget *parent )
 
 void CalibrationIconsWidget::initialize()
 {
+    setWrapping( true );
+
     connect( this, &CalibrationIconsWidget::itemDoubleClicked,
                 [&]( QListWidgetItem *item ) {
                     auto itemCast = dynamic_cast< CalibrationIconBase * >( item );

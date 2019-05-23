@@ -8,7 +8,9 @@
 #include "src/common/supportwidgets.h"
 
 class CameraDisparityWidget;
+class DisparityDocumentBase;
 class CameraDisparityDocument;
+class ImageDisparityDocument;
 
 class MainWindow : public MainWindowBase
 {
@@ -21,9 +23,9 @@ public:
     void addImageDisparityDocument();
     void addCameraDisparityDocument( const QString &leftCameraIp, const QString &rightCameraIp );
 
+    DisparityDocumentBase *currentDisparityDocument() const;
     CameraDisparityDocument *currentCameraDisparityDocument() const;
-
-    void loadCalibrationFile( const QString &fileName );
+    ImageDisparityDocument *currentImageDisparityDocument() const;
 
 public slots:
     void addImageDisparity();

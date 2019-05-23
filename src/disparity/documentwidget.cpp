@@ -4,9 +4,21 @@
 
 #include "disparitypreviewwidget.h"
 
+// DisparityDocumentBase
+DisparityDocumentBase::DisparityDocumentBase( QWidget* parent )
+    : DocumentBase( parent )
+{
+    initialize();
+}
+
+void DisparityDocumentBase::initialize()
+{
+
+}
+
 // CalibrationDocumentBase
 CameraDisparityDocument::CameraDisparityDocument( const QString &leftCameraIp, const QString &rightCameraIp, QWidget* parent )
-    : DocumentBase( parent )
+    : DisparityDocumentBase( parent )
 {
     initialize( leftCameraIp, rightCameraIp );
 }
@@ -26,9 +38,14 @@ bool CameraDisparityDocument::loadCalibrationFile( const QString &fileName )
     widget()->loadCalibrationFile( fileName );
 }
 
+void CameraDisparityDocument::loadCalibrationDialog()
+{
+    widget()->loadCalibrationDialog();
+}
+
 // ImageDisparityDocument
 ImageDisparityDocument::ImageDisparityDocument( QWidget* parent )
-    : DocumentBase( parent )
+    : DisparityDocumentBase( parent )
 {
     initialize();
 }
@@ -48,3 +65,12 @@ bool ImageDisparityDocument::loadCalibrationFile( const QString &fileName )
     widget()->loadCalibrationFile( fileName );
 }
 
+void ImageDisparityDocument::loadCalibrationDialog()
+{
+    widget()->loadCalibrationDialog();
+}
+
+void ImageDisparityDocument::importDialog()
+{
+    widget()->importDialog();
+}

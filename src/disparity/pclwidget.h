@@ -11,7 +11,10 @@ class PCLViewer : public QVTKWidget
 public:
     PCLViewer( QWidget* parent = nullptr );
 
-    std::unique_ptr< pcl::visualization::PCLVisualizer > pclviewer;
+    void setPointCloud( const pcl::PointCloud< pcl::PointXYZRGB >::Ptr &cloud );
+
+protected:
+    std::unique_ptr< pcl::visualization::PCLVisualizer > m_pclViewer;
 
 private:
     void initialize();

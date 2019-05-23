@@ -450,22 +450,26 @@ StereoResult StereoProcessor::process( const CvImage &leftFrame, const CvImage &
 
                 pointCloud->clear();
 
-                for (int rows = 0; rows < points.rows; ++rows) {
+                CvImage rgbLeftImage;
+
+                cv::cvtColor( leftRectifiedImage, rgbLeftImage, CV_BGR2RGB );
+
+                for (int rows = 0; rows < points.rows; ++rows) {                    
                     for (int cols = 0; cols < points.cols; ++cols) {
 
                         cv::Point3f point = points.at< cv::Point3f >(rows, cols);
 
-                        if ( point.x > -10 && point.y > -10 && point.z > -10 &&
-                             point.x < 10 && point.y < 10 && point.z < 10) {
+                        if ( point.x > -1000 && point.y > -1000 && point.z > -1000 &&
+                             point.x < 1000 && point.y < 1000 && point.z < 1000 ) {
 
                             pcl::PointXYZRGB pclPoint;
                             pclPoint.x = point.x;
                             pclPoint.y = point.y;
                             pclPoint.z = point.z;
 
-                            cv::Vec3b intensity = leftRectifiedImage.at<cv::Vec3b>(rows,cols); //BGR
-                            uint32_t rgb = (static_cast<uint32_t>(intensity[2]) << 16 | static_cast<uint32_t>(intensity[1]) << 8 | static_cast<uint32_t>(intensity[0]));
-                            pclPoint.rgb = *reinterpret_cast<float*>(&rgb);
+                            cv::Vec3b intensity = rgbLeftImage.at< cv::Vec3b >( rows, cols );
+                            uint32_t rgb = (static_cast<uint32_t>(intensity[0]) << 16 | static_cast<uint32_t>(intensity[1]) << 8 | static_cast<uint32_t>(intensity[2]));
+                            pclPoint.rgb = *reinterpret_cast< float* >( &rgb );
                             pointCloud->push_back( pclPoint );
 
                         }

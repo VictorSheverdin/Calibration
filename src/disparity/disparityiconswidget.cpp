@@ -39,7 +39,7 @@ const CvImage &DisparityIcon::rightImage() const
     return m_rightImage;
 }
 
-// IconsWidget
+// IconsListWidget
 DisparityIconsWidget::DisparityIconsWidget( QWidget *parent )
     : SuperClass( parent )
 {
@@ -48,6 +48,8 @@ DisparityIconsWidget::DisparityIconsWidget( QWidget *parent )
 
 void DisparityIconsWidget::initialize()
 {
+    setWrapping( false );
+
     connect( this, &DisparityIconsWidget::itemDoubleClicked,
                 [&]( QListWidgetItem *item ) {
                     auto itemCast = dynamic_cast< DisparityIcon * >( item );
@@ -87,3 +89,7 @@ QList< DisparityIcon* > DisparityIconsWidget::icons() const
 
 }
 
+DisparityIcon *DisparityIconsWidget::currentIcon() const
+{
+    return dynamic_cast< DisparityIcon * >( currentItem() );
+}

@@ -25,14 +25,14 @@ private:
 
 };
 
-class IconsWidget : public QListWidget
+class IconsListWidget : public QListWidget
 {
     Q_OBJECT
 
 public:
     using SuperClass = QListWidget;
 
-    explicit IconsWidget( QWidget *parent = nullptr );
+    explicit IconsListWidget( QWidget *parent = nullptr );
 
     void addIcon( IconBase *icon );
     void insertIcon( IconBase *icon );

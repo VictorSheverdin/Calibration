@@ -196,6 +196,8 @@ void MainWindow::setupToolBars()
     m_toolBar->addAction( m_openAction );
     m_toolBar->addAction( m_saveAction );
     m_toolBar->addSeparator();
+    m_toolBar->addAction( m_importAction );
+    m_toolBar->addSeparator();
     m_toolBar->addAction( m_grabAction );
     m_toolBar->addAction( m_autoGrabAction );
     m_toolBar->addSeparator();

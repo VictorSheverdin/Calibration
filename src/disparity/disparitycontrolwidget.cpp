@@ -27,6 +27,7 @@ void IntSliderLayout::initialize( const QString label )
     addWidget( m_numberWidget );
 
     connect( m_slider, &QSlider::valueChanged, this, &IntSliderLayout::updateDisplayedValue );
+    connect( m_slider, &QSlider::valueChanged, this, &IntSliderLayout::valueChanged );
 
     updateDisplayedValue();
 
@@ -226,9 +227,21 @@ void BMControlWidget::initialize()
     setNumDisparities( 128 );
     setTextureThreshold( 700 );
     setUniquessRatio( 10 );
-    setSpeckleWindowSize( 15 );
-    setSpeckleRange( 50 );
+    setSpeckleWindowSize( 70 );
+    setSpeckleRange( 10 );
     setDisp12MaxDiff( 0 );
+
+    connect( m_preFilterSizeLayout, &IntSliderLayout::valueChanged, this, &BMControlWidget::valueChanged );
+    connect( m_preFilterCapLayout, &IntSliderLayout::valueChanged, this, &BMControlWidget::valueChanged );
+    connect( m_sadWindowSizeLayout, &IntSliderLayout::valueChanged, this, &BMControlWidget::valueChanged );
+    connect( m_minDisparityLayout, &IntSliderLayout::valueChanged, this, &BMControlWidget::valueChanged );
+    connect( m_numDisparitiesLayout, &IntSliderLayout::valueChanged, this, &BMControlWidget::valueChanged );
+    connect( m_textureThresholdLayout, &IntSliderLayout::valueChanged, this, &BMControlWidget::valueChanged );
+    connect( m_uniquessRatioLayout, &IntSliderLayout::valueChanged, this, &BMControlWidget::valueChanged );
+    connect( m_speckleWindowSizeLayout, &IntSliderLayout::valueChanged, this, &BMControlWidget::valueChanged );
+    connect( m_speckleRangeLayout, &IntSliderLayout::valueChanged, this, &BMControlWidget::valueChanged );
+    connect( m_disp12MaxDiffLayout, &IntSliderLayout::valueChanged, this, &BMControlWidget::valueChanged );
+
 }
 
 int BMControlWidget::prefilterSize() const
@@ -389,11 +402,23 @@ void GMControlWidget::initialize()
     setMinDisparity( -128 );
     setNumDisparities( 256 );
     setUniquessRatio( 10 );
-    setSpeckleWindowSize( 15 );
-    setSpeckleRange( 50 );
+    setSpeckleWindowSize( 70 );
+    setSpeckleRange( 10 );
     setDisp12MaxDiff( 0 );
     setP1(0);
     setP2(0);
+
+    connect( m_modeLayout, &GMTypeLayout::currentIndexChanged, this, &GMControlWidget::valueChanged );
+    connect( m_preFilterCapLayout, &IntSliderLayout::valueChanged, this, &GMControlWidget::valueChanged );
+    connect( m_sadWindowSizeLayout, &IntSliderLayout::valueChanged, this, &GMControlWidget::valueChanged );
+    connect( m_minDisparityLayout, &IntSliderLayout::valueChanged, this, &GMControlWidget::valueChanged );
+    connect( m_numDisparitiesLayout, &IntSliderLayout::valueChanged, this, &GMControlWidget::valueChanged );
+    connect( m_uniquessRatioLayout, &IntSliderLayout::valueChanged, this, &GMControlWidget::valueChanged );
+    connect( m_speckleWindowSizeLayout, &IntSliderLayout::valueChanged, this, &GMControlWidget::valueChanged );
+    connect( m_speckleRangeLayout, &IntSliderLayout::valueChanged, this, &GMControlWidget::valueChanged );
+    connect( m_disp12MaxDiffLayout, &IntSliderLayout::valueChanged, this, &GMControlWidget::valueChanged );
+    connect( m_p1Layout, &IntSliderLayout::valueChanged, this, &GMControlWidget::valueChanged );
+    connect( m_p2Layout, &IntSliderLayout::valueChanged, this, &GMControlWidget::valueChanged );
 
 }
 
@@ -545,6 +570,10 @@ void DisparityControlWidget::initialize()
     layout->addWidget( m_stack );
 
     connect( m_typeLayout, &TypeLayout::currentIndexChanged, this, &DisparityControlWidget::updateStackedWidget );
+
+    connect( m_typeLayout, &TypeLayout::currentIndexChanged, this, &DisparityControlWidget::valueChanged );
+    connect( m_bmControlWidget, &BMControlWidget::valueChanged, this, &DisparityControlWidget::valueChanged );
+    connect( m_gmControlWidget, &GMControlWidget::valueChanged, this, &DisparityControlWidget::valueChanged );
 
     updateStackedWidget();
 

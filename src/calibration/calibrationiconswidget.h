@@ -89,12 +89,12 @@ private:
 
 };
 
-class CalibrationIconsWidget : public IconsWidget
+class CalibrationIconsWidget : public IconsListWidget
 {
     Q_OBJECT
 
 public:
-    using SuperClass = IconsWidget;
+    using SuperClass = IconsListWidget;
 
     explicit CalibrationIconsWidget( QWidget *parent = nullptr );
 

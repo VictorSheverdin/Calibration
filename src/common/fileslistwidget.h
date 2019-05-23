@@ -1,6 +1,6 @@
 #pragma once
 
-#include "src/common/supportwidgets.h"
+#include "supportwidgets.h"
 #include <QSplitter>
 
 class FilesListWidget;

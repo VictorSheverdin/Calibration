@@ -51,10 +51,10 @@ void VideoIconWidget::paintEvent( QPaintEvent *event )
 
 void VideoIconWidget::mouseDoubleClickEvent( QMouseEvent * )
 {
-    emit iconActivated( m_image );
+    emit iconActivated( this );
 }
 
-// FrameIconsWidget
+// VideoIconsWidget
 VideoIconsLayout::VideoIconsLayout( QWidget *parent )
     : QWidget( parent )
 {
@@ -85,21 +85,19 @@ Qt::Orientation VideoIconsLayout::orientation() const
         return Qt::Vertical;
 }
 
-void VideoIconsLayout::addFrame( const CvImage frame )
+void VideoIconsLayout::addIcon( VideoIconWidget *icon )
 {
-    auto newImage = new VideoIconWidget( frame, this );
+    connect( icon, &VideoIconWidget::iconActivated, this, &VideoIconsLayout::iconActivated );
 
-    connect( newImage, &VideoIconWidget::iconActivated, this, &VideoIconsLayout::iconActivated );
-
-    m_layout->addWidget( newImage );
+    m_layout->addWidget( icon );
 
 
 }
 
-void VideoIconsLayout::addFrames( const std::vector<CvImage> &frames )
+void VideoIconsLayout::addIcons( const std::vector< VideoIconWidget * > &icons )
 {
-    for ( auto i = frames.begin(); i != frames.end(); ++i )
-        addFrame( *i );
+    for ( auto i = icons.begin(); i != icons.end(); ++i )
+        addIcon( *i );
 }
 
 unsigned int VideoIconsLayout::framesCount() const
@@ -141,15 +139,15 @@ void VideoIconsLayout::clear()
 
 }
 
-// FrameIconsWidget
-FrameIconsWidget::FrameIconsWidget( QWidget *parent )
+// VideoIconsWidget
+VideoIconsWidget::VideoIconsWidget( QWidget *parent )
     : QScrollArea( parent )
 {
     initialize();
 
 }
 
-void FrameIconsWidget::initialize()
+void VideoIconsWidget::initialize()
 {
     auto palette = this->palette();
     palette.setColor( QPalette::Background, Qt::white );
@@ -160,30 +158,50 @@ void FrameIconsWidget::initialize()
     auto layout = new VideoIconsLayout( this );
     setWidget( layout );
 
-    connect( layout, &VideoIconsLayout::iconActivated, this, &FrameIconsWidget::iconActivated );
+    connect( layout, &VideoIconsLayout::iconActivated, this, &VideoIconsWidget::iconActivated );
 
     setVerticalScrollBarPolicy( Qt::ScrollBarAlwaysOff );
 
 }
 
-VideoIconsLayout *FrameIconsWidget::layoutWidget() const
+VideoIconsLayout *VideoIconsWidget::layoutWidget() const
 {
     return dynamic_cast<VideoIconsLayout *>( widget() );
 }
 
-void FrameIconsWidget::setIcons( const std::vector<CvImage> &icons )
+void VideoIconsWidget::setIcons( const std::vector<VideoIconWidget *> &icons )
 {
     auto layout = layoutWidget();
 
     layout->clear();
 
-    layout->addFrames( icons );
+    layout->addIcons( icons );
 
     updateLayout();
 
 }
 
-void FrameIconsWidget::setOrientation( const Qt::Orientation value )
+void VideoIconsWidget::addIcon( VideoIconWidget *icon )
+{
+    auto layout = layoutWidget();
+
+    layout->addIcon( icon );
+
+    updateLayout();
+
+}
+
+void VideoIconsWidget::addIcons( const std::vector< VideoIconWidget* > &icons )
+{
+    auto layout = layoutWidget();
+
+    layout->addIcons( icons );
+
+    updateLayout();
+
+}
+
+void VideoIconsWidget::setOrientation( const Qt::Orientation value )
 {
     layoutWidget()->setOrientation( value );
 
@@ -191,12 +209,12 @@ void FrameIconsWidget::setOrientation( const Qt::Orientation value )
 
 }
 
-Qt::Orientation FrameIconsWidget::orientation() const
+Qt::Orientation VideoIconsWidget::orientation() const
 {
     return layoutWidget()->orientation();
 }
 
-void FrameIconsWidget::updateLayout()
+void VideoIconsWidget::updateLayout()
 {
     auto layout = layoutWidget();
 
@@ -224,7 +242,7 @@ void FrameIconsWidget::updateLayout()
 
 }
 
-void FrameIconsWidget::resizeEvent(QResizeEvent */*event*/)
+void VideoIconsWidget::resizeEvent(QResizeEvent */*event*/)
 {
     updateLayout();
 }

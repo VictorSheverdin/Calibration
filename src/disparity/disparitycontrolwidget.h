@@ -26,9 +26,11 @@ public:
     int minimum() const;
     int maximum() const;
 
+signals:
+    void valueChanged();
+
 public slots:
     void setRange( const int minValue, const int maxValue, const int step = 1 );
-
     void setValue( const int value );
 
 protected:
@@ -71,7 +73,7 @@ public:
     TypeComboBox::Type value() const;
 
 signals:
-    void currentIndexChanged(int index);
+    void currentIndexChanged( int index );
 
 protected:
     QPointer< QLabel > m_label;
@@ -112,7 +114,7 @@ public:
     GMTypeComboBox::Type value() const;
 
 signals:
-    void currentIndexChanged(int index);
+    void currentIndexChanged( int index );
 
 protected:
     QPointer< QLabel > m_label;
@@ -140,6 +142,9 @@ public:
     int speckleWindowSize() const;
     int speckleRange() const;
     int disp12MaxDiff() const;
+
+signals:
+    void valueChanged();
 
 public slots:
     void setPrefilterSize( const int value );
@@ -187,6 +192,9 @@ public:
     int disp12MaxDiff() const;
     int p1() const;
     int p2() const;
+
+signals:
+    void valueChanged();
 
 public slots:
     void setPrefilterCap( const int value );
@@ -240,6 +248,9 @@ public:
 
     bool isBmMethod() const;
     bool isGmMethod() const;
+
+signals:
+    void valueChanged();
 
 public slots:
     void activateBmWidget() const;

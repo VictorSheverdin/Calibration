@@ -37,17 +37,19 @@ void MainWindow::addCameraDisparityDocument( const QString &leftCameraIp, const 
     addDocument( new CameraDisparityDocument( leftCameraIp, rightCameraIp, this ) );
 }
 
+DisparityDocumentBase *MainWindow::currentDisparityDocument() const
+{
+    return getCurrentDocument< DisparityDocumentBase >();
+}
+
 CameraDisparityDocument *MainWindow::currentCameraDisparityDocument() const
 {
     return getCurrentDocument< CameraDisparityDocument >();
 }
 
-void MainWindow::loadCalibrationFile( const QString &fileName )
+ImageDisparityDocument *MainWindow::currentImageDisparityDocument() const
 {
-    auto doc = currentCameraDisparityDocument();
-
-    if ( doc )
-        doc->loadCalibrationFile( fileName );
+    return getCurrentDocument< ImageDisparityDocument >();
 }
 
 void MainWindow::addImageDisparity()
@@ -66,19 +68,22 @@ void MainWindow::addCameraDisparityDialog()
 
 void MainWindow::loadCalibrationDialog()
 {
-    auto file = QFileDialog::getOpenFileName(
-                            this,
-                            tr( "Select calibration file" ),
-                            QString(),
-                            "Calibration files (*.yaml)" );
+    auto doc = currentDisparityDocument();
 
-    if ( !file.isEmpty() )
-        loadCalibrationFile( file );
+    if ( doc ) {
+        doc->loadCalibrationDialog();
+    }
 
 }
 
+
 void MainWindow::importDialog()
 {
+    auto doc = currentImageDisparityDocument();
+
+    if ( doc )
+        doc->importDialog();
+
 }
 
 void MainWindow::exportDialog()
@@ -159,5 +164,7 @@ void MainWindow::setupToolBars()
     m_toolBar->addAction( m_newCameraDocumentAction );
     m_toolBar->addSeparator();
     m_toolBar->addAction( m_loadCalibrationAction );
+    m_toolBar->addSeparator();
+    m_toolBar->addAction( m_importAction );
 
 }

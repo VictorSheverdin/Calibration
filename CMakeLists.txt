@@ -29,6 +29,8 @@ set ( CALIBRATION_SOURCES
     "src/common/documentarea.cpp"
     "src/common/iconswidget.h"
     "src/common/iconswidget.cpp"
+    "src/common/fileslistwidget.h"
+    "src/common/fileslistwidget.cpp"
     "src/calibration/application.h"
     "src/calibration/application.cpp"
     "src/calibration/mainwindow.h"
@@ -51,8 +53,6 @@ set ( CALIBRATION_SOURCES
     "src/calibration/parameterswidget.cpp"
     "src/calibration/documentwidget.h"
     "src/calibration/documentwidget.cpp"
-    "src/calibration/fileslistwidget.h"
-    "src/calibration/fileslistwidget.cpp"
     "src/calibration/main.cpp"
 )
 set ( DISPARITY_SOURCES
@@ -81,6 +81,8 @@ set ( DISPARITY_SOURCES
     "src/common/videopreviewwidget.cpp"
     "src/common/iconswidget.h"
     "src/common/iconswidget.cpp"
+    "src/common/fileslistwidget.h"
+    "src/common/fileslistwidget.cpp"
     "src/disparity/application.h"
     "src/disparity/application.cpp"
     "src/disparity/mainwindow.h"

@@ -20,33 +20,32 @@ const CvImage &IconBase::previewImage() const
     return m_previewImage;
 }
 
-// IconsWidget
-const QSize IconsWidget::m_iconSize( 200, 200 );
+// IconsListWidget
+const QSize IconsListWidget::m_iconSize( 200, 200 );
 
-IconsWidget::IconsWidget( QWidget *parent )
+IconsListWidget::IconsListWidget( QWidget *parent )
     : SuperClass( parent )
 {
     initialize();
 }
 
-void IconsWidget::initialize()
+void IconsListWidget::initialize()
 {
     setIconSize( m_iconSize );
     setViewMode( IconMode );
-    setWrapping( true );
 }
 
-void IconsWidget::addIcon( IconBase *icon )
+void IconsListWidget::addIcon( IconBase *icon )
 {
     addItem( icon );
 }
 
-void IconsWidget::insertIcon(IconBase *icon )
+void IconsListWidget::insertIcon(IconBase *icon )
 {
     insertItem( 0, icon );
 }
 
-QList< IconBase* > IconsWidget::icons() const
+QList< IconBase* > IconsListWidget::icons() const
 {
     QList< IconBase* > ret;
 

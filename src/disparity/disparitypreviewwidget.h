@@ -15,6 +15,7 @@ class DisparityControlWidget;
 class PCLViewer;
 class BMControlWidget;
 class GMControlWidget;
+class DisparityIcon;
 class DisparityIconsWidget;
 
 class DisparityPreviewWidget : public QSplitter
@@ -48,12 +49,18 @@ public:
 
     bool loadCalibrationFile( const QString &fileName );
 
+    void updateFrame( const CvImage leftFrame, const CvImage rightFrame );
+
+signals:
+    void valueChanged();
+
+public slots:
+    void loadCalibrationDialog();
+
 protected:
     QPointer< DisparityPreviewWidget > m_view;
     QPointer< DisparityControlWidget > m_controlWidget;
     QPointer< PCLViewer > m_3dWidget;
-
-    void updateFrame( const CvImage leftFrame, const CvImage rightFrame );
 
     std::shared_ptr< BMDisparityProcessor > m_bmProcessor;
     std::shared_ptr< GMDisparityProcessor > m_gmProcessor;
@@ -97,9 +104,23 @@ public:
 
     bool loadCalibrationFile( const QString &fileName );
 
+    void addIcon( const CvImage &leftImage, const CvImage &rightImage );
+    void insertIcon( const CvImage &leftImage, const CvImage &rightImage );
+
+    void loadIcon( const QString &leftFileName, const QString &rightFileName );
+
+public slots:
+    void loadCalibrationDialog();
+    void importDialog();
+
+protected slots:
+    void updateFrame();
+    void updateFrame( DisparityIcon* icon );
+
 protected:
     QPointer< DisparityWidgetBase > m_disparityWidget;
     QPointer< DisparityIconsWidget > m_iconsWidget;
+
 private:
     void initialize();
 

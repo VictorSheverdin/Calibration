@@ -7,7 +7,7 @@
 #include "camerawidget.h"
 #include "reportwidget.h"
 #include "parameterswidget.h"
-#include "fileslistwidget.h"
+#include "src/common/fileslistwidget.h"
 #include "src/common/functions.h"
 
 #include "application.h"
