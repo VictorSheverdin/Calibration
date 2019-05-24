@@ -2,6 +2,8 @@
 
 #include "templateprocessor.h"
 
+#include "src/common/functions.h"
+
 // ProcessorData
 ProcessorState::ProcessorState()
 {
@@ -179,10 +181,8 @@ bool TemplateProcessor::processPreview(const CvImage &frame, CvImage *preview, s
 
         cv::Mat sourceFrame;
 
-        if ( m_resizeFlag && extent > m_frameMaximumSize ) {
-            double scaleFactor = static_cast<double>( m_frameMaximumSize ) / extent;
-            cv::resize( frame, sourceFrame, cv::Size(), scaleFactor, scaleFactor, cv::INTER_LANCZOS4 );
-        }
+        if ( m_resizeFlag && extent > m_frameMaximumSize )
+            sourceFrame = resizeTo( frame, m_frameMaximumSize );
         else
             frame.copyTo( sourceFrame );
 

@@ -2,15 +2,40 @@
 
 #include "pclwidget.h"
 
+#include <vtkPointPicker.h>
+
+#include "application.h"
+
 PCLViewer::PCLViewer( QWidget* parent )
     : QVTKWidget( parent )
 {
     initialize();
 }
 
+void PCLViewer::pickingEventHandler( const pcl::visualization::PointPickingEvent& event, void* viewer_void )
+{
+    float x, y, z;
+
+    if (event.getPointIndex () == -1) {
+        return;
+    }
+
+    event.getPoint( x, y, z );
+
+    auto distance = x * x + y * y + z * z;
+
+    std::stringstream ss;
+    ss << distance;
+
+    application()->setStatusBarText( tr( "Distance: " ) + QString::number( distance ) );
+
+    reinterpret_cast< pcl::visualization::PCLVisualizer *>( viewer_void )->addText3D( ss.str(), pcl::PointXYZ( x, y, z - 0.1 ), 0.2, 1.0, 0, 0 );
+
+}
+
 void PCLViewer::initialize()
 {
-    m_pclViewer = std::unique_ptr< pcl::visualization::PCLVisualizer >( new pcl::visualization::PCLVisualizer( "PCLVisualizer", false ) );
+    m_pclViewer = std::unique_ptr< pcl::visualization::PCLVisualizer >( new pcl::visualization::PCLVisualizer( "PCLVisualizer" ) );
     SetRenderWindow( m_pclViewer->getRenderWindow() );
     m_pclViewer->initCameraParameters ();
 
@@ -19,6 +44,12 @@ void PCLViewer::initialize()
     m_pclViewer->addPointCloud( pcl::PointCloud<pcl::PointXYZRGB>::Ptr( new pcl::PointCloud<pcl::PointXYZRGB> ) );
 
     m_pclViewer->setPointCloudRenderingProperties( pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2 );
+
+    // m_pclViewer->addOrientationMarkerWidgetAxes( GetInteractor() );
+    m_pclViewer->addCoordinateSystem( 0.1 );
+    m_pclViewer->registerPointPickingCallback( PCLViewer::pickingEventHandler, m_pclViewer.get() );
+
+    m_pclViewer->setCameraPosition( 0, 0, -1, 0, 1, 0 );
 
 }
 

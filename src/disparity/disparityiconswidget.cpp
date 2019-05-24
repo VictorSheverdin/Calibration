@@ -6,11 +6,11 @@
 #include "src/common/functions.h"
 
 // StereoIcon
-DisparityIcon::DisparityIcon( const CvImage leftSourceImage, const CvImage rightSourceImage, const int number )
-    : IconBase( makeOverlappedPreview( leftSourceImage, rightSourceImage ), number )
+DisparityIcon::DisparityIcon( const CvImage &preivewImage, const QString &leftFileName, const QString &rightFileName, const int number )
+    : IconBase( resizeTo( preivewImage, IconsListWidget::m_iconSize.width() ), number )
 {
-    setLeftImage( leftSourceImage );
-    setRightImage( rightSourceImage );
+    setLeftFileName( leftFileName );
+    setRightFileName( rightFileName );
 
     initialize();
 }
@@ -19,24 +19,34 @@ void DisparityIcon::initialize()
 {
 }
 
-void DisparityIcon::setLeftImage( const CvImage &image )
+void DisparityIcon::setLeftFileName( const QString &fileName )
 {
-    m_leftImage = image;
+    m_leftFileName = fileName;
 }
 
-void DisparityIcon::setRightImage( const CvImage &image )
+void DisparityIcon::setRightFileName(const QString &fileName )
 {
-    m_rightImage = image;
+    m_rightFileName = fileName;
 }
 
-const CvImage &DisparityIcon::leftImage() const
+const QString &DisparityIcon::leftFileName() const
 {
-    return m_leftImage;
+    return m_leftFileName;
 }
 
-const CvImage &DisparityIcon::rightImage() const
+const QString &DisparityIcon::rightFileName() const
 {
-    return m_rightImage;
+    return m_rightFileName;
+}
+
+CvImage DisparityIcon::loadLeftImage() const
+{
+    return CvImage( m_leftFileName );
+}
+
+CvImage DisparityIcon::loadRightImage() const
+{
+    return CvImage( m_rightFileName );
 }
 
 // IconsListWidget

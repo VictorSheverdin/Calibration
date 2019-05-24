@@ -8,17 +8,20 @@ class DisparityIcon : public IconBase
 public:
     using SuperClass = IconBase;
 
-    DisparityIcon( const CvImage leftSourceImage, const CvImage rightSourceImage, const int number );
+    DisparityIcon( const CvImage &preivewImage, const QString &leftFileName, const QString &rightFileName, const int number );
 
-    void setLeftImage( const CvImage &image );
-    void setRightImage( const CvImage &image );
+    void setLeftFileName( const QString &fileName );
+    void setRightFileName( const QString &fileName );
 
-    const CvImage &leftImage() const;
-    const CvImage &rightImage() const;
+    const QString &leftFileName() const;
+    const QString &rightFileName() const;
+
+    CvImage loadLeftImage() const;
+    CvImage loadRightImage() const;
 
 protected:
-    CvImage m_leftImage;
-    CvImage m_rightImage;
+    QString m_leftFileName;
+    QString m_rightFileName;
 
 private:
     void initialize();

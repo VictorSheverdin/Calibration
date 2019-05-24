@@ -92,10 +92,20 @@ void MainWindow::exportDialog()
 
 void MainWindow::clearIcons()
 {
+    auto doc = currentImageDisparityDocument();
+
+    if ( doc )
+        doc->clearIcons();
+
 }
 
 void MainWindow::settingsDialog()
 {
+}
+
+void MainWindow::setStatusBarText( const QString &text )
+{
+    m_statusBar->showMessage( text );
 }
 
 void MainWindow::setupActions()

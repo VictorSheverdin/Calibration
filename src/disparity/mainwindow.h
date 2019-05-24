@@ -39,6 +39,8 @@ public slots:
     void clearIcons();
     void settingsDialog();
 
+    void setStatusBarText( const QString &text );
+
 protected:
     QPointer< QMenuBar > m_menuBar;
 

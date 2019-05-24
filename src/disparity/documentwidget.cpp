@@ -74,3 +74,8 @@ void ImageDisparityDocument::importDialog()
 {
     widget()->importDialog();
 }
+
+void ImageDisparityDocument::clearIcons()
+{
+    widget()->clearIcons();
+}

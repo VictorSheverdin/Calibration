@@ -55,6 +55,7 @@ set ( CALIBRATION_SOURCES
     "src/calibration/documentwidget.cpp"
     "src/calibration/main.cpp"
 )
+
 set ( DISPARITY_SOURCES
     "src/common/defs.h"
     "src/common/precompiled.h"
@@ -102,6 +103,10 @@ set ( DISPARITY_SOURCES
     "src/disparity/main.cpp"
 )
 
+set ( COMPARE_SOURCES
+    "src/compare/main.cpp"
+)
+
 set ( RESOURCES
     "resources/resources.qrc"
 )
@@ -123,6 +128,7 @@ QT5_ADD_RESOURCES( RES_SOURCES ${RESOURCES} )
 
 add_executable( calibration ${CALIBRATION_SOURCES} ${RES_SOURCES} )
 add_executable( disparity ${DISPARITY_SOURCES} ${RES_SOURCES} )
+add_executable( compare ${COMPARE_SOURCES} )
 
 target_include_directories( calibration PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/vimba/include )
 target_include_directories( disparity PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/vimba/include )

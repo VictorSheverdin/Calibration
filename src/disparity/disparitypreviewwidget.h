@@ -103,15 +103,13 @@ public:
     GMControlWidget *gmControlWidget() const;
 
     bool loadCalibrationFile( const QString &fileName );
-
-    void addIcon( const CvImage &leftImage, const CvImage &rightImage );
-    void insertIcon( const CvImage &leftImage, const CvImage &rightImage );
-
-    void loadIcon( const QString &leftFileName, const QString &rightFileName );
+    void addIcon( const QString &leftFileName, const QString &rightFileName );
 
 public slots:
     void loadCalibrationDialog();
     void importDialog();
+
+    void clearIcons();
 
 protected slots:
     void updateFrame();

@@ -48,7 +48,17 @@ AVT::VmbAPI::VimbaSystem &Application::vimbaSystem() const
     return m_vimbaSystem;
 }
 
+void Application::setStatusBarText( const QString &text )
+{
+    m_mainWindow->setStatusBarText( text );
+}
+
 Application *application()
 {
     return dynamic_cast< Application * >( qApp );
+}
+
+MainWindow *mainWindow()
+{
+    return application()->mainWindow();
 }

@@ -59,6 +59,8 @@ public slots:
     virtual void loadCalibrationDialog() override;
     void importDialog();
 
+    void clearIcons();
+
 private:
     void initialize();
 

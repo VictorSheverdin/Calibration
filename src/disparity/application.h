@@ -19,6 +19,9 @@ public:
 
     AVT::VmbAPI::VimbaSystem &vimbaSystem() const;
 
+public slots:
+    void setStatusBarText( const QString &text );
+
 protected:
     QPointer< MainWindow > m_mainWindow;
 
@@ -30,3 +33,4 @@ private:
 };
 
 Application *application();
+MainWindow *mainWindow();

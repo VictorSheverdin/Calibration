@@ -459,12 +459,12 @@ StereoResult StereoProcessor::process( const CvImage &leftFrame, const CvImage &
 
                         cv::Point3f point = points.at< cv::Point3f >(rows, cols);
 
-                        if ( point.x > -1000 && point.y > -1000 && point.z > -1000 &&
+                        if ( point.x > -1000 && point.y > -1000 && point.z > 0 &&
                              point.x < 1000 && point.y < 1000 && point.z < 1000 ) {
 
                             pcl::PointXYZRGB pclPoint;
                             pclPoint.x = point.x;
-                            pclPoint.y = point.y;
+                            pclPoint.y = -point.y;
                             pclPoint.z = point.z;
 
                             cv::Vec3b intensity = rgbLeftImage.at< cv::Vec3b >( rows, cols );

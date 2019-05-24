@@ -217,23 +217,13 @@ bool ImageDisparityWidget::loadCalibrationFile( const QString &fileName )
     m_disparityWidget->loadCalibrationFile( fileName );
 }
 
-void ImageDisparityWidget::addIcon( const CvImage &leftImage, const CvImage &rightImage )
-{
-    m_iconsWidget->addIcon( new DisparityIcon( leftImage, rightImage, 0 ) );
-}
-
-void ImageDisparityWidget::insertIcon( const CvImage &leftImage, const CvImage &rightImage )
-{
-    m_iconsWidget->insertIcon( new DisparityIcon( leftImage, rightImage, 0 ) );
-}
-
-void ImageDisparityWidget::loadIcon( const QString &leftFileName, const QString &rightFileName )
+void ImageDisparityWidget::addIcon( const QString &leftFileName, const QString &rightFileName )
 {
     CvImage leftImg = cv::imread( leftFileName.toStdString() );
     CvImage rightImg = cv::imread( rightFileName.toStdString() );
 
     if ( !leftImg.empty() && !rightImg.empty() ) {
-        addIcon( leftImg, rightImg );
+        m_iconsWidget->addIcon( new DisparityIcon( makeOverlappedPreview( leftImg, rightImg ) , leftFileName, rightFileName, 0 ) );
 
     }
 
@@ -242,6 +232,8 @@ void ImageDisparityWidget::loadIcon( const QString &leftFileName, const QString 
 void ImageDisparityWidget::loadCalibrationDialog()
 {
     m_disparityWidget->loadCalibrationDialog();
+
+    updateFrame();
 }
 
 void ImageDisparityWidget::importDialog()
@@ -253,12 +245,18 @@ void ImageDisparityWidget::importDialog()
         auto rightFileNames = dlg.rightFileNames();
 
         for ( auto i = 0; i < leftFileNames.size(); ++i ) {
-            loadIcon( leftFileNames[i], rightFileNames[i] );
+            addIcon( leftFileNames[i], rightFileNames[i] );
         }
 
     }
 
+    updateFrame();
 
+}
+
+void ImageDisparityWidget::clearIcons()
+{
+    m_iconsWidget->clear();
 }
 
 void ImageDisparityWidget::updateFrame()
@@ -272,6 +270,6 @@ void ImageDisparityWidget::updateFrame()
 
 void ImageDisparityWidget::updateFrame( DisparityIcon* icon )
 {
-    m_disparityWidget->updateFrame( icon->leftImage(), icon->rightImage() );
+    m_disparityWidget->updateFrame( icon->loadLeftImage(), icon->loadRightImage() );
 }
 

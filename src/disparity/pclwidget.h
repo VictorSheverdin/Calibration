@@ -19,4 +19,6 @@ protected:
 private:
     void initialize();
 
+    static void pickingEventHandler( const pcl::visualization::PointPickingEvent& event, void* viewer_void );
+
 };
