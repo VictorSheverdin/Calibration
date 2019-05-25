@@ -2,14 +2,15 @@
 
 #include <vector>
 #include <string>
-#include "rapidxml/xmlTree.h"
+#include "src/rapidxml/xmlTree.h"
 
 #include <fstream>
 #include <streambuf>
 #include <cstdlib>
 #include <cmath>
-
 #define CHECKOK(X) if(!(X)) return -1
+
+//#include <iostream>
 
 int Annotation::LoadFromFile(std::string file){
 	rapidxml::xml_document<> doc;
@@ -134,15 +135,17 @@ double CompareDistances(Annotation a1, Annotation a2){
 
 double CompareCoordinates(Annotation a1, Annotation a2){
 	return sqrt(pow(a1.position.x - a2.position.x, 2) + pow(a1.position.y - a2.position.y, 2) + pow(a1.position.z - a2.position.z, 2));
+}
 
 double CompareTrajectories(std::vector<Annotation> ann1, std::vector<Annotation> ann2){
-	int s = (a1.objects.size() < a2.objects.size()) ? a1.objects.size() : a2.objects.size();
+	int s = (ann1.size() < ann2.size()) ? ann1.size() : ann2.size();
 	double len = 0;
 	double dist = CompareCoordinates(ann1[0], ann2[0]);
-	for (i = 1; i < s; i++){
-		len += CompareCoordinates(ann1[i], ann1[i-1]);
+	for (int i = 1; i < s; i++){
+        len += (CompareCoordinates(ann1[i], ann1[i-1])+CompareCoordinates(ann2[i], ann2[i-1]))/2;
 		dist += CompareCoordinates(ann1[i], ann2[i]);
+		//std::cout<<dist<<std::endl<<len<<std::endl<<std::endl;
 	}
 	if(len == 0) return 0;
-	return dist/len;
+	return dist/(s*len);
 }

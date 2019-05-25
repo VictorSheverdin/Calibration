@@ -85,7 +85,7 @@ GMControlWidget *DisparityWidgetBase::gmControlWidget() const
 
 bool DisparityWidgetBase::loadCalibrationFile( const QString &fileName )
 {
-    m_processor.loadYaml( fileName.toStdString() );
+    return m_processor.loadYaml( fileName.toStdString() );
 }
 
 void DisparityWidgetBase::loadCalibrationDialog()
@@ -200,6 +200,12 @@ void ImageDisparityWidget::initialize()
 
     connect( m_disparityWidget, &DisparityWidgetBase::valueChanged, this, static_cast< void ( ImageDisparityWidget::* )() >( &ImageDisparityWidget::updateFrame ) );
 
+    dropIconCount();
+}
+
+void ImageDisparityWidget::dropIconCount()
+{
+    m_iconCount = 0;
 }
 
 BMControlWidget *ImageDisparityWidget::bmControlWidget() const
@@ -223,7 +229,8 @@ void ImageDisparityWidget::addIcon( const QString &leftFileName, const QString &
     CvImage rightImg = cv::imread( rightFileName.toStdString() );
 
     if ( !leftImg.empty() && !rightImg.empty() ) {
-        m_iconsWidget->addIcon( new DisparityIcon( makeOverlappedPreview( leftImg, rightImg ) , leftFileName, rightFileName, 0 ) );
+        m_iconsWidget->addIcon( new DisparityIcon( makeOverlappedPreview( leftImg, rightImg ) , leftFileName, rightFileName, m_iconCount ) );
+        ++m_iconCount;
 
     }
 
@@ -257,6 +264,8 @@ void ImageDisparityWidget::importDialog()
 void ImageDisparityWidget::clearIcons()
 {
     m_iconsWidget->clear();
+
+    dropIconCount();
 }
 
 void ImageDisparityWidget::updateFrame()

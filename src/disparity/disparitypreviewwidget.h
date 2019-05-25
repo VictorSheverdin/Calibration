@@ -105,6 +105,8 @@ public:
     bool loadCalibrationFile( const QString &fileName );
     void addIcon( const QString &leftFileName, const QString &rightFileName );
 
+    int m_iconCount;
+
 public slots:
     void loadCalibrationDialog();
     void importDialog();
@@ -121,6 +123,8 @@ protected:
 
 private:
     void initialize();
+
+    void dropIconCount();
 
 };
 
