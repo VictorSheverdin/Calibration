@@ -46,7 +46,7 @@ void PCLViewer::initialize()
     SetRenderWindow( m_pclViewer->getRenderWindow() );
     m_pclViewer->initCameraParameters ();
 
-    m_pclViewer->setBackgroundColor( 127, 127, 127 );
+    // m_pclViewer->setBackgroundColor( 0, 0, 127 );
 
     m_pclViewer->addPointCloud( pcl::PointCloud<pcl::PointXYZRGB>::Ptr( new pcl::PointCloud<pcl::PointXYZRGB> ) );
 

@@ -80,12 +80,10 @@ public:
     explicit CameraDisparityWidget( const QString &leftCameraIp, const QString &rightCameraIp, QWidget* parent = nullptr );
 
 protected:
-    VimbaCamera m_leftCam;
-    VimbaCamera m_rightCam;
+    MasterCamera m_leftCam;
+    SlaveCamera m_rightCam;
 
     void updateFrame();
-
-    virtual void timerEvent( QTimerEvent * ) override;
 
 private:
     void initialize();

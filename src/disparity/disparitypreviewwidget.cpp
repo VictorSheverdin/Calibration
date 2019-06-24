@@ -152,33 +152,24 @@ void DisparityWidgetBase::updateFrame(const CvImage leftFrame, const CvImage rig
 
 // CameraDisparityWidget
 CameraDisparityWidget::CameraDisparityWidget( const QString &leftCameraIp, const QString &rightCameraIp, QWidget* parent )
-    : DisparityWidgetBase( parent ), m_leftCam( leftCameraIp.toStdString() ), m_rightCam( rightCameraIp.toStdString() )
+    : DisparityWidgetBase( parent ), m_leftCam( leftCameraIp.toStdString(), parent ), m_rightCam( rightCameraIp.toStdString(), parent )
 {
     initialize();
 }
 
 void CameraDisparityWidget::initialize()
 {
-    connect( &m_rightCam, &VimbaCamera::receivedFrame, this, &CameraDisparityWidget::updateFrame );
-
-    startTimer( 1000 / 10 );
+    connect( &m_rightCam, &SlaveCamera::receivedFrame, this, &CameraDisparityWidget::updateFrame );
 
 }
 
 void CameraDisparityWidget::updateFrame()
 {
-    DisparityWidgetBase::updateFrame( m_leftCam.getFrame(), m_rightCam.getFrame() );
-}
+    auto leftFrame = m_leftCam.getFrame();
+    auto rightFrame = m_rightCam.getFrame();
 
-void CameraDisparityWidget::timerEvent( QTimerEvent * )
-{
-    auto &vimbaSystem = AVT::VmbAPI::VimbaSystem::GetInstance();
+    DisparityWidgetBase::updateFrame( leftFrame, rightFrame );
 
-    setVimbaFeature( vimbaSystem, "ActionDeviceKey", ACTION_DEVICE_KEY );
-    setVimbaFeature( vimbaSystem, "ActionGroupKey", ACTION_GROUP_KEY );
-    setVimbaFeature( vimbaSystem, "ActionGroupMask", ACTION_GROUP_MASK );
-
-    vimbaRunCommand( vimbaSystem, "ActionCommand" );
 }
 
 // ImageDisparityWidget

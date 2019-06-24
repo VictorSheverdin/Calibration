@@ -20,26 +20,25 @@ public :
 
     virtual void FrameReceived( const AVT::VmbAPI::FramePtr pFrame ) override;
 
-    CvImage getFrame();
+    Frame getFrame();
 
 signals:
     void receivedFrame();
 
 protected:
     QMutex m_framesMutex;
-    LimitedQueue< CvImage > m_framesQueue;
+    LimitedQueue< Frame > m_framesQueue;
 
 };
 
-class VimbaCamera : public QObject
+class CameraBase : public QObject
 {
     Q_OBJECT
 
 public:
-    VimbaCamera( const std::string &ip );
-    ~VimbaCamera();
+    CameraBase( QObject *parent = nullptr );
 
-    CvImage getFrame();
+    Frame getFrame();
 
 signals:
     void receivedFrame();
@@ -53,6 +52,34 @@ protected:
     static const int m_numFrames = 3;
 
 private:
+    void initialize();
+
+};
+
+
+class MasterCamera : public CameraBase
+{
+    Q_OBJECT
+
+public:
+    MasterCamera( const std::string &ip, QObject *parent = nullptr );
+    ~MasterCamera();
+
+private:
     void initialize( const std::string &ip );
 
 };
+
+class SlaveCamera : public CameraBase
+{
+    Q_OBJECT
+
+public:
+    SlaveCamera( const std::string &ip, QObject *parent = nullptr );
+    ~SlaveCamera();
+
+private:
+    void initialize( const std::string &ip );
+
+};
+

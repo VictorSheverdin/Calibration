@@ -175,3 +175,44 @@ void StereoImage::setRightImage( const CvImage &img )
 {
     m_rightImage = img;
 }
+
+// Frame
+Frame::Frame()
+    : CvImage()
+{
+    initialize();
+}
+
+Frame::Frame( const CvImage &img )
+    : CvImage( img )
+{
+    initialize();
+}
+
+Frame::Frame( const cv::Mat &mat )
+    : CvImage( mat )
+{
+    initialize();
+}
+
+Frame::Frame( const QtImage &img )
+    : CvImage( img )
+{
+    initialize();
+}
+
+void Frame::initialize()
+{
+    m_time = std::chrono::system_clock::now();
+}
+
+const std::chrono::time_point< std::chrono::system_clock > &Frame::time() const
+{
+    return m_time;
+}
+
+int Frame::timeDiff( const Frame &other ) const
+{
+    return std::abs( std::chrono::duration_cast<std::chrono::milliseconds>( m_time - other.m_time ).count() );
+}
+

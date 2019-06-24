@@ -48,12 +48,12 @@ void FrameObserver::FrameReceived ( const AVT::VmbAPI::FramePtr pFrame )
 
 }
 
-CvImage FrameObserver::getFrame()
+Frame FrameObserver::getFrame()
 {
     // Lock the frame queue
     m_framesMutex.lock();
     // Pop frame from queue
-    CvImage res;
+    Frame res;
 
     if( !m_framesQueue.empty() )
     {
@@ -67,51 +67,23 @@ CvImage FrameObserver::getFrame()
 
 }
 
-// VimbaCamera
-VimbaCamera::VimbaCamera( const std::string &ip )
+// CameraBase
+CameraBase::CameraBase( QObject *parent )
+    : QObject( parent )
 {
-    initialize( ip );
+    initialize();
 }
 
-VimbaCamera::~VimbaCamera()
+void CameraBase::initialize()
 {
-    setVimbaFeature( m_camera, "TriggerMode", "Off" );
-
-    m_camera->Close();
-
 }
 
-void VimbaCamera::initialize( const std::string &ip )
-{
-    auto &vimbaSystem = AVT::VmbAPI::VimbaSystem::GetInstance();
-
-    checkVimbaStatus( vimbaSystem.OpenCameraByID( ip.c_str(), VmbAccessModeFull, m_camera ),
-        std::string( "Could not start open camera; ip = " ) + ip );
-
-    setVimbaFeature( m_camera, "PixelFormat", VmbPixelFormatBgr8 );
-
-    setVimbaFeature( m_camera, "TriggerSelector", "FrameStart" );
-    setVimbaFeature( m_camera, "TriggerSource", "Action0" );
-    setVimbaFeature( m_camera, "TriggerMode", "On" );
-
-    setVimbaFeature( m_camera, "ActionDeviceKey", ACTION_DEVICE_KEY );
-    setVimbaFeature( m_camera, "ActionGroupKey", ACTION_GROUP_KEY );
-    setVimbaFeature( m_camera, "ActionGroupMask", ACTION_GROUP_MASK );
-
-    SP_SET( m_frameObserver, new FrameObserver( m_camera ) );
-
-    checkVimbaStatus( SP_ACCESS( m_camera )->StartContinuousImageAcquisition( m_numFrames,  m_frameObserver ), "Can't start image acquisition" );
-
-    connect( m_frameObserver.get(), &FrameObserver::receivedFrame, this, &VimbaCamera::receivedFrame );
-
-}
-
-CvImage VimbaCamera::getFrame()
+Frame CameraBase::getFrame()
 {
     return m_frameObserver->getFrame();
 }
 
-void VimbaCamera::setMaxValue( const char* const name )
+void CameraBase::setMaxValue( const char* const name )
 {
     AVT::VmbAPI::FeaturePtr      feature;
 
@@ -127,3 +99,74 @@ void VimbaCamera::setMaxValue( const char* const name )
 
 }
 
+// MasterCamera
+MasterCamera::MasterCamera( const std::string &ip, QObject *parent )
+    : CameraBase( parent )
+{
+    initialize( ip );
+}
+
+MasterCamera::~MasterCamera()
+{
+    m_camera->Close();
+
+}
+
+void MasterCamera::initialize( const std::string &ip )
+{
+    auto &vimbaSystem = AVT::VmbAPI::VimbaSystem::GetInstance();
+
+    checkVimbaStatus( vimbaSystem.OpenCameraByID( ip.c_str(), VmbAccessModeFull, m_camera ),
+        std::string( "Could not start open camera; ip = " ) + ip );
+
+    setVimbaFeature( m_camera, "PixelFormat", VmbPixelFormatBgr8 );
+
+    setVimbaFeature( m_camera, "TriggerMode", "Off" );
+    setVimbaFeature( m_camera, "SyncOutSelector", "SyncOut1" );
+    setVimbaFeature( m_camera, "SyncOutSource", "Imaging" );
+
+    SP_SET( m_frameObserver, new FrameObserver( m_camera ) );
+
+    checkVimbaStatus( SP_ACCESS( m_camera )->StartContinuousImageAcquisition( m_numFrames,  m_frameObserver ), "Can't start image acquisition" );
+
+    connect( m_frameObserver.get(), &FrameObserver::receivedFrame, this, &MasterCamera::receivedFrame );
+
+    m_camera->StartCapture();
+
+}
+
+// MasterCamera
+SlaveCamera::SlaveCamera( const std::string &ip, QObject *parent )
+    : CameraBase( parent )
+{
+    initialize( ip );
+}
+
+SlaveCamera::~SlaveCamera()
+{
+    setVimbaFeature( m_camera, "TriggerMode", "Off" );
+
+    m_camera->Close();
+
+}
+
+void SlaveCamera::initialize( const std::string &ip )
+{
+    auto &vimbaSystem = AVT::VmbAPI::VimbaSystem::GetInstance();
+
+    checkVimbaStatus( vimbaSystem.OpenCameraByID( ip.c_str(), VmbAccessModeFull, m_camera ),
+        std::string( "Could not start open camera; ip = " ) + ip );
+
+    setVimbaFeature( m_camera, "PixelFormat", VmbPixelFormatBgr8 );
+
+    setVimbaFeature( m_camera, "TriggerSelector", "FrameStart" );
+    setVimbaFeature( m_camera, "TriggerSource", "Line1" );
+    setVimbaFeature( m_camera, "TriggerMode", "On" );
+
+    SP_SET( m_frameObserver, new FrameObserver( m_camera ) );
+
+    checkVimbaStatus( SP_ACCESS( m_camera )->StartContinuousImageAcquisition( m_numFrames,  m_frameObserver ), "Can't start image acquisition" );
+
+    connect( m_frameObserver.get(), &FrameObserver::receivedFrame, this, &MasterCamera::receivedFrame );
+
+}

@@ -428,15 +428,22 @@ StereoResult StereoProcessor::process( const CvImage &leftFrame, const CvImage &
             cv::remap( leftFrame, leftRectifiedImage, m_calibration.leftRMap(), m_calibration.leftDMap(), cv::INTER_LINEAR );
             cv::remap( rightFrame, rightRectifiedImage, m_calibration.rightRMap(), m_calibration.rightDMap(), cv::INTER_LINEAR );
 
+            CvImage leftCroppedFrame;
+            CvImage rightCroppedFrame;
 
-            auto previewImage = stackImages( leftRectifiedImage, rightRectifiedImage );
+            if (!m_calibration.leftROI().empty() && !m_calibration.rightROI().empty()) {
+                leftCroppedFrame = leftRectifiedImage( m_calibration.leftROI() );
+                rightCroppedFrame = rightRectifiedImage( m_calibration.leftROI() );
+            }
+
+            auto previewImage = stackImages( leftCroppedFrame, rightCroppedFrame );
             drawTraceLines( previewImage, 20 );
 
             ret.setPreviewImage( previewImage );
 
             if ( m_disparityProcessor ) {
 
-                auto disparity = m_disparityProcessor->processDisparity( leftRectifiedImage, rightRectifiedImage );
+                auto disparity = m_disparityProcessor->processDisparity( leftCroppedFrame, rightCroppedFrame );
 
                 ret.setDisparity( disparity );
 
@@ -452,7 +459,7 @@ StereoResult StereoProcessor::process( const CvImage &leftFrame, const CvImage &
 
                 CvImage rgbLeftImage;
 
-                cv::cvtColor( leftRectifiedImage, rgbLeftImage, CV_BGR2RGB );
+                cv::cvtColor( leftCroppedFrame, rgbLeftImage, CV_BGR2RGB );
 
                 for (int rows = 0; rows < points.rows; ++rows) {                    
                     for (int cols = 0; cols < points.cols; ++cols) {
@@ -463,7 +470,7 @@ StereoResult StereoProcessor::process( const CvImage &leftFrame, const CvImage &
                              point.x < 1000 && point.y < 1000 && point.z < 1000 ) {
 
                             pcl::PointXYZRGB pclPoint;
-                            pclPoint.x = point.x;
+                            pclPoint.x = -point.x;
                             pclPoint.y = -point.y;
                             pclPoint.z = point.z;
 

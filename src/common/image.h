@@ -5,6 +5,8 @@
 
 #include <opencv2/opencv.hpp>
 
+#include <chrono>
+
 class CvImage;
 
 class QtImage : public QImage
@@ -37,6 +39,26 @@ public:
 
     double aspectRatio() const;
     double revAspectRatio() const;
+
+};
+
+class Frame : public CvImage
+{
+public:
+    Frame();
+    Frame( const CvImage &mat );
+    Frame( const cv::Mat &mat );
+    Frame( const QtImage &img );
+
+    const std::chrono::time_point< std::chrono::system_clock > &time() const;
+
+    int timeDiff( const Frame &other ) const;
+
+protected:
+    std::chrono::time_point< std::chrono::system_clock > m_time;
+
+private:
+    void initialize();
 
 };
 

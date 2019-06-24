@@ -110,7 +110,7 @@ bool CameraWidgetBase::fastCheck() const
 
 // MonocularCameraWidget
 MonocularCameraWidget::MonocularCameraWidget( const QString &cameraIp, QWidget* parent )
-    : CameraWidgetBase( parent ), m_camera( cameraIp.toStdString() )
+    : CameraWidgetBase( parent ), m_camera( cameraIp.toStdString(), parent )
 {
     initialize();
 }
@@ -120,7 +120,7 @@ void MonocularCameraWidget::initialize()
     m_previewWidget = new CameraPreviewWidget( this );
     addWidget( m_previewWidget );
 
-    connect( &m_camera, &VimbaCamera::receivedFrame, this, &MonocularCameraWidget::updateFrame );
+    connect( &m_camera, &MasterCamera::receivedFrame, this, &MonocularCameraWidget::updateFrame );
 
     startTimer( 1000 / 30 );
 
@@ -180,21 +180,9 @@ void MonocularCameraWidget::updateFrame()
 
 }
 
-void MonocularCameraWidget::timerEvent( QTimerEvent * )
-{
-    auto &vimbaSystem = AVT::VmbAPI::VimbaSystem::GetInstance();
-
-    setVimbaFeature( vimbaSystem, "ActionDeviceKey", ACTION_DEVICE_KEY );
-    setVimbaFeature( vimbaSystem, "ActionGroupKey", ACTION_GROUP_KEY );
-    setVimbaFeature( vimbaSystem, "ActionGroupMask", ACTION_GROUP_MASK );
-
-    vimbaRunCommand( vimbaSystem, "ActionCommand" );
-
-}
-
 // StereoCameraWidget
 StereoCameraWidget::StereoCameraWidget( const QString &leftCameraIp, const QString &rightCameraIp, QWidget* parent )
-    : CameraWidgetBase( parent ), m_leftCamera( leftCameraIp.toStdString() ), m_rightCamera( rightCameraIp.toStdString() )
+    : CameraWidgetBase( parent ), m_leftCamera( leftCameraIp.toStdString(), parent ), m_rightCamera( rightCameraIp.toStdString(), parent )
 {
     initialize();
 }
@@ -207,8 +195,8 @@ void StereoCameraWidget::initialize()
     addWidget( m_leftCameraWidget );
     addWidget( m_rightCameraWidget );
 
-    connect( &m_leftCamera, &VimbaCamera::receivedFrame, this, &StereoCameraWidget::updateLeftFrame );
-    connect( &m_rightCamera, &VimbaCamera::receivedFrame, this, &StereoCameraWidget::updateRightFrame );
+    connect( &m_leftCamera, &MasterCamera::receivedFrame, this, &StereoCameraWidget::updateLeftFrame );
+    connect( &m_rightCamera, &SlaveCamera::receivedFrame, this, &StereoCameraWidget::updateRightFrame );
 
     startTimer( 1000 / 30 );
 
@@ -321,18 +309,6 @@ void StereoCameraWidget::updateRightFrame()
 
 }
 
-void StereoCameraWidget::timerEvent( QTimerEvent * )
-{
-    auto &vimbaSystem = AVT::VmbAPI::VimbaSystem::GetInstance();
-
-    setVimbaFeature( vimbaSystem, "ActionDeviceKey", ACTION_DEVICE_KEY );
-    setVimbaFeature( vimbaSystem, "ActionGroupKey", ACTION_GROUP_KEY );
-    setVimbaFeature( vimbaSystem, "ActionGroupMask", ACTION_GROUP_MASK );
-
-    vimbaRunCommand( vimbaSystem, "ActionCommand" );
-
-}
-
 // TripleCameraWidget
 TripleCameraWidget::TripleCameraWidget( const int camera1Index, const int camera2Index, const int camera3Index, QWidget* parent )
     : CameraWidgetBase( parent )
@@ -405,11 +381,6 @@ void TripleCameraWidget::updatePreview()
 {
     for ( int i = 0; i < 3; ++i )
         updatePreview( i );
-}
-
-void TripleCameraWidget::timerEvent( QTimerEvent *event )
-{
-
 }
 
 void TripleCameraWidget::updatePreview( const unsigned int cameraIndex )

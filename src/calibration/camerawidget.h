@@ -76,9 +76,7 @@ protected slots:
 protected:
     QPointer< CameraPreviewWidget > m_previewWidget;
 
-    VimbaCamera m_camera;
-
-    virtual void timerEvent( QTimerEvent * ) override;
+    MasterCamera m_camera;
 
 private:
     void initialize();
@@ -119,13 +117,11 @@ protected:
     QPointer<CameraPreviewWidget> m_leftCameraWidget;
     QPointer<CameraPreviewWidget> m_rightCameraWidget;
 
-    VimbaCamera m_leftCamera;
-    VimbaCamera m_rightCamera;
+    MasterCamera m_leftCamera;
+    SlaveCamera m_rightCamera;
 
     QMutex m_leftUpdateMutex;
     QMutex m_rightUpdateMutex;
-
-    virtual void timerEvent( QTimerEvent * ) override;
 
 private:
     void initialize();
@@ -162,8 +158,6 @@ protected slots:
     void updatePreview();
 
 protected:
-    virtual void timerEvent( QTimerEvent *event ) override;
-
     void updatePreview( const unsigned int cameraIndex );
 
 private:
