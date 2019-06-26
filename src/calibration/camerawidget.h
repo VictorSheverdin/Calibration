@@ -43,7 +43,7 @@ public:
     bool fastCheck() const;
 
 protected:
-    TemplateProcessor m_processor;
+    TemplateProcessor m_previewProcessor;
 
     static const int m_aquireInterval = 30;
     static const int m_aquireCount = 10;
@@ -100,6 +100,8 @@ public:
 
     bool isTemplateExist() const;
 
+    const StereoImage &stereoImage() const;
+
 public slots:
     void setLeftSourceImage( const CvImage image );
     void setLeftDisplayedImage( const CvImage image );
@@ -110,18 +112,15 @@ public slots:
     void setRightPreviewPoints( const std::vector<cv::Point2f> &points );
 
 protected slots:
-    void updateLeftFrame();
-    void updateRightFrame();
+    void updateFrame();
 
 protected:
     QPointer<CameraPreviewWidget> m_leftCameraWidget;
     QPointer<CameraPreviewWidget> m_rightCameraWidget;
 
-    MasterCamera m_leftCamera;
-    SlaveCamera m_rightCamera;
+    StereoCamera m_camera;
 
-    QMutex m_leftUpdateMutex;
-    QMutex m_rightUpdateMutex;
+    QMutex m_updateMutex;
 
 private:
     void initialize();

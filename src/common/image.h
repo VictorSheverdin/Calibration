@@ -74,6 +74,8 @@ public:
     const CvImage &rightImage() const;
     void setRightImage( const CvImage &img );
 
+    bool empty() const;
+
 protected:
     CvImage m_leftImage;
     CvImage m_rightImage;

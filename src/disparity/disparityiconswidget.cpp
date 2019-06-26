@@ -6,8 +6,8 @@
 #include "src/common/functions.h"
 
 // StereoIcon
-DisparityIcon::DisparityIcon( const CvImage &preivewImage, const QString &leftFileName, const QString &rightFileName, const int number )
-    : IconBase( resizeTo( preivewImage, IconsListWidget::m_iconSize.width() ), number )
+DisparityIcon::DisparityIcon( const CvImage &preivewImage, const QString &leftFileName, const QString &rightFileName, const QString &text )
+    : IconBase( resizeTo( preivewImage, IconsListWidget::m_iconSize.width() ), text )
 {
     setLeftFileName( leftFileName );
     setRightFileName( rightFileName );

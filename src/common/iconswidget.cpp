@@ -5,8 +5,8 @@
 #include "functions.h"
 
 // IconBase
-IconBase::IconBase( const CvImage image, const int number )
-    : QListWidgetItem( QPixmap::fromImage( QtImage( image ) ) , QObject::tr("Frame") + " " + QString::number( number ) ), m_previewImage( image )
+IconBase::IconBase( const CvImage image, const QString &text )
+    : QListWidgetItem( QPixmap::fromImage( QtImage( image ) ), text ), m_previewImage( image )
 {
     initialize();
 }

@@ -13,26 +13,6 @@ void MonocularCalibrationResult::initialize()
     m_ok = false;
 }
 
-void MonocularCalibrationResult::setSourceView( const CvImage &value )
-{
-    m_sourceView = value;
-}
-
-const CvImage &MonocularCalibrationResult::sourceView() const
-{
-    return m_sourceView;
-}
-
-void MonocularCalibrationResult::setProcessedView( const CvImage &value )
-{
-    m_processedView = value;
-}
-
-const CvImage &MonocularCalibrationResult::processedView() const
-{
-    return m_processedView;
-}
-
 void MonocularCalibrationResult::setRVec( const cv::Mat &value )
 {
     m_rVec = value;

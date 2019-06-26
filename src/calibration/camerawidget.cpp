@@ -20,92 +20,92 @@ void CameraWidgetBase::initialize()
 
 void CameraWidgetBase::setType( const TemplateProcessor::Type type )
 {
-    m_processor.setType( type );
+    m_previewProcessor.setType( type );
 }
 
 void CameraWidgetBase::setCount( const cv::Size &count )
 {
-    m_processor.setCount( count );
+    m_previewProcessor.setCount( count );
 }
 
 void CameraWidgetBase::setTemplateSize( const double value )
 {
-    m_processor.setSize( value );
+    m_previewProcessor.setSize( value );
 }
 
 void CameraWidgetBase::setResizeFlag( const bool value )
 {
-    m_processor.setResizeFlag( value );
+    m_previewProcessor.setResizeFlag( value );
 }
 
 void CameraWidgetBase::setFrameMaximumSize( const unsigned int value )
 {
-    m_processor.setFrameMaximumSize( value );
+    m_previewProcessor.setFrameMaximumSize( value );
 }
 
 void CameraWidgetBase::setAdaptiveThreshold( const bool value )
 {
-    m_processor.setAdaptiveThreshold( value );
+    m_previewProcessor.setAdaptiveThreshold( value );
 }
 
 void CameraWidgetBase::setNormalizeImage( const bool value )
 {
-    m_processor.setNormalizeImage( value );
+    m_previewProcessor.setNormalizeImage( value );
 }
 
 void CameraWidgetBase::setFilterQuads( const bool value )
 {
-    m_processor.setFilterQuads( value );
+    m_previewProcessor.setFilterQuads( value );
 }
 
 void CameraWidgetBase::setFastCheck( const bool value )
 {
-    m_processor.setFastCheck( value );
+    m_previewProcessor.setFastCheck( value );
 }
 
 TemplateProcessor::Type CameraWidgetBase::templateType() const
 {
-    return m_processor.type();
+    return m_previewProcessor.type();
 }
 
 const cv::Size &CameraWidgetBase::templateCount() const
 {
-    return m_processor.count();
+    return m_previewProcessor.count();
 }
 
 double CameraWidgetBase::templateSize() const
 {
-    return m_processor.size();
+    return m_previewProcessor.size();
 }
 
 bool CameraWidgetBase::resizeFlag() const
 {
-    return m_processor.resizeFlag();
+    return m_previewProcessor.resizeFlag();
 }
 
 unsigned int CameraWidgetBase::frameMaximumFlag() const
 {
-    return m_processor.frameMaximumFlag();
+    return m_previewProcessor.frameMaximumFlag();
 }
 
 bool CameraWidgetBase::adaptiveThreshold() const
 {
-    return m_processor.adaptiveThreshold();
+    return m_previewProcessor.adaptiveThreshold();
 }
 
 bool CameraWidgetBase::normalizeImage() const
 {
-    return m_processor.normalizeImage();
+    return m_previewProcessor.normalizeImage();
 }
 
 bool CameraWidgetBase::filterQuads() const
 {
-    return m_processor.filterQuads();
+    return m_previewProcessor.filterQuads();
 }
 
 bool CameraWidgetBase::fastCheck() const
 {
-    return m_processor.fastCheck();
+    return m_previewProcessor.fastCheck();
 }
 
 // MonocularCameraWidget
@@ -171,7 +171,7 @@ void MonocularCameraWidget::updateFrame()
         CvImage procFrame;
         std::vector< cv::Point2f > previewPoints;
 
-        m_processor.processPreview( frame, &procFrame, &previewPoints );
+        m_previewProcessor.processPreview( frame, &procFrame, &previewPoints );
 
         setPreviewImage( procFrame );
         setPreviewPoints( previewPoints );
@@ -182,7 +182,7 @@ void MonocularCameraWidget::updateFrame()
 
 // StereoCameraWidget
 StereoCameraWidget::StereoCameraWidget( const QString &leftCameraIp, const QString &rightCameraIp, QWidget* parent )
-    : CameraWidgetBase( parent ), m_leftCamera( leftCameraIp.toStdString(), parent ), m_rightCamera( rightCameraIp.toStdString(), parent )
+    : CameraWidgetBase( parent ), m_camera( leftCameraIp.toStdString(), rightCameraIp.toStdString(), parent )
 {
     initialize();
 }
@@ -195,8 +195,7 @@ void StereoCameraWidget::initialize()
     addWidget( m_leftCameraWidget );
     addWidget( m_rightCameraWidget );
 
-    connect( &m_leftCamera, &MasterCamera::receivedFrame, this, &StereoCameraWidget::updateLeftFrame );
-    connect( &m_rightCamera, &SlaveCamera::receivedFrame, this, &StereoCameraWidget::updateRightFrame );
+    connect( &m_camera, &StereoCamera::receivedFrame, this, &StereoCameraWidget::updateFrame );
 
     startTimer( 1000 / 30 );
 
@@ -257,53 +256,39 @@ bool StereoCameraWidget::isTemplateExist() const
     return m_leftCameraWidget->isTemplateExist() || m_rightCameraWidget->isTemplateExist();
 }
 
-void StereoCameraWidget::updateLeftFrame()
+const StereoImage &StereoCameraWidget::stereoImage() const
 {
-    if ( m_leftUpdateMutex.tryLock() ) {
-
-        auto frame = m_leftCamera.getFrame();
-
-        if ( !frame.empty() ) {
-
-            m_leftCameraWidget->setSourceImage( frame );
-
-            CvImage procFrame;
-            std::vector< cv::Point2f > previewPoints;
-
-            m_processor.processPreview( frame, &procFrame, &previewPoints );
-
-            m_leftCameraWidget->setPreviewImage( procFrame );
-            m_leftCameraWidget->setPreviewPoints( previewPoints );
-
-        }
-
-        m_leftUpdateMutex.unlock();
-
-    }
-
+    return m_camera.getFrame();
 }
 
-void StereoCameraWidget::updateRightFrame()
+void StereoCameraWidget::updateFrame()
 {
-    if ( m_rightUpdateMutex.tryLock() ) {
+    if ( m_updateMutex.tryLock() ) {
 
-        auto frame = m_rightCamera.getFrame();
+        auto frame = m_camera.getFrame();
 
         if ( !frame.empty() ) {
 
-            m_rightCameraWidget->setSourceImage( frame );
+            m_leftCameraWidget->setSourceImage( frame.leftImage() );
+            m_rightCameraWidget->setSourceImage( frame.rightImage() );
 
-            CvImage procFrame;
-            std::vector< cv::Point2f > previewPoints;
+            CvImage leftProcFrame;
+            std::vector< cv::Point2f > leftPreviewPoints;
 
-            m_processor.processPreview( frame, &procFrame, &previewPoints );
+            CvImage rightProcFrame;
+            std::vector< cv::Point2f > rightPreviewPoints;
 
-            m_rightCameraWidget->setPreviewImage( procFrame );
-            m_rightCameraWidget->setPreviewPoints( previewPoints );
+            m_previewProcessor.processPreview( frame.leftImage(), &leftProcFrame, &leftPreviewPoints );
+            m_previewProcessor.processPreview( frame.rightImage(), &rightProcFrame, &rightPreviewPoints );
 
+            m_leftCameraWidget->setPreviewImage( leftProcFrame );
+            m_leftCameraWidget->setPreviewPoints( leftPreviewPoints );
+
+            m_rightCameraWidget->setPreviewImage( rightProcFrame );
+            m_rightCameraWidget->setPreviewPoints( rightPreviewPoints );
         }
 
-        m_rightUpdateMutex.unlock();
+        m_updateMutex.unlock();
 
     }
 

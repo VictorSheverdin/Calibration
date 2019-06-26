@@ -220,9 +220,7 @@ void ImageDisparityWidget::addIcon( const QString &leftFileName, const QString &
     CvImage rightImg = cv::imread( rightFileName.toStdString() );
 
     if ( !leftImg.empty() && !rightImg.empty() ) {
-        m_iconsWidget->addIcon( new DisparityIcon( makeOverlappedPreview( leftImg, rightImg ) , leftFileName, rightFileName, m_iconCount ) );
-        ++m_iconCount;
-
+        m_iconsWidget->addIcon( new DisparityIcon( makeOverlappedPreview( leftImg, rightImg ) , leftFileName, rightFileName, QObject::tr("Frame") + " " + QString::number( m_iconCount++ ) ) );
     }
 
 }

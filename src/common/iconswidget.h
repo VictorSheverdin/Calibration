@@ -13,7 +13,7 @@ class IconBase : public QListWidgetItem
 public:
     using SuperClass = QListWidget;
 
-    IconBase( const CvImage image, const int number );
+    IconBase(const CvImage image, const QString &text );
 
     const CvImage &previewImage() const;
 

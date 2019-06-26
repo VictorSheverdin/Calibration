@@ -170,3 +170,38 @@ void SlaveCamera::initialize( const std::string &ip )
     connect( m_frameObserver.get(), &FrameObserver::receivedFrame, this, &MasterCamera::receivedFrame );
 
 }
+
+// StereoCamera
+StereoCamera::StereoCamera( const std::string &leftIp, const std::string &rightIp, QObject *parent )
+    : QObject( parent ), m_leftCamera( leftIp, parent ), m_rightCamera( rightIp, parent )
+{
+    initialize();
+}
+
+void StereoCamera::initialize()
+{
+    connect( &m_rightCamera, &SlaveCamera::receivedFrame, this, &StereoCamera::updateFrame );
+}
+
+void StereoCamera::updateFrame()
+{
+    auto leftFrame = m_leftCamera.getFrame();
+    auto rightFrame = m_rightCamera.getFrame();
+
+    if ( !leftFrame.empty() && !rightFrame.empty() ) {
+        m_frame = StereoImage( leftFrame, rightFrame );
+        emit receivedFrame();
+
+    }
+
+}
+
+const StereoImage &StereoCamera::getFrame() const
+{
+    return m_frame;
+}
+
+bool StereoCamera::empty() const
+{
+    return m_frame.empty();
+}

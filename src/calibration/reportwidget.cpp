@@ -118,23 +118,6 @@ void MonocularReportWidget::report( const MonocularCalibrationData &calibration 
     addText( tr( "Camera calibration." ) + "\n" );
     addBreak();
 
-
-    for (  auto &i : calibration.results() ) {
-
-        if ( !i.processedView().empty() ) {
-
-            CvImage resizedView = resizeTo( i.processedView(), m_reportFrameSize );
-
-            addImage( resizedView );
-            addSpace();
-
-
-        }
-
-    }
-
-    addDoubleBreak();
-
     addText( tr( "Results:" ) + "\n" );
     addBreak();
 
@@ -158,25 +141,6 @@ void MonocularReportWidget::report( const MonocularCalibrationData &calibration 
     addBreak();
     addText( tr( "Reprojection error:" ) +  " " + QString::number( calibration.error() ) +"\n" );
     addBreak();
-
-    for ( auto &i : calibration.results() ) {
-
-        if ( !i.sourceView().empty() ) {
-
-            CvImage undistorted;
-
-            cv::undistort( i.sourceView(), undistorted, calibration.cameraMatrix(), calibration.distortionCoefficients() );
-
-            CvImage resizedView = resizeTo( undistorted, m_reportFrameSize );
-
-            addImage( resizedView );
-            addSpace();
-
-        }
-
-    }
-
-    addDoubleBreak();
 
     if ( calibration.isOk() )
         addText( tr( "Calibration succesful!" ) + "\n" );
@@ -205,9 +169,7 @@ void StereoReportWidget::report(const StereoCalibrationData &calibration )
     addText( tr( "Stereo camera calibration." ) + "\n" );
     addBreak();
 
-    if ( calibration.leftResultsSize() != calibration.rightResultsSize() )
-        throw std::exception();
-
+/*
     for (  int i = 0; i < calibration.leftCameraResults().resultsSize(); ++i ) {
         if ( calibration.leftCameraResults().result(i).isOk() &&  calibration.rightCameraResults().result(i).isOk() ) {
 
@@ -226,7 +188,7 @@ void StereoReportWidget::report(const StereoCalibrationData &calibration )
     }
 
     addDoubleBreak();
-
+*/
     if ( calibration.isOk() ) {
 
         addText( tr( "Left camera matrix:" ) + "\n" );
@@ -287,38 +249,34 @@ void StereoReportWidget::report(const StereoCalibrationData &calibration )
 
         addText( tr( "Reprojection error:" ) +  " " + QString::number( calibration.error() ) +"\n" );
         addBreak();
+/*
+        auto leftImage = calibration.leftCameraResults().result(0).sourceView();
+        auto rightImage = calibration.rightCameraResults().result(0).sourceView();
 
-        for ( auto i = 0; i < calibration.leftCameraResults().resultsSize(); ++i ) {
-            auto leftImage = calibration.leftCameraResults().result(i).sourceView();
-            auto rightImage = calibration.rightCameraResults().result(i).sourceView();
+        if ( !leftImage.empty() && !rightImage.empty() ) {
 
-            if ( !leftImage.empty() && !rightImage.empty() ) {
+            cv::Mat leftRectifiedImage;
+            cv::Mat rightRectifiedImage;
 
-                cv::Mat leftRectifiedImage;
-                cv::Mat rightRectifiedImage;
+            cv::remap( leftImage, leftRectifiedImage, calibration.leftRMap(), calibration.leftDMap(), cv::INTER_LANCZOS4 );
+            cv::remap( rightImage, rightRectifiedImage, calibration.rightRMap(), calibration.rightDMap(), cv::INTER_LANCZOS4 );
 
-                cv::remap( leftImage, leftRectifiedImage, calibration.leftRMap(), calibration.leftDMap(), cv::INTER_LANCZOS4 );
-                cv::remap( rightImage, rightRectifiedImage, calibration.rightRMap(), calibration.rightDMap(), cv::INTER_LANCZOS4 );
+            auto image1 = resizeTo( leftRectifiedImage, m_reportFrameSize );
+            auto image2 = resizeTo( rightRectifiedImage, m_reportFrameSize );
 
-                auto image1 = resizeTo( leftRectifiedImage, m_reportFrameSize );
-                auto image2 = resizeTo( rightRectifiedImage, m_reportFrameSize );
+            auto stitchedImage = makeStraightPreview( image1, image2 );
 
-                auto stitchedImage = makeStraightPreview( image1, image2 );
+            if ( !stitchedImage.empty() ) {
+                drawTraceLines( stitchedImage, 15 );
 
-                if ( !stitchedImage.empty() ) {
-                    drawTraceLines( stitchedImage, 15 );
-
-                    addImage( stitchedImage );
-                    addSpace();
-
-                }
-
+                addImage( stitchedImage );
+                addSpace();
 
             }
 
         }
 
-        addDoubleBreak();
+        addDoubleBreak();*/
 
         addText( tr( "Calibration succesful!" ) + "\n" );
 

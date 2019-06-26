@@ -83,3 +83,30 @@ private:
 
 };
 
+class StereoCamera : public QObject
+{
+    Q_OBJECT
+
+public:
+    StereoCamera( const std::string &leftIp, const std::string &rightIp, QObject *parent = nullptr );
+
+    const StereoImage &getFrame() const;
+
+    bool empty() const;
+
+signals:
+    void receivedFrame();
+
+protected slots:
+    void updateFrame();
+
+protected:
+    MasterCamera m_leftCamera;
+    SlaveCamera m_rightCamera;
+
+    StereoImage m_frame;
+
+private:
+    void initialize();
+
+};

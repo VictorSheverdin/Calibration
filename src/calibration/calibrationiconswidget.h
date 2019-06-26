@@ -14,7 +14,7 @@ class CalibrationIconBase : public IconBase
 public:
     using SuperClass = IconBase;
 
-    CalibrationIconBase( const CvImage image, const int number );
+    CalibrationIconBase( const CvImage image, const cv::Size &frameSize, const QString &text );
 
     bool isMonocularIcon() const;
     bool isStereoIcon() const;
@@ -24,6 +24,12 @@ public:
 
     const MonocularIcon *toMonocularIcon() const;
     const StereoIcon *toStereoIcon() const;
+
+    void setFrameSize( const cv::Size &size );
+    const cv::Size &frameSize() const;
+
+protected:
+    cv::Size m_frameSize;
 
 private:
     void initialize();
@@ -36,16 +42,16 @@ class MonocularIcon : public CalibrationIconBase
 public:
     using SuperClass = CalibrationIconBase;
 
-    MonocularIcon( const CvImage previewImage, const CvImage sourceImage, const int number );
+    MonocularIcon( const CvImage previewImage, const CvImage sourceImage, const cv::Size &frameSize, const std::vector< cv::Point2f > &points, const QString &text );
 
     void setSourceImage( const CvImage &image );
     const CvImage sourceImage() const;
 
-    void setPreviewPoints( std::vector< cv::Point2f > &points );
-    std::vector< cv::Point2f > previewPoints() const;
+    void setPoints( const std::vector<cv::Point2f> &points );
+    std::vector< cv::Point2f > points() const;
 
 protected:
-    std::vector< cv::Point2f > m_previewPoints;
+    std::vector< cv::Point2f > m_points;
     CvImage m_sourceImage;
 
 private:
@@ -59,30 +65,23 @@ class StereoIcon : public CalibrationIconBase
 public:
     using SuperClass = CalibrationIconBase;
 
-    StereoIcon( const CvImage leftPreviewImage, const CvImage rightPreviewImage, const CvImage leftSourceImage, const CvImage rightSourceImage, const int number );
+    StereoIcon( const CvImage leftPreviewImage, const CvImage rightPreviewImage, const CvImage leftSourceImage, const CvImage rightSourceImage,
+                const cv::Size &frameSize, const std::vector< cv::Point2f > &leftPoints, const std::vector< cv::Point2f > &rightPoints, const QString &text );
 
     void setStraightPreview(const CvImage &image);
-    void setLeftSourceImage( const CvImage &image );
-    void setRightSourceImage( const CvImage &image );
-
     const CvImage &straightPreview() const;
-    const CvImage leftSourceImage() const;
-    const CvImage rightSourceImage() const;
 
-    void setLeftPreviewPoints( std::vector< cv::Point2f > &points );
-    std::vector< cv::Point2f > leftPreviewPoints() const;
+    void setLeftPoints( const std::vector<cv::Point2f> &points );
+    std::vector< cv::Point2f > leftPoints() const;
 
-    void setRightPreviewPoints( std::vector< cv::Point2f > &points );
-    std::vector< cv::Point2f > rightPreviewPoints() const;
+    void setRightPoints( const std::vector< cv::Point2f > &points );
+    std::vector< cv::Point2f > rightPoints() const;
 
 protected:
     CvImage m_straightPreview;
 
-    std::vector<cv::Point2f> m_previewLeftPoints;
-    std::vector<cv::Point2f> m_previewRightPoints;
-
-    CvImage m_leftSourceImage;
-    CvImage m_rightSourceImage;
+    std::vector<cv::Point2f> m_leftPoints;
+    std::vector<cv::Point2f> m_rightPoints;
 
 private:
     void initialize();

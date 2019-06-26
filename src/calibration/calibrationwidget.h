@@ -45,10 +45,13 @@ protected:
 
     static const int m_minimumCalibrationFrames = 5;
 
-    MonocularCalibrationData calcMonocularCalibration( const std::vector< CvImage > &frames, const cv::Size &count, const double size );
+    //MonocularCalibrationData calcMonocularCalibration( const std::vector< CvImage > &frames, const cv::Size &count, const double size );
+    MonocularCalibrationData calcMonocularCalibration( const std::vector< std::vector< cv::Point2f > > &points, cv::Size &frameSize, const cv::Size &count, const double size );
 
-    StereoCalibrationData calcStereoCalibration( const std::vector< CvImage > &leftFrames, const std::vector< CvImage > &rightFrames,
-                                                 const cv::Size &count, const double size );
+    //StereoCalibrationData calcStereoCalibration( const std::vector< CvImage > &leftFrames, const std::vector< CvImage > &rightFrames,
+    //                                             const cv::Size &count, const double size );
+    StereoCalibrationData calcStereoCalibration( const std::vector< std::vector< cv::Point2f > > &leftPoints, const std::vector< std::vector< cv::Point2f > > &rightPoints,
+                                                 cv::Size &frameSize, const cv::Size &count, const double size );
 
     int m_iconCount;
 

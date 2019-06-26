@@ -73,13 +73,15 @@ public:
 
     StereoCameraWidget *cameraWidget() const;
 
-    const CvImage leftSourceImage() const;
+    //const CvImage leftSourceImage() const;
     const CvImage leftDisplayedImage() const;
 
-    const CvImage rightSourceImage() const;
+    //const CvImage rightSourceImage() const;
     const CvImage rightDisplayedImage() const;
 
     bool isTemplateExist() const;
+
+    const StereoImage &image() const;
 
 public slots:
     void setLeftSourceImage( const CvImage image );

@@ -6,9 +6,11 @@
 #include "src/common/functions.h"
 
 // CalibrationIconBase
-CalibrationIconBase::CalibrationIconBase( const CvImage image, const int number )
-    : IconBase( image, number )
+CalibrationIconBase::CalibrationIconBase(const CvImage image, const cv::Size &frameSize, const QString &text )
+    : IconBase( image, text )
 {
+    setFrameSize( frameSize );
+
     initialize();
 }
 
@@ -46,12 +48,22 @@ const StereoIcon *CalibrationIconBase::toStereoIcon() const
     return dynamic_cast< const StereoIcon * >( this );
 }
 
+void CalibrationIconBase::setFrameSize( const cv::Size &size )
+{
+    m_frameSize = size;
+}
+
+const cv::Size &CalibrationIconBase::frameSize() const
+{
+    return m_frameSize;
+}
 
 // MonocularIcon
-MonocularIcon::MonocularIcon( const CvImage previewImage, const CvImage sourceImage, const int number )
-    : CalibrationIconBase( previewImage, number )
+MonocularIcon::MonocularIcon(const CvImage previewImage, const CvImage sourceImage, const cv::Size &frameSize, const std::vector<cv::Point2f> &points, const QString &text )
+    : CalibrationIconBase( previewImage, frameSize, text )
 {
     setSourceImage( sourceImage );
+    setPoints( points );
 
     initialize();
 }
@@ -70,23 +82,25 @@ const CvImage MonocularIcon::sourceImage() const
     return m_sourceImage;
 }
 
-void MonocularIcon::setPreviewPoints( std::vector< cv::Point2f > &points )
+void MonocularIcon::setPoints( const std::vector< cv::Point2f > &points )
 {
-    m_previewPoints = points;
+    m_points = points;
 }
 
-std::vector< cv::Point2f > MonocularIcon::previewPoints() const
+std::vector< cv::Point2f > MonocularIcon::points() const
 {
-    return m_previewPoints;
+    return m_points;
 }
 
 // StereoIcon
-StereoIcon::StereoIcon( const CvImage leftPreviewImage, const CvImage rightPreviewImage, const CvImage leftSourceImage, const CvImage rightSourceImage, const int number )
-    : CalibrationIconBase( makeOverlappedPreview( leftPreviewImage, rightPreviewImage ), number )
+StereoIcon::StereoIcon(const CvImage leftPreviewImage, const CvImage rightPreviewImage, const CvImage leftSourceImage, const CvImage rightSourceImage,
+                       const cv::Size &frameSize, const std::vector< cv::Point2f > &leftPoints, const std::vector< cv::Point2f > &rightPoints, const QString &text )
+    : CalibrationIconBase( makeOverlappedPreview( leftPreviewImage, rightPreviewImage ), frameSize, text )
 {
     setStraightPreview( makeStraightPreview( leftPreviewImage, rightPreviewImage ) );
-    setLeftSourceImage( leftSourceImage );
-    setRightSourceImage( rightSourceImage );
+
+    setLeftPoints( leftPoints );
+    setRightPoints( rightPoints );
 
     initialize();
 }
@@ -100,49 +114,29 @@ void StereoIcon::setStraightPreview( const CvImage &image )
     m_straightPreview = image;
 }
 
-void StereoIcon::setLeftSourceImage( const CvImage &image )
-{
-    m_leftSourceImage = image;
-}
-
-void StereoIcon::setRightSourceImage( const CvImage &image )
-{
-    m_rightSourceImage = image;
-}
-
 const CvImage &StereoIcon::straightPreview() const
 {
     return m_straightPreview;
 }
 
-const CvImage StereoIcon::leftSourceImage() const
+void StereoIcon::setLeftPoints( const std::vector< cv::Point2f > &points )
 {
-    return m_leftSourceImage;
+    m_leftPoints = points;
 }
 
-const CvImage StereoIcon::rightSourceImage() const
+std::vector< cv::Point2f > StereoIcon::leftPoints() const
 {
-    return m_rightSourceImage;
+    return m_leftPoints;
 }
 
-void StereoIcon::setLeftPreviewPoints( std::vector< cv::Point2f > &points )
+void StereoIcon::setRightPoints( const std::vector< cv::Point2f > &points )
 {
-    m_previewLeftPoints = points;
+    m_rightPoints = points;
 }
 
-std::vector< cv::Point2f > StereoIcon::leftPreviewPoints() const
+std::vector< cv::Point2f > StereoIcon::rightPoints() const
 {
-    return m_previewLeftPoints;
-}
-
-void StereoIcon::setRightPreviewPoints( std::vector< cv::Point2f > &points )
-{
-    m_previewRightPoints = points;
-}
-
-std::vector< cv::Point2f > StereoIcon::rightPreviewPoints() const
-{
-    return m_previewRightPoints;
+    return m_rightPoints;
 }
 
 // IconsListWidget

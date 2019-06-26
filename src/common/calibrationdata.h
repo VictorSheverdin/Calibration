@@ -7,12 +7,6 @@ class MonocularCalibrationResult
 public:
     MonocularCalibrationResult();
 
-    void setSourceView( const CvImage &value );
-    const CvImage &sourceView() const;
-
-    void setProcessedView( const CvImage &value );
-    const CvImage &processedView() const;
-
     void setRVec( const cv::Mat &value );
     const cv::Mat &rVec() const;
 
@@ -29,8 +23,6 @@ public:
     bool isOk() const;
 
 protected:
-    CvImage m_sourceView;
-    CvImage m_processedView;
     cv::Mat m_rVec;
     cv::Mat m_tVec;
 

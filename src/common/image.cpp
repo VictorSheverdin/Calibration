@@ -176,6 +176,11 @@ void StereoImage::setRightImage( const CvImage &img )
     m_rightImage = img;
 }
 
+bool StereoImage::empty() const
+{
+    return m_leftImage.empty() || m_rightImage.empty();
+}
+
 // Frame
 Frame::Frame()
     : CvImage()
