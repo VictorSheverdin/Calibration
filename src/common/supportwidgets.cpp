@@ -168,7 +168,7 @@ void MainWindowBase::addDocument( DocumentBase *document )
 
 DocumentBase *MainWindowBase::currentDocument() const
 {
-    m_documentArea->currentDocument();
+    return m_documentArea->currentDocument();
 }
 
 void MainWindowBase::setupDocuments()

@@ -59,10 +59,9 @@ const cv::Size &CalibrationIconBase::frameSize() const
 }
 
 // MonocularIcon
-MonocularIcon::MonocularIcon(const CvImage previewImage, const CvImage sourceImage, const cv::Size &frameSize, const std::vector<cv::Point2f> &points, const QString &text )
+MonocularIcon::MonocularIcon(const CvImage previewImage, const cv::Size &frameSize, const std::vector<cv::Point2f> &points, const QString &text )
     : CalibrationIconBase( previewImage, frameSize, text )
 {
-    setSourceImage( sourceImage );
     setPoints( points );
 
     initialize();
@@ -72,32 +71,23 @@ void MonocularIcon::initialize()
 {
 }
 
-void MonocularIcon::setSourceImage( const CvImage &image )
-{
-    m_sourceImage = image;
-}
-
-const CvImage MonocularIcon::sourceImage() const
-{
-    return m_sourceImage;
-}
-
 void MonocularIcon::setPoints( const std::vector< cv::Point2f > &points )
 {
     m_points = points;
 }
 
-std::vector< cv::Point2f > MonocularIcon::points() const
+const std::vector<cv::Point2f> &MonocularIcon::points() const
 {
     return m_points;
 }
 
 // StereoIcon
-StereoIcon::StereoIcon(const CvImage leftPreviewImage, const CvImage rightPreviewImage, const CvImage leftSourceImage, const CvImage rightSourceImage,
-                       const cv::Size &frameSize, const std::vector< cv::Point2f > &leftPoints, const std::vector< cv::Point2f > &rightPoints, const QString &text )
+StereoIcon::StereoIcon(const CvImage leftPreviewImage, const CvImage rightPreviewImage, const cv::Size &frameSize,
+                       const std::vector< cv::Point2f > &leftPoints, const std::vector< cv::Point2f > &rightPoints, const QString &text )
     : CalibrationIconBase( makeOverlappedPreview( leftPreviewImage, rightPreviewImage ), frameSize, text )
 {
-    setStraightPreview( makeStraightPreview( leftPreviewImage, rightPreviewImage ) );
+    setLeftPreview( leftPreviewImage );
+    setRightPreview( leftPreviewImage );
 
     setLeftPoints( leftPoints );
     setRightPoints( rightPoints );
@@ -109,14 +99,29 @@ void StereoIcon::initialize()
 {
 }
 
-void StereoIcon::setStraightPreview( const CvImage &image )
+void StereoIcon::setLeftPreview( const CvImage &image )
 {
-    m_straightPreview = image;
+    m_leftPreview = image;
 }
 
-const CvImage &StereoIcon::straightPreview() const
+void StereoIcon::setRightPreview(const CvImage &image)
 {
-    return m_straightPreview;
+    m_rightPreview = image;
+}
+
+const CvImage &StereoIcon::leftPreview() const
+{
+    return m_leftPreview;
+}
+
+const CvImage &StereoIcon::rightPreview() const
+{
+    return m_rightPreview;
+}
+
+const CvImage StereoIcon::straightPreview() const
+{
+    return makeStraightPreview( m_leftPreview, m_rightPreview );
 }
 
 void StereoIcon::setLeftPoints( const std::vector< cv::Point2f > &points )

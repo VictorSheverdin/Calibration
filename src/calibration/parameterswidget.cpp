@@ -170,7 +170,7 @@ bool CameraParametersWidget::filterQuads() const
 
 bool CameraParametersWidget::fastCheck() const
 {
-    m_fastCheckCheckBox->isChecked();
+    return m_fastCheckCheckBox->isChecked();
 }
 
 bool CameraParametersWidget::rescaleFlag() const

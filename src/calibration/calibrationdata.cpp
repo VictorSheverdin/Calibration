@@ -1,4 +1,4 @@
-#include "precompiled.h"
+#include "src/common/precompiled.h"
 
 #include "calibrationdata.h"
 
@@ -71,37 +71,6 @@ MonocularCalibrationData::MonocularCalibrationData()
 
 void MonocularCalibrationData::initialize()
 {
-    m_ok = false;
-}
-
-void MonocularCalibrationData::setFrameSize( const cv::Size &value )
-{
-    m_frameSize = value;
-}
-
-const cv::Size &MonocularCalibrationData::frameSize() const
-{
-    return m_frameSize;
-}
-
-void MonocularCalibrationData::setCameraMatrix( const cv::Mat &value )
-{
-    m_cameraMatrix = value;
-}
-
-const cv::Mat &MonocularCalibrationData::cameraMatrix() const
-{
-    return m_cameraMatrix;
-}
-
-void MonocularCalibrationData::setDistortionCoefficients( const cv::Mat &value )
-{
-    m_distCoefficients = value;
-}
-
-const cv::Mat &MonocularCalibrationData::distortionCoefficients() const
-{
-    return m_distCoefficients;
 }
 
 void MonocularCalibrationData::setResults( std::vector< MonocularCalibrationResult > &value )
@@ -124,31 +93,20 @@ const MonocularCalibrationResult &MonocularCalibrationData::result( const unsign
     return m_results[i];
 }
 
-void MonocularCalibrationData::setOk( const bool value )
-{
-    m_ok = value;
-}
-
-bool MonocularCalibrationData::isOk() const
-{
-    return m_ok;
-}
-
-void MonocularCalibrationData::setError( const double value )
-{
-    m_error = value;
-}
-
-double MonocularCalibrationData::error() const
-{
-    return m_error;
-}
-
 const unsigned int MonocularCalibrationData::resultsSize() const
 {
     return m_results.size();
 }
 
+void MonocularCalibrationData::setPreviewImage( const CvImage &image )
+{
+    m_previewImage = image;
+}
+
+const CvImage &MonocularCalibrationData::previewImage() const
+{
+    return m_previewImage;
+}
 
 bool MonocularCalibrationData::saveYaml( const std::string &fileName ) const
 {
@@ -216,7 +174,7 @@ StereoCalibrationData::StereoCalibrationData()
 {
 }
 
-void StereoCalibrationData::setLeftCameraResults( const MonocularCalibrationData &value )
+void StereoCalibrationData::setLeftCameraResults(const MonocularCalibrationData &value )
 {
     m_leftCameraResults = value;
 }
@@ -254,181 +212,6 @@ unsigned int StereoCalibrationData::leftResultsSize() const
 unsigned int StereoCalibrationData::rightResultsSize() const
 {
     return m_rightCameraResults.resultsSize();
-}
-
-void StereoCalibrationData::setCorrespondFrameCount( const unsigned int value )
-{
-    m_correspondFrameCount = value;
-}
-
-unsigned int StereoCalibrationData::correspondFrameCount() const
-{
-    return m_correspondFrameCount;
-}
-
-void StereoCalibrationData::setRotationMatrix( const cv::Mat &value )
-{
-    m_rotationMatrix = value;
-}
-
-const cv::Mat &StereoCalibrationData::rotationMatrix() const
-{
-    return m_rotationMatrix;
-}
-
-void StereoCalibrationData::setTranslationVector( const cv::Mat &value )
-{
-    m_translationVector = value;
-}
-
-const cv::Mat &StereoCalibrationData::translationVector() const
-{
-    return m_translationVector;
-}
-
-void StereoCalibrationData::setFundamentalMatrix( const cv::Mat &value )
-{
-    m_fundamentalMatrix = value;
-}
-
-const cv::Mat &StereoCalibrationData::fundamentalMatrix() const
-{
-    return m_fundamentalMatrix;
-}
-
-void StereoCalibrationData::setEssentialMatrix( const cv::Mat &value )
-{
-    m_essentialMatrix = value;
-}
-
-const cv::Mat &StereoCalibrationData::essentialMatrix() const
-{
-    return m_essentialMatrix;
-}
-
-void StereoCalibrationData::setLeftRectifyMatrix( const cv::Mat &value )
-{
-    m_leftRectifyMatrix = value;
-}
-
-const cv::Mat &StereoCalibrationData::leftRectifyMatrix() const
-{
-    return m_leftRectifyMatrix;
-}
-
-void StereoCalibrationData::setRightRectifyMatrix( const cv::Mat &value )
-{
-    m_rightRectifyMatrix = value;
-}
-
-const cv::Mat &StereoCalibrationData::rightRectifyMatrix() const
-{
-    return m_rightRectifyMatrix;
-}
-
-void StereoCalibrationData::setLeftProjectionMatrix( const cv::Mat &value )
-{
-    m_leftProjectionMatrix = value;
-}
-
-const cv::Mat &StereoCalibrationData::leftProjectionMatrix() const
-{
-    return m_leftProjectionMatrix;
-}
-
-void StereoCalibrationData::setRightProjectionMatrix( const cv::Mat &value )
-{
-    m_rightProjectionMatrix = value;
-}
-
-const cv::Mat &StereoCalibrationData::rightProjectionMatrix() const
-{
-    return m_rightProjectionMatrix;
-}
-
-void StereoCalibrationData::setDisparityToDepthMatrix( const cv::Mat &value )
-{
-    m_disparityToDepthMatrix = value;
-}
-
-const cv::Mat &StereoCalibrationData::disparityToDepthMatrix() const
-{
-    return m_disparityToDepthMatrix;
-}
-
-void StereoCalibrationData::setLeftROI( const cv::Rect &value )
-{
-    m_leftROI = value;
-}
-
-const cv::Rect &StereoCalibrationData::leftROI() const
-{
-    return m_leftROI;
-}
-
-void StereoCalibrationData::setRightROI( const cv::Rect &value )
-{
-    m_rightROI = value;
-}
-
-const cv::Rect &StereoCalibrationData::rightROI() const
-{
-    return m_rightROI;
-}
-
-void StereoCalibrationData::setLeftRMap( const cv::Mat &value )
-{
-    m_leftRMap = value;
-}
-
-const cv::Mat &StereoCalibrationData::leftRMap() const
-{
-    return m_leftRMap;
-}
-
-void StereoCalibrationData::setLeftDMap( const cv::Mat &value )
-{
-    m_leftDMap = value;
-}
-
-const cv::Mat &StereoCalibrationData::leftDMap() const
-{
-    return m_leftDMap;
-}
-
-void StereoCalibrationData::setRightRMap( const cv::Mat &value )
-{
-    m_rightRMap = value;
-}
-
-const cv::Mat &StereoCalibrationData::rightRMap() const
-{
-    return m_rightRMap;
-}
-
-void StereoCalibrationData::setRightDMap( const cv::Mat &value )
-{
-    m_rightDMap = value;
-}
-
-const cv::Mat &StereoCalibrationData::rightDMap() const
-{
-    return m_rightDMap;
-}
-
-void StereoCalibrationData::setError( const double value )
-{
-    m_error = value;
-}
-
-double StereoCalibrationData::error() const
-{
-    return m_error;
-}
-
-bool StereoCalibrationData::isOk() const
-{
-    return m_leftCameraResults.isOk() && m_rightCameraResults.isOk();
 }
 
 bool StereoCalibrationData::saveYaml( const std::string &fileName ) const
@@ -577,6 +360,8 @@ bool StereoCalibrationData::loadYaml( const std::string &fileName )
         setRightDMap( rightDMap );
 
         setError( error );
+
+        setOk( true );
 
         return true;
     }

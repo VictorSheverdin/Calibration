@@ -1,45 +1,30 @@
 #pragma once
 
-#include "image.h"
+#include "src/common/image.h"
 
-class MonocularCalibrationResult
+class CalibrationDataBase
 {
 public:
-    MonocularCalibrationResult();
-
-    void setRVec( const cv::Mat &value );
-    const cv::Mat &rVec() const;
-
-    void setTVec( const cv::Mat &value );
-    const cv::Mat &tVec() const;
-
-    void setPoints2d( const std::vector< cv::Point2f > &value );
-    const std::vector< cv::Point2f > &points2d() const;
-
-    void setPoints3d( const std::vector< cv::Point3f > &value );
-    const std::vector< cv::Point3f > &points3d() const;
+    CalibrationDataBase();
 
     void setOk( const bool value );
     bool isOk() const;
 
+    void setError( const double value );
+    double error() const;
+
 protected:
-    cv::Mat m_rVec;
-    cv::Mat m_tVec;
-
-    std::vector< cv::Point2f > m_points2d;
-    std::vector< cv::Point3f > m_points3d;
-
     bool m_ok;
+    double m_error;
 
 private:
     void initialize();
-
 };
 
-class MonocularCalibrationData
+class MonocularCalibrationDataShort : public CalibrationDataBase
 {
 public:
-    MonocularCalibrationData();
+    MonocularCalibrationDataShort();
 
     void setFrameSize( const cv::Size &value );
     const cv::Size &frameSize() const;
@@ -50,20 +35,6 @@ public:
     void setDistortionCoefficients( const cv::Mat &value );
     const cv::Mat &distortionCoefficients() const;
 
-    void setResults( std::vector< MonocularCalibrationResult > &value );
-    const std::vector< MonocularCalibrationResult > &results() const;
-
-    MonocularCalibrationResult &result( const unsigned int i );
-    const MonocularCalibrationResult &result( const unsigned int i ) const;
-
-    void setOk( const bool value );
-    bool isOk() const;
-
-    void setError( const double value );
-    double error() const;
-
-    const unsigned int resultsSize() const;
-
     bool saveYaml( const std::string &fileName ) const;
     bool loadYaml( const std::string &fileName );
 
@@ -73,31 +44,14 @@ protected:
     cv::Mat m_cameraMatrix;
     cv::Mat m_distCoefficients;
 
-    std::vector< MonocularCalibrationResult > m_results;
-
-    bool m_ok;
-
-    double m_error;
-
 private:
     void initialize();
 };
 
-class StereoCalibrationData
+class StereoCalibrationDataBase : public CalibrationDataBase
 {
 public:
-    StereoCalibrationData();
-
-    void setLeftCameraResults( const MonocularCalibrationData &value );
-    const MonocularCalibrationData &leftCameraResults() const;
-    MonocularCalibrationData &leftCameraResults();
-
-    void setRightCameraResults( const MonocularCalibrationData &value );
-    const MonocularCalibrationData &rightCameraResults() const;
-    MonocularCalibrationData &rightCameraResults();
-
-    unsigned int leftResultsSize() const;
-    unsigned int rightResultsSize() const;
+    StereoCalibrationDataBase();
 
     void setCorrespondFrameCount( const unsigned int value );
     unsigned int correspondFrameCount() const;
@@ -147,18 +101,7 @@ public:
     void setRightDMap( const cv::Mat &value );
     const cv::Mat &rightDMap() const;
 
-    void setError( const double value );
-    double error() const;
-
-    bool isOk() const;
-
-    bool saveYaml( const std::string &fileName ) const;
-    bool loadYaml( const std::string &fileName );
-
 protected:
-    MonocularCalibrationData m_leftCameraResults;
-    MonocularCalibrationData m_rightCameraResults;
-
     unsigned int m_correspondFrameCount;
 
     cv::Mat m_rotationMatrix;
@@ -180,8 +123,32 @@ protected:
     cv::Mat m_rightRMap;
     cv::Mat m_rightDMap;
 
-    double m_error;
+private:
+    void initialize();
 
 };
+
+class StereoCalibrationDataShort : public StereoCalibrationDataBase
+{
+public:
+    StereoCalibrationDataShort();
+
+    void setLeftCameraResults( const MonocularCalibrationDataShort &value );
+    const MonocularCalibrationDataShort &leftCameraResults() const;
+    MonocularCalibrationDataShort &leftCameraResults();
+
+    void setRightCameraResults( const MonocularCalibrationDataShort &value );
+    const MonocularCalibrationDataShort &rightCameraResults() const;
+    MonocularCalibrationDataShort &rightCameraResults();
+
+    bool saveYaml( const std::string &fileName ) const;
+    bool loadYaml( const std::string &fileName );
+
+protected:
+    MonocularCalibrationDataShort m_leftCameraResults;
+    MonocularCalibrationDataShort m_rightCameraResults;
+
+};
+
 
 

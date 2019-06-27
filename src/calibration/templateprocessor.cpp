@@ -212,6 +212,8 @@ bool TemplateProcessor::calcChessboardCorners( std::vector< cv::Point3f > *corne
                 for( int j = 0; j < m_count.width; j++ )
                     corners->push_back( cv::Point3f( ( 2*j + i % 2 ) * m_size, i * m_size, 0 ) );
             return true;
+        case ARUCO_MARKERS:
+            break;
 
     }
 

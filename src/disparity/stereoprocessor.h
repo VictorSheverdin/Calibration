@@ -1,7 +1,7 @@
 #pragma once
 
 #include "src/common/image.h"
-#include "src/common/calibrationdata.h"
+#include "src/common/calibrationdatabase.h"
 
 #include <QThread>
 #include <QMutex>
@@ -154,8 +154,8 @@ class StereoProcessor
 public:
     StereoProcessor();
 
-    void setCalibration( const StereoCalibrationData &data );
-    const StereoCalibrationData &calibration() const;
+    void setCalibration( const StereoCalibrationDataShort &data );
+    const StereoCalibrationDataShort &calibration() const;
 
     bool loadYaml( const std::string &fileName );
 
@@ -167,7 +167,7 @@ public:
 protected:
     std::shared_ptr< DisparityProcessorBase > m_disparityProcessor;
 
-    StereoCalibrationData m_calibration;
+    StereoCalibrationDataShort m_calibration;
 
 private:
     void initialize();

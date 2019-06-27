@@ -122,8 +122,6 @@ void MonocularCameraWidget::initialize()
 
     connect( &m_camera, &MasterCamera::receivedFrame, this, &MonocularCameraWidget::updateFrame );
 
-    startTimer( 1000 / 30 );
-
 }
 
 void MonocularCameraWidget::setSourceImage(const CvImage image)

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QListWidget>
+#include <memory>
 
 #include "src/common/imagewidget.h"
 
@@ -13,7 +14,7 @@ class IconBase : public QListWidgetItem
 public:
     using SuperClass = QListWidget;
 
-    IconBase(const CvImage image, const QString &text );
+    IconBase( const CvImage image, const QString &text );
 
     const CvImage &previewImage() const;
 

@@ -3,7 +3,7 @@
 #include <QTextEdit>
 #include <QDialog>
 
-#include "src/common/calibrationdata.h"
+#include "calibrationdata.h"
 
 class CalibrationIconBase;
 class QVBoxLayout;
@@ -29,7 +29,7 @@ public:
     void addRect( const cv::Rect& rect );
 
 protected:
-    static const int m_reportFrameSize = 400;
+    static const int m_reportFrameSize = 800;
 
 private:
     void initialize();

@@ -389,12 +389,12 @@ void StereoProcessor::initialize()
 {
 }
 
-void StereoProcessor::setCalibration( const StereoCalibrationData &data )
+void StereoProcessor::setCalibration( const StereoCalibrationDataShort &data )
 {
     m_calibration = data;
 }
 
-const StereoCalibrationData &StereoProcessor::calibration() const
+const StereoCalibrationDataShort &StereoProcessor::calibration() const
 {
     return m_calibration;
 }

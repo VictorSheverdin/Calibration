@@ -8,7 +8,7 @@
 
 #include "src/common/vimbacamera.h"
 
-#include "src/common/calibrationdata.h"
+#include "src/common/calibrationdatabase.h"
 
 class ImageWidget;
 class DisparityControlWidget;

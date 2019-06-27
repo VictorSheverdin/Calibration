@@ -42,17 +42,13 @@ class MonocularIcon : public CalibrationIconBase
 public:
     using SuperClass = CalibrationIconBase;
 
-    MonocularIcon( const CvImage previewImage, const CvImage sourceImage, const cv::Size &frameSize, const std::vector< cv::Point2f > &points, const QString &text );
-
-    void setSourceImage( const CvImage &image );
-    const CvImage sourceImage() const;
+    MonocularIcon(const CvImage previewImage, const cv::Size &frameSize, const std::vector< cv::Point2f > &points, const QString &text );
 
     void setPoints( const std::vector<cv::Point2f> &points );
-    std::vector< cv::Point2f > points() const;
+    const std::vector< cv::Point2f > &points() const;
 
 protected:
     std::vector< cv::Point2f > m_points;
-    CvImage m_sourceImage;
 
 private:
     void initialize();
@@ -65,11 +61,16 @@ class StereoIcon : public CalibrationIconBase
 public:
     using SuperClass = CalibrationIconBase;
 
-    StereoIcon( const CvImage leftPreviewImage, const CvImage rightPreviewImage, const CvImage leftSourceImage, const CvImage rightSourceImage,
-                const cv::Size &frameSize, const std::vector< cv::Point2f > &leftPoints, const std::vector< cv::Point2f > &rightPoints, const QString &text );
+    StereoIcon( const CvImage leftPreviewImage, const CvImage rightPreviewImage, const cv::Size &frameSize,
+                const std::vector< cv::Point2f > &leftPoints, const std::vector< cv::Point2f > &rightPoints, const QString &text );
 
-    void setStraightPreview(const CvImage &image);
-    const CvImage &straightPreview() const;
+    void setLeftPreview(const CvImage &image);
+    void setRightPreview(const CvImage &image);
+
+    const CvImage &leftPreview() const;
+    const CvImage &rightPreview() const;
+
+    const CvImage straightPreview() const;
 
     void setLeftPoints( const std::vector<cv::Point2f> &points );
     std::vector< cv::Point2f > leftPoints() const;
@@ -78,7 +79,8 @@ public:
     std::vector< cv::Point2f > rightPoints() const;
 
 protected:
-    CvImage m_straightPreview;
+    CvImage m_leftPreview;
+    CvImage m_rightPreview;
 
     std::vector<cv::Point2f> m_leftPoints;
     std::vector<cv::Point2f> m_rightPoints;

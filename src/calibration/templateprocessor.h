@@ -60,7 +60,7 @@ protected:
     cv::Size m_subPixWinSize;
     cv::Size m_subPixZeroZone;
 
-    unsigned int m_frameMaximumSize;
+    int m_frameMaximumSize;
     int m_flags;
 
     bool findPoints( const CvImage &frame, std::vector<cv::Point2f> *points );
