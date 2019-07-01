@@ -1,8 +1,10 @@
 #pragma once
 
 #include <QThread>
+#include <QMutex>
 #include <QComboBox>
 
+#include "src/common/limitedqueue.h"
 #include "src/common/image.h"
 
 class ProcessorState
@@ -14,6 +16,7 @@ protected:
 
 private:
     void initialize();
+
 };
 
 class TemplateProcessor
@@ -45,8 +48,8 @@ public:
     bool filterQuads() const;
     bool fastCheck() const;
 
-    bool processFrame( const CvImage &frame, CvImage *view, std::vector< cv::Point2f > *points );
-    bool processPreview( const CvImage &frame, CvImage *preview, std::vector< cv::Point2f > *points );
+    bool processFrame( const Frame &frame, CvImage *view, std::vector< cv::Point2f > *points );
+    bool processPreview( const Frame &frame, CvImage *preview, std::vector< cv::Point2f > *points );
 
     bool calcChessboardCorners(std::vector< cv::Point3f > *corners);
 
@@ -67,14 +70,42 @@ protected:
 
 private:
     void initialize();
+
 };
 
-class ProcessorThread : public QThread
+class MonocularProcessorThread : public QThread
 {
     Q_OBJECT
 
 public:
-    explicit ProcessorThread( QObject *parent = nullptr );
+    explicit MonocularProcessorThread( const TemplateProcessor &processor, QObject *parent = nullptr );
+
+    void setProcessor( const TemplateProcessor &processor );
+
+    const TemplateProcessor &processor() const;
+    TemplateProcessor &processor();
+
+    void addFrame( const Frame &frame );
+
+protected:
+    TemplateProcessor m_processor;
+
+    LimitedQueue< Frame > m_framesQueue;
+    QMutex m_framesMutex;
+
+    virtual void run() override;
+
+private:
+    void initialize();
+
+};
+
+class StereoProcessorThread : public QThread
+{
+    Q_OBJECT
+
+public:
+    explicit StereoProcessorThread( QObject *parent = nullptr );
 
 protected:
     virtual void run() override;

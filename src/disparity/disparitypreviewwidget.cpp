@@ -152,23 +152,31 @@ void DisparityWidgetBase::updateFrame(const CvImage leftFrame, const CvImage rig
 
 // CameraDisparityWidget
 CameraDisparityWidget::CameraDisparityWidget( const QString &leftCameraIp, const QString &rightCameraIp, QWidget* parent )
-    : DisparityWidgetBase( parent ), m_leftCam( leftCameraIp.toStdString(), parent ), m_rightCam( rightCameraIp.toStdString(), parent )
+    : DisparityWidgetBase( parent ), m_camera( leftCameraIp.toStdString(), rightCameraIp.toStdString(), parent )
 {
     initialize();
 }
 
 void CameraDisparityWidget::initialize()
 {
-    connect( &m_rightCam, &SlaveCamera::receivedFrame, this, &CameraDisparityWidget::updateFrame );
+    connect( &m_camera, &StereoCamera::receivedFrame, this, &CameraDisparityWidget::updateFrame );
 
 }
 
 void CameraDisparityWidget::updateFrame()
 {
-    auto leftFrame = m_leftCam.getFrame();
-    auto rightFrame = m_rightCam.getFrame();
+    if ( m_updateMutex.tryLock() ) {
 
-    DisparityWidgetBase::updateFrame( leftFrame, rightFrame );
+        auto frame = m_camera.getFrame();
+
+        auto leftFrame = frame.leftFrame();
+        auto rightFrame = frame.rightFrame();
+
+        DisparityWidgetBase::updateFrame( leftFrame, rightFrame );
+
+        m_updateMutex.unlock();
+
+    }
 
 }
 

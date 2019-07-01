@@ -287,7 +287,9 @@ StereoCalibrationData CalibrationWidgetBase::calcStereoCalibration(const QList< 
         double rms = cv::stereoCalibrate( points3d, leftPoints, rightPoints,
                                           ret.leftCameraResults().cameraMatrix(), ret.leftCameraResults().distortionCoefficients(),
                                           ret.rightCameraResults().cameraMatrix(), ret.rightCameraResults().distortionCoefficients(), ret.leftCameraResults().frameSize(),
-                                          R, T, E, F, cv::CALIB_FIX_INTRINSIC );
+                                          R, T, E, F, /*cv::CALIB_FIX_ASPECT_RATIO | cv::CALIB_ZERO_TANGENT_DIST | */cv::CALIB_USE_INTRINSIC_GUESS/* | cv::CALIB_SAME_FOCAL_LENGTH |
+                                          cv::CALIB_RATIONAL_MODEL */| cv::CALIB_FIX_K3 | cv::CALIB_FIX_K4 | cv::CALIB_FIX_K5,
+                                          cv::TermCriteria( cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 100, 1e-5 ) );
 
         ret.setRotationMatrix( R );
         ret.setTranslationVector( T );
@@ -714,10 +716,10 @@ void StereoCameraCalibrationWidget::grabFrame()
 
     if ( taskWidget->isTemplateExist() ) {
 
-        StereoImage image = taskWidget->image();
+        auto frame = taskWidget->frame();
 
-        if ( !image.empty() )
-            insertIcon( image.leftImage(), image.rightImage() );
+        if ( !frame.empty() )
+            insertIcon( frame.leftFrame(), frame.rightFrame() );
 
     }
 

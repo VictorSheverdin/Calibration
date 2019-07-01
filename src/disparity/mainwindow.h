@@ -28,6 +28,8 @@ public:
     ImageDisparityDocument *currentImageDisparityDocument() const;
 
 public slots:
+    void choiceDisparityDialog();
+
     void addImageDisparity();
     void addCameraDisparityDialog();
 
@@ -44,8 +46,7 @@ public slots:
 protected:
     QPointer< QMenuBar > m_menuBar;
 
-    QPointer< QAction > m_newImageDocumentAction;
-    QPointer< QAction > m_newCameraDocumentAction;
+    QPointer< QAction > m_newDisparityDocumentAction;
     QPointer< QAction > m_loadCalibrationAction;
 
     QPointer< QAction > m_importAction;

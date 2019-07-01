@@ -6,6 +6,8 @@
 #include "documentwidget.h"
 #include "src/common/ipwidget.h"
 
+#include "disparitychoicedialog.h"
+
 MainWindow::MainWindow( QWidget *parent )
     : MainWindowBase( parent )
 {
@@ -50,6 +52,25 @@ CameraDisparityDocument *MainWindow::currentCameraDisparityDocument() const
 ImageDisparityDocument *MainWindow::currentImageDisparityDocument() const
 {
     return getCurrentDocument< ImageDisparityDocument >();
+}
+
+void MainWindow::choiceDisparityDialog()
+{
+     DisparityChoiceDialog dlg( this );
+
+     if ( dlg.exec() == DialogBase::Accepted ) {
+         switch ( dlg.selectedType() ) {
+         case DisparityChoiceDialog::IMAGES:
+             addImageDisparity();
+             break;
+         case DisparityChoiceDialog::CAMERA:
+             addCameraDisparityDialog();
+             break;
+         default:
+             break;
+         }
+     }
+
 }
 
 void MainWindow::addImageDisparity()
@@ -110,8 +131,7 @@ void MainWindow::setStatusBarText( const QString &text )
 
 void MainWindow::setupActions()
 {
-    m_newImageDocumentAction = new QAction( QIcon( ":/resources/images/new.ico" ), tr( "New image disparity" ), this );
-    m_newCameraDocumentAction = new QAction( QIcon( ":/resources/images/new.ico" ), tr( "New camera disparity" ), this );
+    m_newDisparityDocumentAction = new QAction( QIcon( ":/resources/images/new.ico" ), tr( "New disparity document" ), this );
     m_loadCalibrationAction = new QAction( QIcon( ":/resources/images/open.ico" ), tr( "Load calibration file" ), this );
 
     m_importAction = new QAction( QIcon( ":/resources/images/export.ico" ), tr( "Import" ), this );
@@ -123,8 +143,7 @@ void MainWindow::setupActions()
     m_exitAction = new QAction( QIcon( ":/resources/images/power.ico" ), tr( "Exit" ), this );
     m_aboutAction = new QAction( QIcon( ":/resources/images/help.ico" ), tr( "About" ), this );
 
-    connect( m_newImageDocumentAction, &QAction::triggered, this, &MainWindow::addImageDisparity );
-    connect( m_newCameraDocumentAction, &QAction::triggered, this, &MainWindow::addCameraDisparityDialog );
+    connect( m_newDisparityDocumentAction, &QAction::triggered, this, &MainWindow::choiceDisparityDialog );
 
     connect( m_loadCalibrationAction, &QAction::triggered, this, &MainWindow::loadCalibrationDialog );
 
@@ -142,8 +161,7 @@ void MainWindow::setupMenus()
     m_menuBar = new QMenuBar(this);
 
     auto fileMenu = m_menuBar->addMenu( tr( "File" ) );
-    fileMenu->addAction( m_newImageDocumentAction );
-    fileMenu->addAction( m_newCameraDocumentAction );
+    fileMenu->addAction( m_newDisparityDocumentAction );
     fileMenu->addSeparator();
     fileMenu->addAction( m_loadCalibrationAction );
     fileMenu->addSeparator();
@@ -170,8 +188,7 @@ void MainWindow::setupToolBars()
     m_toolBar = new QToolBar( tr( "Project tool bar" ), this );
     addToolBar( m_toolBar );
 
-    m_toolBar->addAction( m_newImageDocumentAction );
-    m_toolBar->addAction( m_newCameraDocumentAction );
+    m_toolBar->addAction( m_newDisparityDocumentAction );
     m_toolBar->addSeparator();
     m_toolBar->addAction( m_loadCalibrationAction );
     m_toolBar->addSeparator();

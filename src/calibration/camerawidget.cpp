@@ -161,18 +161,24 @@ bool MonocularCameraWidget::isTemplateExist() const
 
 void MonocularCameraWidget::updateFrame()
 {
-    auto frame = m_camera.getFrame();
+    if ( m_updateMutex.tryLock() ) {
 
-    if ( !frame.empty() ) {
-        setSourceImage( frame );
+        auto frame = m_camera.getFrame();
 
-        CvImage procFrame;
-        std::vector< cv::Point2f > previewPoints;
+        if ( !frame.empty() ) {
+            setSourceImage( frame );
 
-        m_previewProcessor.processPreview( frame, &procFrame, &previewPoints );
+            CvImage procFrame;
+            std::vector< cv::Point2f > previewPoints;
 
-        setPreviewImage( procFrame );
-        setPreviewPoints( previewPoints );
+            m_previewProcessor.processPreview( frame, &procFrame, &previewPoints );
+
+            setPreviewImage( procFrame );
+            setPreviewPoints( previewPoints );
+
+        }
+
+        m_updateMutex.unlock();
 
     }
 
@@ -194,8 +200,6 @@ void StereoCameraWidget::initialize()
     addWidget( m_rightCameraWidget );
 
     connect( &m_camera, &StereoCamera::receivedFrame, this, &StereoCameraWidget::updateFrame );
-
-    startTimer( 1000 / 30 );
 
 }
 
@@ -254,7 +258,7 @@ bool StereoCameraWidget::isTemplateExist() const
     return m_leftCameraWidget->isTemplateExist() || m_rightCameraWidget->isTemplateExist();
 }
 
-const StereoImage &StereoCameraWidget::stereoImage() const
+StereoFrame StereoCameraWidget::stereoFrame()
 {
     return m_camera.getFrame();
 }
@@ -267,8 +271,8 @@ void StereoCameraWidget::updateFrame()
 
         if ( !frame.empty() ) {
 
-            m_leftCameraWidget->setSourceImage( frame.leftImage() );
-            m_rightCameraWidget->setSourceImage( frame.rightImage() );
+            m_leftCameraWidget->setSourceImage( frame.leftFrame() );
+            m_rightCameraWidget->setSourceImage( frame.rightFrame() );
 
             CvImage leftProcFrame;
             std::vector< cv::Point2f > leftPreviewPoints;
@@ -276,8 +280,8 @@ void StereoCameraWidget::updateFrame()
             CvImage rightProcFrame;
             std::vector< cv::Point2f > rightPreviewPoints;
 
-            m_previewProcessor.processPreview( frame.leftImage(), &leftProcFrame, &leftPreviewPoints );
-            m_previewProcessor.processPreview( frame.rightImage(), &rightProcFrame, &rightPreviewPoints );
+            m_previewProcessor.processPreview( frame.leftFrame(), &leftProcFrame, &leftPreviewPoints );
+            m_previewProcessor.processPreview( frame.rightFrame(), &rightProcFrame, &rightPreviewPoints );
 
             m_leftCameraWidget->setPreviewImage( leftProcFrame );
             m_leftCameraWidget->setPreviewPoints( leftPreviewPoints );

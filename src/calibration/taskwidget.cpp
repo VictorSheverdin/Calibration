@@ -141,22 +141,12 @@ StereoCameraWidget *StereoGrabWidget::cameraWidget() const
 {
     return dynamic_cast< StereoCameraWidget * >( m_cameraWidget.data() );
 }
-/*
-const CvImage StereoGrabWidget::leftSourceImage() const
-{
-    return cameraWidget()->leftSourceImage();
-}
-*/
+
 const CvImage StereoGrabWidget::leftDisplayedImage() const
 {
     return cameraWidget()->leftDisplayedImage();
 }
-/*
-const CvImage StereoGrabWidget::rightSourceImage() const
-{
-    return cameraWidget()->rightSourceImage();
-}
-*/
+
 const CvImage StereoGrabWidget::rightDisplayedImage() const
 {
     return cameraWidget()->rightDisplayedImage();
@@ -167,9 +157,9 @@ bool StereoGrabWidget::isTemplateExist() const
     return cameraWidget()->isTemplateExist();
 }
 
-const StereoImage &StereoGrabWidget::image() const
+const StereoFrame StereoGrabWidget::frame() const
 {
-    return cameraWidget()->stereoImage();
+    return cameraWidget()->stereoFrame();
 }
 
 void StereoGrabWidget::setLeftSourceImage( const CvImage image )

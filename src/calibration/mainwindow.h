@@ -53,8 +53,10 @@ public slots:
 
     void clearIcons();
 
-    void addMonocularCalibrationDialog();
-    void addStereoCalibrationDialog();
+    void choiceCalibrationDialog();
+
+    void addMonocularImageCalibrationDialog();
+    void addStereoImageCalibrationDialog();
 
     void addMonocularCameraCalibrationDialog();
     void addStereoCameraCalibrationDialog();
@@ -62,10 +64,7 @@ public slots:
 protected:
     QPointer< QMenuBar > m_menuBar;
 
-    QPointer< QAction > m_newMonocularImageDocumentAction;
-    QPointer< QAction > m_newStereoImageDocumentAction;
-    QPointer< QAction > m_newMonocularCameraDocumentAction;
-    QPointer< QAction > m_newStereoCameraDocumentAction;
+    QPointer< QAction > m_newCalibrationDocumentAction;
     QPointer< QAction > m_openAction;
     QPointer< QAction > m_saveAction;
 

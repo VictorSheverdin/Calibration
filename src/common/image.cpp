@@ -221,3 +221,43 @@ int Frame::timeDiff( const Frame &other ) const
     return std::abs( std::chrono::duration_cast<std::chrono::milliseconds>( m_time - other.m_time ).count() );
 }
 
+// StereoFrame
+StereoFrame::StereoFrame()
+{
+}
+
+StereoFrame::StereoFrame( const Frame &leftFrame, const Frame &rightFrame )
+{
+    setLeftFrame( leftFrame );
+    setRightFrame( rightFrame );
+}
+
+const Frame &StereoFrame::leftFrame() const
+{
+    return m_leftFrame;
+}
+
+void StereoFrame::setLeftFrame( const Frame &frame )
+{
+    m_leftFrame = frame;
+}
+
+const Frame &StereoFrame::rightFrame() const
+{
+    return m_rightFrame;
+}
+
+void StereoFrame::setRightFrame( const Frame &frame )
+{
+    m_rightFrame = frame;
+}
+
+int StereoFrame::timeDiff() const
+{
+    return m_leftFrame.timeDiff( m_rightFrame );
+}
+
+bool StereoFrame::empty() const
+{
+    return m_leftFrame.empty() || m_rightFrame.empty();
+}

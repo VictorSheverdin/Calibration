@@ -80,8 +80,9 @@ public:
     explicit CameraDisparityWidget( const QString &leftCameraIp, const QString &rightCameraIp, QWidget* parent = nullptr );
 
 protected:
-    MasterCamera m_leftCam;
-    SlaveCamera m_rightCam;
+    StereoCamera m_camera;
+
+    QMutex m_updateMutex;
 
     void updateFrame();
 

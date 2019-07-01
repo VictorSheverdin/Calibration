@@ -78,6 +78,8 @@ protected:
 
     MasterCamera m_camera;
 
+    QMutex m_updateMutex;
+
 private:
     void initialize();
 
@@ -100,7 +102,7 @@ public:
 
     bool isTemplateExist() const;
 
-    const StereoImage &stereoImage() const;
+    StereoFrame stereoFrame();
 
 public slots:
     void setLeftSourceImage( const CvImage image );

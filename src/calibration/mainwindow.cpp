@@ -7,6 +7,8 @@
 
 #include "src/common/ipwidget.h"
 
+#include "calibrationchoicedialog.h"
+
 MainWindow::MainWindow( QWidget *parent )
     : MainWindowBase( parent )
 {
@@ -104,10 +106,7 @@ ReportDocument *MainWindow::currentReportDocument() const
 
 void MainWindow::setupActions()
 {
-    m_newMonocularImageDocumentAction = new QAction( QIcon( ":/resources/images/new.ico" ), tr( "New monocular image calibration" ), this );
-    m_newStereoImageDocumentAction = new QAction( QIcon( ":/resources/images/new.ico" ), tr( "New stereo image calibration" ), this );
-    m_newMonocularCameraDocumentAction = new QAction( QIcon( ":/resources/images/new.ico" ), tr( "New monocular camera calibration" ), this );
-    m_newStereoCameraDocumentAction = new QAction( QIcon( ":/resources/images/new.ico" ), tr( "New stereo camera calibration" ), this );
+    m_newCalibrationDocumentAction = new QAction( QIcon( ":/resources/images/new.ico" ), tr( "New calibration document" ), this );
     m_openAction = new QAction( QIcon( ":/resources/images/open.ico" ), tr( "Open" ), this );
     m_saveAction = new QAction( QIcon( ":/resources/images/save.ico" ), tr( "Save" ), this );
 
@@ -128,11 +127,7 @@ void MainWindow::setupActions()
     m_exitAction = new QAction( QIcon( ":/resources/images/power.ico" ), tr( "Exit" ), this );
     m_aboutAction = new QAction( QIcon( ":/resources/images/help.ico" ), tr( "About" ), this );
 
-    connect( m_newMonocularImageDocumentAction, &QAction::triggered, this, &MainWindow::addMonocularCalibrationDialog );
-    connect( m_newStereoImageDocumentAction, &QAction::triggered, this, &MainWindow::addStereoCalibrationDialog );
-
-    connect( m_newMonocularCameraDocumentAction, &QAction::triggered, this, &MainWindow::addMonocularCameraCalibrationDialog );
-    connect( m_newStereoCameraDocumentAction, &QAction::triggered, this, &MainWindow::addStereoCameraCalibrationDialog );
+    connect( m_newCalibrationDocumentAction, &QAction::triggered, this, &MainWindow::choiceCalibrationDialog );
 
     connect( m_importAction, &QAction::triggered, this, &MainWindow::importDialog );
     connect( m_exportAction, &QAction::triggered, this, &MainWindow::exportDialog );
@@ -150,11 +145,7 @@ void MainWindow::setupMenus()
     m_menuBar = new QMenuBar(this);
 
     auto fileMenu = m_menuBar->addMenu( tr( "File" ) );
-    fileMenu->addAction( m_newMonocularImageDocumentAction );
-    fileMenu->addAction( m_newStereoImageDocumentAction );
-    fileMenu->addSeparator();
-    fileMenu->addAction( m_newMonocularCameraDocumentAction );
-    fileMenu->addAction( m_newStereoCameraDocumentAction );
+    fileMenu->addAction( m_newCalibrationDocumentAction );
     fileMenu->addSeparator();
     fileMenu->addAction( m_openAction );
     fileMenu->addAction( m_saveAction );
@@ -187,11 +178,7 @@ void MainWindow::setupToolBars()
     m_toolBar = new QToolBar( tr( "Project tool bar" ), this );
     addToolBar( m_toolBar );
 
-    m_toolBar->addAction( m_newMonocularImageDocumentAction );
-    m_toolBar->addAction( m_newStereoImageDocumentAction );
-    m_toolBar->addSeparator();
-    m_toolBar->addAction( m_newMonocularCameraDocumentAction );
-    m_toolBar->addAction( m_newStereoCameraDocumentAction );
+    m_toolBar->addAction( m_newCalibrationDocumentAction );
     m_toolBar->addSeparator();
     m_toolBar->addAction( m_openAction );
     m_toolBar->addAction( m_saveAction );
@@ -258,12 +245,37 @@ void MainWindow::clearIcons()
         doc->clearIcons();
 }
 
-void MainWindow::addMonocularCalibrationDialog()
+void MainWindow::choiceCalibrationDialog()
+{
+     CalibrationChoiceDialog dlg( this );
+
+     if ( dlg.exec() == DialogBase::Accepted ) {
+         switch ( dlg.selectedType() ) {
+         case CalibrationChoiceDialog::MONOCULAR_IMAGE:
+             addMonocularImageCalibrationDialog();
+             break;
+         case CalibrationChoiceDialog::STEREO_IMAGE:
+             addStereoImageCalibrationDialog();
+             break;
+         case CalibrationChoiceDialog::MONOCULAR_CAMERA:
+             addMonocularCameraCalibrationDialog();
+             break;
+         case CalibrationChoiceDialog::STEREO_CAMERA:
+             addStereoCameraCalibrationDialog();
+             break;
+         default:
+             break;
+         }
+     }
+
+}
+
+void MainWindow::addMonocularImageCalibrationDialog()
 {
     addMonocularCalibrationDocument();
 }
 
-void MainWindow::addStereoCalibrationDialog()
+void MainWindow::addStereoImageCalibrationDialog()
 {
     addStereoCalibrationDocument();
 }

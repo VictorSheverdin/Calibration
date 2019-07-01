@@ -7,9 +7,17 @@
 #include <unistd.h>
 
 // FrameObserver
+int FrameObserver::m_currentNumber = 0;
+
 FrameObserver::FrameObserver( AVT::VmbAPI::CameraPtr pCamera )
     : AVT::VmbAPI::IFrameObserver( pCamera )
 {
+    inititalize();
+}
+
+void FrameObserver::inititalize()
+{
+    m_number = m_currentNumber++;
 }
 
 void FrameObserver::FrameReceived ( const AVT::VmbAPI::FramePtr pFrame )
@@ -20,7 +28,7 @@ void FrameObserver::FrameReceived ( const AVT::VmbAPI::FramePtr pFrame )
     {
         if ( VmbFrameStatusComplete == eReceiveStatus )
         {
-            CvImage frame;
+            Frame frame;
 
             VmbUchar_t *pImage;
             VmbUint32_t nWidth = 0;
@@ -50,21 +58,50 @@ void FrameObserver::FrameReceived ( const AVT::VmbAPI::FramePtr pFrame )
 
 Frame FrameObserver::getFrame()
 {
-    // Lock the frame queue
     m_framesMutex.lock();
-    // Pop frame from queue
+
     Frame res;
 
-    if( !m_framesQueue.empty() )
-    {
-        res = m_framesQueue.front();
-        m_framesQueue.pop();
-    }
+    if ( !m_framesQueue.empty() )
+        res = m_framesQueue.back();
 
     m_framesMutex.unlock();
 
     return res;
 
+}
+
+Frame FrameObserver::nearestFrame( const Frame &frame )
+{
+    Frame res;
+
+    if ( !frame.empty() ) {
+
+        auto time = frame.time();
+
+        m_framesMutex.lock();
+
+        if ( !m_framesQueue.empty() ) {
+            res = m_framesQueue.back();
+            auto resTime = abs( std::chrono::duration_cast<std::chrono::milliseconds>( time - res.time() ).count() );
+
+            auto i = m_framesQueue.rbegin();
+            ++i;
+
+            for ( ; i != m_framesQueue.rend(); ++i ) {
+                auto curTime = abs( std::chrono::duration_cast<std::chrono::milliseconds>( time - i->time() ).count() );
+                if ( curTime < resTime ) {
+                    resTime = curTime;
+                    res = *i;
+                }
+            }
+
+        }
+
+        m_framesMutex.unlock();
+    }
+
+    return res;
 }
 
 // CameraBase
@@ -81,6 +118,11 @@ void CameraBase::initialize()
 Frame CameraBase::getFrame()
 {
     return m_frameObserver->getFrame();
+}
+
+Frame CameraBase::nearestFrame( const Frame &frame )
+{
+    return m_frameObserver->nearestFrame( frame );
 }
 
 void CameraBase::setMaxValue( const char* const name )
@@ -186,22 +228,42 @@ void StereoCamera::initialize()
 void StereoCamera::updateFrame()
 {
     auto leftFrame = m_leftCamera.getFrame();
-    auto rightFrame = m_rightCamera.getFrame();
+    if ( !leftFrame.empty() ) {
+        auto rightFrame = m_rightCamera.nearestFrame( leftFrame );
 
-    if ( !leftFrame.empty() && !rightFrame.empty() ) {
-        m_frame = StereoImage( leftFrame, rightFrame );
-        emit receivedFrame();
+        if ( !rightFrame.empty() ) {
+
+            m_framesMutex.lock();
+            m_framesQueue.push( StereoFrame( leftFrame, rightFrame ) );
+            m_framesMutex.unlock();
+
+            emit receivedFrame();
+
+        }
 
     }
 
 }
 
-const StereoImage &StereoCamera::getFrame() const
+StereoFrame StereoCamera::getFrame()
 {
-    return m_frame;
+    // Lock the frame queue
+    m_framesMutex.lock();
+    // Pop frame from queue
+    StereoFrame res;
+
+    if( !m_framesQueue.empty() ) {
+        res = m_framesQueue.back();
+        qDebug() << res.timeDiff();
+    }
+
+    m_framesMutex.unlock();
+
+    return res;
+
 }
 
 bool StereoCamera::empty() const
 {
-    return m_frame.empty();
+    return m_framesQueue.empty();
 }

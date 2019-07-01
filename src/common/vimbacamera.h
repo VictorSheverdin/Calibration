@@ -21,6 +21,7 @@ public :
     virtual void FrameReceived( const AVT::VmbAPI::FramePtr pFrame ) override;
 
     Frame getFrame();
+    Frame nearestFrame( const Frame &frame );
 
 signals:
     void receivedFrame();
@@ -28,6 +29,13 @@ signals:
 protected:
     QMutex m_framesMutex;
     LimitedQueue< Frame > m_framesQueue;
+    int m_number;
+
+
+    static int m_currentNumber;
+
+private:
+    void inititalize();
 
 };
 
@@ -39,6 +47,7 @@ public:
     CameraBase( QObject *parent = nullptr );
 
     Frame getFrame();
+    Frame nearestFrame( const Frame &frame );
 
 signals:
     void receivedFrame();
@@ -90,7 +99,7 @@ class StereoCamera : public QObject
 public:
     StereoCamera( const std::string &leftIp, const std::string &rightIp, QObject *parent = nullptr );
 
-    const StereoImage &getFrame() const;
+    StereoFrame getFrame();
 
     bool empty() const;
 
@@ -104,7 +113,8 @@ protected:
     MasterCamera m_leftCamera;
     SlaveCamera m_rightCamera;
 
-    StereoImage m_frame;
+    LimitedQueue< StereoFrame > m_framesQueue;
+    QMutex m_framesMutex;
 
 private:
     void initialize();

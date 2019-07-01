@@ -42,6 +42,26 @@ public:
 
 };
 
+class StereoImage
+{
+public:
+    StereoImage();
+    StereoImage( const CvImage &leftImage, const CvImage &rightImage );
+
+    const CvImage &leftImage() const;
+    void setLeftImage( const CvImage &img );
+
+    const CvImage &rightImage() const;
+    void setRightImage( const CvImage &img );
+
+    bool empty() const;
+
+protected:
+    CvImage m_leftImage;
+    CvImage m_rightImage;
+
+};
+
 class Frame : public CvImage
 {
 public:
@@ -62,22 +82,24 @@ private:
 
 };
 
-class StereoImage
+class StereoFrame
 {
 public:
-    StereoImage();
-    StereoImage( const CvImage &leftImage, const CvImage &rightImage );
+    StereoFrame();
+    StereoFrame( const Frame &leftFrame, const Frame &rightFrame );
 
-    const CvImage &leftImage() const;
-    void setLeftImage( const CvImage &img );
+    const Frame &leftFrame() const;
+    void setLeftFrame( const Frame &frame );
 
-    const CvImage &rightImage() const;
-    void setRightImage( const CvImage &img );
+    const Frame &rightFrame() const;
+    void setRightFrame( const Frame &frame );
+
+    int timeDiff() const;
 
     bool empty() const;
 
 protected:
-    CvImage m_leftImage;
-    CvImage m_rightImage;
+    Frame m_leftFrame;
+    Frame m_rightFrame;
 
 };
