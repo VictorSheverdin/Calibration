@@ -110,7 +110,7 @@ protected slots:
     void updateFrame();
 
 protected:
-    MasterCamera m_leftCamera;
+    SlaveCamera m_leftCamera;
     SlaveCamera m_rightCamera;
 
     LimitedQueue< StereoFrame > m_framesQueue;

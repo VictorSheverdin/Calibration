@@ -86,9 +86,8 @@ Frame FrameObserver::nearestFrame( const Frame &frame )
             auto resTime = abs( std::chrono::duration_cast<std::chrono::milliseconds>( time - res.time() ).count() );
 
             auto i = m_framesQueue.rbegin();
-            ++i;
 
-            for ( ; i != m_framesQueue.rend(); ++i ) {
+            for ( ++i; i != m_framesQueue.rend(); ++i ) {
                 auto curTime = abs( std::chrono::duration_cast<std::chrono::milliseconds>( time - i->time() ).count() );
                 if ( curTime < resTime ) {
                     resTime = curTime;
@@ -247,9 +246,7 @@ void StereoCamera::updateFrame()
 
 StereoFrame StereoCamera::getFrame()
 {
-    // Lock the frame queue
     m_framesMutex.lock();
-    // Pop frame from queue
     StereoFrame res;
 
     if( !m_framesQueue.empty() ) {
