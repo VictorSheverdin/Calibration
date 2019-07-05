@@ -28,7 +28,7 @@ QtImage::QtImage( const CvImage &img )
     CvImage convertedImage;
 
     if ( img.channels() == 3 ) {
-        cv::cvtColor( img, convertedImage, CV_BGR2RGB );
+        cv::cvtColor( img, convertedImage, cv::COLOR_BGR2RGB );
 
         operator=( QImage( reinterpret_cast<const unsigned char *>( convertedImage.data ),
                         convertedImage.width(), convertedImage.height(), convertedImage.step,
@@ -36,7 +36,7 @@ QtImage::QtImage( const CvImage &img )
 
     }
     else if ( img.channels() == 1 ) {
-        cv::cvtColor( img, convertedImage, CV_GRAY2RGB );
+        cv::cvtColor( img, convertedImage, cv::COLOR_GRAY2RGB );
 
         operator=( QImage( reinterpret_cast<const unsigned char *>( convertedImage.data ),
                         convertedImage.width(), convertedImage.height(), convertedImage.step,
@@ -97,7 +97,7 @@ CvImage::CvImage( const QtImage &img )
 
         CvImage cvImage;
 
-        cv::cvtColor( cv::Mat( cloneImage.height(), cloneImage.width(), CV_8UC3, cloneImage.bits(), cloneImage.bytesPerLine() ).clone(), cvImage, CV_RGB2BGR );
+        cv::cvtColor( cv::Mat( cloneImage.height(), cloneImage.width(), CV_8UC3, cloneImage.bits(), cloneImage.bytesPerLine() ).clone(), cvImage, cv::COLOR_RGB2BGR );
 
         operator=( cvImage );
 

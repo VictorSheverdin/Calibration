@@ -149,8 +149,6 @@ public:
     const CvImage sourceImage( const unsigned int cameraIndex ) const;
     const CvImage previewImage( const unsigned int cameraIndex ) const;
 
-    static CvImage createPreview( const CvImage &previewImage1, const CvImage &previewImage2, const CvImage &previewImage3 );
-
 public slots:
     void setSource1Image( const unsigned int cameraIndex, const CvImage image );
     void setPreviewImage( const unsigned int cameraIndex, const CvImage image );

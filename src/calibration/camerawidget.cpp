@@ -338,18 +338,6 @@ const CvImage TripleCameraWidget::previewImage( const unsigned int cameraIndex )
 
 }
 
-CvImage TripleCameraWidget::createPreview( const CvImage &previewImage1, const CvImage &previewImage2, const CvImage &previewImage3 )
-{
-/*    CvImage result( std::max( leftPreviewImage.height(), rightPreviewImage.height() ),
-                    leftPreviewImage.width() / 2 + rightPreviewImage.width(),
-                    leftPreviewImage.type(), cv::Scalar( 0, 0, 0, 0) );
-
-    leftPreviewImage.copyTo( result( cv::Rect( 0, 0, leftPreviewImage.width(), leftPreviewImage.height() ) ) );
-    rightPreviewImage.copyTo( result( cv::Rect( result.width() - rightPreviewImage.width(), 0, rightPreviewImage.width(), rightPreviewImage.height() ) ) );
-
-    return result;*/
-}
-
 void TripleCameraWidget::setSource1Image( const unsigned int cameraIndex, const CvImage image )
 {
     if( cameraIndex >= 0 && cameraIndex < 3 )

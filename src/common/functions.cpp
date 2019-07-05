@@ -8,7 +8,7 @@ void drawTraceLines( CvImage &image, const unsigned int count )
 
         auto step = image.height() / count;
 
-        for ( auto i = 1; i < count; ++i )
+        for ( unsigned int i = 1; i < count; ++i )
             cv::line( image, cv::Point( 0, i * step ), cv::Point( image.width(), i * step ), cv::Scalar( 100, 255, 100, 100 ) );
 
     }

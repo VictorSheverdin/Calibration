@@ -119,6 +119,7 @@ set ( COMPARE_SOURCES
     "src/compare/main.cpp"
 )
 
+
 set ( ODOMETRY_SOURCES
     "src/common/documentarea.h"
     "src/common/documentarea.cpp"
@@ -157,9 +158,9 @@ set ( RESOURCES
 )
 
 find_package(Qt5Widgets REQUIRED)
-find_package(OpenCV 3 REQUIRED)
+find_package(OpenCV 4 REQUIRED)
 find_package(Eigen3 3.1.0 REQUIRED)
-find_package(VTK 7.1 REQUIRED)
+find_package(VTK 8 REQUIRED)
 find_package(PCL 1.9 REQUIRED)
 find_package(Pangolin REQUIRED)
 

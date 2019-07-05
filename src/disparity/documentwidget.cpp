@@ -35,7 +35,7 @@ CameraDisparityWidget *CameraDisparityDocument::widget() const
 
 bool CameraDisparityDocument::loadCalibrationFile( const QString &fileName )
 {
-    widget()->loadCalibrationFile( fileName );
+    return widget()->loadCalibrationFile( fileName );
 }
 
 void CameraDisparityDocument::loadCalibrationDialog()
@@ -62,7 +62,7 @@ ImageDisparityWidget *ImageDisparityDocument::widget() const
 
 bool ImageDisparityDocument::loadCalibrationFile( const QString &fileName )
 {
-    widget()->loadCalibrationFile( fileName );
+    return widget()->loadCalibrationFile( fileName );
 }
 
 void ImageDisparityDocument::loadCalibrationDialog()

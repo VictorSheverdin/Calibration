@@ -5,7 +5,7 @@
 #include <QBoxLayout>
 #include <QPointer>
 
-#include <opencv/cv.hpp>
+#include <opencv2/opencv.hpp>
 
 class QHBoxLayout;
 class QLabel;

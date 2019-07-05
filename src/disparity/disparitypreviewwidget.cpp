@@ -219,7 +219,7 @@ GMControlWidget *ImageDisparityWidget::gmControlWidget() const
 
 bool ImageDisparityWidget::loadCalibrationFile( const QString &fileName )
 {
-    m_disparityWidget->loadCalibrationFile( fileName );
+    return m_disparityWidget->loadCalibrationFile( fileName );
 }
 
 void ImageDisparityWidget::addIcon( const QString &leftFileName, const QString &rightFileName )

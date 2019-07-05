@@ -51,7 +51,7 @@ int Annotation::LoadFromFile(std::string file){
 	position.z = atof(ann_z->value());
 	
 	rapidxml::xml_node<>* ann_obj = ann_position;
-	while(ann_obj = ann_obj->next_sibling("object")){
+    while( ( ann_obj = ann_obj->next_sibling("object") ) != nullptr ){
 		AnnotatedObject obj;
 		rapidxml::xml_node<>* ann_name = ann_obj->first_node("name");
 		CHECKOK(ann_name);
@@ -112,7 +112,7 @@ int Annotation::SaveToFile(std::string file){
 std::vector<Annotation> LoadAnnotations(std::vector<std::string> files){
 	std::vector<Annotation> annotations;
 	Annotation a;
-	for ( int i = 0; i < files.size(); i++){
+    for ( size_t i = 0; i < files.size(); i++){
 		if (a.LoadFromFile(files[i]) == 0)
 			annotations.push_back(a);
 	}

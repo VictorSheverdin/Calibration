@@ -401,7 +401,7 @@ const StereoCalibrationDataShort &StereoProcessor::calibration() const
 
 bool StereoProcessor::loadYaml( const std::string &fileName )
 {
-    m_calibration.loadYaml( fileName );
+    return m_calibration.loadYaml( fileName );
 }
 
 std::shared_ptr< DisparityProcessorBase > StereoProcessor::disparityProcessor() const
@@ -459,7 +459,7 @@ StereoResult StereoProcessor::process( const CvImage &leftFrame, const CvImage &
 
                 CvImage rgbLeftImage;
 
-                cv::cvtColor( leftCroppedFrame, rgbLeftImage, CV_BGR2RGB );
+                cv::cvtColor( leftCroppedFrame, rgbLeftImage, cv::COLOR_BGR2RGB );
 
                 for (int rows = 0; rows < points.rows; ++rows) {                    
                     for (int cols = 0; cols < points.cols; ++cols) {
