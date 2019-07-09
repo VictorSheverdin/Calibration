@@ -41,5 +41,21 @@ void setVimbaFeature( AVT::VmbAPI::VimbaSystem &system, const std::string &key, 
 
 }
 
+template <typename FeatureT>
+FeatureT getVimbaFeature( AVT::VmbAPI::CameraPtr camera, const std::string &key )
+{
+    FeatureT ret;
+
+    AVT::VmbAPI::FeaturePtr feature;
+
+    checkVimbaStatus( camera->GetFeatureByName( key.data(), feature ),
+        "Could not access " + key);
+
+    checkVimbaStatus( feature->GetValue( ret ), "Could not get " + key );
+
+    return ret;
+
+}
+
 void vimbaRunCommand( AVT::VmbAPI::VimbaSystem &system, const std::string &key );
 

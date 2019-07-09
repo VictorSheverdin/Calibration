@@ -7,6 +7,7 @@
 #include <QMutex>
 
 #include <opencv2/opencv.hpp>
+#include <opencv2/ximgproc.hpp>
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -66,7 +67,9 @@ public:
     virtual cv::Mat processDisparity( const CvImage &left, const CvImage &right ) override;
 
 protected:
-    cv::Ptr< cv::StereoBM > m_matcher;
+//    cv::Ptr< cv::ximgproc::DisparityWLSFilter > m_wlsFilter;
+    cv::Ptr< cv::StereoBM > m_leftMatcher;
+//    cv::Ptr< cv::StereoMatcher > m_rightMatcher;
 
 private:
     void initialize();
@@ -135,7 +138,7 @@ public:
     const cv::Mat &disparity() const;
     const CvImage &colorizedDisparity() const;
     const cv::Mat &points() const;
-    const pcl::PointCloud< pcl::PointXYZRGB >::Ptr &pointCloud() const;
+    pcl::PointCloud< pcl::PointXYZRGB >::Ptr pointCloud() const;
 
 protected:
     CvImage m_previewImage;

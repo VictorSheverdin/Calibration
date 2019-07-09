@@ -72,10 +72,14 @@ public:
 
     const std::chrono::time_point< std::chrono::system_clock > &time() const;
 
-    int timeDiff( const Frame &other ) const;
+    int64_t timeDiff( const Frame &other ) const;
+
+    int64_t timeFromStart() const;
 
 protected:
     std::chrono::time_point< std::chrono::system_clock > m_time;
+
+    static const std::chrono::time_point< std::chrono::system_clock > m_startTime;
 
 private:
     void initialize();

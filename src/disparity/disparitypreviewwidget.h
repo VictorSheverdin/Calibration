@@ -62,6 +62,8 @@ protected:
     QPointer< DisparityControlWidget > m_controlWidget;
     QPointer< PCLViewer > m_3dWidget;
 
+    QMutex m_updateMutex;
+
     std::shared_ptr< BMDisparityProcessor > m_bmProcessor;
     std::shared_ptr< GMDisparityProcessor > m_gmProcessor;
 

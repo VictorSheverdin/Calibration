@@ -53,6 +53,8 @@ DisparityWidgetBase::DisparityWidgetBase( QWidget* parent )
 
 void DisparityWidgetBase::initialize()
 {
+    setAttribute( Qt::WA_DeleteOnClose );
+
     m_bmProcessor = std::shared_ptr<BMDisparityProcessor>( new BMDisparityProcessor );
     m_gmProcessor = std::shared_ptr<GMDisparityProcessor>( new GMDisparityProcessor );
 
@@ -141,10 +143,11 @@ void DisparityWidgetBase::updateFrame(const CvImage leftFrame, const CvImage rig
 
         m_view->disparityView()->setImage( stereoResult.colorizedDisparity() );
 
-        if ( stereoResult.pointCloud() )
+        if ( stereoResult.pointCloud() && !stereoResult.pointCloud()->empty() ) {
             m_3dWidget->setPointCloud( stereoResult.pointCloud() );
+            m_3dWidget->update();
 
-        m_3dWidget->repaint();
+        }
 
     }
 

@@ -27,9 +27,6 @@ void PCLViewer::pickingEventHandler( const pcl::visualization::PointPickingEvent
     std::stringstream ss;
     ss << distance;
 
-/*    application()->setStatusBarText( tr( "Coordinates: x = %1, y = %2, z = %3, Distance = %4" )
-                                     .arg( QString::number( x ) ).arg( QString::number( y ) ).arg( QString::number( z ) ).arg( QString::number( distance ) ) ); */
-
     application()->setStatusBarText( tr( "Distance = %1" )
                                      .arg( QString::number( distance ) ) );
 
@@ -42,25 +39,32 @@ void PCLViewer::pickingEventHandler( const pcl::visualization::PointPickingEvent
 
 void PCLViewer::initialize()
 {
-    m_pclViewer = std::unique_ptr< pcl::visualization::PCLVisualizer >( new pcl::visualization::PCLVisualizer( "PCLVisualizer" ) );
+    m_pclViewer = std::unique_ptr< pcl::visualization::PCLVisualizer >( new pcl::visualization::PCLVisualizer( "PCLVisualizer", false ) );
     SetRenderWindow( m_pclViewer->getRenderWindow() );
-    m_pclViewer->initCameraParameters ();
+    m_pclViewer->initCameraParameters();
 
     m_pclViewer->setBackgroundColor( 127, 127, 127 );
 
-    m_pclViewer->addPointCloud( pcl::PointCloud<pcl::PointXYZRGB>::Ptr( new pcl::PointCloud<pcl::PointXYZRGB> ) );
-
     m_pclViewer->setPointCloudRenderingProperties( pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2 );
 
-    // m_pclViewer->addOrientationMarkerWidgetAxes( GetInteractor() );
-    // m_pclViewer->addCoordinateSystem( 0.1 );
     m_pclViewer->registerPointPickingCallback( PCLViewer::pickingEventHandler, m_pclViewer.get() );
 
     m_pclViewer->setCameraPosition( 0, 0, -1, 0, 1, 0 );
 
+    m_pclViewer->setShowFPS( true );
+
 }
 
-void PCLViewer::setPointCloud(const pcl::PointCloud< pcl::PointXYZRGB >::Ptr &cloud )
+void PCLViewer::setPointCloud(const pcl::PointCloud< pcl::PointXYZRGB >::Ptr cloud )
 {
-    m_pclViewer->updatePointCloud( cloud );
+    m_pclViewer->removePointCloud();
+    m_pclViewer->addPointCloud( cloud );
+
+    m_pclViewer->setPointCloudRenderingProperties( pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2 );
+
+}
+
+void PCLViewer::update()
+{
+    QVTKWidget::update();
 }

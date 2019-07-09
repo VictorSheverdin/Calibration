@@ -22,6 +22,8 @@ CalibrationWidgetBase::CalibrationWidgetBase( QWidget *parent )
 
 void CalibrationWidgetBase::initialize()
 {
+    setAttribute( Qt::WA_DeleteOnClose );
+
     m_layout = new QVBoxLayout( this );
 
     m_iconsList = new CalibrationIconsWidget( this );

@@ -30,6 +30,8 @@ void FrameObserver::FrameReceived ( const AVT::VmbAPI::FramePtr pFrame )
         {
             Frame frame;
 
+            // qDebug() << m_number << frame.timeFromStart();
+
             VmbUchar_t *pImage;
             VmbUint32_t nWidth = 0;
             VmbUint32_t nHeight = 0;
@@ -58,9 +60,9 @@ void FrameObserver::FrameReceived ( const AVT::VmbAPI::FramePtr pFrame )
 
 Frame FrameObserver::getFrame()
 {
-    m_framesMutex.lock();
-
     Frame res;
+
+    m_framesMutex.lock();
 
     if ( !m_framesQueue.empty() )
         res = m_framesQueue.back();
@@ -70,7 +72,7 @@ Frame FrameObserver::getFrame()
     return res;
 
 }
-
+/*
 Frame FrameObserver::nearestFrame( const Frame &frame )
 {
     Frame res;
@@ -83,12 +85,13 @@ Frame FrameObserver::nearestFrame( const Frame &frame )
 
         if ( !m_framesQueue.empty() ) {
             res = m_framesQueue.back();
-            auto resTime = abs( std::chrono::duration_cast<std::chrono::milliseconds>( time - res.time() ).count() );
+            auto resTime = abs( std::chrono::duration_cast< std::chrono::microseconds >( time - res.time() ).count() );
 
             auto i = m_framesQueue.rbegin();
+            ++i;
 
-            for ( ++i; i != m_framesQueue.rend(); ++i ) {
-                auto curTime = abs( std::chrono::duration_cast<std::chrono::milliseconds>( time - i->time() ).count() );
+            for ( ; i != m_framesQueue.rend(); ++i ) {
+                auto curTime = abs( std::chrono::duration_cast< std::chrono::microseconds >( time - i->time() ).count() );
                 if ( curTime < resTime ) {
                     resTime = curTime;
                     res = *i;
@@ -102,7 +105,7 @@ Frame FrameObserver::nearestFrame( const Frame &frame )
 
     return res;
 }
-
+*/
 // CameraBase
 CameraBase::CameraBase( QObject *parent )
     : QObject( parent )
@@ -118,12 +121,12 @@ Frame CameraBase::getFrame()
 {
     return m_frameObserver->getFrame();
 }
-
+/*
 Frame CameraBase::nearestFrame( const Frame &frame )
 {
     return m_frameObserver->nearestFrame( frame );
 }
-
+*/
 void CameraBase::setMaxValue( const char* const name )
 {
     AVT::VmbAPI::FeaturePtr      feature;
@@ -149,6 +152,8 @@ MasterCamera::MasterCamera( const std::string &ip, QObject *parent )
 
 MasterCamera::~MasterCamera()
 {
+    m_camera->StopContinuousImageAcquisition();
+
     m_camera->Close();
 
 }
@@ -162,9 +167,11 @@ void MasterCamera::initialize( const std::string &ip )
 
     setVimbaFeature( m_camera, "PixelFormat", VmbPixelFormatBgr8 );
 
+    setVimbaFeature( m_camera, "ExposureTimeAbs", 10000.0 );
+
+    setVimbaFeature( m_camera, "Gain", 13.0 );
+
     setVimbaFeature( m_camera, "TriggerMode", "Off" );
-    setVimbaFeature( m_camera, "SyncOutSelector", "SyncOut1" );
-    setVimbaFeature( m_camera, "SyncOutSource", "Imaging" );
 
     SP_SET( m_frameObserver, new FrameObserver( m_camera ) );
 
@@ -187,6 +194,8 @@ SlaveCamera::~SlaveCamera()
 {
     setVimbaFeature( m_camera, "TriggerMode", "Off" );
 
+    m_camera->StopContinuousImageAcquisition();
+
     m_camera->Close();
 
 }
@@ -200,9 +209,15 @@ void SlaveCamera::initialize( const std::string &ip )
 
     setVimbaFeature( m_camera, "PixelFormat", VmbPixelFormatBgr8 );
 
+    setVimbaFeature( m_camera, "ExposureTimeAbs", 10000.0 );
+
+    setVimbaFeature( m_camera, "Gain", 13.0 );
+
     setVimbaFeature( m_camera, "TriggerSelector", "FrameStart" );
     setVimbaFeature( m_camera, "TriggerSource", "Line1" );
     setVimbaFeature( m_camera, "TriggerMode", "On" );
+
+    setVimbaFeature( m_camera, "SyncOutSource", "Exposing" );
 
     SP_SET( m_frameObserver, new FrameObserver( m_camera ) );
 
@@ -221,6 +236,7 @@ StereoCamera::StereoCamera( const std::string &leftIp, const std::string &rightI
 
 void StereoCamera::initialize()
 {
+    connect( &m_leftCamera, &SlaveCamera::receivedFrame, this, &StereoCamera::updateFrame );
     connect( &m_rightCamera, &SlaveCamera::receivedFrame, this, &StereoCamera::updateFrame );
 }
 
@@ -228,15 +244,23 @@ void StereoCamera::updateFrame()
 {
     auto leftFrame = m_leftCamera.getFrame();
     if ( !leftFrame.empty() ) {
-        auto rightFrame = m_rightCamera.nearestFrame( leftFrame );
+        auto rightFrame = m_rightCamera.getFrame();
 
         if ( !rightFrame.empty() ) {
 
-            m_framesMutex.lock();
-            m_framesQueue.push( StereoFrame( leftFrame, rightFrame ) );
-            m_framesMutex.unlock();
+            if ( leftFrame.timeDiff( rightFrame ) < 2000 ) {
 
-            emit receivedFrame();
+                m_framesMutex.lock();
+                m_framesQueue.push( StereoFrame( leftFrame, rightFrame ) );
+                m_framesMutex.unlock();
+
+                qDebug() << "Left frame:" << leftFrame.timeFromStart() << "Right frame:" << rightFrame.timeFromStart() << "Difference:" << leftFrame.timeDiff( rightFrame ) << "+";
+
+                emit receivedFrame();
+
+            }
+            else
+                qDebug() << "Left frame:" << leftFrame.timeFromStart() << "Right frame:" << rightFrame.timeFromStart() << "Difference:" << leftFrame.timeDiff( rightFrame );
 
         }
 
@@ -246,12 +270,12 @@ void StereoCamera::updateFrame()
 
 StereoFrame StereoCamera::getFrame()
 {
-    m_framesMutex.lock();
     StereoFrame res;
+
+    m_framesMutex.lock();
 
     if( !m_framesQueue.empty() ) {
         res = m_framesQueue.back();
-        // qDebug() << res.timeDiff();
     }
 
     m_framesMutex.unlock();

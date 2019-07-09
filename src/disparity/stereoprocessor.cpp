@@ -18,137 +18,138 @@ BMDisparityProcessor::BMDisparityProcessor()
 
 void BMDisparityProcessor::initialize()
 {
-    m_matcher = cv::StereoBM::create();
+    m_leftMatcher = cv::StereoBM::create();
+
 }
 
 int BMDisparityProcessor::getMinDisparity() const
 {
-    return m_matcher->getMinDisparity();
+    return m_leftMatcher->getMinDisparity();
 }
 
 void BMDisparityProcessor::setMinDisparity( const int minDisparity )
 {
-    m_matcher->setMinDisparity( minDisparity );
+    m_leftMatcher->setMinDisparity( minDisparity );
 }
 
 int BMDisparityProcessor::getNumDisparities() const
 {
-    return m_matcher->getNumDisparities();
+    return m_leftMatcher->getNumDisparities();
 }
 
 void BMDisparityProcessor::setNumDisparities( const int numDisparities )
 {
-    m_matcher->setNumDisparities( numDisparities );
+    m_leftMatcher->setNumDisparities( numDisparities );
 }
 
 int BMDisparityProcessor::getBlockSize() const
 {
-    return m_matcher->getBlockSize();
+    return m_leftMatcher->getBlockSize();
 }
 
 void BMDisparityProcessor::setBlockSize( const int blockSize )
 {
-    m_matcher->setBlockSize( blockSize );
+    m_leftMatcher->setBlockSize( blockSize );
 }
 
 int BMDisparityProcessor::getSpeckleWindowSize() const
 {
-    return m_matcher->getSpeckleWindowSize();
+    return m_leftMatcher->getSpeckleWindowSize();
 }
 
 void BMDisparityProcessor::setSpeckleWindowSize( const int speckleWindowSize )
 {
-    m_matcher->setSpeckleWindowSize( speckleWindowSize );
+    m_leftMatcher->setSpeckleWindowSize( speckleWindowSize );
 }
 
 int BMDisparityProcessor::getSpeckleRange() const
 {
-    return m_matcher->getSpeckleRange();
+    return m_leftMatcher->getSpeckleRange();
 }
 
 void BMDisparityProcessor::setSpeckleRange( const int speckleRange )
 {
-    m_matcher->setSpeckleRange( speckleRange );
+    m_leftMatcher->setSpeckleRange( speckleRange );
 }
 
 int BMDisparityProcessor::getDisp12MaxDiff() const
 {
-    return m_matcher->getDisp12MaxDiff();
+    return m_leftMatcher->getDisp12MaxDiff();
 }
 
 void BMDisparityProcessor::setDisp12MaxDiff( const int disp12MaxDiff )
 {
-    m_matcher->setDisp12MaxDiff( disp12MaxDiff );
+    m_leftMatcher->setDisp12MaxDiff( disp12MaxDiff );
 }
 
 int BMDisparityProcessor::getPreFilterType() const
 {
-    return m_matcher->getPreFilterType();
+    return m_leftMatcher->getPreFilterType();
 }
 
 void BMDisparityProcessor::setPreFilterType( const int preFilterType )
 {
-    m_matcher->setPreFilterType( preFilterType );
+    m_leftMatcher->setPreFilterType( preFilterType );
 }
 
 int BMDisparityProcessor::getPreFilterSize() const
 {
-    return m_matcher->getPreFilterSize();
+    return m_leftMatcher->getPreFilterSize();
 }
 
 void BMDisparityProcessor::setPreFilterSize( const int preFilterSize )
 {
-    m_matcher->setPreFilterSize( preFilterSize );
+    m_leftMatcher->setPreFilterSize( preFilterSize );
 }
 
 int BMDisparityProcessor::getPreFilterCap() const
 {
-    return m_matcher->getPreFilterCap();
+    return m_leftMatcher->getPreFilterCap();
 }
 
 void BMDisparityProcessor::setPreFilterCap( const int preFilterCap )
 {
-    m_matcher->setPreFilterCap( preFilterCap );
+    m_leftMatcher->setPreFilterCap( preFilterCap );
 }
 
 int BMDisparityProcessor::getTextureThreshold() const
 {
-    return m_matcher->getTextureThreshold();
+    return m_leftMatcher->getTextureThreshold();
 }
 
 void BMDisparityProcessor::setTextureThreshold( const int textureThreshold )
 {
-    m_matcher->setTextureThreshold( textureThreshold );
+    m_leftMatcher->setTextureThreshold( textureThreshold );
 }
 
 int BMDisparityProcessor::getUniquenessRatio() const
 {
-    return m_matcher->getUniquenessRatio();
+    return m_leftMatcher->getUniquenessRatio();
 }
 
 void BMDisparityProcessor::setUniquenessRatio( const int uniquenessRatio )
 {
-    m_matcher->setUniquenessRatio( uniquenessRatio );
+    m_leftMatcher->setUniquenessRatio( uniquenessRatio );
 }
 
 cv::Rect BMDisparityProcessor::getROI1() const
 {
-    return m_matcher->getROI1();
+    return m_leftMatcher->getROI1();
 }
 
 void BMDisparityProcessor::setROI1( const cv::Rect &roi1 )
 {
-    m_matcher->setROI1( roi1 );
+    m_leftMatcher->setROI1( roi1 );
 }
 
 cv::Rect BMDisparityProcessor::getROI2() const
 {
-    return m_matcher->getROI2();
+    return m_leftMatcher->getROI2();
 }
 
 void BMDisparityProcessor::setROI2( const cv::Rect &roi2 )
 {
-    m_matcher->setROI2( roi2 );
+    m_leftMatcher->setROI2( roi2 );
 }
 
 cv::Mat BMDisparityProcessor::processDisparity( const CvImage &left, const CvImage &right )
@@ -160,24 +161,38 @@ cv::Mat BMDisparityProcessor::processDisparity( const CvImage &left, const CvIma
     cv::cvtColor( right, rightGray, cv::COLOR_BGR2GRAY );
 
     cv::Mat leftDisp;
+
+    m_leftMatcher->compute( leftGray, rightGray, leftDisp );
+
+    return leftDisp;
+/*
     cv::Mat rightDisp;
 
-    m_matcher->compute( leftGray, rightGray, leftDisp );
+    auto rightMatcher = cv::ximgproc::createRightMatcher( m_leftMatcher );
 
-/*    cv::Ptr< cv::ximgproc::DisparityWLSFilter > wlsFilter;
-    wlsFilter = cv::ximgproc::createDisparityWLSFilter( m_matcher );
-
-    auto rightMatcher = cv::ximgproc::createRightMatcher(m_matcher);
     rightMatcher->compute( rightGray, leftGray, rightDisp );
+
+    auto wlsFilter = cv::ximgproc::createDisparityWLSFilter( m_leftMatcher );
 
     wlsFilter->setLambda( 8000.0 );
     wlsFilter->setSigmaColor( 1.5 );
 
+    cv::Mat conf_map = cv::Mat( left.rows, left.cols, CV_8U );
+    conf_map = cv::Scalar(255);
+
     cv::Mat filteredDisp;
 
-    wlsFilter->filter( leftDisp, left, filteredDisp, rightDisp );*/
+    wlsFilter->filter( leftDisp, left, filteredDisp, rightDisp );
 
-    return leftDisp;
+    conf_map = wlsFilter->getConfidenceMap();
+
+    cv::Mat solvedDisp;
+    cv::Mat solvedFilteredDisp;
+
+    cv::ximgproc::fastBilateralSolverFilter( left, leftDisp, conf_map/255.0f, solvedDisp );
+    cv::ximgproc::fastBilateralSolverFilter( left, filteredDisp, conf_map/255.0f, solvedFilteredDisp );
+
+    return solvedFilteredDisp;*/
 
 }
 
@@ -312,12 +327,8 @@ cv::Mat GMDisparityProcessor::processDisparity( const CvImage &left, const CvIma
     cv::cvtColor( right, rightGray, cv::COLOR_BGR2GRAY );
 
     cv::Mat leftDisp;
-    cv::Mat rightDisp;
 
     m_matcher->compute( leftGray, rightGray, leftDisp );
-
-/*    auto rightMatcher = cv::ximgproc::createRightMatcher(m_matcher);
-    rightMatcher->compute( rightGray, leftGray, rightDisp );*/
 
     return leftDisp;
 
@@ -374,7 +385,7 @@ const cv::Mat &StereoResult::points() const
     return m_points;
 }
 
-const pcl::PointCloud< pcl::PointXYZRGB >::Ptr &StereoResult::pointCloud() const
+pcl::PointCloud< pcl::PointXYZRGB >::Ptr StereoResult::pointCloud() const
 {
     return m_pointCloud;
 }

@@ -223,8 +223,8 @@ void BMControlWidget::initialize()
     setSadWindowSize( 12 );
     setPrefilterSize( 100 );
     setPrefilterCap( 50 );
-    setMinDisparity( 0 );
-    setNumDisparities( 128 );
+    setMinDisparity( -128 );
+    setNumDisparities( 256 );
     setTextureThreshold( 700 );
     setUniquessRatio( 10 );
     setSpeckleWindowSize( 70 );
