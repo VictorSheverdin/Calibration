@@ -96,7 +96,35 @@ void vimbaRunCommand( AVT::VmbAPI::VimbaSystem &system, const std::string &key )
 
     checkVimbaStatus( feature->RunCommand(), "Could run command " + key );
 
+    bool bIsCommandDone = false;
+
+    do
+    {
+        if( VmbErrorSuccess != SP_ACCESS( feature )->IsCommandDone( bIsCommandDone ) )
+        {
+            break;
+        }
+    } while( false == bIsCommandDone );
+
 }
 
+void vimbaRunCommand( AVT::VmbAPI::CameraPtr camera, const std::string &key )
+{
+    AVT::VmbAPI::FeaturePtr feature;
+    checkVimbaStatus( camera->GetFeatureByName( key.data(), feature ),
+        "Could not access " + key );
 
+    checkVimbaStatus( feature->RunCommand(), "Could run command " + key );
+
+    bool bIsCommandDone = false;
+
+    do
+    {
+        if( VmbErrorSuccess != SP_ACCESS( feature )->IsCommandDone( bIsCommandDone ) )
+        {
+            break;
+        }
+    } while( false == bIsCommandDone );
+
+}
 

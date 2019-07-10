@@ -21,17 +21,23 @@ public :
     virtual void FrameReceived( const AVT::VmbAPI::FramePtr pFrame ) override;
 
     Frame getFrame();
-    // Frame nearestFrame( const Frame &frame );
+    Frame nearestFrame( const Frame &frame );
 
 signals:
     void receivedFrame();
 
 protected:
     QMutex m_framesMutex;
-    LimitedQueue< Frame > m_framesQueue;
     int m_number;
 
+    cv::Mat m_sourceMat;
+    std::chrono::time_point< std::chrono::system_clock > m_sourceTime;
+
     static int m_currentNumber;
+
+    static const std::chrono::time_point< std::chrono::system_clock > m_startTime;
+
+    static int64_t timeFromStart();
 
 private:
     void inititalize();
@@ -46,7 +52,7 @@ public:
     CameraBase( QObject *parent = nullptr );
 
     Frame getFrame();
-    // Frame nearestFrame( const Frame &frame );
+    Frame nearestFrame( const Frame &frame );
 
 signals:
     void receivedFrame();

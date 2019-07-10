@@ -59,3 +59,4 @@ FeatureT getVimbaFeature( AVT::VmbAPI::CameraPtr camera, const std::string &key 
 
 void vimbaRunCommand( AVT::VmbAPI::VimbaSystem &system, const std::string &key );
 
+void vimbaRunCommand(AVT::VmbAPI::CameraPtr camera, const std::string &key );

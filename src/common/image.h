@@ -70,11 +70,10 @@ public:
     Frame( const cv::Mat &mat );
     Frame( const QtImage &img );
 
-    const std::chrono::time_point< std::chrono::system_clock > &time() const;
-
     int64_t timeDiff( const Frame &other ) const;
 
-    int64_t timeFromStart() const;
+    void setTime( const std::chrono::time_point< std::chrono::system_clock > &time );
+    const std::chrono::time_point< std::chrono::system_clock > &time() const;
 
 protected:
     std::chrono::time_point< std::chrono::system_clock > m_time;

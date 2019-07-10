@@ -8,6 +8,7 @@
 
 // FrameObserver
 int FrameObserver::m_currentNumber = 0;
+const std::chrono::time_point< std::chrono::system_clock > FrameObserver::m_startTime = std::chrono::system_clock::now();
 
 FrameObserver::FrameObserver( AVT::VmbAPI::CameraPtr pCamera )
     : AVT::VmbAPI::IFrameObserver( pCamera )
@@ -20,6 +21,11 @@ void FrameObserver::inititalize()
     m_number = m_currentNumber++;
 }
 
+int64_t FrameObserver::timeFromStart()
+{
+    return std::chrono::duration_cast< std::chrono::microseconds >( std::chrono::system_clock::now() - m_startTime ).count();
+}
+
 void FrameObserver::FrameReceived ( const AVT::VmbAPI::FramePtr pFrame )
 {
     VmbFrameStatusType eReceiveStatus ;
@@ -28,9 +34,8 @@ void FrameObserver::FrameReceived ( const AVT::VmbAPI::FramePtr pFrame )
     {
         if ( VmbFrameStatusComplete == eReceiveStatus )
         {
-            Frame frame;
 
-            // qDebug() << m_number << frame.timeFromStart();
+            auto time = std::chrono::system_clock::now();
 
             VmbUchar_t *pImage;
             VmbUint32_t nWidth = 0;
@@ -40,12 +45,9 @@ void FrameObserver::FrameReceived ( const AVT::VmbAPI::FramePtr pFrame )
             checkVimbaStatus( pFrame->GetHeight( nHeight ), "FAILED to aquire height of frame!" );
             checkVimbaStatus( pFrame->GetImage( pImage ), "FAILED to acquire image data of frame!" );
 
-            auto mat = cv::Mat( nHeight, nWidth, CV_8UC3, pImage );
-
-            mat.copyTo( frame );
-
             m_framesMutex.lock();
-            m_framesQueue.push( frame );
+            m_sourceMat = cv::Mat( nHeight, nWidth, CV_8UC1, pImage );
+            m_sourceTime = time;
             m_framesMutex.unlock();
 
             emit receivedFrame();
@@ -64,48 +66,22 @@ Frame FrameObserver::getFrame()
 
     m_framesMutex.lock();
 
-    if ( !m_framesQueue.empty() )
-        res = m_framesQueue.back();
+    if ( !m_sourceMat.empty() ) {
+        res.setTime( m_sourceTime );
+        cv::cvtColor( m_sourceMat, res, cv::COLOR_BayerGB2RGB );
+    }
 
     m_framesMutex.unlock();
 
     return res;
 
 }
-/*
+
 Frame FrameObserver::nearestFrame( const Frame &frame )
 {
-    Frame res;
-
-    if ( !frame.empty() ) {
-
-        auto time = frame.time();
-
-        m_framesMutex.lock();
-
-        if ( !m_framesQueue.empty() ) {
-            res = m_framesQueue.back();
-            auto resTime = abs( std::chrono::duration_cast< std::chrono::microseconds >( time - res.time() ).count() );
-
-            auto i = m_framesQueue.rbegin();
-            ++i;
-
-            for ( ; i != m_framesQueue.rend(); ++i ) {
-                auto curTime = abs( std::chrono::duration_cast< std::chrono::microseconds >( time - i->time() ).count() );
-                if ( curTime < resTime ) {
-                    resTime = curTime;
-                    res = *i;
-                }
-            }
-
-        }
-
-        m_framesMutex.unlock();
-    }
-
-    return res;
+    return getFrame();
 }
-*/
+
 // CameraBase
 CameraBase::CameraBase( QObject *parent )
     : QObject( parent )
@@ -121,12 +97,12 @@ Frame CameraBase::getFrame()
 {
     return m_frameObserver->getFrame();
 }
-/*
+
 Frame CameraBase::nearestFrame( const Frame &frame )
 {
     return m_frameObserver->nearestFrame( frame );
 }
-*/
+
 void CameraBase::setMaxValue( const char* const name )
 {
     AVT::VmbAPI::FeaturePtr      feature;
@@ -165,7 +141,9 @@ void MasterCamera::initialize( const std::string &ip )
     checkVimbaStatus( vimbaSystem.OpenCameraByID( ip.c_str(), VmbAccessModeFull, m_camera ),
         std::string( "Could not start open camera; ip = " ) + ip );
 
-    setVimbaFeature( m_camera, "PixelFormat", VmbPixelFormatBgr8 );
+    setVimbaFeature( m_camera, "PixelFormat", VmbPixelFormatBayerGB8 );
+
+    vimbaRunCommand( m_camera, "GVSPAdjustPacketSize" );
 
     setVimbaFeature( m_camera, "ExposureTimeAbs", 10000.0 );
 
@@ -207,7 +185,9 @@ void SlaveCamera::initialize( const std::string &ip )
     checkVimbaStatus( vimbaSystem.OpenCameraByID( ip.c_str(), VmbAccessModeFull, m_camera ),
         std::string( "Could not start open camera; ip = " ) + ip );
 
-    setVimbaFeature( m_camera, "PixelFormat", VmbPixelFormatBgr8 );
+    setVimbaFeature( m_camera, "PixelFormat", VmbPixelFormatBayerGB8 );
+
+    vimbaRunCommand( m_camera, "GVSPAdjustPacketSize" );
 
     setVimbaFeature( m_camera, "ExposureTimeAbs", 10000.0 );
 
@@ -217,13 +197,11 @@ void SlaveCamera::initialize( const std::string &ip )
     setVimbaFeature( m_camera, "TriggerSource", "Line1" );
     setVimbaFeature( m_camera, "TriggerMode", "On" );
 
-    setVimbaFeature( m_camera, "SyncOutSource", "Exposing" );
-
     SP_SET( m_frameObserver, new FrameObserver( m_camera ) );
 
     checkVimbaStatus( SP_ACCESS( m_camera )->StartContinuousImageAcquisition( m_numFrames,  m_frameObserver ), "Can't start image acquisition" );
 
-    connect( m_frameObserver.get(), &FrameObserver::receivedFrame, this, &MasterCamera::receivedFrame );
+    connect( m_frameObserver.get(), &FrameObserver::receivedFrame, this, &SlaveCamera::receivedFrame );
 
 }
 
@@ -244,7 +222,7 @@ void StereoCamera::updateFrame()
 {
     auto leftFrame = m_leftCamera.getFrame();
     if ( !leftFrame.empty() ) {
-        auto rightFrame = m_rightCamera.getFrame();
+        auto rightFrame = m_rightCamera.nearestFrame( leftFrame );
 
         if ( !rightFrame.empty() ) {
 
@@ -254,13 +232,14 @@ void StereoCamera::updateFrame()
                 m_framesQueue.push( StereoFrame( leftFrame, rightFrame ) );
                 m_framesMutex.unlock();
 
-                qDebug() << "Left frame:" << leftFrame.timeFromStart() << "Right frame:" << rightFrame.timeFromStart() << "Difference:" << leftFrame.timeDiff( rightFrame ) << "+";
+                qDebug() << "Difference time:" << leftFrame.timeDiff( rightFrame ) /*<< "+"*/;
 
                 emit receivedFrame();
 
             }
-            else
-                qDebug() << "Left frame:" << leftFrame.timeFromStart() << "Right frame:" << rightFrame.timeFromStart() << "Difference:" << leftFrame.timeDiff( rightFrame );
+            /*else {
+                qDebug() << "Difference time:" << leftFrame.timeDiff( rightFrame );
+            }*/
 
         }
 

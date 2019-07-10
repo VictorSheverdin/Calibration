@@ -182,8 +182,6 @@ bool StereoImage::empty() const
 }
 
 // Frame
-const std::chrono::time_point< std::chrono::system_clock > Frame::m_startTime = std::chrono::system_clock::now();
-
 Frame::Frame()
     : CvImage()
 {
@@ -213,19 +211,19 @@ void Frame::initialize()
     m_time = std::chrono::system_clock::now();
 }
 
-const std::chrono::time_point< std::chrono::system_clock > &Frame::time() const
-{
-    return m_time;
-}
-
 int64_t Frame::timeDiff( const Frame &other ) const
 {
     return std::abs( std::chrono::duration_cast< std::chrono::microseconds >( m_time - other.m_time ).count() );
 }
 
-int64_t Frame::timeFromStart() const
+void Frame::setTime( const std::chrono::time_point< std::chrono::system_clock > &time )
 {
-    return std::chrono::duration_cast< std::chrono::microseconds >( m_time - m_startTime ).count();
+    m_time = time;
+}
+
+const std::chrono::time_point< std::chrono::system_clock > &Frame::time() const
+{
+    return m_time;
 }
 
 // StereoFrame

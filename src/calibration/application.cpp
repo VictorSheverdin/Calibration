@@ -21,8 +21,6 @@ void Application::initialize( int &, char ** )
 {
     checkVimbaStatus( m_vimbaSystem.Startup(), "Could not start Vimba system");
 
-    vimbaRunCommand( m_vimbaSystem, "GVSPAdjustPacketSize" );
-
     QFile cssFile(":/resources/qss/style.css");
 
     if ( cssFile.open( QIODevice::ReadOnly ) ) {

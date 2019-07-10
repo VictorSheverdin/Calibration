@@ -458,7 +458,7 @@ StereoResult StereoProcessor::process( const CvImage &leftFrame, const CvImage &
 
                 ret.setDisparity( disparity );
 
-                cv::Mat points;
+                /*cv::Mat points;
 
                 cv::reprojectImageTo3D( disparity, points, m_calibration.disparityToDepthMatrix(), true );
 
@@ -496,7 +496,7 @@ StereoResult StereoProcessor::process( const CvImage &leftFrame, const CvImage &
 
                 }
 
-                ret.setPointCloud( pointCloud );
+                ret.setPointCloud( pointCloud );*/
 
             }
 
