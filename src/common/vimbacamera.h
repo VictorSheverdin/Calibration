@@ -15,13 +15,14 @@ class FrameObserver : public QObject, public AVT::VmbAPI::IFrameObserver
 {
     Q_OBJECT
 
+    friend class CameraBase;
+
 public :
     FrameObserver( AVT::VmbAPI::CameraPtr pCamera );
 
     virtual void FrameReceived( const AVT::VmbAPI::FramePtr pFrame ) override;
 
     Frame getFrame();
-    Frame nearestFrame( const Frame &frame );
 
 signals:
     void receivedFrame();
@@ -34,10 +35,15 @@ protected:
     std::chrono::time_point< std::chrono::system_clock > m_sourceTime;
 
     static int m_currentNumber;
-
     static const std::chrono::time_point< std::chrono::system_clock > m_startTime;
 
     static int64_t timeFromStart();
+
+    void lockMutex();
+    void unlockMutex();
+
+    Frame getFrameUnsafe() const;
+    std::chrono::time_point< std::chrono::system_clock > getTimeUnsafe() const;
 
 private:
     void inititalize();
@@ -48,11 +54,12 @@ class CameraBase : public QObject
 {
     Q_OBJECT
 
+    friend class StereoCamera;
+
 public:
     CameraBase( QObject *parent = nullptr );
 
     Frame getFrame();
-    Frame nearestFrame( const Frame &frame );
 
 signals:
     void receivedFrame();
@@ -61,9 +68,16 @@ protected:
     AVT::VmbAPI::CameraPtr m_camera;
     SP_DECL( FrameObserver ) m_frameObserver;
 
+    static const int m_numFrames = 3;
+
     void setMaxValue(const char * const name );
 
-    static const int m_numFrames = 3;
+    void lockMutex();
+    void unlockMutex();
+
+    Frame getFrameUnsafe() const;
+
+    std::chrono::time_point< std::chrono::system_clock > getTimeUnsafe() const;
 
 private:
     void initialize();

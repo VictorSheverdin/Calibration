@@ -77,9 +77,32 @@ Frame FrameObserver::getFrame()
 
 }
 
-Frame FrameObserver::nearestFrame( const Frame &frame )
+void FrameObserver::lockMutex()
 {
-    return getFrame();
+    m_framesMutex.lock();
+}
+
+void FrameObserver::unlockMutex()
+{
+    m_framesMutex.unlock();
+}
+
+Frame FrameObserver::getFrameUnsafe() const
+{
+    Frame res;
+
+    if ( !m_sourceMat.empty() ) {
+        res.setTime( m_sourceTime );
+        cv::cvtColor( m_sourceMat, res, cv::COLOR_BayerGB2RGB );
+    }
+
+    return res;
+
+}
+
+std::chrono::time_point< std::chrono::system_clock > FrameObserver::getTimeUnsafe() const
+{
+    return m_sourceTime;
 }
 
 // CameraBase
@@ -98,11 +121,6 @@ Frame CameraBase::getFrame()
     return m_frameObserver->getFrame();
 }
 
-Frame CameraBase::nearestFrame( const Frame &frame )
-{
-    return m_frameObserver->nearestFrame( frame );
-}
-
 void CameraBase::setMaxValue( const char* const name )
 {
     AVT::VmbAPI::FeaturePtr      feature;
@@ -117,6 +135,26 @@ void CameraBase::setMaxValue( const char* const name )
 
     checkVimbaStatus( SP_ACCESS( feature )->SetValue ( value_max ), "Coldn't set maximum value" );
 
+}
+
+void CameraBase::lockMutex()
+{
+    m_frameObserver->lockMutex();
+}
+
+void CameraBase::unlockMutex()
+{
+    m_frameObserver->unlockMutex();
+}
+
+Frame CameraBase::getFrameUnsafe() const
+{
+    return m_frameObserver->getFrameUnsafe();
+}
+
+std::chrono::time_point< std::chrono::system_clock > CameraBase::getTimeUnsafe() const
+{
+    return m_frameObserver->getTimeUnsafe();
 }
 
 // MasterCamera
@@ -219,29 +257,30 @@ void StereoCamera::initialize()
 }
 
 void StereoCamera::updateFrame()
-{
-    auto leftFrame = m_leftCamera.getFrame();
-    if ( !leftFrame.empty() ) {
-        auto rightFrame = m_rightCamera.nearestFrame( leftFrame );
+{    
+    Frame leftFrame;
+    Frame rightFrame;
 
-        if ( !rightFrame.empty() ) {
+    m_leftCamera.lockMutex();
+    m_rightCamera.lockMutex();
 
-            if ( leftFrame.timeDiff( rightFrame ) < 2000 ) {
+    if ( std::abs( std::chrono::duration_cast< std::chrono::microseconds >( m_leftCamera.getTimeUnsafe() - m_rightCamera.getTimeUnsafe() ).count() ) < 2000 ) {
+        leftFrame = m_leftCamera.getFrameUnsafe();
+        rightFrame = m_rightCamera.getFrameUnsafe();
+    }
 
-                m_framesMutex.lock();
-                m_framesQueue.push( StereoFrame( leftFrame, rightFrame ) );
-                m_framesMutex.unlock();
+    m_leftCamera.unlockMutex();
+    m_rightCamera.unlockMutex();
 
-                qDebug() << "Difference time:" << leftFrame.timeDiff( rightFrame ) /*<< "+"*/;
+    if ( !leftFrame.empty() && !rightFrame.empty() ) {
 
-                emit receivedFrame();
+        m_framesMutex.lock();
+        m_framesQueue.push( StereoFrame( leftFrame, rightFrame ) );
+        m_framesMutex.unlock();
 
-            }
-            /*else {
-                qDebug() << "Difference time:" << leftFrame.timeDiff( rightFrame );
-            }*/
+        qDebug() << "Difference time:" << leftFrame.timeDiff( rightFrame );
 
-        }
+        emit receivedFrame();
 
     }
 
