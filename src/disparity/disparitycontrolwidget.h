@@ -11,6 +11,7 @@ class QHBoxLayout;
 class QLabel;
 class QSlider;
 class QSpinBox;
+class QDoubleSpinBox;
 class QStackedWidget;
 
 class IntSliderLayout : public QHBoxLayout
@@ -33,26 +34,63 @@ public slots:
     void setRange( const int minValue, const int maxValue, const int step = 1 );
     void setValue( const int value );
 
+private slots:
+    void updateSliderValue();
+    void updateSpinValue();
+
 protected:
     QPointer< QLabel > m_label;
     QPointer< QSlider > m_slider;
     QPointer< QSpinBox > m_numberWidget;
-
-    int m_stepSize;
-
-    void updateDisplayedValue();
 
 private:
     void initialize( const QString label );
 
 };
 
+class DoubleSliderLayout : public QHBoxLayout
+{
+    Q_OBJECT
+
+public:
+    explicit DoubleSliderLayout( const QString label, QWidget* parent = nullptr );
+
+    double value();
+
+    double stepSize() const;
+    double minimum() const;
+    double maximum() const;
+
+signals:
+    void valueChanged();
+
+public slots:
+    void setRange( const double minValue, const double maxValue, const double step = 1.0 );
+    void setValue( const double value );
+
+private slots:
+    void updateSliderValue();
+    void updateSpinValue();
+
+protected:
+    QPointer< QLabel > m_label;
+    QPointer< QSlider > m_slider;
+    QPointer< QDoubleSpinBox > m_numberWidget;
+
+    static const double m_minStepSize;
+
+private:
+    void initialize( const QString label );
+
+};
+
+
 class TypeComboBox : public QComboBox
 {
     Q_OBJECT
 
 public:
-    enum Type { BM, GM };
+    enum Type { BM, GM, BM_GPU, BP };
 
     explicit TypeComboBox( QWidget *parent = nullptr );
 
@@ -174,6 +212,37 @@ private:
     void initialize();
 };
 
+class BMGPUControlWidget : public QWidget
+{
+    Q_OBJECT
+
+public:
+    BMGPUControlWidget( QWidget* parent = nullptr );
+
+    int prefilterCap() const;
+    int sadWindowSize() const;
+    int numDisparities() const;
+    int textureThreshold() const;
+
+signals:
+    void valueChanged();
+
+public slots:
+    void setPrefilterCap( const int value );
+    void setSadWindowSize( const int value );
+    void setNumDisparities( const int value );
+    void setTextureThreshold( const int value );
+
+protected:
+    QPointer< IntSliderLayout > m_preFilterCapLayout;
+    QPointer< IntSliderLayout > m_sadWindowSizeLayout;
+    QPointer< IntSliderLayout > m_numDisparitiesLayout;
+    QPointer< IntSliderLayout > m_textureThresholdLayout;
+
+private:
+    void initialize();
+};
+
 class GMControlWidget : public QWidget
 {
     Q_OBJECT
@@ -225,6 +294,46 @@ private:
     void initialize();
 };
 
+class BPControlWidget : public QWidget
+{
+    Q_OBJECT
+
+public:
+    BPControlWidget( QWidget* parent = nullptr );
+
+    int numDisparities() const;
+    int numIterations() const;
+    int numLevels() const;
+    double maxDataTerm() const;
+    double dataWeight() const;
+    double maxDiscTerm() const;
+    double discSingleJump() const;
+
+signals:
+    void valueChanged();
+
+public slots:
+    void setNumDisparities( const int value );
+    void setNumIterations( const int value );
+    void setNumLevels( const int value );
+    void setMaxDataTerm( const double value );
+    void setDataWeight( const double value );
+    void setMaxDiscTerm( const double value );
+    void setDiscSingleJump( const double value );
+
+protected:
+    QPointer< IntSliderLayout > m_numDisparitiesLayout;
+    QPointer< IntSliderLayout > m_numIters;
+    QPointer< IntSliderLayout > m_numLevels;
+    QPointer< DoubleSliderLayout > m_maxDataTerm;
+    QPointer< DoubleSliderLayout > m_dataWeight;
+    QPointer< DoubleSliderLayout > m_maxDiscTerm;
+    QPointer< DoubleSliderLayout > m_discSingleJump;
+
+private:
+    void initialize();
+};
+
 class FilterControlWidget : public QWidget
 {
     Q_OBJECT
@@ -245,9 +354,13 @@ public:
 
     BMControlWidget *bmControlWidget() const;
     GMControlWidget *gmControlWidget() const;
+    BMGPUControlWidget *bmGpuControlWidget() const;
+    BPControlWidget *bpControlWidget() const;
 
     bool isBmMethod() const;
     bool isGmMethod() const;
+    bool isBmGpuMethod() const;
+    bool isBpMethod() const;
 
 signals:
     void valueChanged();
@@ -255,6 +368,8 @@ signals:
 public slots:
     void activateBmWidget() const;
     void activateGmWidget() const;
+    void activateBmGpuWidget() const;
+    void activateBpWidget() const;
 
 protected slots:
     void updateStackedWidget();
@@ -266,10 +381,15 @@ protected:
 
     QPointer< BMControlWidget > m_bmControlWidget;
     QPointer< GMControlWidget > m_gmControlWidget;
+    QPointer< BMGPUControlWidget > m_bmGpuControlWidget;
+    QPointer< BPControlWidget > m_bpControlWidget;
+
     QPointer< FilterControlWidget > m_filterControlWidget;
 
     int m_bmControlIndex;
     int m_gmControlIndex;
+    int m_bmGpuControlIndex;
+    int m_bpControlIndex;
 
 private:
     void initialize();

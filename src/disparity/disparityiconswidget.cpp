@@ -17,6 +17,7 @@ DisparityIcon::DisparityIcon( const CvImage &preivewImage, const QString &leftFi
 
 void DisparityIcon::initialize()
 {
+    m_time = std::chrono::system_clock::now();
 }
 
 void DisparityIcon::setLeftFileName( const QString &fileName )
@@ -47,6 +48,21 @@ CvImage DisparityIcon::loadLeftImage() const
 CvImage DisparityIcon::loadRightImage() const
 {
     return CvImage( m_rightFileName );
+}
+
+StereoFrame DisparityIcon::stereoFrame() const
+{
+    return StereoFrame( m_time, loadLeftImage(), loadRightImage() );
+}
+
+void DisparityIcon::setTime( const std::chrono::time_point< std::chrono::system_clock > &time )
+{
+    m_time = time;
+}
+
+const std::chrono::time_point< std::chrono::system_clock > &DisparityIcon::time() const
+{
+    return m_time;
 }
 
 // IconsListWidget

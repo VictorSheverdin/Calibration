@@ -14,7 +14,9 @@ class ImageWidget;
 class DisparityControlWidget;
 class PCLViewer;
 class BMControlWidget;
+class BMGPUControlWidget;
 class GMControlWidget;
+class BPControlWidget;
 class DisparityIcon;
 class DisparityIconsWidget;
 
@@ -46,16 +48,21 @@ public:
 
     BMControlWidget *bmControlWidget() const;
     GMControlWidget *gmControlWidget() const;
+    BMGPUControlWidget *bmGpuControlWidget() const;
+    BPControlWidget *bpControlWidget() const;
 
-    bool loadCalibrationFile( const QString &fileName );
-
-    void updateFrame( const CvImage leftFrame, const CvImage rightFrame );
+    void loadCalibrationFile( const QString &fileName );
 
 signals:
     void valueChanged();
 
 public slots:
+    void processFrame( const StereoFrame &frame );
+
     void loadCalibrationDialog();
+
+private slots:
+    void updateFrame();
 
 protected:
     QPointer< DisparityPreviewWidget > m_view;
@@ -66,8 +73,14 @@ protected:
 
     std::shared_ptr< BMDisparityProcessor > m_bmProcessor;
     std::shared_ptr< GMDisparityProcessor > m_gmProcessor;
+    std::shared_ptr< BMGPUDisparityProcessor > m_bmGpuProcessor;
+    std::shared_ptr< BPDisparityProcessor > m_bpProcessor;
 
-    StereoProcessor m_processor;
+    std::shared_ptr< StereoProcessor > m_processor;
+
+    ProcessorThread m_processorThread;
+
+    // std::chrono::time_point< std::chrono::system_clock > m_time;
 
 private:
     void initialize();
@@ -103,7 +116,7 @@ public:
     BMControlWidget *bmControlWidget() const;
     GMControlWidget *gmControlWidget() const;
 
-    bool loadCalibrationFile( const QString &fileName );
+    void loadCalibrationFile( const QString &fileName );
     void addIcon( const QString &leftFileName, const QString &rightFileName );
 
     int m_iconCount;

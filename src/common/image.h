@@ -62,7 +62,23 @@ protected:
 
 };
 
-class Frame : public CvImage
+class FrameBase
+{
+public:
+    FrameBase();
+    FrameBase( const std::chrono::time_point< std::chrono::system_clock > &time );
+
+    void setTime( const std::chrono::time_point< std::chrono::system_clock > &time );
+    const std::chrono::time_point< std::chrono::system_clock > &time() const;
+
+protected:
+    std::chrono::time_point< std::chrono::system_clock > m_time;
+
+private:
+    void initialize();
+};
+
+class Frame : public CvImage, public FrameBase
 {
 public:
     Frame();
@@ -72,24 +88,22 @@ public:
 
     int64_t timeDiff( const Frame &other ) const;
 
-    void setTime( const std::chrono::time_point< std::chrono::system_clock > &time );
-    const std::chrono::time_point< std::chrono::system_clock > &time() const;
-
-protected:
-    std::chrono::time_point< std::chrono::system_clock > m_time;
-
-    static const std::chrono::time_point< std::chrono::system_clock > m_startTime;
-
 private:
     void initialize();
 
 };
 
-class StereoFrame
+class StereoFrame : public FrameBase
 {
 public:
     StereoFrame();
+    StereoFrame( const std::chrono::time_point< std::chrono::system_clock > &time );
+
+    StereoFrame( const std::chrono::time_point< std::chrono::system_clock > &time, const Frame &leftFrame, const Frame &rightFrame );
     StereoFrame( const Frame &leftFrame, const Frame &rightFrame );
+
+    StereoFrame( const std::chrono::time_point< std::chrono::system_clock > &time, const StereoImage &image );
+    StereoFrame( const StereoImage &image );
 
     const Frame &leftFrame() const;
     void setLeftFrame( const Frame &frame );
@@ -101,8 +115,13 @@ public:
 
     bool empty() const;
 
+    operator StereoImage();
+
 protected:
     Frame m_leftFrame;
     Frame m_rightFrame;
+
+private:
+    void initialize();
 
 };

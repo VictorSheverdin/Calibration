@@ -181,6 +181,34 @@ bool StereoImage::empty() const
     return m_leftImage.empty() || m_rightImage.empty();
 }
 
+// FrameBase
+FrameBase::FrameBase()
+{
+    initialize();
+}
+
+FrameBase::FrameBase( const std::chrono::time_point< std::chrono::system_clock > &time )
+{
+    initialize();
+
+    setTime( time );
+}
+
+void FrameBase::initialize()
+{
+    m_time = std::chrono::system_clock::now();
+}
+
+void FrameBase::setTime( const std::chrono::time_point< std::chrono::system_clock > &time )
+{
+    m_time = time;
+}
+
+const std::chrono::time_point< std::chrono::system_clock > &FrameBase::time() const
+{
+    return m_time;
+}
+
 // Frame
 Frame::Frame()
     : CvImage()
@@ -208,7 +236,6 @@ Frame::Frame( const QtImage &img )
 
 void Frame::initialize()
 {
-    m_time = std::chrono::system_clock::now();
 }
 
 int64_t Frame::timeDiff( const Frame &other ) const
@@ -216,25 +243,57 @@ int64_t Frame::timeDiff( const Frame &other ) const
     return std::abs( std::chrono::duration_cast< std::chrono::microseconds >( m_time - other.m_time ).count() );
 }
 
-void Frame::setTime( const std::chrono::time_point< std::chrono::system_clock > &time )
-{
-    m_time = time;
-}
-
-const std::chrono::time_point< std::chrono::system_clock > &Frame::time() const
-{
-    return m_time;
-}
-
 // StereoFrame
 StereoFrame::StereoFrame()
+    : FrameBase()
 {
+    initialize();
+}
+
+StereoFrame::StereoFrame( const std::chrono::time_point< std::chrono::system_clock > &time )
+    : FrameBase( time )
+{
+    initialize();
+}
+
+StereoFrame::StereoFrame( const std::chrono::time_point< std::chrono::system_clock > &time, const Frame &leftFrame, const Frame &rightFrame )
+    : FrameBase( time )
+{
+    initialize();
+
+    setLeftFrame( leftFrame );
+    setRightFrame( rightFrame );
 }
 
 StereoFrame::StereoFrame( const Frame &leftFrame, const Frame &rightFrame )
+    : FrameBase()
 {
+    initialize();
+
     setLeftFrame( leftFrame );
     setRightFrame( rightFrame );
+}
+
+StereoFrame::StereoFrame( const std::chrono::time_point< std::chrono::system_clock > &time, const StereoImage &image )
+    : FrameBase( time )
+{
+    initialize();
+
+    setLeftFrame( image.leftImage() );
+    setRightFrame( image.rightImage() );
+}
+
+StereoFrame::StereoFrame( const StereoImage &image )
+    : FrameBase()
+{
+    initialize();
+
+    setLeftFrame( image.leftImage() );
+    setRightFrame( image.rightImage() );
+}
+
+void StereoFrame::initialize()
+{
 }
 
 const Frame &StereoFrame::leftFrame() const
@@ -265,4 +324,9 @@ int StereoFrame::timeDiff() const
 bool StereoFrame::empty() const
 {
     return m_leftFrame.empty() || m_rightFrame.empty();
+}
+
+StereoFrame::operator StereoImage()
+{
+    return StereoImage( m_leftFrame, m_rightFrame );
 }

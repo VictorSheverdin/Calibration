@@ -13,8 +13,6 @@ IntSliderLayout::IntSliderLayout( const QString label, QWidget* parent )
 
 void IntSliderLayout::initialize( const QString label )
 {
-    m_stepSize = 1;
-
     m_label = new QLabel( label );
     m_slider = new QSlider( Qt::Horizontal );
     m_numberWidget = new QSpinBox();
@@ -26,62 +24,164 @@ void IntSliderLayout::initialize( const QString label )
 
     addWidget( m_numberWidget );
 
-    connect( m_slider, &QSlider::valueChanged, this, &IntSliderLayout::updateDisplayedValue );
-    connect( m_slider, &QSlider::valueChanged, this, &IntSliderLayout::valueChanged );
+    connect( m_numberWidget, static_cast< void ( QSpinBox::* )( int ) >( &QSpinBox::valueChanged ), this, &IntSliderLayout::updateSliderValue );
+    connect( m_slider, &QSlider::valueChanged, this, &IntSliderLayout::updateSpinValue );
 
-    updateDisplayedValue();
+    connect( m_numberWidget, static_cast< void ( QSpinBox::* )( int ) >( &QSpinBox::valueChanged ), this, &IntSliderLayout::valueChanged );
+
+    setRange( 0, 100, 1 );
+
+    updateSliderValue();
+    updateSpinValue();
 
 }
 
 int IntSliderLayout::value()
 {
-    return m_slider->minimum() + ( m_slider->value() - m_slider->minimum() ) * m_stepSize;
+    return m_numberWidget->value();
 }
 
 int IntSliderLayout::stepSize() const
 {
-    return m_stepSize;
+    return m_numberWidget->singleStep();
 }
 
 int IntSliderLayout::minimum() const
 {
-    return m_slider->minimum();
+    return m_numberWidget->minimum();
 }
 
 int IntSliderLayout::maximum() const
 {
-    return m_slider->minimum() + ( m_slider->maximum() - m_slider->maximum() ) * m_stepSize;
+    return m_numberWidget->maximum();
 }
 
 void IntSliderLayout::setRange( const int minValue, const int maxValue, const int step )
 {
     auto normStep = std::max( 1, step );
 
-    m_stepSize = normStep;
-
-    m_slider->setMinimum( minValue );
-    m_slider->setMaximum( minValue + ( maxValue - minValue ) / m_stepSize );
-
     m_numberWidget->setMinimum( minValue );
     m_numberWidget->setMaximum( maxValue );
     m_numberWidget->setSingleStep( normStep );
+
+    m_slider->setMinimum( 0 );
+    m_slider->setMaximum( ( m_numberWidget->maximum() - m_numberWidget->minimum() ) / m_numberWidget->singleStep() );
 
 }
 
 void IntSliderLayout::setValue( const int value )
 {
-    auto newValue = m_slider->minimum() + ( value - m_slider->minimum() ) / m_stepSize;
-
-    if ( m_slider->value() != newValue )
-        m_slider->setValue( newValue );
+    if ( m_numberWidget->value() != value )
+        m_numberWidget->setValue( value );
 }
 
-void IntSliderLayout::updateDisplayedValue()
+void IntSliderLayout::updateSliderValue()
 {
-    auto newValue = value();
+    auto value = ( m_numberWidget->value() - m_numberWidget->minimum() ) / m_numberWidget->singleStep();
 
-    if ( m_numberWidget->value() != newValue )
-        m_numberWidget->setValue( newValue );
+    if ( m_slider->value() != value )
+        m_slider->setValue( value );
+
+}
+
+void IntSliderLayout::updateSpinValue()
+{
+    auto value = m_numberWidget->minimum() + m_slider->value() * m_numberWidget->singleStep();
+
+    if ( m_numberWidget->value() != value )
+        m_numberWidget->setValue( value );
+
+}
+
+// DoubleSliderLayout
+const double DoubleSliderLayout::m_minStepSize = 1e-4;
+
+DoubleSliderLayout::DoubleSliderLayout( const QString label, QWidget* parent )
+    : QHBoxLayout( parent )
+{
+    initialize( label );
+}
+
+void DoubleSliderLayout::initialize( const QString label )
+{
+    m_label = new QLabel( label );
+    m_slider = new QSlider( Qt::Horizontal );
+    m_numberWidget = new QDoubleSpinBox();
+    m_numberWidget->setAlignment( Qt::AlignVCenter | Qt::AlignRight );
+    m_numberWidget->setFixedWidth( 70 );
+
+    addWidget( m_label );
+    addWidget( m_slider );
+
+    addWidget( m_numberWidget );
+
+    connect( m_numberWidget, static_cast< void ( QDoubleSpinBox::* )( double ) >( &QDoubleSpinBox::valueChanged ), this, &DoubleSliderLayout::updateSliderValue );
+    connect( m_slider, &QSlider::valueChanged, this, &DoubleSliderLayout::updateSpinValue );
+
+    connect( m_numberWidget, static_cast< void ( QDoubleSpinBox::* )( double ) >( &QDoubleSpinBox::valueChanged ), this, &DoubleSliderLayout::valueChanged );
+
+    setRange( 0.0, 100.0, 1.0 );
+
+    updateSliderValue();
+    updateSpinValue();
+
+}
+
+double DoubleSliderLayout::value()
+{
+    return m_numberWidget->value();
+}
+
+double DoubleSliderLayout::stepSize() const
+{
+    return m_numberWidget->singleStep();
+}
+
+double DoubleSliderLayout::minimum() const
+{
+    return m_numberWidget->minimum();
+}
+
+double DoubleSliderLayout::maximum() const
+{
+    return m_numberWidget->maximum();
+}
+
+void DoubleSliderLayout::setRange( const double minValue, const double maxValue, const double step )
+{
+    auto normStep = std::max( m_minStepSize, step );
+
+    m_numberWidget->setMinimum( minValue );
+    m_numberWidget->setMaximum( maxValue );
+    m_numberWidget->setSingleStep( normStep );
+
+    m_slider->setMinimum( 0 );
+    m_slider->setMaximum( ( m_numberWidget->maximum() - m_numberWidget->minimum() ) / m_numberWidget->singleStep() );
+
+}
+
+void DoubleSliderLayout::setValue( const double value )
+{
+    if ( m_numberWidget->value() != value )
+        m_numberWidget->setValue( value );
+}
+
+void DoubleSliderLayout::updateSliderValue()
+{
+    auto value = ( m_numberWidget->value() - m_numberWidget->minimum() ) / m_numberWidget->singleStep();
+
+    if ( m_slider->value() != value )
+        m_slider->setValue( value );
+
+}
+
+void DoubleSliderLayout::updateSpinValue()
+{
+    auto value = m_numberWidget->minimum() + m_slider->value() * m_numberWidget->singleStep();
+
+    if ( m_numberWidget->value() != value )
+        m_numberWidget->setValue( value );
+
 }
 
 // TypeComboBox
@@ -95,6 +195,8 @@ void TypeComboBox::initialize()
 {
     addItem( tr( "Block matching" ), Type::BM );
     addItem( tr( "Global matching" ), Type::GM );
+    addItem( tr( "GPU Block matching" ), Type::BM_GPU );
+    addItem( tr( "Belief Propagation" ), Type::BP );
 }
 
 TypeComboBox::Type TypeComboBox::currentType() const
@@ -215,19 +317,19 @@ void BMControlWidget::initialize()
     layout->addLayout( m_speckleRangeLayout );
 
     m_disp12MaxDiffLayout = new IntSliderLayout( tr( "Max difference" ) );
-    m_disp12MaxDiffLayout->setRange( 0, 1000 );
+    m_disp12MaxDiffLayout->setRange( 0, 10000 );
     layout->addLayout( m_disp12MaxDiffLayout );
 
     layout->addStretch();
 
     setSadWindowSize( 12 );
-    setPrefilterSize( 100 );
-    setPrefilterCap( 50 );
+    setPrefilterSize( 15 );
+    setPrefilterCap( 63 );
     setMinDisparity( -128 );
     setNumDisparities( 256 );
-    setTextureThreshold( 700 );
-    setUniquessRatio( 10 );
-    setSpeckleWindowSize( 70 );
+    setTextureThreshold( 0 );
+    setUniquessRatio( 27 );
+    setSpeckleWindowSize( 45 );
     setSpeckleRange( 10 );
     setDisp12MaxDiff( 0 );
 
@@ -344,6 +446,87 @@ void BMControlWidget::setDisp12MaxDiff( const int value )
     m_disp12MaxDiffLayout->setValue( value );
 }
 
+// BMGPUControlWidget
+BMGPUControlWidget::BMGPUControlWidget( QWidget* parent )
+    : QWidget( parent )
+{
+    initialize();
+}
+
+void BMGPUControlWidget::initialize()
+{
+    auto layout = new QVBoxLayout( this );
+
+    m_preFilterCapLayout = new IntSliderLayout( tr("Prefilter cap" ) );
+    layout->addLayout( m_preFilterCapLayout );
+    m_preFilterCapLayout->setRange( 1, 63 );
+
+    m_sadWindowSizeLayout = new IntSliderLayout( tr("SAD Window size" ) );
+    m_sadWindowSizeLayout->setRange( 5, 255, 2 );
+    layout->addLayout( m_sadWindowSizeLayout );
+
+    m_numDisparitiesLayout = new IntSliderLayout( tr( "Number of disparities" ) );
+    m_numDisparitiesLayout->setRange( 16, 256, 16 );
+    layout->addLayout( m_numDisparitiesLayout );
+
+    m_textureThresholdLayout = new IntSliderLayout( tr( "Texture threshold" ) );
+    m_textureThresholdLayout->setRange( 0, 1000 );
+    layout->addLayout( m_textureThresholdLayout );
+
+    layout->addStretch();
+
+    setSadWindowSize( 12 );
+    setPrefilterCap( 63 );
+    setNumDisparities( 256 );
+    setTextureThreshold( 10 );
+
+    connect( m_preFilterCapLayout, &IntSliderLayout::valueChanged, this, &BMGPUControlWidget::valueChanged );
+    connect( m_sadWindowSizeLayout, &IntSliderLayout::valueChanged, this, &BMGPUControlWidget::valueChanged );
+    connect( m_numDisparitiesLayout, &IntSliderLayout::valueChanged, this, &BMGPUControlWidget::valueChanged );
+    connect( m_textureThresholdLayout, &IntSliderLayout::valueChanged, this, &BMGPUControlWidget::valueChanged );
+
+}
+
+int BMGPUControlWidget::prefilterCap() const
+{
+    return m_preFilterCapLayout->value();
+}
+
+int BMGPUControlWidget::sadWindowSize() const
+{
+    return m_sadWindowSizeLayout->value();
+}
+
+int BMGPUControlWidget::numDisparities() const
+{
+    return m_numDisparitiesLayout->value();
+}
+
+int BMGPUControlWidget::textureThreshold() const
+{
+    return m_textureThresholdLayout->value();
+}
+
+void BMGPUControlWidget::setPrefilterCap( const int value )
+{
+    m_preFilterCapLayout->setValue( value );
+}
+
+void BMGPUControlWidget::setSadWindowSize( const int value )
+{
+    m_sadWindowSizeLayout->setValue( value );
+}
+
+void BMGPUControlWidget::setNumDisparities( const int value )
+{
+    m_numDisparitiesLayout->setValue( value );
+}
+
+void BMGPUControlWidget::setTextureThreshold( const int value )
+{
+    m_textureThresholdLayout->setValue( value );
+}
+
 // GMControlWidget
 GMControlWidget::GMControlWidget( QWidget* parent )
     : QWidget( parent )
@@ -384,7 +567,7 @@ void GMControlWidget::initialize()
     layout->addLayout( m_speckleRangeLayout );
 
     m_disp12MaxDiffLayout = new IntSliderLayout( tr( "Max difference" ) );
-    m_disp12MaxDiffLayout->setRange( 0, 1000 );
+    m_disp12MaxDiffLayout->setRange( 0, 10000 );
     layout->addLayout( m_disp12MaxDiffLayout );
 
     m_p1Layout = new IntSliderLayout( tr( "P1" ) );
@@ -401,8 +584,8 @@ void GMControlWidget::initialize()
     setPrefilterCap( 50 );
     setMinDisparity( -128 );
     setNumDisparities( 256 );
-    setUniquessRatio( 10 );
-    setSpeckleWindowSize( 70 );
+    setUniquessRatio( 30 );
+    setSpeckleWindowSize( 20 );
     setSpeckleRange( 10 );
     setDisp12MaxDiff( 0 );
     setP1(0);
@@ -527,6 +710,135 @@ void GMControlWidget::setP2(int p2)
     m_p2Layout->setValue( p2 );
 }
 
+// BPControlWidget
+BPControlWidget::BPControlWidget( QWidget* parent )
+    : QWidget( parent )
+{
+    initialize();
+}
+
+void BPControlWidget::initialize()
+{
+    auto layout = new QVBoxLayout( this );
+
+    m_numDisparitiesLayout = new IntSliderLayout( tr( "Number of disparities" ) );
+    m_numDisparitiesLayout->setRange( 16, 256, 16 );
+    layout->addLayout( m_numDisparitiesLayout );
+
+    m_numIters = new IntSliderLayout( tr("Number of iterations" ) );
+    layout->addLayout( m_numIters );
+    m_numIters->setRange( 0, 100 );
+
+    m_numLevels = new IntSliderLayout( tr("Number of levels" ) );
+    layout->addLayout( m_numLevels );
+    m_numLevels->setRange( 0, 100 );
+
+    m_maxDataTerm = new DoubleSliderLayout( tr("Max data term" ) );
+    layout->addLayout( m_maxDataTerm );
+    m_maxDataTerm->setRange( 0, 100 );
+
+    m_dataWeight = new DoubleSliderLayout( tr("Data weight" ) );
+    layout->addLayout( m_dataWeight );
+    m_dataWeight->setRange( 0, 10, 0.01 );
+
+    m_maxDiscTerm = new DoubleSliderLayout( tr("Max disc term" ) );
+    layout->addLayout( m_maxDiscTerm );
+    m_maxDiscTerm->setRange( 0, 10, 0.1 );
+
+    m_discSingleJump = new DoubleSliderLayout( tr("Disc single jump" ) );
+    layout->addLayout( m_discSingleJump );
+    m_discSingleJump->setRange( 0, 100 );
+
+    layout->addStretch();
+
+    setNumDisparities( 64 );
+    setNumIterations( 5 );
+    setNumLevels( 5 );
+    setMaxDataTerm( 10.0 );
+    setDataWeight( 0.07 );
+    setMaxDiscTerm( 1.7 );
+    setDiscSingleJump( 1.0 );
+
+    connect( m_numDisparitiesLayout, &IntSliderLayout::valueChanged, this, &BPControlWidget::valueChanged );
+    connect( m_numIters, &IntSliderLayout::valueChanged, this, &BPControlWidget::valueChanged );
+    connect( m_numLevels, &IntSliderLayout::valueChanged, this, &BPControlWidget::valueChanged );
+    connect( m_maxDataTerm, &DoubleSliderLayout::valueChanged, this, &BPControlWidget::valueChanged );
+    connect( m_dataWeight, &DoubleSliderLayout::valueChanged, this, &BPControlWidget::valueChanged );
+    connect( m_maxDiscTerm, &DoubleSliderLayout::valueChanged, this, &BPControlWidget::valueChanged );
+    connect( m_discSingleJump, &DoubleSliderLayout::valueChanged, this, &BPControlWidget::valueChanged );
+
+}
+
+int BPControlWidget::numDisparities() const
+{
+    return m_numDisparitiesLayout->value();
+}
+
+int BPControlWidget::numIterations() const
+{
+    return m_numIters->value();
+}
+
+int BPControlWidget::numLevels() const
+{
+    return m_numLevels->value();
+}
+
+double BPControlWidget::maxDataTerm() const
+{
+    return m_maxDataTerm->value();
+}
+
+double BPControlWidget::dataWeight() const
+{
+    return m_dataWeight->value();
+}
+
+double BPControlWidget::maxDiscTerm() const
+{
+    return m_maxDiscTerm->value();
+}
+
+double BPControlWidget::discSingleJump() const
+{
+    return m_discSingleJump->value();
+}
+
+void BPControlWidget::setNumDisparities( const int value )
+{
+    m_numDisparitiesLayout->setValue( value );
+}
+
+void BPControlWidget::setNumIterations( const int value )
+{
+    m_numIters->setValue( value );
+}
+
+void BPControlWidget::setNumLevels( const int value )
+{
+    m_numLevels->setValue( value );
+}
+
+void BPControlWidget::setMaxDataTerm( const double value )
+{
+    m_maxDataTerm->setValue( value );
+}
+
+void BPControlWidget::setDataWeight( const double value )
+{
+    m_dataWeight->setValue( value );
+}
+
+void BPControlWidget::setMaxDiscTerm( const double value )
+{
+    m_maxDiscTerm->setValue( value );
+}
+
+void BPControlWidget::setDiscSingleJump( const double value )
+{
+    m_discSingleJump->setValue( value );
+}
+
 // FilterControlWidget
 FilterControlWidget::FilterControlWidget( QWidget* parent )
     : QWidget( parent )
@@ -541,7 +853,7 @@ void FilterControlWidget::initialize()
 
 // DisparityControlWidget
 DisparityControlWidget::DisparityControlWidget( QWidget* parent )
-    : QWidget( nullptr )
+    : QWidget( parent )
 {
     initialize();
 }
@@ -561,9 +873,13 @@ void DisparityControlWidget::initialize()
 
     m_bmControlWidget = new BMControlWidget( this );
     m_gmControlWidget = new GMControlWidget( this );
+    m_bmGpuControlWidget = new BMGPUControlWidget( this );
+    m_bpControlWidget = new BPControlWidget( this );
 
     m_bmControlIndex = m_stack->addWidget( m_bmControlWidget );
     m_gmControlIndex = m_stack->addWidget( m_gmControlWidget );
+    m_bmGpuControlIndex = m_stack->addWidget( m_bmGpuControlWidget );
+    m_bpControlIndex = m_stack->addWidget( m_bpControlWidget );
 
     m_filterControlWidget = new FilterControlWidget( this );
 
@@ -572,8 +888,11 @@ void DisparityControlWidget::initialize()
     connect( m_typeLayout, &TypeLayout::currentIndexChanged, this, &DisparityControlWidget::updateStackedWidget );
 
     connect( m_typeLayout, &TypeLayout::currentIndexChanged, this, &DisparityControlWidget::valueChanged );
+
     connect( m_bmControlWidget, &BMControlWidget::valueChanged, this, &DisparityControlWidget::valueChanged );
     connect( m_gmControlWidget, &GMControlWidget::valueChanged, this, &DisparityControlWidget::valueChanged );
+    connect( m_bmGpuControlWidget, &BMGPUControlWidget::valueChanged, this, &DisparityControlWidget::valueChanged );
+    connect( m_bpControlWidget, &BPControlWidget::valueChanged, this, &DisparityControlWidget::valueChanged );
 
     updateStackedWidget();
 
@@ -589,6 +908,16 @@ GMControlWidget *DisparityControlWidget::gmControlWidget() const
     return m_gmControlWidget;
 }
 
+BMGPUControlWidget *DisparityControlWidget::bmGpuControlWidget() const
+{
+    return m_bmGpuControlWidget;
+}
+
+BPControlWidget *DisparityControlWidget::bpControlWidget() const
+{
+    return m_bpControlWidget;
+}
+
 bool DisparityControlWidget::isBmMethod() const
 {
     return m_typeLayout->value() == TypeComboBox::BM;
@@ -597,6 +926,16 @@ bool DisparityControlWidget::isBmMethod() const
 bool DisparityControlWidget::isGmMethod() const
 {
     return m_typeLayout->value() == TypeComboBox::GM;
+}
+
+bool DisparityControlWidget::isBmGpuMethod() const
+{
+    return m_typeLayout->value() == TypeComboBox::BM_GPU;
+}
+
+bool DisparityControlWidget::isBpMethod() const
+{
+    return m_typeLayout->value() == TypeComboBox::BP;
 }
 
 void DisparityControlWidget::activateBmWidget() const
@@ -609,11 +948,25 @@ void DisparityControlWidget::activateGmWidget() const
     m_stack->setCurrentIndex( m_gmControlIndex );
 }
 
+void DisparityControlWidget::activateBmGpuWidget() const
+{
+    m_stack->setCurrentIndex( m_bmGpuControlIndex );
+}
+
+void DisparityControlWidget::activateBpWidget() const
+{
+    m_stack->setCurrentIndex( m_bpControlIndex );
+}
+
 void DisparityControlWidget::updateStackedWidget()
 {
     if ( m_typeLayout->value() == TypeComboBox::BM )
         activateBmWidget();
     else if (m_typeLayout->value() == TypeComboBox::GM )
         activateGmWidget();
+    else if (m_typeLayout->value() == TypeComboBox::BM_GPU )
+        activateBmGpuWidget();
+    else if (m_typeLayout->value() == TypeComboBox::BP )
+        activateBpWidget();
 
 }

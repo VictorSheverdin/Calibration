@@ -55,9 +55,6 @@ void DisparityWidgetBase::initialize()
 {
     setAttribute( Qt::WA_DeleteOnClose );
 
-    m_bmProcessor = std::shared_ptr<BMDisparityProcessor>( new BMDisparityProcessor );
-    m_gmProcessor = std::shared_ptr<GMDisparityProcessor>( new GMDisparityProcessor );
-
     auto tabWidget = new QTabWidget( this );
 
     m_view = new DisparityPreviewWidget( this );
@@ -73,6 +70,18 @@ void DisparityWidgetBase::initialize()
     addWidget( m_controlWidget );
 
     connect( m_controlWidget, &DisparityControlWidget::valueChanged, this, &DisparityWidgetBase::valueChanged );
+
+    m_bmProcessor = std::shared_ptr< BMDisparityProcessor >( new BMDisparityProcessor );
+    m_gmProcessor = std::shared_ptr< GMDisparityProcessor >( new GMDisparityProcessor );
+    m_bmGpuProcessor = std::shared_ptr< BMGPUDisparityProcessor >( new BMGPUDisparityProcessor );
+    m_bpProcessor = std::shared_ptr< BPDisparityProcessor >( new BPDisparityProcessor );
+
+    m_processor = std::shared_ptr<StereoProcessor>( new StereoProcessor );
+
+    m_processorThread.setProcessor( m_processor );
+
+    connect( &m_processorThread, &ProcessorThread::frameProcessed, this, &DisparityWidgetBase::updateFrame );
+
 }
 
 BMControlWidget *DisparityWidgetBase::bmControlWidget() const
@@ -85,9 +94,19 @@ GMControlWidget *DisparityWidgetBase::gmControlWidget() const
     return m_controlWidget->gmControlWidget();
 }
 
-bool DisparityWidgetBase::loadCalibrationFile( const QString &fileName )
+BMGPUControlWidget *DisparityWidgetBase::bmGpuControlWidget() const
 {
-    return m_processor.loadYaml( fileName.toStdString() );
+    return m_controlWidget->bmGpuControlWidget();
+}
+
+BPControlWidget *DisparityWidgetBase::bpControlWidget() const
+{
+    return m_controlWidget->bpControlWidget();
+}
+
+void DisparityWidgetBase::loadCalibrationFile( const QString &fileName )
+{
+    m_processor->loadYaml( fileName.toStdString() );
 }
 
 void DisparityWidgetBase::loadCalibrationDialog()
@@ -96,60 +115,90 @@ void DisparityWidgetBase::loadCalibrationDialog()
                         this,
                         tr( "Select calibration file" ),
                         QString(),
-                        "Calibration files (*.yaml)" );
+                        "Calibration files (*.yaml)"
+                );
 
     if ( !file.isEmpty() )
         loadCalibrationFile( file );
 }
 
-void DisparityWidgetBase::updateFrame(const CvImage leftFrame, const CvImage rightFrame)
+void DisparityWidgetBase::processFrame( const StereoFrame &frame )
 {
-     if ( !leftFrame.empty() && !rightFrame.empty() ) {
+     if ( !frame.empty() ) {
 
         if ( m_controlWidget->isBmMethod() ) {
-            m_bmProcessor->setBlockSize( m_controlWidget->bmControlWidget()->sadWindowSize() );
-            m_bmProcessor->setMinDisparity( m_controlWidget->bmControlWidget()->minDisparity() );
-            m_bmProcessor->setNumDisparities( m_controlWidget->bmControlWidget()->numDisparities() );
-            m_bmProcessor->setPreFilterSize( m_controlWidget->bmControlWidget()->prefilterSize() );
-            m_bmProcessor->setPreFilterCap( m_controlWidget->bmControlWidget()->prefilterCap() );
-            m_bmProcessor->setTextureThreshold( m_controlWidget->bmControlWidget()->textureThreshold() );
-            m_bmProcessor->setUniquenessRatio( m_controlWidget->bmControlWidget()->uniquessRatio() );
-            m_bmProcessor->setSpeckleWindowSize( m_controlWidget->bmControlWidget()->speckleWindowSize() );
-            m_bmProcessor->setSpeckleRange( m_controlWidget->bmControlWidget()->speckleRange() );
-            m_bmProcessor->setDisp12MaxDiff( m_controlWidget->bmControlWidget()->disp12MaxDiff() );
+            m_bmProcessor->setBlockSize( bmControlWidget()->sadWindowSize() );
+            m_bmProcessor->setMinDisparity( bmControlWidget()->minDisparity() );
+            m_bmProcessor->setNumDisparities( bmControlWidget()->numDisparities() );
+            m_bmProcessor->setPreFilterSize( bmControlWidget()->prefilterSize() );
+            m_bmProcessor->setPreFilterCap( bmControlWidget()->prefilterCap() );
+            m_bmProcessor->setTextureThreshold( bmControlWidget()->textureThreshold() );
+            m_bmProcessor->setUniquenessRatio( bmControlWidget()->uniquessRatio() );
+            m_bmProcessor->setSpeckleWindowSize( bmControlWidget()->speckleWindowSize() );
+            m_bmProcessor->setSpeckleRange( bmControlWidget()->speckleRange() );
+            m_bmProcessor->setDisp12MaxDiff( bmControlWidget()->disp12MaxDiff() );
 
-            m_processor.setDisparityProcessor( m_bmProcessor );
+            m_processor->setDisparityProcessor( m_bmProcessor );
+
+        }
+        else if ( m_controlWidget->isBmGpuMethod() ) {
+            m_bmGpuProcessor->setBlockSize( bmGpuControlWidget()->sadWindowSize() );
+            m_bmGpuProcessor->setNumDisparities( bmGpuControlWidget()->numDisparities() );
+            m_bmGpuProcessor->setPreFilterCap( bmGpuControlWidget()->prefilterCap() );
+            m_bmGpuProcessor->setTextureThreshold( bmGpuControlWidget()->textureThreshold() );
+
+            m_processor->setDisparityProcessor( m_bmGpuProcessor );
+
         }
         else if ( m_controlWidget->isGmMethod() ) {
-            m_gmProcessor->setMode( m_controlWidget->gmControlWidget()->mode() );
-            m_gmProcessor->setPreFilterCap( m_controlWidget->gmControlWidget()->prefilterCap() );
-            m_gmProcessor->setBlockSize( m_controlWidget->gmControlWidget()->sadWindowSize() );
-            m_gmProcessor->setMinDisparity( m_controlWidget->gmControlWidget()->minDisparity() );
-            m_gmProcessor->setNumDisparities( m_controlWidget->gmControlWidget()->numDisparities() );
-            m_gmProcessor->setUniquenessRatio( m_controlWidget->gmControlWidget()->uniquessRatio() );
-            m_gmProcessor->setSpeckleWindowSize( m_controlWidget->gmControlWidget()->speckleWindowSize() );
-            m_gmProcessor->setSpeckleRange( m_controlWidget->gmControlWidget()->speckleRange() );
-            m_gmProcessor->setDisp12MaxDiff( m_controlWidget->gmControlWidget()->disp12MaxDiff() );
-            m_gmProcessor->setP1( m_controlWidget->gmControlWidget()->p1() );
-            m_gmProcessor->setP2( m_controlWidget->gmControlWidget()->p2() );
+            m_gmProcessor->setMode( gmControlWidget()->mode() );
+            m_gmProcessor->setPreFilterCap( gmControlWidget()->prefilterCap() );
+            m_gmProcessor->setBlockSize( gmControlWidget()->sadWindowSize() );
+            m_gmProcessor->setMinDisparity( gmControlWidget()->minDisparity() );
+            m_gmProcessor->setNumDisparities( gmControlWidget()->numDisparities() );
+            m_gmProcessor->setUniquenessRatio( gmControlWidget()->uniquessRatio() );
+            m_gmProcessor->setSpeckleWindowSize( gmControlWidget()->speckleWindowSize() );
+            m_gmProcessor->setSpeckleRange( gmControlWidget()->speckleRange() );
+            m_gmProcessor->setDisp12MaxDiff( gmControlWidget()->disp12MaxDiff() );
+            m_gmProcessor->setP1( gmControlWidget()->p1() );
+            m_gmProcessor->setP2( gmControlWidget()->p2() );
 
-            m_processor.setDisparityProcessor( m_gmProcessor );
+            m_processor->setDisparityProcessor( m_gmProcessor );
+
+        }
+        else if ( m_controlWidget->isBpMethod() ) {
+            m_bpProcessor->setNumDisparities( bpControlWidget()->numDisparities() );
+            m_bpProcessor->setNumIterations( bpControlWidget()->numIterations() );
+            m_bpProcessor->setNumLevels( bpControlWidget()->numLevels() );
+            m_bpProcessor->setMaxDataTerm( bpControlWidget()->maxDataTerm() );
+            m_bpProcessor->setDataWeight( bpControlWidget()->dataWeight() );
+            m_bpProcessor->setMaxDiscTerm( bpControlWidget()->maxDiscTerm() );
+            m_bpProcessor->setDiscSingleJump( bpControlWidget()->discSingleJump() );
+
+            m_processor->setDisparityProcessor( m_bpProcessor );
 
         }
 
-        auto stereoResult = m_processor.process( leftFrame, rightFrame );
-
-        m_view->rectifyView()->setImage( stereoResult.previewImage() );
-
-        m_view->disparityView()->setImage( stereoResult.colorizedDisparity() );
-
-        if ( stereoResult.pointCloud() && !stereoResult.pointCloud()->empty() ) {
-            m_3dWidget->setPointCloud( stereoResult.pointCloud() );
-            m_3dWidget->update();
-
-        }
+        m_processorThread.process( frame );
 
     }
+
+}
+
+void DisparityWidgetBase::updateFrame()
+{
+    auto result = m_processorThread.result();
+
+    m_view->rectifyView()->setImage( result.previewImage() );
+
+    m_view->disparityView()->setImage( result.colorizedDisparity() );
+
+    if ( result.pointCloud() && !result.pointCloud()->empty() ) {
+        m_3dWidget->setPointCloud( result.pointCloud() );
+        m_3dWidget->update();
+
+    }
+
 
 }
 
@@ -172,10 +221,7 @@ void CameraDisparityWidget::updateFrame()
 
         auto frame = m_camera.getFrame();
 
-        auto leftFrame = frame.leftFrame();
-        auto rightFrame = frame.rightFrame();
-
-        DisparityWidgetBase::updateFrame( leftFrame, rightFrame );
+        DisparityWidgetBase::processFrame( frame );
 
         m_updateMutex.unlock();
 
@@ -220,9 +266,9 @@ GMControlWidget *ImageDisparityWidget::gmControlWidget() const
     return m_disparityWidget->gmControlWidget();
 }
 
-bool ImageDisparityWidget::loadCalibrationFile( const QString &fileName )
+void ImageDisparityWidget::loadCalibrationFile( const QString &fileName )
 {
-    return m_disparityWidget->loadCalibrationFile( fileName );
+    m_disparityWidget->loadCalibrationFile( fileName );
 }
 
 void ImageDisparityWidget::addIcon( const QString &leftFileName, const QString &rightFileName )
@@ -279,6 +325,6 @@ void ImageDisparityWidget::updateFrame()
 
 void ImageDisparityWidget::updateFrame( DisparityIcon* icon )
 {
-    m_disparityWidget->updateFrame( icon->loadLeftImage(), icon->loadRightImage() );
+    m_disparityWidget->processFrame( icon->stereoFrame() );
 }
 

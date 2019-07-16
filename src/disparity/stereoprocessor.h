@@ -18,6 +18,9 @@ public:
     DisparityProcessorBase();
 
     virtual cv::Mat processDisparity( const CvImage &left, const CvImage &right ) = 0;
+
+protected:
+    CvImage preprocess( const CvImage img );
 };
 
 class BMDisparityProcessor : public DisparityProcessorBase
@@ -76,6 +79,36 @@ private:
 
 };
 
+class BMGPUDisparityProcessor : public DisparityProcessorBase
+{
+public:
+    BMGPUDisparityProcessor();
+
+    int getNumDisparities() const;
+    void setNumDisparities( const int numDisparities );
+
+    int getBlockSize() const;
+    void setBlockSize( const int blockSize );
+
+    int getPreFilterType() const;
+    void setPreFilterType( const int preFilterType );
+
+    int getPreFilterCap() const;
+    void setPreFilterCap( const int preFilterCap );
+
+    int getTextureThreshold() const;
+    void setTextureThreshold( const int textureThreshold );
+
+    virtual cv::Mat processDisparity( const CvImage &left, const CvImage &right ) override;
+
+protected:
+    cv::Ptr< cv::cuda::StereoBM > m_matcher;
+
+private:
+    void initialize();
+
+};
+
 class GMDisparityProcessor : public DisparityProcessorBase
 {
 public:
@@ -124,6 +157,45 @@ private:
 
 };
 
+class BPDisparityProcessor : public DisparityProcessorBase
+{
+public:
+    BPDisparityProcessor();
+
+    int getNumDisparities() const;
+    void setNumDisparities( const int value );
+
+    int getNumIterations() const;
+    void setNumIterations( const int value );
+
+    int getNumLevels() const;
+    void setNumLevels( const int value );
+
+    double getMaxDataTerm() const;
+    void setMaxDataTerm( const double value );
+
+    double getDataWeight() const;
+    void setDataWeight( const double value );
+
+    double getMaxDiscTerm() const;
+    void setMaxDiscTerm( const double value );
+
+    double getDiscSingleJump() const;
+    void setDiscSingleJump( const double value );
+
+    int getMsgType() const;
+    void setMsgType( const int value );
+
+    virtual cv::Mat processDisparity( const CvImage &left, const CvImage &right ) override;
+
+protected:
+    cv::Ptr< cv::cuda::StereoBeliefPropagation > m_matcher;
+
+private:
+    void initialize();
+
+};
+
 class StereoResult
 {
 public:
@@ -140,12 +212,19 @@ public:
     const cv::Mat &points() const;
     pcl::PointCloud< pcl::PointXYZRGB >::Ptr pointCloud() const;
 
+    const std::chrono::time_point< std::chrono::system_clock > &time() const;
+
+    void setFrame( const StereoFrame &frame );
+    const StereoFrame &frame() const;
+
 protected:
     CvImage m_previewImage;
     cv::Mat m_disparity;
     CvImage m_colorizedDisparity;
     cv::Mat m_points;
     pcl::PointCloud< pcl::PointXYZRGB >::Ptr m_pointCloud;
+
+    StereoFrame m_frame;
 
 private:
     void initialize();
@@ -165,7 +244,7 @@ public:
     std::shared_ptr< DisparityProcessorBase > disparityProcessor() const;
     void setDisparityProcessor( const std::shared_ptr< DisparityProcessorBase > proc );
 
-    StereoResult process( const CvImage &leftFrame, const CvImage &rightFrame );
+    StereoResult process( const StereoFrame &frame );
 
 protected:
     std::shared_ptr< DisparityProcessorBase > m_disparityProcessor;
@@ -184,17 +263,23 @@ class ProcessorThread : public QThread
 public:
     explicit ProcessorThread( QObject *parent = nullptr );
 
-    void queueImage( const StereoImage &img );
+    bool process( const StereoFrame &frame );
+
+    void setProcessor( const std::shared_ptr< StereoProcessor > processor );
+
+    StereoResult result();
+
+signals:
+    void frameProcessed();
 
 protected:
-    std::deque< StereoImage > m_processQueue;
+    StereoFrame m_frame;
     QMutex m_processMutex;
 
-    std::deque< StereoResult > m_resultQueue;
+    StereoResult m_result;
     QMutex m_resultMutex;
 
-    static const int m_maxDequeSize = 10;
-
+    std::shared_ptr< StereoProcessor > m_processor;
 
     virtual void run() override;
 

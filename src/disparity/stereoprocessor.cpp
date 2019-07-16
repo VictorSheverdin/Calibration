@@ -4,9 +4,24 @@
 
 #include "src/common/functions.h"
 
+#include "src/libelas/StereoEfficientLargeScale.h"
+
 // DisparityProcessorBase
 DisparityProcessorBase::DisparityProcessorBase()
 {
+}
+
+CvImage DisparityProcessorBase::preprocess( const CvImage img )
+{
+    CvImage ret;
+
+    cv::cvtColor( img,  ret,  cv::COLOR_BGR2GRAY );
+
+    cv::equalizeHist( ret, ret );
+    cv::GaussianBlur( ret, ret, cv::Size (5,5), 0);
+
+    return ret;
+
 }
 
 // BMDisparityProcessor
@@ -19,7 +34,6 @@ BMDisparityProcessor::BMDisparityProcessor()
 void BMDisparityProcessor::initialize()
 {
     m_leftMatcher = cv::StereoBM::create();
-
 }
 
 int BMDisparityProcessor::getMinDisparity() const
@@ -154,45 +168,144 @@ void BMDisparityProcessor::setROI2( const cv::Rect &roi2 )
 
 cv::Mat BMDisparityProcessor::processDisparity( const CvImage &left, const CvImage &right )
 {
+    /*CvImage leftGray = preprocess( left );
+    CvImage rightGray = preprocess( right );
+
+    cv::Mat leftDisp;
+
+    m_leftMatcher->compute( leftGray, rightGray, leftDisp );
+
+    // cv::normalize( leftDisp, leftDisp, 0.0, 255, cv::NORM_MINMAX, CV_8U );
+
+    return leftDisp;*/
+
+    StereoEfficientLargeScale elas( 0, 256 );
+
+    cv::Mat dest;
+
+    elas( left, right, dest, 0 );
+
+    return dest;
+
+//    cv::Mat rightDisp;
+
+//    auto rightMatcher = cv::ximgproc::createRightMatcher( m_leftMatcher );
+
+//    rightMatcher->compute( rightGray, leftGray, rightDisp );
+
+//    auto wlsFilter = cv::ximgproc::createDisparityWLSFilter( m_leftMatcher );
+
+//    wlsFilter->setLambda( 8000.0 );
+//    wlsFilter->setSigmaColor( 1.5 );
+
+//    cv::Mat conf_map = cv::Mat( left.rows, left.cols, CV_8U );
+//    conf_map = cv::Scalar(255);
+
+//    cv::Mat filteredDisp;
+
+//    wlsFilter->filter( leftDisp, left, filteredDisp, rightDisp );
+
+//    conf_map = wlsFilter->getConfidenceMap();
+
+//    cv::Mat solvedDisp;
+//    cv::Mat solvedFilteredDisp;
+
+//    cv::ximgproc::fastBilateralSolverFilter( left, leftDisp, conf_map/255.0f, solvedDisp );
+//    cv::ximgproc::fastBilateralSolverFilter( left, filteredDisp, conf_map/255.0f, solvedFilteredDisp );
+
+//    return solvedFilteredDisp;
+
+}
+
+// BMGPUDisparityProcessor
+BMGPUDisparityProcessor::BMGPUDisparityProcessor()
+    : DisparityProcessorBase()
+{
+    initialize();
+}
+
+void BMGPUDisparityProcessor::initialize()
+{
+    m_matcher = cv::cuda::createStereoBM();
+}
+
+int BMGPUDisparityProcessor::getNumDisparities() const
+{
+    return m_matcher->getNumDisparities();
+}
+
+void BMGPUDisparityProcessor::setNumDisparities( const int numDisparities )
+{
+    m_matcher->setNumDisparities( numDisparities );
+}
+
+int BMGPUDisparityProcessor::getBlockSize() const
+{
+    return m_matcher->getBlockSize();
+}
+
+void BMGPUDisparityProcessor::setBlockSize( const int blockSize )
+{
+    m_matcher->setBlockSize( blockSize );
+}
+
+int BMGPUDisparityProcessor::getPreFilterType() const
+{
+    return m_matcher->getPreFilterType();
+}
+
+void BMGPUDisparityProcessor::setPreFilterType( const int preFilterType )
+{
+    m_matcher->setPreFilterType( preFilterType );
+}
+
+int BMGPUDisparityProcessor::getPreFilterCap() const
+{
+    return m_matcher->getPreFilterCap();
+}
+
+void BMGPUDisparityProcessor::setPreFilterCap( const int preFilterCap )
+{
+    m_matcher->setPreFilterCap( preFilterCap );
+}
+
+int BMGPUDisparityProcessor::getTextureThreshold() const
+{
+    return m_matcher->getTextureThreshold();
+}
+
+void BMGPUDisparityProcessor::setTextureThreshold( const int textureThreshold )
+{
+    m_matcher->setTextureThreshold( textureThreshold );
+}
+
+cv::Mat BMGPUDisparityProcessor::processDisparity( const CvImage &left, const CvImage &right )
+{
     CvImage leftGray;
     CvImage rightGray;
 
     cv::cvtColor( left,  leftGray,  cv::COLOR_BGR2GRAY );
     cv::cvtColor( right, rightGray, cv::COLOR_BGR2GRAY );
 
-    cv::Mat leftDisp;
+    cv::cuda::GpuMat leftGPU( leftGray.size(), CV_8U );
+    cv::cuda::GpuMat rightGPU( leftGray.size(), CV_8U );
 
-    m_leftMatcher->compute( leftGray, rightGray, leftDisp );
+    leftGPU.upload( leftGray );
+    rightGPU.upload( rightGray );
 
-    return leftDisp;
-/*
-    cv::Mat rightDisp;
+    cv::cuda::GpuMat dispGPU( leftGray.size(), CV_8U );
 
-    auto rightMatcher = cv::ximgproc::createRightMatcher( m_leftMatcher );
+    m_matcher->compute( leftGPU, rightGPU, dispGPU );
 
-    rightMatcher->compute( rightGray, leftGray, rightDisp );
+    cv::Ptr < cv::cuda::DisparityBilateralFilter > dispFilter = cv::cuda::createDisparityBilateralFilter( m_matcher->getNumDisparities(), 5, 1 );
+    dispFilter->apply( dispGPU, leftGPU, dispGPU );
 
-    auto wlsFilter = cv::ximgproc::createDisparityWLSFilter( m_leftMatcher );
+   // cv::cuda::normalize( dispGPU, dispGPU, 0, 255, cv::NORM_MINMAX, CV_8U );
+    cv::Mat res( leftGray.size(), CV_8U );
 
-    wlsFilter->setLambda( 8000.0 );
-    wlsFilter->setSigmaColor( 1.5 );
+    dispGPU.download( res );
 
-    cv::Mat conf_map = cv::Mat( left.rows, left.cols, CV_8U );
-    conf_map = cv::Scalar(255);
-
-    cv::Mat filteredDisp;
-
-    wlsFilter->filter( leftDisp, left, filteredDisp, rightDisp );
-
-    conf_map = wlsFilter->getConfidenceMap();
-
-    cv::Mat solvedDisp;
-    cv::Mat solvedFilteredDisp;
-
-    cv::ximgproc::fastBilateralSolverFilter( left, leftDisp, conf_map/255.0f, solvedDisp );
-    cv::ximgproc::fastBilateralSolverFilter( left, filteredDisp, conf_map/255.0f, solvedFilteredDisp );
-
-    return solvedFilteredDisp;*/
+    return res;
 
 }
 
@@ -334,6 +447,126 @@ cv::Mat GMDisparityProcessor::processDisparity( const CvImage &left, const CvIma
 
 }
 
+// BPDisparityProcessor
+BPDisparityProcessor::BPDisparityProcessor()
+    : DisparityProcessorBase()
+{
+    initialize();
+}
+
+void BPDisparityProcessor::initialize()
+{
+    m_matcher = cv::cuda::createStereoBeliefPropagation();
+
+    setMsgType( CV_16S );
+}
+
+int BPDisparityProcessor::getNumDisparities() const
+{
+    return m_matcher->getNumDisparities();
+}
+
+void BPDisparityProcessor::setNumDisparities( const int value )
+{
+    m_matcher->setNumDisparities( value );
+}
+
+int BPDisparityProcessor::getNumIterations() const
+{
+    return m_matcher->getNumIters();
+}
+
+void BPDisparityProcessor::setNumIterations( const int value )
+{
+    m_matcher->setNumIters( value );
+}
+
+int BPDisparityProcessor::getNumLevels() const
+{
+    return m_matcher->getNumLevels();
+}
+
+void BPDisparityProcessor::setNumLevels( const int value )
+{
+    m_matcher->setNumLevels( value );
+}
+
+double BPDisparityProcessor::getMaxDataTerm() const
+{
+    return m_matcher->getMaxDataTerm();
+}
+
+void BPDisparityProcessor::setMaxDataTerm( const double value )
+{
+    m_matcher->setMaxDataTerm( value );
+}
+
+double BPDisparityProcessor::getDataWeight() const
+{
+    return m_matcher->getDataWeight();
+}
+
+void BPDisparityProcessor::setDataWeight( const double value )
+{
+    m_matcher->setDataWeight( value );
+}
+
+double BPDisparityProcessor::getMaxDiscTerm() const
+{
+    return m_matcher->getMaxDiscTerm();
+}
+
+void BPDisparityProcessor::setMaxDiscTerm( const double value )
+{
+    m_matcher->setMaxDiscTerm( value );
+}
+
+double BPDisparityProcessor::getDiscSingleJump() const
+{
+    return m_matcher->getDiscSingleJump();
+}
+
+void BPDisparityProcessor::setDiscSingleJump( const double value )
+{
+    m_matcher->setDiscSingleJump( value );
+}
+
+int BPDisparityProcessor::getMsgType() const
+{
+    return m_matcher->getMsgType();
+}
+
+void BPDisparityProcessor::setMsgType( const int value )
+{
+    m_matcher->setMsgType( value );
+}
+
+cv::Mat BPDisparityProcessor::processDisparity( const CvImage &left, const CvImage &right )
+{
+    CvImage leftGray;
+    CvImage rightGray;
+
+    cv::cvtColor( left,  leftGray,  cv::COLOR_BGR2GRAY );
+    cv::cvtColor( right, rightGray, cv::COLOR_BGR2GRAY );
+
+    cv::cuda::GpuMat leftGPU;
+    cv::cuda::GpuMat rightGPU;
+
+    leftGPU.upload( leftGray );
+    rightGPU.upload( rightGray );
+
+    cv::cuda::GpuMat leftDisp;
+
+    m_matcher->compute( leftGPU, rightGPU, leftDisp );
+
+    cv::Mat res;
+
+    leftDisp.download( res );
+
+    return res;
+
+}
+
 // StereoResult
 StereoResult::StereoResult()
 {
@@ -390,6 +623,21 @@ pcl::PointCloud< pcl::PointXYZRGB >::Ptr StereoResult::pointCloud() const
     return m_pointCloud;
 }
 
+const std::chrono::time_point< std::chrono::system_clock > &StereoResult::time() const
+{
+    return m_frame.time();
+}
+
+void StereoResult::setFrame( const StereoFrame &frame )
+{
+    m_frame = frame;
+}
+
+const StereoFrame &StereoResult::frame() const
+{
+    return m_frame;
+}
+
 // StereoProcessor
 StereoProcessor::StereoProcessor()
 {
@@ -425,11 +673,16 @@ void StereoProcessor::setDisparityProcessor(const std::shared_ptr< DisparityProc
     m_disparityProcessor = proc;
 }
 
-StereoResult StereoProcessor::process( const CvImage &leftFrame, const CvImage &rightFrame )
+StereoResult StereoProcessor::process( const StereoFrame &frame )
 {
     StereoResult ret;
 
-    if ( !leftFrame.empty() && !rightFrame.empty() ) {
+    ret.setFrame( frame );
+
+    if ( !frame.empty() ) {
+
+        auto leftFrame = frame.leftFrame();
+        auto rightFrame = frame.rightFrame();
 
         if ( m_calibration.isOk() ) {
 
@@ -458,9 +711,18 @@ StereoResult StereoProcessor::process( const CvImage &leftFrame, const CvImage &
 
                 ret.setDisparity( disparity );
 
-                /*cv::Mat points;
+                cv::Mat points;
 
-                cv::reprojectImageTo3D( disparity, points, m_calibration.disparityToDepthMatrix(), true );
+                cv::reprojectImageTo3D( disparity, points, m_calibration.disparityToDepthMatrix(), true, CV_32F );
+
+                /*cv::cuda::GpuMat disp_gpu;
+                cv::cuda::GpuMat points_gpu;
+
+                disp_gpu.upload( disparity );
+
+                cv::cuda::reprojectImageTo3D( disp_gpu, points_gpu, m_calibration.disparityToDepthMatrix() );
+
+                points_gpu.download( points );*/
 
                 ret.setPoints( points );
 
@@ -496,7 +758,7 @@ StereoResult StereoProcessor::process( const CvImage &leftFrame, const CvImage &
 
                 }
 
-                ret.setPointCloud( pointCloud );*/
+                ret.setPointCloud( pointCloud );
 
             }
 
@@ -518,19 +780,51 @@ void ProcessorThread::initialize()
 {
 }
 
-void ProcessorThread::queueImage( const StereoImage &img )
+bool ProcessorThread::process(const StereoFrame &frame )
 {
-    m_processMutex.lock();
+    bool res = false;
 
-    if ( m_processQueue.size() >= m_maxDequeSize )
-        m_processQueue.resize( m_maxDequeSize - 1 );
+    if ( m_processMutex.tryLock() ) {
+        if ( !isRunning() ) {
+            m_frame = frame;
+            start();
+            res = true;
+        }
 
-    m_processQueue.push_front( img );
+        m_processMutex.unlock();
+    }
 
-    m_processMutex.unlock();
+    return res;
 
 }
+
+void ProcessorThread::setProcessor( const std::shared_ptr< StereoProcessor > processor )
+{
+    m_processor = processor;
+}
+
+StereoResult ProcessorThread::result()
+{
+    StereoResult ret;
+
+    m_resultMutex.lock();
+    ret = m_result;
+    m_resultMutex.unlock();
+
+    return ret;
+}
+
 void ProcessorThread::run()
 {
+    if ( !m_frame.empty() ) {
+        auto result = m_processor->process( m_frame );
+        m_resultMutex.lock();
+        m_result = result;
+        m_resultMutex.unlock();
+
+        emit frameProcessed();
+
+    }
+
 }
 

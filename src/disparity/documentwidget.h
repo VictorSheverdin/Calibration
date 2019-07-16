@@ -34,7 +34,7 @@ public:
 
     CameraDisparityWidget *widget() const;
 
-    bool loadCalibrationFile( const QString &fileName );
+    void loadCalibrationFile( const QString &fileName );
 
 public slots:
     virtual void loadCalibrationDialog() override;
@@ -53,7 +53,7 @@ public:
 
     ImageDisparityWidget *widget() const;
 
-    bool loadCalibrationFile( const QString &fileName );
+    void loadCalibrationFile( const QString &fileName );
 
 public slots:
     virtual void loadCalibrationDialog() override;

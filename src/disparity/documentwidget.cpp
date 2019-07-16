@@ -33,9 +33,9 @@ CameraDisparityWidget *CameraDisparityDocument::widget() const
     return dynamic_cast< CameraDisparityWidget * >( m_widget );
 }
 
-bool CameraDisparityDocument::loadCalibrationFile( const QString &fileName )
+void CameraDisparityDocument::loadCalibrationFile( const QString &fileName )
 {
-    return widget()->loadCalibrationFile( fileName );
+    widget()->loadCalibrationFile( fileName );
 }
 
 void CameraDisparityDocument::loadCalibrationDialog()
@@ -60,9 +60,9 @@ ImageDisparityWidget *ImageDisparityDocument::widget() const
     return dynamic_cast< ImageDisparityWidget * >( m_widget );
 }
 
-bool ImageDisparityDocument::loadCalibrationFile( const QString &fileName )
+void ImageDisparityDocument::loadCalibrationFile( const QString &fileName )
 {
-    return widget()->loadCalibrationFile( fileName );
+    widget()->loadCalibrationFile( fileName );
 }
 
 void ImageDisparityDocument::loadCalibrationDialog()

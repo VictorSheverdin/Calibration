@@ -19,9 +19,16 @@ public:
     CvImage loadLeftImage() const;
     CvImage loadRightImage() const;
 
+    StereoFrame stereoFrame() const;
+
+    void setTime( const std::chrono::time_point< std::chrono::system_clock > &time );
+    const std::chrono::time_point< std::chrono::system_clock > &time() const;
+
 protected:
     QString m_leftFileName;
     QString m_rightFileName;
+
+    std::chrono::time_point< std::chrono::system_clock > m_time;
 
 private:
     void initialize();
