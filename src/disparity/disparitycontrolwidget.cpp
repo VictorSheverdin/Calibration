@@ -197,6 +197,8 @@ void TypeComboBox::initialize()
     addItem( tr( "Global matching" ), Type::GM );
     addItem( tr( "GPU Block matching" ), Type::BM_GPU );
     addItem( tr( "Belief Propagation" ), Type::BP );
+    addItem( tr( "Constant Space Belief Propagation" ), Type::CSBP );
+    addItem( tr( "ELAS" ), Type::ELAS );
 }
 
 TypeComboBox::Type TypeComboBox::currentType() const
@@ -727,11 +729,11 @@ void BPControlWidget::initialize()
 
     m_numIters = new IntSliderLayout( tr("Number of iterations" ) );
     layout->addLayout( m_numIters );
-    m_numIters->setRange( 0, 100 );
+    m_numIters->setRange( 0, 50 );
 
     m_numLevels = new IntSliderLayout( tr("Number of levels" ) );
     layout->addLayout( m_numLevels );
-    m_numLevels->setRange( 0, 100 );
+    m_numLevels->setRange( 0, 9 );
 
     m_maxDataTerm = new DoubleSliderLayout( tr("Max data term" ) );
     layout->addLayout( m_maxDataTerm );
@@ -751,7 +753,7 @@ void BPControlWidget::initialize()
 
     layout->addStretch();
 
-    setNumDisparities( 64 );
+    setNumDisparities( 256 );
     setNumIterations( 5 );
     setNumLevels( 5 );
     setMaxDataTerm( 10.0 );
@@ -839,6 +841,28 @@ void BPControlWidget::setDiscSingleJump( const double value )
     m_discSingleJump->setValue( value );
 }
 
+// CSBPControlWidget
+CSBPControlWidget::CSBPControlWidget( QWidget* parent )
+    : QWidget( parent )
+{
+    initialize();
+}
+
+void CSBPControlWidget::initialize()
+{
+}
+
+// ElasControlWidget
+ElasControlWidget::ElasControlWidget( QWidget* parent )
+    : QWidget( parent )
+{
+    initialize();
+}
+
+void ElasControlWidget::initialize()
+{
+}
+
 // FilterControlWidget
 FilterControlWidget::FilterControlWidget( QWidget* parent )
     : QWidget( parent )
@@ -875,11 +899,15 @@ void DisparityControlWidget::initialize()
     m_gmControlWidget = new GMControlWidget( this );
     m_bmGpuControlWidget = new BMGPUControlWidget( this );
     m_bpControlWidget = new BPControlWidget( this );
+    m_csbpControlWidget = new CSBPControlWidget( this );
+    m_elasControlWidget = new ElasControlWidget( this );
 
     m_bmControlIndex = m_stack->addWidget( m_bmControlWidget );
     m_gmControlIndex = m_stack->addWidget( m_gmControlWidget );
     m_bmGpuControlIndex = m_stack->addWidget( m_bmGpuControlWidget );
     m_bpControlIndex = m_stack->addWidget( m_bpControlWidget );
+    m_csbpControlIndex = m_stack->addWidget( m_csbpControlWidget );
+    m_elasControlIndex = m_stack->addWidget( m_elasControlWidget );
 
     m_filterControlWidget = new FilterControlWidget( this );
 
@@ -893,6 +921,8 @@ void DisparityControlWidget::initialize()
     connect( m_gmControlWidget, &GMControlWidget::valueChanged, this, &DisparityControlWidget::valueChanged );
     connect( m_bmGpuControlWidget, &BMGPUControlWidget::valueChanged, this, &DisparityControlWidget::valueChanged );
     connect( m_bpControlWidget, &BPControlWidget::valueChanged, this, &DisparityControlWidget::valueChanged );
+    connect( m_csbpControlWidget, &CSBPControlWidget::valueChanged, this, &DisparityControlWidget::valueChanged );
+    connect( m_elasControlWidget, &ElasControlWidget::valueChanged, this, &DisparityControlWidget::valueChanged );
 
     updateStackedWidget();
 
@@ -918,6 +948,16 @@ BPControlWidget *DisparityControlWidget::bpControlWidget() const
     return m_bpControlWidget;
 }
 
+CSBPControlWidget *DisparityControlWidget::csbpControlWidget() const
+{
+    return m_csbpControlWidget;
+}
+
+ElasControlWidget *DisparityControlWidget::elasControlWidget() const
+{
+    return m_elasControlWidget;
+}
+
 bool DisparityControlWidget::isBmMethod() const
 {
     return m_typeLayout->value() == TypeComboBox::BM;
@@ -936,6 +976,16 @@ bool DisparityControlWidget::isBmGpuMethod() const
 bool DisparityControlWidget::isBpMethod() const
 {
     return m_typeLayout->value() == TypeComboBox::BP;
+}
+
+bool DisparityControlWidget::isCsbpMethod() const
+{
+    return m_typeLayout->value() == TypeComboBox::CSBP;
+}
+
+bool DisparityControlWidget::isElasMethod() const
+{
+    return m_typeLayout->value() == TypeComboBox::ELAS;
 }
 
 void DisparityControlWidget::activateBmWidget() const
@@ -958,15 +1008,43 @@ void DisparityControlWidget::activateBpWidget() const
     m_stack->setCurrentIndex( m_bpControlIndex );
 }
 
+void DisparityControlWidget::activateCsbpWidget() const
+{
+    m_stack->setCurrentIndex( m_csbpControlIndex );
+}
+
+void DisparityControlWidget::activateElasWidget() const
+{
+    m_stack->setCurrentIndex( m_elasControlIndex );
+}
+
+void DisparityControlWidget::activateWidget( const TypeComboBox::Type type ) const
+{
+    switch( type ) {
+    case TypeComboBox::BM :
+        activateBmWidget();
+        break;
+    case TypeComboBox::GM :
+        activateGmWidget();
+        break;
+    case TypeComboBox::BM_GPU :
+        activateBmGpuWidget();
+        break;
+    case TypeComboBox::BP :
+        activateBpWidget();
+        break;
+    case TypeComboBox::CSBP :
+        activateCsbpWidget();
+        break;
+    case TypeComboBox::ELAS :
+        activateElasWidget();
+        break;
+
+    }
+}
+
 void DisparityControlWidget::updateStackedWidget()
 {
-    if ( m_typeLayout->value() == TypeComboBox::BM )
-        activateBmWidget();
-    else if (m_typeLayout->value() == TypeComboBox::GM )
-        activateGmWidget();
-    else if (m_typeLayout->value() == TypeComboBox::BM_GPU )
-        activateBmGpuWidget();
-    else if (m_typeLayout->value() == TypeComboBox::BP )
-        activateBpWidget();
+    activateWidget( m_typeLayout->value() );
 
 }

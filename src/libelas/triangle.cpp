@@ -400,7 +400,6 @@ enum finddirectionresult {WITHIN, LEFTCOLLINEAR, RIGHTCOLLINEAR};
 /*   Because the size and structure of a `triangle' is not decided until     */
 /*   runtime, I haven't simply declared the type `triangle' as a struct.     */
 
-
 typedef float **triangle;            /* Really:  typedef triangle *triangle   */
 
 /* An oriented triangle:  includes a pointer to a triangle and orientation.  */
@@ -8214,8 +8213,8 @@ void quality_statistics(struct mesh *m, struct behavior *b)
   int i, ii, j, k;
 
   printf("Mesh quality statistics:\n\n");
-  radconst = (float)(PI / 18.0);
-  degconst = float(180.0 / PI);
+  radconst = PI / 18.0;
+  degconst = 180.0 / PI;
   for (i = 0; i < 8; i++) {
     cossquaretable[i] = cos(radconst * (float) (i + 1));
     cossquaretable[i] = cossquaretable[i] * cossquaretable[i];

@@ -196,6 +196,39 @@ private:
 
 };
 
+class CSBPDisparityProcessor : public DisparityProcessorBase
+{
+public:
+    CSBPDisparityProcessor();
+
+    virtual cv::Mat processDisparity( const CvImage &left, const CvImage &right ) override;
+
+protected:
+    cv::Ptr< cv::cuda::StereoConstantSpaceBP > m_matcher;
+
+private:
+    void initialize();
+
+};
+
+
+class StereoEfficientLargeScale;
+
+class ElasDisparityProcessor : public DisparityProcessorBase
+{
+public:
+    ElasDisparityProcessor();
+
+    virtual cv::Mat processDisparity( const CvImage &left, const CvImage &right ) override;
+
+protected:
+    cv::Ptr< StereoEfficientLargeScale > m_matcher;
+
+private:
+    void initialize();
+
+};
+
 class StereoResult
 {
 public:

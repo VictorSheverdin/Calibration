@@ -1,9 +1,6 @@
 cmake_minimum_required( VERSION 2.6 )
 project ( Calibration )
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O3 -march=native")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O3 -march=native")
-
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
@@ -92,6 +89,7 @@ set ( DISPARITY_SOURCES
     "src/common/fileslistwidget.h"
     "src/common/fileslistwidget.cpp"
     "src/libelas/descriptor.h"
+    "src/libelas/elas.h"
     "src/libelas/image.h"
     "src/libelas/filter.h"
     "src/libelas/matrix.h"
@@ -102,6 +100,7 @@ set ( DISPARITY_SOURCES
     "src/libelas/filter.cpp"
     "src/libelas/matrix.cpp"
     "src/libelas/triangle.cpp"
+    "src/libelas/StereoEfficientLargeScale.cpp"
     "src/disparity/application.h"
     "src/disparity/application.cpp"
     "src/disparity/mainwindow.h"
@@ -129,7 +128,6 @@ set ( COMPARE_SOURCES
     "src/annotations/annotation.cpp"
     "src/compare/main.cpp"
 )
-
 
 set ( ODOMETRY_SOURCES
     "src/common/documentarea.h"
@@ -164,16 +162,60 @@ set ( ODOMETRY_SOURCES
     "src/odometry/main.cpp"
 )
 
+set ( ORBCAMERA_SOURCES
+    "src/common/documentarea.h"
+    "src/common/documentarea.cpp"
+    "src/common/supportwidgets.h"
+    "src/common/supportwidgets.cpp"
+    "src/common/supportwidgets.inl"
+    "src/common/fileslistwidget.h"
+    "src/common/fileslistwidget.cpp"
+    "src/common/image.h"
+    "src/common/image.cpp"
+    "src/common/functions.h"
+    "src/common/functions.cpp"
+    "src/common/vimbacamera.h"
+    "src/common/vimbacamera.cpp"
+    "src/ORBCamera/System.cc"
+    "src/ORBCamera/Tracking.cc"
+    "src/ORBCamera/LocalMapping.cc"
+    "src/ORBCamera/LoopClosing.cc"
+    "src/ORBCamera/ORBextractor.cc"
+    "src/ORBCamera/ORBmatcher.cc"
+    "src/ORBCamera/FrameDrawer.cc"
+    "src/ORBCamera/Converter.cc"
+    "src/ORBCamera/MapPoint.cc"
+    "src/ORBCamera/KeyFrame.cc"
+    "src/ORBCamera/Map.cc"
+    "src/ORBCamera/MapDrawer.cc"
+    "src/ORBCamera/Optimizer.cc"
+    "src/ORBCamera/PnPsolver.cc"
+    "src/ORBCamera/Frame.cc"
+    "src/ORBCamera/KeyFrameDatabase.cc"
+    "src/ORBCamera/Sim3Solver.cc"
+    "src/ORBCamera/Initializer.cc"
+    "src/ORBCamera/Viewer.cc"
+    "src/annotations/annotation.h"
+    "src/annotations/annotation.cpp"
+    "src/rapidxml/xmlTree.cpp"
+    "src/ORBCamera/main.cpp"
+)
+
 set ( RESOURCES
     "resources/resources.qrc"
 )
 
-find_package(Qt5Widgets REQUIRED)
-find_package(OpenCV 4 REQUIRED)
-find_package(Eigen3 3.1.0 REQUIRED)
-find_package(VTK 8 REQUIRED)
-find_package(PCL 1.9 REQUIRED)
-find_package(Pangolin REQUIRED)
+find_package( OpenMP REQUIRED )
+find_package( Qt5Widgets REQUIRED )
+find_package( OpenCV 4 REQUIRED )
+find_package( Eigen3 3.1.0 REQUIRED )
+find_package( VTK 8 REQUIRED )
+find_package( PCL 1.9 REQUIRED )
+find_package( Pangolin REQUIRED )
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O3 -march=native ${OpenMP_C_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O3 -march=native ${OpenMP_CXX_FLAGS}")
+set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 
 add_definitions( ${QT_DEFINITIONS} )
 include_directories( ${Qt5Widgets_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR} ${PCL_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR}/src/vimba/include )
@@ -186,10 +228,13 @@ add_executable( calibration ${CALIBRATION_SOURCES} ${RES_SOURCES} )
 add_executable( disparity ${DISPARITY_SOURCES} ${RES_SOURCES} )
 add_executable( compare ${COMPARE_SOURCES} )
 add_executable( odometry ${ODOMETRY_SOURCES} ${RES_SOURCES} )
+add_executable( orbcamera ${ORBCAMERA_SOURCES} ${RES_SOURCES} )
 
 target_include_directories( odometry PRIVATE ${Pangolin_INCLUDE_DIRS} )
+target_include_directories( orbcamera PRIVATE ${Pangolin_INCLUDE_DIRS} )
 
 target_link_libraries( calibration ${Qt5Widgets_LIBRARIES} ${OpenCV_LIBS} ${EIGEN3_LIBS} ${CMAKE_CURRENT_SOURCE_DIR}/src/vimba/lib/libVimbaCPP.so ${YAML_CPP_LIBRARIES} )
 target_link_libraries( disparity ${Qt5Widgets_LIBRARIES} ${OpenCV_LIBS} ${EIGEN3_LIBS} ${VTK_LIBRARIES} ${PCL_LIBRARIES} ${CMAKE_CURRENT_SOURCE_DIR}/src/vimba/lib/libVimbaCPP.so ${YAML_CPP_LIBRARIES} )
 target_link_libraries( compare ${Qt5Widgets_LIBRARIES} )
 target_link_libraries( odometry ${Qt5Widgets_LIBRARIES} ${Pangolin_LIBRARIES} ${OpenCV_LIBS} ${EIGEN3_LIBS} ${PROJECT_SOURCE_DIR}/src/DBoW2/lib/libDBoW2.so ${PROJECT_SOURCE_DIR}/src/g2o/lib/libg2o.so )
+target_link_libraries( orbcamera ${Qt5Widgets_LIBRARIES} ${Pangolin_LIBRARIES} ${OpenCV_LIBS} ${EIGEN3_LIBS} ${CMAKE_CURRENT_SOURCE_DIR}/src/vimba/lib/libVimbaCPP.so ${PROJECT_SOURCE_DIR}/src/DBoW2/lib/libDBoW2.so ${PROJECT_SOURCE_DIR}/src/g2o/lib/libg2o.so )

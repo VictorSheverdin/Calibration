@@ -20,12 +20,13 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA
 */
 
 #include "matrix.h"
+#include <math.h>
 
 #define SWAP(a,b) {temp=a;a=b;b=temp;}
 #define SIGN(a,b) ((b) >= 0.0 ? fabs(a) : -fabs(a))
-static PRECION_FLOAT sqrarg;
+static FLOAT sqrarg;
 #define SQR(a) ((sqrarg=(a)) == 0.0 ? 0.0 : sqrarg*sqrarg)
-static PRECION_FLOAT maxarg1,maxarg2;
+static FLOAT maxarg1,maxarg2;
 #define FMAX(a,b) (maxarg1=(a),maxarg2=(b),(maxarg1) > (maxarg2) ? (maxarg1) : (maxarg2))
 static int32_t iminarg1,iminarg2;
 #define IMIN(a,b) (iminarg1=(a),iminarg2=(b),(iminarg1) < (iminarg2) ? (iminarg1) : (iminarg2))
@@ -43,7 +44,7 @@ Matrix::Matrix (const int32_t m_,const int32_t n_) {
   allocateMemory(m_,n_);
 }
 
-Matrix::Matrix (const int32_t m_,const int32_t n_,const PRECION_FLOAT* val_) {
+Matrix::Matrix (const int32_t m_,const int32_t n_,const FLOAT* val_) {
   allocateMemory(m_,n_);
   int32_t k=0;
   for (int32_t i=0; i<m_; i++)
@@ -54,7 +55,7 @@ Matrix::Matrix (const int32_t m_,const int32_t n_,const PRECION_FLOAT* val_) {
 Matrix::Matrix (const Matrix &M) {
   allocateMemory(M.m,M.n);
   for (int32_t i=0; i<M.m; i++)
-    memcpy(val[i],M.val[i],M.n*sizeof(PRECION_FLOAT));
+    memcpy(val[i],M.val[i],M.n*sizeof(FLOAT));
 }
 
 Matrix::~Matrix () {
@@ -69,12 +70,12 @@ Matrix& Matrix::operator= (const Matrix &M) {
     }
     if (M.n>0)
       for (int32_t i=0; i<M.m; i++)
-        memcpy(val[i],M.val[i],M.n*sizeof(PRECION_FLOAT));
+        memcpy(val[i],M.val[i],M.n*sizeof(FLOAT));
   }
   return *this;
 }
 
-void Matrix::getData(PRECION_FLOAT* val_,int32_t i1,int32_t j1,int32_t i2,int32_t j2) {
+void Matrix::getData(FLOAT* val_,int32_t i1,int32_t j1,int32_t i2,int32_t j2) {
   if (i2==-1) i2 = m-1;
   if (j2==-1) j2 = n-1;
   int32_t k=0;
@@ -111,7 +112,7 @@ void Matrix::setMat(const Matrix &M,const int32_t i1,const int32_t j1) {
       val[i1+i][j1+j] = M.val[i][j];
 }
 
-void Matrix::setVal(PRECION_FLOAT s,int32_t i1,int32_t j1,int32_t i2,int32_t j2) {
+void Matrix::setVal(FLOAT s,int32_t i1,int32_t j1,int32_t i2,int32_t j2) {
   if (i2==-1) i2 = m-1;
   if (j2==-1) j2 = n-1;
   if (i2<i1 || j2<j1) {
@@ -123,7 +124,7 @@ void Matrix::setVal(PRECION_FLOAT s,int32_t i1,int32_t j1,int32_t i2,int32_t j2)
       val[i][j] = s;
 }
 
-void Matrix::setDiag(PRECION_FLOAT s,int32_t i1,int32_t i2) {
+void Matrix::setDiag(FLOAT s,int32_t i1,int32_t i2) {
   if (i2==-1) i2 = min(m-1,n-1);
   for (int32_t i=i1; i<=i2; i++)
     val[i][i] = s;
@@ -134,7 +135,7 @@ void Matrix::zero() {
 }
 
 Matrix Matrix::extractCols (vector<int> idx) {
-  Matrix M(m,(int)idx.size());
+  Matrix M(m,idx.size());
   for (int32_t j=0; j<M.n; j++)
     if (idx[j]<n)
       for (int32_t i=0; i<m; i++)
@@ -190,9 +191,9 @@ Matrix Matrix::reshape(const Matrix &M,int32_t m_,int32_t n_) {
   return M2;
 }
 
-Matrix Matrix::rotMatX (const PRECION_FLOAT &angle) {
-  PRECION_FLOAT s = sin(angle);
-  PRECION_FLOAT c = cos(angle);
+Matrix Matrix::rotMatX (const FLOAT &angle) {
+  FLOAT s = sin(angle);
+  FLOAT c = cos(angle);
   Matrix R(3,3);
   R.val[0][0] = +1;
   R.val[1][1] = +c;
@@ -202,9 +203,9 @@ Matrix Matrix::rotMatX (const PRECION_FLOAT &angle) {
   return R;
 }
 
-Matrix Matrix::rotMatY (const PRECION_FLOAT &angle) {
-  PRECION_FLOAT s = sin(angle);
-  PRECION_FLOAT c = cos(angle);
+Matrix Matrix::rotMatY (const FLOAT &angle) {
+  FLOAT s = sin(angle);
+  FLOAT c = cos(angle);
   Matrix R(3,3);
   R.val[0][0] = +c;
   R.val[0][2] = +s;
@@ -214,9 +215,9 @@ Matrix Matrix::rotMatY (const PRECION_FLOAT &angle) {
   return R;
 }
 
-Matrix Matrix::rotMatZ (const PRECION_FLOAT &angle) {
-  PRECION_FLOAT s = sin(angle);
-  PRECION_FLOAT c = cos(angle);
+Matrix Matrix::rotMatZ (const FLOAT &angle) {
+  FLOAT s = sin(angle);
+  FLOAT c = cos(angle);
   Matrix R(3,3);
   R.val[0][0] = +c;
   R.val[0][1] = -s;
@@ -272,7 +273,7 @@ Matrix Matrix::operator* (const Matrix &M) {
   return C;
 }
 
-Matrix Matrix::operator* (const PRECION_FLOAT &s) {
+Matrix Matrix::operator* (const FLOAT &s) {
   Matrix C(m,n);
   for (int32_t i=0; i<m; i++)
     for (int32_t j=0; j<n; j++)
@@ -315,7 +316,7 @@ Matrix Matrix::operator/ (const Matrix &M) {
   } 
 }
 
-Matrix Matrix::operator/ (const PRECION_FLOAT &s) {
+Matrix Matrix::operator/ (const FLOAT &s) {
   if (fabs(s)<1e-20) {
     cerr << "ERROR: Trying to divide by zero!" << endl;
     exit(0);
@@ -343,20 +344,20 @@ Matrix Matrix::operator~ () {
   return C;
 }
 
-PRECION_FLOAT Matrix::l2norm () {
-  PRECION_FLOAT norm = 0;
+FLOAT Matrix::l2norm () {
+  FLOAT norm = 0;
   for (int32_t i=0; i<m; i++)
     for (int32_t j=0; j<n; j++)
       norm += val[i][j]*val[i][j];
   return sqrt(norm);
 }
 
-PRECION_FLOAT Matrix::mean () {
-  PRECION_FLOAT mean = 0;
+FLOAT Matrix::mean () {
+  FLOAT mean = 0;
   for (int32_t i=0; i<m; i++)
     for (int32_t j=0; j<n; j++)
       mean += val[i][j];
-  return mean/(PRECION_FLOAT)(m*n);
+  return mean/(FLOAT)(m*n);
 }
 
 Matrix Matrix::cross (const Matrix &a, const Matrix &b) {
@@ -393,7 +394,7 @@ bool Matrix::inv () {
   return true;
 }
 
-PRECION_FLOAT Matrix::det () {
+FLOAT Matrix::det () {
   
   if (m != n) {
     cerr << "ERROR: Trying to compute determinant of a matrix of size (" << m << "x" << n << ")" << endl;
@@ -402,14 +403,14 @@ PRECION_FLOAT Matrix::det () {
     
   Matrix A(*this);
   int32_t *idx = (int32_t*)malloc(m*sizeof(int32_t));
-  PRECION_FLOAT d;
+  FLOAT d;
   A.lu(idx,d);
   for( int32_t i=0; i<m; i++)
     d *= A.val[i][i];
   free(idx);
 }
 
-bool Matrix::solve (const Matrix &M, PRECION_FLOAT eps) {
+bool Matrix::solve (const Matrix &M, FLOAT eps) {
   
   // substitutes
   const Matrix &A = M;
@@ -428,7 +429,7 @@ bool Matrix::solve (const Matrix &M, PRECION_FLOAT eps) {
   
   // loop variables
   int32_t i, icol, irow, j, k, l, ll;
-  PRECION_FLOAT big, dum, pivinv, temp;
+  FLOAT big, dum, pivinv, temp;
   
   // initialize pivots to zero
   for (j=0;j<m;j++) ipiv[j]=0;
@@ -506,7 +507,7 @@ bool Matrix::solve (const Matrix &M, PRECION_FLOAT eps) {
 // or odd, respectively. This routine is used in combination with lubksb to solve linear equations
 // or invert a matrix.
 
-bool Matrix::lu(int32_t *idx, PRECION_FLOAT &d, PRECION_FLOAT eps) {
+bool Matrix::lu(int32_t *idx, FLOAT &d, FLOAT eps) {
   
   if (m != n) {
     cerr << "ERROR: Trying to LU decompose a matrix of size (" << m << "x" << n << ")" << endl;
@@ -514,8 +515,8 @@ bool Matrix::lu(int32_t *idx, PRECION_FLOAT &d, PRECION_FLOAT eps) {
   }
   
   int32_t i,imax,j,k;
-  PRECION_FLOAT   big,dum,sum,temp;
-  PRECION_FLOAT* vv = (PRECION_FLOAT*)malloc(n*sizeof(PRECION_FLOAT)); // vv stores the implicit scaling of each row.
+  FLOAT   big,dum,sum,temp;
+  FLOAT* vv = (FLOAT*)malloc(n*sizeof(FLOAT)); // vv stores the implicit scaling of each row.
   d = 1.0;
   for (i=0; i<n; i++) { // Loop over rows to get the implicit scaling information.
     big = 0.0;
@@ -577,11 +578,11 @@ void Matrix::svd(Matrix &U2,Matrix &W,Matrix &V) {
   U2 = Matrix(m,m);
   V  = Matrix(n,n);
 
-  PRECION_FLOAT* w   = (PRECION_FLOAT*)malloc(n*sizeof(PRECION_FLOAT));
-  PRECION_FLOAT* rv1 = (PRECION_FLOAT*)malloc(n*sizeof(PRECION_FLOAT));
+  FLOAT* w   = (FLOAT*)malloc(n*sizeof(FLOAT));
+  FLOAT* rv1 = (FLOAT*)malloc(n*sizeof(FLOAT));
 
   int32_t flag,i,its,j,jj,k,l,nm;
-  PRECION_FLOAT   anorm,c,f,g,h,s,scale,x,y,z;
+  FLOAT   anorm,c,f,g,h,s,scale,x,y,z;
 
   g = scale = anorm = 0.0; // Householder reduction to bidiagonal form.
   for (i=0;i<n;i++) {
@@ -666,8 +667,8 @@ void Matrix::svd(Matrix &U2,Matrix &W,Matrix &V) {
       flag = 1;
       for (l=k;l>=0;l--) { // Test for splitting.
         nm = l-1;
-        if ((PRECION_FLOAT)(fabs(rv1[l])+anorm) == anorm) { flag = 0; break; }
-        if ((PRECION_FLOAT)(fabs( w[nm])+anorm) == anorm) { break; }
+        if ((FLOAT)(fabs(rv1[l])+anorm) == anorm) { flag = 0; break; }
+        if ((FLOAT)(fabs( w[nm])+anorm) == anorm) { break; }
       }
       if (flag) {
         c = 0.0; // Cancellation of rv1[l], if l > 1.
@@ -675,7 +676,7 @@ void Matrix::svd(Matrix &U2,Matrix &W,Matrix &V) {
         for (i=l;i<=k;i++) {
           f = s*rv1[i];
           rv1[i] = c*rv1[i];
-          if ((PRECION_FLOAT)(fabs(f)+anorm) == anorm) break;
+          if ((FLOAT)(fabs(f)+anorm) == anorm) break;
           g = w[i];
           h = pythag(f,g);
           w[i] = h;
@@ -755,9 +756,9 @@ void Matrix::svd(Matrix &U2,Matrix &W,Matrix &V) {
   // by decreasing magnitude. Also, signs of corresponding columns are
   // flipped so as to maximize the number of positive elements.
   int32_t s2,inc=1;
-  PRECION_FLOAT   sw;
-  PRECION_FLOAT* su = (PRECION_FLOAT*)malloc(m*sizeof(PRECION_FLOAT));
-  PRECION_FLOAT* sv = (PRECION_FLOAT*)malloc(n*sizeof(PRECION_FLOAT));
+  FLOAT   sw;
+  FLOAT* su = (FLOAT*)malloc(m*sizeof(FLOAT));
+  FLOAT* sv = (FLOAT*)malloc(n*sizeof(FLOAT));
   do { inc *= 3; inc++; } while (inc <= n);
   do {
     inc /= 3;
@@ -824,8 +825,8 @@ void Matrix::allocateMemory (const int32_t m_,const int32_t n_) {
     val = 0;
     return;
   }
-  val    = (PRECION_FLOAT**)malloc(m*sizeof(PRECION_FLOAT*));
-  val[0] = (PRECION_FLOAT*)calloc(m*n,sizeof(PRECION_FLOAT));
+  val    = (FLOAT**)malloc(m*sizeof(FLOAT*));
+  val[0] = (FLOAT*)calloc(m*n,sizeof(FLOAT));
   for(int32_t i=1; i<m; i++)
     val[i] = val[i-1]+n;
 }
@@ -837,8 +838,8 @@ void Matrix::releaseMemory () {
   }
 }
 
-PRECION_FLOAT Matrix::pythag(PRECION_FLOAT a,PRECION_FLOAT b) {
-  PRECION_FLOAT absa,absb;
+FLOAT Matrix::pythag(FLOAT a,FLOAT b) {
+  FLOAT absa,absb;
   absa = fabs(a);
   absb = fabs(b);
   if (absa > absb)

@@ -75,6 +75,8 @@ void DisparityWidgetBase::initialize()
     m_gmProcessor = std::shared_ptr< GMDisparityProcessor >( new GMDisparityProcessor );
     m_bmGpuProcessor = std::shared_ptr< BMGPUDisparityProcessor >( new BMGPUDisparityProcessor );
     m_bpProcessor = std::shared_ptr< BPDisparityProcessor >( new BPDisparityProcessor );
+    m_csbpProcessor = std::shared_ptr< CSBPDisparityProcessor >( new CSBPDisparityProcessor );
+    m_elasProcessor = std::shared_ptr< ElasDisparityProcessor >( new ElasDisparityProcessor );
 
     m_processor = std::shared_ptr<StereoProcessor>( new StereoProcessor );
 
@@ -176,6 +178,14 @@ void DisparityWidgetBase::processFrame( const StereoFrame &frame )
             m_bpProcessor->setDiscSingleJump( bpControlWidget()->discSingleJump() );
 
             m_processor->setDisparityProcessor( m_bpProcessor );
+
+        }
+        else if ( m_controlWidget->isCsbpMethod() ) {
+            m_processor->setDisparityProcessor( m_csbpProcessor );
+
+        }
+        else if ( m_controlWidget->isElasMethod() ) {
+            m_processor->setDisparityProcessor( m_elasProcessor );
 
         }
 

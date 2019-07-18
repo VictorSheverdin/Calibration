@@ -90,7 +90,7 @@ class TypeComboBox : public QComboBox
     Q_OBJECT
 
 public:
-    enum Type { BM, GM, BM_GPU, BP };
+    enum Type { BM, GM, BM_GPU, BP, CSBP, ELAS };
 
     explicit TypeComboBox( QWidget *parent = nullptr );
 
@@ -334,6 +334,42 @@ private:
     void initialize();
 };
 
+class CSBPControlWidget : public QWidget
+{
+    Q_OBJECT
+
+public:
+    CSBPControlWidget( QWidget* parent = nullptr );
+
+signals:
+    void valueChanged();
+
+public slots:
+
+protected:
+
+private:
+    void initialize();
+};
+
+class ElasControlWidget : public QWidget
+{
+    Q_OBJECT
+
+public:
+    ElasControlWidget( QWidget* parent = nullptr );
+
+signals:
+    void valueChanged();
+
+public slots:
+
+protected:
+
+private:
+    void initialize();
+};
+
 class FilterControlWidget : public QWidget
 {
     Q_OBJECT
@@ -356,11 +392,15 @@ public:
     GMControlWidget *gmControlWidget() const;
     BMGPUControlWidget *bmGpuControlWidget() const;
     BPControlWidget *bpControlWidget() const;
+    CSBPControlWidget *csbpControlWidget() const;
+    ElasControlWidget *elasControlWidget() const;
 
     bool isBmMethod() const;
     bool isGmMethod() const;
     bool isBmGpuMethod() const;
     bool isBpMethod() const;
+    bool isCsbpMethod() const;
+    bool isElasMethod() const;
 
 signals:
     void valueChanged();
@@ -370,6 +410,9 @@ public slots:
     void activateGmWidget() const;
     void activateBmGpuWidget() const;
     void activateBpWidget() const;
+    void activateCsbpWidget() const;
+    void activateElasWidget() const;
+    void activateWidget( const TypeComboBox::Type type ) const;
 
 protected slots:
     void updateStackedWidget();
@@ -383,6 +426,8 @@ protected:
     QPointer< GMControlWidget > m_gmControlWidget;
     QPointer< BMGPUControlWidget > m_bmGpuControlWidget;
     QPointer< BPControlWidget > m_bpControlWidget;
+    QPointer< CSBPControlWidget > m_csbpControlWidget;
+    QPointer< ElasControlWidget > m_elasControlWidget;
 
     QPointer< FilterControlWidget > m_filterControlWidget;
 
@@ -390,6 +435,8 @@ protected:
     int m_gmControlIndex;
     int m_bmGpuControlIndex;
     int m_bpControlIndex;
+    int m_csbpControlIndex;
+    int m_elasControlIndex;
 
 private:
     void initialize();

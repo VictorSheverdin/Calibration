@@ -75,6 +75,8 @@ protected:
     std::shared_ptr< GMDisparityProcessor > m_gmProcessor;
     std::shared_ptr< BMGPUDisparityProcessor > m_bmGpuProcessor;
     std::shared_ptr< BPDisparityProcessor > m_bpProcessor;
+    std::shared_ptr< CSBPDisparityProcessor > m_csbpProcessor;
+    std::shared_ptr< ElasDisparityProcessor > m_elasProcessor;
 
     std::shared_ptr< StereoProcessor > m_processor;
 
