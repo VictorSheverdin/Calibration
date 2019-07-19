@@ -201,6 +201,37 @@ set ( ORBCAMERA_SOURCES
     "src/ORBCamera/main.cpp"
 )
 
+set ( WRITER_SOURCES
+    "src/common/defs.h"
+    "src/common/precompiled.h"
+    "src/common/image.h"
+    "src/common/image.cpp"
+    "src/common/imagewidget.h"
+    "src/common/imagewidget.cpp"
+    "src/common/vimbacamera.h"
+    "src/common/vimbacamera.cpp"
+    "src/common/limitedqueue.h"
+    "src/common/limitedqueue.inl"
+    "src/common/supportwidgets.h"
+    "src/common/supportwidgets.cpp"
+    "src/common/supportwidgets.inl"
+    "src/common/functions.h"
+    "src/common/functions.cpp"
+    "src/common/calibrationdatabase.h"
+    "src/common/calibrationdatabase.cpp"
+    "src/common/ipwidget.h"
+    "src/common/ipwidget.cpp"
+    "src/common/documentarea.h"
+    "src/common/documentarea.cpp"
+    "src/common/iconswidget.h"
+    "src/common/iconswidget.cpp"
+    "src/common/fileslistwidget.h"
+    "src/common/fileslistwidget.cpp"
+    "src/writer/writer.h"
+    "src/writer/writer.cpp"
+    "src/writer/main.cpp"
+)
+
 set ( RESOURCES
     "resources/resources.qrc"
 )
@@ -229,6 +260,7 @@ add_executable( disparity ${DISPARITY_SOURCES} ${RES_SOURCES} )
 add_executable( compare ${COMPARE_SOURCES} )
 add_executable( odometry ${ODOMETRY_SOURCES} ${RES_SOURCES} )
 add_executable( orbcamera ${ORBCAMERA_SOURCES} ${RES_SOURCES} )
+add_executable( writer ${WRITER_SOURCES} ${RES_SOURCES} )
 
 target_include_directories( odometry PRIVATE ${Pangolin_INCLUDE_DIRS} )
 target_include_directories( orbcamera PRIVATE ${Pangolin_INCLUDE_DIRS} )
@@ -238,3 +270,4 @@ target_link_libraries( disparity ${Qt5Widgets_LIBRARIES} ${OpenCV_LIBS} ${EIGEN3
 target_link_libraries( compare ${Qt5Widgets_LIBRARIES} )
 target_link_libraries( odometry ${Qt5Widgets_LIBRARIES} ${Pangolin_LIBRARIES} ${OpenCV_LIBS} ${EIGEN3_LIBS} ${PROJECT_SOURCE_DIR}/src/DBoW2/lib/libDBoW2.so ${PROJECT_SOURCE_DIR}/src/g2o/lib/libg2o.so )
 target_link_libraries( orbcamera ${Qt5Widgets_LIBRARIES} ${Pangolin_LIBRARIES} ${OpenCV_LIBS} ${EIGEN3_LIBS} ${CMAKE_CURRENT_SOURCE_DIR}/src/vimba/lib/libVimbaCPP.so ${PROJECT_SOURCE_DIR}/src/DBoW2/lib/libDBoW2.so ${PROJECT_SOURCE_DIR}/src/g2o/lib/libg2o.so )
+target_link_libraries( writer ${Qt5Widgets_LIBRARIES} ${OpenCV_LIBS} ${CMAKE_CURRENT_SOURCE_DIR}/src/vimba/lib/libVimbaCPP.so )

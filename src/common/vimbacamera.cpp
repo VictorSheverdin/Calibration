@@ -252,7 +252,7 @@ StereoCamera::StereoCamera( const std::string &leftIp, const std::string &rightI
 
 void StereoCamera::initialize()
 {
-    connect( &m_leftCamera, &SlaveCamera::receivedFrame, this, &StereoCamera::updateFrame );
+    connect( &m_leftCamera, &MasterCamera::receivedFrame, this, &StereoCamera::updateFrame );
     connect( &m_rightCamera, &SlaveCamera::receivedFrame, this, &StereoCamera::updateFrame );
 }
 

@@ -125,11 +125,13 @@ public:
 signals:
     void receivedFrame();
 
+public slots:
+
 protected slots:
     void updateFrame();
 
 protected:
-    SlaveCamera m_leftCamera;
+    MasterCamera m_leftCamera;
     SlaveCamera m_rightCamera;
 
     LimitedQueue< StereoFrame > m_framesQueue;

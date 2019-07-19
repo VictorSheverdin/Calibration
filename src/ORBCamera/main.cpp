@@ -42,30 +42,33 @@ using namespace std;
 std::string pathToVocabulary = "/home/victor/calibration/ORBvoc.txt";
 std::string pathToSettings = "/home/victor/calibration/orb_calib.yaml";
 
-int main( int argc, char **argv )
+int main( int , char ** )
 {   
-    QApplication app( argc, argv );
-
     checkVimbaStatus( AVT::VmbAPI::VimbaSystem::GetInstance().Startup(), "Could not start Vimba system" );
 
-    StereoCamera camera( "192.168.80.82", "192.168.80.66" );
+    StereoCamera camera( "192.168.80.66", "192.168.80.82" );
 
-    ORB_SLAM2::System SLAM( pathToVocabulary, pathToSettings, ORB_SLAM2::System::STEREO, false );
+    ORB_SLAM2::System SLAM( pathToVocabulary, pathToSettings, ORB_SLAM2::System::STEREO, true );
 
-    double tframe = 0;
+    auto prevTime = std::chrono::system_clock::now();
 
     while( true )
     {
-/*        auto frame = camera.getFrame();
+        // camera.updateFrame();
+        auto frame = camera.getFrame();
 
         if ( !frame.empty() ) {
             auto imLeft = frame.leftFrame();
             auto imRight = frame.rightFrame();
-            tframe += 1.0/30.0;
 
-            SLAM.TrackStereo( imLeft, imRight, tframe );
+            auto currentTime = std::chrono::system_clock::now();
 
-        }*/
+            auto time = std::chrono::duration_cast< std::chrono::milliseconds >( currentTime - prevTime ).count();
+            prevTime = currentTime;
+
+            SLAM.TrackStereo( imLeft, imRight, static_cast<double>( time / 1000.0 ) );
+
+        }
 
     }
 

@@ -19,7 +19,7 @@ Application::~Application()
 
 void Application::initialize( int &, char ** )
 {
-    checkVimbaStatus( m_vimbaSystem.Startup(), "Could not start Vimba system");
+    checkVimbaStatus( m_vimbaSystem.Startup(), "Could not start Vimba system" );
 
     QFile cssFile(":/resources/qss/style.css");
 
@@ -32,7 +32,7 @@ void Application::initialize( int &, char ** )
 
     setWindowIcon( QIcon( ":/resources/images/checkerboard.ico" ) );
 
-    m_mainWindow = new MainWindow( /*"192.168.80.82", "192.168.80.66"*/ );
+    m_mainWindow = new MainWindow();
 
     m_mainWindow->showMaximized();
 

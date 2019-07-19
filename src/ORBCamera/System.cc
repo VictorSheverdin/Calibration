@@ -26,7 +26,7 @@
 #include <pangolin/pangolin.h>
 #include <iomanip>
 
-#include "src/annotations/annotation.h"
+#include <unistd.h>
 
 namespace ORB_SLAM2
 {
@@ -35,14 +35,33 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
                const bool bUseViewer):mSensor(sensor), mpViewer(static_cast<Viewer*>(NULL)), mbReset(false),mbActivateLocalizationMode(false),
         mbDeactivateLocalizationMode(false)
 {
+    // Output welcome message
+    cout << endl <<
+    "ORB-SLAM2 Copyright (C) 2014-2016 Raul Mur-Artal, University of Zaragoza." << endl <<
+    "This program comes with ABSOLUTELY NO WARRANTY;" << endl  <<
+    "This is free software, and you are welcome to redistribute it" << endl <<
+    "under certain conditions. See LICENSE.txt." << endl << endl;
+
+    cout << "Input sensor was set to: ";
+
+    if(mSensor==MONOCULAR)
+        cout << "Monocular" << endl;
+    else if(mSensor==STEREO)
+        cout << "Stereo" << endl;
+    else if(mSensor==RGBD)
+        cout << "RGB-D" << endl;
+
     //Check settings file
     cv::FileStorage fsSettings(strSettingsFile.c_str(), cv::FileStorage::READ);
-
     if(!fsSettings.isOpened())
     {
        cerr << "Failed to open settings file at: " << strSettingsFile << endl;
        exit(-1);
     }
+
+
+    //Load ORB Vocabulary
+    cout << endl << "Loading ORB Vocabulary. This could take a while..." << endl;
 
     mpVocabulary = new ORBVocabulary();
     bool bVocLoad = mpVocabulary->loadFromTextFile(strVocFile);
@@ -52,6 +71,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
         cerr << "Falied to open at: " << strVocFile << endl;
         exit(-1);
     }
+    cout << "Vocabulary loaded!" << endl << endl;
 
     //Create KeyFrame Database
     mpKeyFrameDatabase = new KeyFrameDatabase(*mpVocabulary);
@@ -60,8 +80,8 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     mpMap = new Map();
 
     //Create Drawers. These are used by the Viewer
-    mpFrameDrawer = new FrameDrawer( mpMap );
-    mpMapDrawer = new MapDrawer( mpMap, strSettingsFile );
+    mpFrameDrawer = new FrameDrawer(mpMap);
+    mpMapDrawer = new MapDrawer(mpMap, strSettingsFile);
 
     //Initialize the Tracking thread
     //(it will live in the main thread of execution, the one that called this constructor)
@@ -450,75 +470,7 @@ void System::SaveTrajectoryKITTI(const string &filename)
              Rwc.at<float>(2,0) << " " << Rwc.at<float>(2,1)  << " " << Rwc.at<float>(2,2) << " "  << twc.at<float>(2) << endl;
     }
     f.close();
-
     cout << endl << "trajectory saved!" << endl;
-
-}
-
-void System::SaveTrajectory( const string &filename )
-{
-    vector<KeyFrame*> vpKFs = mpMap->GetAllKeyFrames();
-
-    sort( vpKFs.begin(), vpKFs.end(), KeyFrame::lId );
-
-    // Transform all keyframes so that the first keyframe is at the origin.
-    // After a loop closure the first keyframe might not be at the origin.
-    cv::Mat Two = vpKFs[0]->GetPoseInverse();
-
-    ofstream f;
-    f.open( filename.c_str() );
-    f << fixed;
-
-
-    int i = 0;
-
-    // Frame pose is stored relative to its reference keyframe (which is optimized by BA and pose graph).
-    // We need to get first the keyframe pose and then concatenate the relative transformation.
-    // Frames not localized (tracking failure) are not saved.
-
-    // For each frame we have a reference keyframe (lRit), the timestamp (lT) and a flag
-    // which is true when tracking failed (lbL).
-    list<ORB_SLAM2::KeyFrame*>::iterator lRit = mpTracker->mlpReferences.begin();
-    list<double>::iterator lT = mpTracker->mlFrameTimes.begin();
-    for(list<cv::Mat>::iterator lit=mpTracker->mlRelativeFramePoses.begin(), lend=mpTracker->mlRelativeFramePoses.end();lit!=lend;lit++, lRit++, lT++)
-    {
-        ORB_SLAM2::KeyFrame* pKF = *lRit;
-
-        cv::Mat Trw = cv::Mat::eye( 4,4,CV_32F );
-
-        while(pKF->isBad())
-        {
-          //  cout << "bad parent" << endl;
-            Trw = Trw*pKF->mTcp;
-            pKF = pKF->GetParent();
-        }
-
-        Trw = Trw * pKF->GetPose() * Two;
-
-        cv::Mat Tcw = (*lit)*Trw;
-        cv::Mat Rwc = Tcw.rowRange(0,3).colRange(0,3).t();
-        cv::Mat twc = -Rwc*Tcw.rowRange(0,3).col(3);
-
-        f << twc.at<float>(0) << " " << twc.at<float>(1) << " " << twc.at<float>(2) << endl;
-
-        Annotation annotation;
-
-        annotation.position.x = twc.at<float>(0);
-        annotation.position.y = twc.at<float>(1);
-        annotation.position.z = twc.at<float>(2);
-
-        std::stringstream ss;
-        ss << setfill('0') << setw( 4 ) << i;
-
-        annotation.SaveToFile( "/home/sheverdin/result/" + ss.str() + ".xml" );
-
-        ++i;
-    }
-
-    f.close();
-
-    cout << endl << "trajectory saved!" << endl;
-
 }
 
 int System::GetTrackingState()

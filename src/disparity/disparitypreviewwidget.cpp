@@ -222,7 +222,6 @@ CameraDisparityWidget::CameraDisparityWidget( const QString &leftCameraIp, const
 void CameraDisparityWidget::initialize()
 {
     connect( &m_camera, &StereoCamera::receivedFrame, this, &CameraDisparityWidget::updateFrame );
-
 }
 
 void CameraDisparityWidget::updateFrame()
