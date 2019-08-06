@@ -36,6 +36,8 @@
 #include "ORBVocabulary.h"
 #include "Viewer.h"
 
+#include <unistd.h>
+
 namespace ORB_SLAM2
 {
 
@@ -111,6 +113,8 @@ public:
     // Call first Shutdown()
     // See format details at: http://www.cvlibs.net/datasets/kitti/eval_odometry.php
     void SaveTrajectoryKITTI(const string &filename);
+
+    void SaveTrajectory( const string &filename );
 
     // TODO: Save/Load functions
     // SaveMap(const string &filename);

@@ -18,7 +18,6 @@
 * along with ORB-SLAM2. If not, see <http://www.gnu.org/licenses/>.
 */
 
-
 #include<iostream>
 #include<algorithm>
 #include<fstream>
@@ -32,7 +31,7 @@
 #include <QMessageBox>
 #include <QFile>
 
-#include "System.h"
+#include "src/ORB/System.h"
 
 #include "src/common/functions.h"
 #include "src/common/vimbacamera.h"
