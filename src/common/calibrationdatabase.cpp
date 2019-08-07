@@ -73,6 +73,61 @@ const cv::Mat &MonocularCalibrationDataShort::distortionCoefficients() const
     return m_distCoefficients;
 }
 
+int MonocularCalibrationDataShort::frameWidth() const
+{
+    return m_frameSize.width;
+}
+
+int MonocularCalibrationDataShort::frameHeight() const
+{
+    return m_frameSize.height;
+}
+
+double MonocularCalibrationDataShort::fx() const
+{
+    return m_cameraMatrix.at<double>( 0, 0 );
+}
+
+double MonocularCalibrationDataShort::fy() const
+{
+
+}
+
+double MonocularCalibrationDataShort::cx() const
+{
+
+}
+
+double MonocularCalibrationDataShort::cy() const
+{
+
+}
+
+double MonocularCalibrationDataShort::k1() const
+{
+
+}
+
+double MonocularCalibrationDataShort::k2() const
+{
+
+}
+
+double MonocularCalibrationDataShort::k3() const
+{
+
+}
+
+double MonocularCalibrationDataShort::p1() const
+{
+
+}
+
+double MonocularCalibrationDataShort::p2() const
+{
+
+}
+
 bool MonocularCalibrationDataShort::saveYaml( const std::string &fileName ) const
 {
     if ( isOk() ) {

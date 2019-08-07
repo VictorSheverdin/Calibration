@@ -35,6 +35,19 @@ public:
     void setDistortionCoefficients( const cv::Mat &value );
     const cv::Mat &distortionCoefficients() const;
 
+    int frameWidth() const;
+    int frameHeight() const;
+
+    double fx() const;
+    double fy() const;
+    double cx() const;
+    double cy() const;
+    double k1() const;
+    double k2() const;
+    double k3() const;
+    double p1() const;
+    double p2() const;
+
     bool saveYaml( const std::string &fileName ) const;
     bool loadYaml( const std::string &fileName );
 

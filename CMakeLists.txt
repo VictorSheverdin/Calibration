@@ -50,6 +50,8 @@ set ( LIBELAS_SOURCES
 )
 
 set ( ORB_SOURCES
+    src/ORB/Settings.h
+    src/ORB/Settings.cpp
     src/ORB/System.h
     src/ORB/System.cc
     src/ORB/Tracking.h
