@@ -39,6 +39,13 @@ MonocularCalibrationDataShort::MonocularCalibrationDataShort()
     initialize();
 }
 
+MonocularCalibrationDataShort::MonocularCalibrationDataShort( const std::string &fileName )
+{
+    initialize();
+
+    loadYaml( fileName );
+}
+
 void MonocularCalibrationDataShort::initialize()
 {
 }
@@ -85,47 +92,74 @@ int MonocularCalibrationDataShort::frameHeight() const
 
 double MonocularCalibrationDataShort::fx() const
 {
-    return m_cameraMatrix.at<double>( 0, 0 );
+    return m_cameraMatrix.at< double >( 0, 0 );
 }
 
 double MonocularCalibrationDataShort::fy() const
 {
-
+    return m_cameraMatrix.at< double >( 1, 1 );
 }
 
 double MonocularCalibrationDataShort::cx() const
 {
-
+    return m_cameraMatrix.at< double >( 0, 2 );
 }
 
 double MonocularCalibrationDataShort::cy() const
 {
-
+    return m_cameraMatrix.at< double >( 1, 2 );
 }
 
 double MonocularCalibrationDataShort::k1() const
 {
-
+    return m_distCoefficients.at< double >( 0 );
 }
 
 double MonocularCalibrationDataShort::k2() const
 {
-
+    return m_distCoefficients.at< double >( 1 );
 }
 
 double MonocularCalibrationDataShort::k3() const
 {
+    if ( m_distCoefficients.elemSize() > 4 )
+        return m_distCoefficients.at<double>( 4 );
+    else
+        return 0.0;
+}
 
+double MonocularCalibrationDataShort::k4() const
+{
+    if ( m_distCoefficients.elemSize() > 5 )
+        return m_distCoefficients.at<double>( 5 );
+    else
+        return 0.0;
+}
+
+double MonocularCalibrationDataShort::k5() const
+{
+    if ( m_distCoefficients.elemSize() > 6 )
+        return m_distCoefficients.at<double>( 6 );
+    else
+        return 0.0;
+}
+
+double MonocularCalibrationDataShort::k6() const
+{
+    if ( m_distCoefficients.elemSize() > 7 )
+        return m_distCoefficients.at<double>( 7 );
+    else
+        return 0.0;
 }
 
 double MonocularCalibrationDataShort::p1() const
 {
-
+    return m_distCoefficients.at<double>( 2 );
 }
 
 double MonocularCalibrationDataShort::p2() const
 {
-
+    return m_distCoefficients.at<double>( 3 );
 }
 
 bool MonocularCalibrationDataShort::saveYaml( const std::string &fileName ) const
@@ -354,9 +388,31 @@ const cv::Mat &StereoCalibrationDataBase::rightDMap() const
     return m_rightDMap;
 }
 
+double StereoCalibrationDataBase::distance() const
+{
+    auto xTrans = m_translationVector.at<double>( 0 );
+    auto yTrans = m_translationVector.at<double>( 1 );
+    auto zTrans = m_translationVector.at<double>( 2 );
+
+    return sqrt( xTrans * xTrans + yTrans * yTrans + zTrans * zTrans );
+}
+
 // StereoCalibrationDataShort
 StereoCalibrationDataShort::StereoCalibrationDataShort()
 {
+    initialize();
+}
+
+StereoCalibrationDataShort::StereoCalibrationDataShort( const std::string &fileName )
+{
+    initialize();
+
+    loadYaml( fileName );
+}
+
+void StereoCalibrationDataShort::initialize()
+{
+
 }
 
 void StereoCalibrationDataShort::setLeftCameraResults(const MonocularCalibrationDataShort &value )

@@ -762,8 +762,8 @@ StereoResult StereoProcessor::process( const StereoFrame &frame )
             CvImage leftRectifiedImage;
             CvImage rightRectifiedImage;
 
-            cv::remap( leftFrame, leftRectifiedImage, m_calibration.leftRMap(), m_calibration.leftDMap(), cv::INTER_LINEAR );
-            cv::remap( rightFrame, rightRectifiedImage, m_calibration.rightRMap(), m_calibration.rightDMap(), cv::INTER_LINEAR );
+            cv::remap( leftFrame, leftRectifiedImage, m_calibration.leftRMap(), m_calibration.leftDMap(), cv::INTER_LANCZOS4 );
+            cv::remap( rightFrame, rightRectifiedImage, m_calibration.rightRMap(), m_calibration.rightDMap(), cv::INTER_LANCZOS4 );
 
             CvImage leftCroppedFrame;
             CvImage rightCroppedFrame;
@@ -787,15 +787,6 @@ StereoResult StereoProcessor::process( const StereoFrame &frame )
                 cv::Mat points;
 
                 cv::reprojectImageTo3D( disparity, points, m_calibration.disparityToDepthMatrix(), true, CV_32F );
-
-                /*cv::cuda::GpuMat disp_gpu;
-                cv::cuda::GpuMat points_gpu;
-
-                disp_gpu.upload( disparity );
-
-                cv::cuda::reprojectImageTo3D( disp_gpu, points_gpu, m_calibration.disparityToDepthMatrix() );
-
-                points_gpu.download( points );*/
 
                 ret.setPoints( points );
 

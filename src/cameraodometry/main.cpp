@@ -39,7 +39,7 @@
 using namespace std;
 
 std::string pathToVocabulary = "/home/victor/calibration/ORBvoc.txt";
-std::string pathToSettings = "/home/victor/calibration/orb_calib.yaml";
+std::string pathToSettings = "/home/victor/calibration/calibration.yaml";
 
 int main( int , char ** )
 {   
@@ -47,7 +47,10 @@ int main( int , char ** )
 
     StereoCamera camera( "192.168.80.66", "192.168.80.82" );
 
-    ORB_SLAM2::System SLAM( pathToVocabulary, pathToSettings, ORB_SLAM2::System::STEREO, true );
+    MonocularCalibrationDataShort calibrationData( pathToSettings );
+    ORB_SLAM2::Settings settings( calibrationData );
+
+    ORB_SLAM2::System SLAM( pathToVocabulary, settings, ORB_SLAM2::System::STEREO, true );
 
     auto prevTime = std::chrono::system_clock::now();
 

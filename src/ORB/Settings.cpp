@@ -35,12 +35,39 @@ Settings::Settings(
 
 Settings::Settings( const MonocularCalibrationDataShort &data )
 {
+    initialize();
+
+    setImageWidth( data.frameWidth() );
+    setImageHeight( data.frameHeight() );
+    setFx( data.fx() );
+    setFy( data.fy() );
+    setCx( data.cx() );
+    setCy( data.cy() );
+    setK1( data.k1() );
+    setK2( data.k2() );
+    setK3( data.k3() );
+    setP1( data.p1() );
+    setP2( data.p2() );
+
     setBf( 0 );
 }
 
 Settings::Settings( const StereoCalibrationDataShort &data )
 {
+    initialize();
 
+    setImageWidth( data.leftCameraResults().frameWidth() );
+    setImageHeight( data.leftCameraResults().frameHeight() );
+    setFx( data.leftCameraResults().fx() );
+    setFy( data.leftCameraResults().fy() );
+    setCx( data.leftCameraResults().cx() );
+    setCy( data.leftCameraResults().cy() );
+    setK1( data.leftCameraResults().k1() );
+    setK2( data.leftCameraResults().k2() );
+    setK3( data.leftCameraResults().k3() );
+    setP1( data.leftCameraResults().p1() );
+    setP2( data.leftCameraResults().p2() );
+    setBf( data.distance() * data.leftCameraResults().fx() );
 }
 
 void Settings::initialize()
@@ -51,19 +78,25 @@ void Settings::initialize()
     m_pointSize = 2;
     m_cameraSize = 0.7;
     m_cameraLineWidth = 3;
-    m_fps = 30;
+
+    m_fps = 10;
+
     m_rgb = 1;
-    m_features = 2000;
+
+    m_features = 10000;
     m_scaleFactor = 1.2;
-    m_levels = 8;
-    m_iniThFAST = 20;
-    m_minThFAST = 7;
+    m_levels = 16;
+    m_iniThFAST = 77;
+    m_minThFAST = 77;
     m_thDepth = 35;
+
     m_depthMapFactor = 1;
+
     m_viewpointX = 0;
     m_viewpointY = -100;
     m_viewpointZ = -0.1;
-    m_viewpointF = 2000;
+    m_viewpointF = 500;
+
 }
 
 void Settings::setkeyFrameSize( const float value )
@@ -301,7 +334,7 @@ void Settings::setThDepth( const float value )
     m_thDepth = value;
 }
 
-float Settings::thDepth()
+float Settings::thDepth() const
 {
     return m_thDepth;
 }
@@ -311,7 +344,7 @@ void Settings::setDepthMapFactor( const float value )
     m_depthMapFactor = value;
 }
 
-float Settings::depthMapFactor()
+float Settings::depthMapFactor() const
 {
     return m_depthMapFactor;
 }
@@ -374,6 +407,15 @@ void Settings::setViewpointF( const float value )
 float Settings::viewpointF() const
 {
     return m_viewpointF;
+}
+
+void Settings::zeroDistortionCoefficients()
+{
+    m_k1 = 0;
+    m_k2 = 0;
+    m_k3 = 0;
+    m_p1 = 0;
+    m_p2 = 0;
 }
 
 }

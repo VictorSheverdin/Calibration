@@ -23,32 +23,32 @@
 
 #include <mutex>
 
+#include <unistd.h>
+
 namespace ORB_SLAM2
 {
 
-Viewer::Viewer(System* pSystem, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer, Tracking *pTracking, const string &strSettingPath):
+Viewer::Viewer(System* pSystem, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer, Tracking *pTracking, const Settings &settings):
     mpSystem(pSystem), mpFrameDrawer(pFrameDrawer),mpMapDrawer(pMapDrawer), mpTracker(pTracking),
     mbFinishRequested(false), mbFinished(true), mbStopped(true), mbStopRequested(false)
 {
-    cv::FileStorage fSettings(strSettingPath, cv::FileStorage::READ);
-
-    float fps = fSettings["Camera.fps"];
+    float fps = settings.fps();
     if(fps<1)
         fps=30;
     mT = 1e3/fps;
 
-    mImageWidth = fSettings["Camera.width"];
-    mImageHeight = fSettings["Camera.height"];
+    mImageWidth = settings.imageWidth();
+    mImageHeight = settings.imageHeight();
     if(mImageWidth<1 || mImageHeight<1)
     {
         mImageWidth = 640;
         mImageHeight = 480;
     }
 
-    mViewpointX = fSettings["Viewer.ViewpointX"];
-    mViewpointY = fSettings["Viewer.ViewpointY"];
-    mViewpointZ = fSettings["Viewer.ViewpointZ"];
-    mViewpointF = fSettings["Viewer.ViewpointF"];
+    mViewpointX = settings.viewpointX();
+    mViewpointY = settings.viewpointY();
+    mViewpointZ = settings.viewpointZ();
+    mViewpointF = settings.viewpointF();
 }
 
 void Viewer::Run()
@@ -65,7 +65,7 @@ void Viewer::Run()
     glEnable (GL_BLEND);
     glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    // pangolin::CreatePanel("menu").SetBounds(0.0,1.0,0.0,pangolin::Attach::Pix(175));
+    pangolin::CreatePanel("menu").SetBounds(0.0,1.0,0.0,pangolin::Attach::Pix(175));
     pangolin::Var<bool> menuFollowCamera("menu.Follow Camera",true,true);
     pangolin::Var<bool> menuShowPoints("menu.Show Points",true,true);
     pangolin::Var<bool> menuShowKeyFrames("menu.Show KeyFrames",true,true);

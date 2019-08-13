@@ -31,18 +31,24 @@
 #include <QApplication>
 #include <QMessageBox>
 #include <QFile>
+#include <QDebug>
 
 #include "src/ORB/System.h"
+
+#include "src/common/calibrationdatabase.h"
 
 using namespace std;
 
 std::string pathToVocabulary = "/home/victor/calibration/ORBvoc.txt";
-std::string pathToSettings = "/home/victor/calibration/orb_calib.yaml";
+std::string pathToSettings = "/home/victor/calibration/calibration.yaml";
+QString pathToImages = "/home/victor/datasets/Polygon/";
 
 int main( int argc, char **argv )
 {
-    QStringList leftFileNames;
-    QStringList rightFileNames;
+
+
+    QString leftDir;
+    QString rightDir;
 
     {
         QApplication a( argc, argv );
@@ -56,43 +62,75 @@ int main( int argc, char **argv )
         else
             QMessageBox::critical( nullptr, "Error", "Can't load css file:" + cssFile.fileName() );
 
-        StereoFilesListDialog dlg;
+        StereoDirDialog dlg;
 
         if ( dlg.exec() == QDialog::Accepted ) {
-            leftFileNames = dlg.leftFileNames();
-            rightFileNames = dlg.rightFileNames();
+            leftDir = dlg.leftDir();
+            rightDir = dlg.rightDir();
         }
 
     }
 
-    if ( leftFileNames.size() == rightFileNames.size() && leftFileNames.size() > 0 ) {
-        ORB_SLAM2::System SLAM( pathToVocabulary, pathToSettings, ORB_SLAM2::System::STEREO, true );
+   if ( !leftDir.isEmpty() && !rightDir.isEmpty() ) {
 
-        cv::Mat imLeft, imRight;
+        StereoCalibrationDataShort calibrationData( pathToSettings );
 
-        double tframe = 0;
+        if ( calibrationData.isOk() ) {
 
-        for( int i = 0; i < leftFileNames.size(); ++i )
-        {
-            auto vstrImageLeft = leftFileNames[i].toStdString();
-            auto vstrImageRight = rightFileNames[i].toStdString();
+            ORB_SLAM2::Settings settings( calibrationData );
 
-            imLeft = cv::imread( vstrImageLeft, cv::IMREAD_UNCHANGED );
-            imRight = cv::imread( vstrImageRight, cv::IMREAD_UNCHANGED );
-            tframe += 1.0/30.0;
+            settings.setCx( settings.cx() - calibrationData.leftROI().x );
+            settings.setCy( settings.cy() - calibrationData.leftROI().y );
 
-            if ( imLeft.empty() ) {
-                std::cerr << "Failed to load image: " << i << std::endl;
-                return 1;
+            settings.zeroDistortionCoefficients();
+
+            ORB_SLAM2::System SLAM( pathToVocabulary, settings, ORB_SLAM2::System::STEREO, true );
+
+            cv::Mat imLeft, imRight;
+
+            double tframe = 0;
+
+            for( int i = 10000; i < 30000; ++i )
+            {
+                auto vstrImageLeft = leftDir + "/" + QString::number(i) + "_left.jpg";
+                auto vstrImageRight = rightDir + "/" + QString::number(i) + "_right.jpg";
+
+                qDebug() << vstrImageLeft << vstrImageRight;
+
+                imLeft = cv::imread( vstrImageLeft.toStdString(), cv::IMREAD_UNCHANGED );
+                imRight = cv::imread( vstrImageRight.toStdString(), cv::IMREAD_UNCHANGED );
+
+                if ( imLeft.empty() ||  imRight.empty() ) {
+                    std::cerr << "Failed to load image: " << i << std::endl;
+                    return 1;
+                }
+
+                CvImage leftRectifiedImage;
+                CvImage rightRectifiedImage;
+
+                cv::remap( imLeft, leftRectifiedImage, calibrationData.leftRMap(), calibrationData.leftDMap(), cv::INTER_LANCZOS4 );
+                cv::remap( imRight, rightRectifiedImage, calibrationData.rightRMap(), calibrationData.rightDMap(), cv::INTER_LANCZOS4 );
+
+                CvImage leftCroppedFrame;
+                CvImage rightCroppedFrame;
+
+                if (!calibrationData.leftROI().empty() && !calibrationData.rightROI().empty()) {
+                    leftCroppedFrame = leftRectifiedImage( calibrationData.leftROI() );
+                    rightCroppedFrame = rightRectifiedImage( calibrationData.leftROI() );
+                }
+
+                tframe += 1.0/10.0;
+
+                SLAM.TrackStereo( leftCroppedFrame, rightCroppedFrame, tframe );
+
             }
 
-            SLAM.TrackStereo(imLeft,imRight,tframe);
+
+            getchar();
+
+            SLAM.Shutdown();
+
         }
-
-
-        getchar();
-
-        SLAM.Shutdown();
 
     }
 

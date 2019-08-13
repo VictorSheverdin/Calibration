@@ -133,4 +133,29 @@ private:
 
 };
 
+class FolderLine : public QWidget
+{
+    Q_OBJECT
+
+public:
+    explicit FolderLine( const QString &label, QWidget *parent = nullptr );
+
+    void setLabel( const QString label );
+    QString label() const;
+
+    void setPath( const QString &value );
+    QString path() const;
+
+public slots:
+    void choiceDirectoryDialog();
+
+protected:
+    QPointer< QLabel > m_label;
+    QPointer< QLineEdit > m_path;
+    QPointer< QPushButton > m_button;
+
+private:
+    void initialize();
+};
+
 #include "supportwidgets.inl"

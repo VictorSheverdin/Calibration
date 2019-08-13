@@ -71,10 +71,10 @@ public:
     int minThFAST() const;
 
     void setThDepth( const float value );
-    float thDepth();
+    float thDepth() const;
 
     void setDepthMapFactor( const float value );
-    float depthMapFactor();
+    float depthMapFactor() const;
 
     // Viewer settings
     void setImageWidth( const float value );
@@ -90,6 +90,8 @@ public:
     float viewpointZ() const;
     void setViewpointF( const float value );
     float viewpointF() const;
+
+    void zeroDistortionCoefficients();
 
 protected:
     float m_keyFrameSize;

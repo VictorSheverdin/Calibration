@@ -25,6 +25,7 @@ class MonocularCalibrationDataShort : public CalibrationDataBase
 {
 public:
     MonocularCalibrationDataShort();
+    MonocularCalibrationDataShort( const std::string &fileName );
 
     void setFrameSize( const cv::Size &value );
     const cv::Size &frameSize() const;
@@ -45,6 +46,9 @@ public:
     double k1() const;
     double k2() const;
     double k3() const;
+    double k4() const;
+    double k5() const;
+    double k6() const;
     double p1() const;
     double p2() const;
 
@@ -114,6 +118,8 @@ public:
     void setRightDMap( const cv::Mat &value );
     const cv::Mat &rightDMap() const;
 
+    double distance() const;
+
 protected:
     unsigned int m_correspondFrameCount;
 
@@ -145,6 +151,7 @@ class StereoCalibrationDataShort : public StereoCalibrationDataBase
 {
 public:
     StereoCalibrationDataShort();
+    StereoCalibrationDataShort( const std::string &fileName );
 
     void setLeftCameraResults( const MonocularCalibrationDataShort &value );
     const MonocularCalibrationDataShort &leftCameraResults() const;
@@ -160,6 +167,9 @@ public:
 protected:
     MonocularCalibrationDataShort m_leftCameraResults;
     MonocularCalibrationDataShort m_rightCameraResults;
+
+private:
+    void initialize();
 
 };
 

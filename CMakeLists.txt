@@ -23,6 +23,8 @@ set ( COMMON_SOURCES
     src/common/functions.cpp
     src/common/calibrationdatabase.h
     src/common/calibrationdatabase.cpp
+    src/common/rectificationprocessor.h
+    src/common/rectificationprocessor.cpp
     src/common/ipwidget.h
     src/common/ipwidget.cpp
     src/common/documentarea.h
@@ -174,11 +176,11 @@ add_executable( disparity ${COMMON_SOURCES} ${LIBELAS_SOURCES} ${RES_SOURCES}
     src/disparity/main.cpp
 )
 
-add_executable( imagesodometry ${COMMON_SOURCES} ${ANNOTATION_SOURCES} ${ORB_SOURCES} ${RES_SOURCES}
+add_executable( imagesorbodometry ${COMMON_SOURCES} ${ANNOTATION_SOURCES} ${ORB_SOURCES} ${RES_SOURCES}
     src/imagesodometry/main.cpp
 )
 
-add_executable( cameraodometry ${COMMON_SOURCES} ${ANNOTATION_SOURCES} ${ORB_SOURCES} ${RES_SOURCES}
+add_executable( cameraorbodometry ${COMMON_SOURCES} ${ANNOTATION_SOURCES} ${ORB_SOURCES} ${RES_SOURCES}
     src/cameraodometry/main.cpp
 )
 
@@ -188,11 +190,11 @@ add_executable( writer ${COMMON_SOURCES} ${RES_SOURCES}
     src/writer/main.cpp
 )
 
-target_include_directories( imagesodometry PRIVATE ${Pangolin_INCLUDE_DIRS} )
-target_include_directories( cameraodometry PRIVATE ${Pangolin_INCLUDE_DIRS} )
+target_include_directories( imagesorbodometry PRIVATE ${Pangolin_INCLUDE_DIRS} )
+target_include_directories( cameraorbodometry PRIVATE ${Pangolin_INCLUDE_DIRS} )
 
 target_link_libraries( calibration ${Qt5Widgets_LIBRARIES} ${OpenCV_LIBS} ${EIGEN3_LIBS} ${CMAKE_CURRENT_SOURCE_DIR}/src/vimba/lib/libVimbaCPP.so ${YAML_CPP_LIBRARIES} )
 target_link_libraries( disparity ${Qt5Widgets_LIBRARIES} ${OpenCV_LIBS} ${EIGEN3_LIBS} ${VTK_LIBRARIES} ${PCL_LIBRARIES} ${CMAKE_CURRENT_SOURCE_DIR}/src/vimba/lib/libVimbaCPP.so ${YAML_CPP_LIBRARIES} )
-target_link_libraries( imagesodometry ${Qt5Widgets_LIBRARIES} ${Pangolin_LIBRARIES} ${OpenCV_LIBS} ${EIGEN3_LIBS} ${CMAKE_CURRENT_SOURCE_DIR}/src/vimba/lib/libVimbaCPP.so ${PROJECT_SOURCE_DIR}/src/DBoW2/lib/libDBoW2.so ${PROJECT_SOURCE_DIR}/src/g2o/lib/libg2o.so )
-target_link_libraries( cameraodometry ${Qt5Widgets_LIBRARIES} ${Pangolin_LIBRARIES} ${OpenCV_LIBS} ${EIGEN3_LIBS} ${CMAKE_CURRENT_SOURCE_DIR}/src/vimba/lib/libVimbaCPP.so ${PROJECT_SOURCE_DIR}/src/DBoW2/lib/libDBoW2.so ${PROJECT_SOURCE_DIR}/src/g2o/lib/libg2o.so )
+target_link_libraries( imagesorbodometry ${Qt5Widgets_LIBRARIES} ${Pangolin_LIBRARIES} ${OpenCV_LIBS} ${EIGEN3_LIBS} ${CMAKE_CURRENT_SOURCE_DIR}/src/vimba/lib/libVimbaCPP.so ${PROJECT_SOURCE_DIR}/src/DBoW2/lib/libDBoW2.so ${PROJECT_SOURCE_DIR}/src/g2o/lib/libg2o.so )
+target_link_libraries( cameraorbodometry ${Qt5Widgets_LIBRARIES} ${Pangolin_LIBRARIES} ${OpenCV_LIBS} ${EIGEN3_LIBS} ${CMAKE_CURRENT_SOURCE_DIR}/src/vimba/lib/libVimbaCPP.so ${PROJECT_SOURCE_DIR}/src/DBoW2/lib/libDBoW2.so ${PROJECT_SOURCE_DIR}/src/g2o/lib/libg2o.so )
 target_link_libraries( writer ${Qt5Widgets_LIBRARIES} ${OpenCV_LIBS} ${CMAKE_CURRENT_SOURCE_DIR}/src/vimba/lib/libVimbaCPP.so )

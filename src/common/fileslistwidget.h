@@ -81,3 +81,39 @@ private:
     void initialize();
 
 };
+
+class StereoDirWidget : public QWidget
+{
+    Q_OBJECT
+
+public:
+    explicit StereoDirWidget( QWidget* parent = nullptr );
+
+    QString leftDir() const;
+    QString rightDir() const;
+
+protected:
+    QPointer< FolderLine > m_leftFolderWidget;
+    QPointer< FolderLine > m_rightFolderWidget;
+
+private:
+    void initialize();
+
+};
+
+class StereoDirDialog : public DialogBase
+{
+    Q_OBJECT
+
+public:
+    explicit StereoDirDialog( QWidget *parent = nullptr );
+
+    StereoDirWidget *widget() const;
+
+    QString leftDir() const;
+    QString rightDir() const;
+
+private:
+    void initialize();
+
+};

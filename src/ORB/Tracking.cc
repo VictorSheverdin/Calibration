@@ -37,24 +37,24 @@
 
 #include<mutex>
 
+#include <unistd.h>
 
 using namespace std;
 
 namespace ORB_SLAM2
 {
 
-Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer, Map *pMap, KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor):
+Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer, Map *pMap, KeyFrameDatabase* pKFDB, const Settings &settings, const int sensor):
     mState(NO_IMAGES_YET), mSensor(sensor), mbOnlyTracking(false), mbVO(false), mpORBVocabulary(pVoc),
     mpKeyFrameDB(pKFDB), mpInitializer(static_cast<Initializer*>(NULL)), mpSystem(pSys), mpViewer(NULL),
     mpFrameDrawer(pFrameDrawer), mpMapDrawer(pMapDrawer), mpMap(pMap), mnLastRelocFrameId(0)
 {
     // Load camera parameters from settings file
 
-    cv::FileStorage fSettings(strSettingPath, cv::FileStorage::READ);
-    float fx = fSettings["Camera.fx"];
-    float fy = fSettings["Camera.fy"];
-    float cx = fSettings["Camera.cx"];
-    float cy = fSettings["Camera.cy"];
+    float fx = settings.fx();
+    float fy = settings.fy();
+    float cx = settings.cx();
+    float cy = settings.cy();
 
     cv::Mat K = cv::Mat::eye(3,3,CV_32F);
     K.at<float>(0,0) = fx;
@@ -64,11 +64,11 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
     K.copyTo(mK);
 
     cv::Mat DistCoef(4,1,CV_32F);
-    DistCoef.at<float>(0) = fSettings["Camera.k1"];
-    DistCoef.at<float>(1) = fSettings["Camera.k2"];
-    DistCoef.at<float>(2) = fSettings["Camera.p1"];
-    DistCoef.at<float>(3) = fSettings["Camera.p2"];
-    const float k3 = fSettings["Camera.k3"];
+    DistCoef.at<float>(0) = settings.k1();
+    DistCoef.at<float>(1) = settings.k2();
+    DistCoef.at<float>(2) = settings.p1();
+    DistCoef.at<float>(3) = settings.p2();
+    const float k3 = settings.k3();
     if(k3!=0)
     {
         DistCoef.resize(5);
@@ -76,9 +76,9 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
     }
     DistCoef.copyTo(mDistCoef);
 
-    mbf = fSettings["Camera.bf"];
+    mbf = settings.bf();
 
-    float fps = fSettings["Camera.fps"];
+    float fps = settings.fps();
     if(fps==0)
         fps=30;
 
@@ -100,7 +100,7 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
     cout << "- fps: " << fps << endl;
 
 
-    int nRGB = fSettings["Camera.RGB"];
+    int nRGB = settings.rgb();
     mbRGB = nRGB;
 
     if(mbRGB)
@@ -110,11 +110,11 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
 
     // Load ORB parameters
 
-    int nFeatures = fSettings["ORBextractor.nFeatures"];
-    float fScaleFactor = fSettings["ORBextractor.scaleFactor"];
-    int nLevels = fSettings["ORBextractor.nLevels"];
-    int fIniThFAST = fSettings["ORBextractor.iniThFAST"];
-    int fMinThFAST = fSettings["ORBextractor.minThFAST"];
+    int nFeatures = settings.features();
+    float fScaleFactor = settings.scaleFactor();
+    int nLevels = settings.levels();
+    int fIniThFAST = settings.iniThFAST();
+    int fMinThFAST = settings.minThFAST();
 
     mpORBextractorLeft = new ORBextractor(nFeatures,fScaleFactor,nLevels,fIniThFAST,fMinThFAST);
 
@@ -133,13 +133,13 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
 
     if(sensor==System::STEREO || sensor==System::RGBD)
     {
-        mThDepth = mbf*(float)fSettings["ThDepth"]/fx;
+        mThDepth = mbf*(float)settings.thDepth()/fx;
         cout << endl << "Depth Threshold (Close/Far Points): " << mThDepth << endl;
     }
 
     if(sensor==System::RGBD)
     {
-        mDepthMapFactor = fSettings["DepthMapFactor"];
+        mDepthMapFactor = settings.depthMapFactor();
         if(fabs(mDepthMapFactor)<1e-5)
             mDepthMapFactor=1;
         else
@@ -173,26 +173,26 @@ cv::Mat Tracking::GrabImageStereo(const cv::Mat &imRectLeft, const cv::Mat &imRe
     {
         if(mbRGB)
         {
-            cvtColor(mImGray,mImGray,cv::COLOR_RGB2GRAY);
-            cvtColor(imGrayRight,imGrayRight,cv::COLOR_RGB2GRAY);
+            cvtColor(mImGray,mImGray,CV_RGB2GRAY);
+            cvtColor(imGrayRight,imGrayRight,CV_RGB2GRAY);
         }
         else
         {
-            cvtColor(mImGray,mImGray,cv::COLOR_BGR2GRAY);
-            cvtColor(imGrayRight,imGrayRight,cv::COLOR_BGR2GRAY);
+            cvtColor(mImGray,mImGray,CV_BGR2GRAY);
+            cvtColor(imGrayRight,imGrayRight,CV_BGR2GRAY);
         }
     }
     else if(mImGray.channels()==4)
     {
         if(mbRGB)
         {
-            cvtColor(mImGray,mImGray,cv::COLOR_RGBA2GRAY);
-            cvtColor(imGrayRight,imGrayRight,cv::COLOR_RGBA2GRAY);
+            cvtColor(mImGray,mImGray,CV_RGBA2GRAY);
+            cvtColor(imGrayRight,imGrayRight,CV_RGBA2GRAY);
         }
         else
         {
-            cvtColor(mImGray,mImGray,cv::COLOR_BGRA2GRAY);
-            cvtColor(imGrayRight,imGrayRight,cv::COLOR_BGRA2GRAY);
+            cvtColor(mImGray,mImGray,CV_BGRA2GRAY);
+            cvtColor(imGrayRight,imGrayRight,CV_BGRA2GRAY);
         }
     }
 
@@ -212,16 +212,16 @@ cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const d
     if(mImGray.channels()==3)
     {
         if(mbRGB)
-            cvtColor(mImGray,mImGray,cv::COLOR_RGB2GRAY);
+            cvtColor(mImGray,mImGray,CV_RGB2GRAY);
         else
-            cvtColor(mImGray,mImGray,cv::COLOR_BGR2GRAY);
+            cvtColor(mImGray,mImGray,CV_BGR2GRAY);
     }
     else if(mImGray.channels()==4)
     {
         if(mbRGB)
-            cvtColor(mImGray,mImGray,cv::COLOR_RGBA2GRAY);
+            cvtColor(mImGray,mImGray,CV_RGBA2GRAY);
         else
-            cvtColor(mImGray,mImGray,cv::COLOR_BGRA2GRAY);
+            cvtColor(mImGray,mImGray,CV_BGRA2GRAY);
     }
 
     if((fabs(mDepthMapFactor-1.0f)>1e-5) || imDepth.type()!=CV_32F)
@@ -242,16 +242,16 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
     if(mImGray.channels()==3)
     {
         if(mbRGB)
-            cvtColor(mImGray,mImGray,cv::COLOR_RGB2GRAY);
+            cvtColor(mImGray,mImGray,CV_RGB2GRAY);
         else
-            cvtColor(mImGray,mImGray,cv::COLOR_BGR2GRAY);
+            cvtColor(mImGray,mImGray,CV_BGR2GRAY);
     }
     else if(mImGray.channels()==4)
     {
         if(mbRGB)
-            cvtColor(mImGray,mImGray,cv::COLOR_RGBA2GRAY);
+            cvtColor(mImGray,mImGray,CV_RGBA2GRAY);
         else
-            cvtColor(mImGray,mImGray,cv::COLOR_BGRA2GRAY);
+            cvtColor(mImGray,mImGray,CV_BGRA2GRAY);
     }
 
     if(mState==NOT_INITIALIZED || mState==NO_IMAGES_YET)

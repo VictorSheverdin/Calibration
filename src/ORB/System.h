@@ -36,7 +36,7 @@
 #include "ORBVocabulary.h"
 #include "Viewer.h"
 
-#include <unistd.h>
+#include "Settings.h"
 
 namespace ORB_SLAM2
 {
@@ -61,7 +61,7 @@ public:
 public:
 
     // Initialize the SLAM system. It launches the Local Mapping, Loop Closing and Viewer threads.
-    System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor, const bool bUseViewer = true);
+    System(const string &strVocFile, const Settings &settings, const eSensor sensor, const bool bUseViewer = true);
 
     // Proccess the given stereo frame. Images must be synchronized and rectified.
     // Input images: RGB (CV_8UC3) or grayscale (CV_8U). RGB is converted to grayscale.
@@ -113,8 +113,6 @@ public:
     // Call first Shutdown()
     // See format details at: http://www.cvlibs.net/datasets/kitti/eval_odometry.php
     void SaveTrajectoryKITTI(const string &filename);
-
-    void SaveTrajectory( const string &filename );
 
     // TODO: Save/Load functions
     // SaveMap(const string &filename);

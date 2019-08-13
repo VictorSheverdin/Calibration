@@ -151,3 +151,63 @@ void StereoFilesListDialog::onAccept()
         accept();
 
 }
+
+// StereoDirsWidget
+StereoDirWidget::StereoDirWidget( QWidget* parent )
+    : QWidget( parent )
+{
+    initialize();
+}
+
+void StereoDirWidget::initialize()
+{
+    auto layout = new QVBoxLayout( this );
+
+    m_leftFolderWidget = new FolderLine( tr( "Left folder:" ), this );
+    layout->addWidget( m_leftFolderWidget );
+
+    m_rightFolderWidget = new FolderLine( tr( "Right folder:" ), this );
+    layout->addWidget( m_rightFolderWidget );
+
+}
+
+QString StereoDirWidget::leftDir() const
+{
+    return m_leftFolderWidget->path();
+}
+
+QString StereoDirWidget::rightDir() const
+{
+    return m_rightFolderWidget->path();
+}
+
+// StereoDirDialog
+StereoDirDialog::StereoDirDialog( QWidget *parent )
+    : DialogBase( QDialogButtonBox::Ok | QDialogButtonBox::Cancel, parent )
+{
+    initialize();
+}
+
+void StereoDirDialog::initialize()
+{
+    setWidget( new StereoDirWidget( this ) );
+
+    connect( m_buttons, &QDialogButtonBox::accepted, this, &StereoDirDialog::accept );
+}
+
+StereoDirWidget *StereoDirDialog::widget() const
+{
+    return dynamic_cast< StereoDirWidget * >( m_widget.data() );
+}
+
+QString StereoDirDialog::leftDir() const
+{
+    return widget()->leftDir();
+}
+
+QString StereoDirDialog::rightDir() const
+{
+    return widget()->rightDir();
+}
+
+

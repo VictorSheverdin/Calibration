@@ -184,3 +184,61 @@ void MainWindowBase::setupStatusBar()
     setStatusBar( m_statusBar );
 
 }
+
+// FolderLine
+FolderLine::FolderLine( const QString &label, QWidget *parent )
+    : QWidget( parent )
+{
+    initialize();
+}
+
+void FolderLine::initialize()
+{
+    setContentsMargins( QMargins() );
+
+    auto layout = new QHBoxLayout( this );
+
+    layout->setContentsMargins( QMargins() );
+
+    m_label = new QLabel( this );
+    layout->addWidget( m_label );
+
+    m_path = new QLineEdit( this );
+    layout->addWidget( m_path );
+
+    m_button = new QPushButton( QIcon( ":/resources/images/folder.ico" ), QString(), this );
+    layout->addWidget( m_button );
+
+    connect( m_button, &QPushButton::clicked, this, &FolderLine::choiceDirectoryDialog );
+
+}
+
+void FolderLine::setLabel( const QString label )
+{
+    m_label->setText( label );
+}
+
+QString FolderLine::label() const
+{
+    return m_label->text();
+}
+
+void FolderLine::setPath( const QString &value )
+{
+    m_path->setText( value );
+}
+
+QString FolderLine::path() const
+{
+    return m_path->text();
+}
+
+void FolderLine::choiceDirectoryDialog()
+{
+    auto dir = QFileDialog::getExistingDirectory( this, tr( "Open Directory" ), QString(), QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks );
+
+    if ( !dir.isEmpty() )
+        setPath( dir );
+
+}
+

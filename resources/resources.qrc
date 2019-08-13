@@ -35,5 +35,6 @@
         <file>images/VerticalScrollBarHandle.png</file>
         <file>images/VerticalToolBarHandle.png</file>
         <file>qss/style.css</file>
+        <file>images/folder.ico</file>
     </qresource>
 </RCC>
