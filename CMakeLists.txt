@@ -51,6 +51,26 @@ set ( LIBELAS_SOURCES
     src/libelas/StereoEfficientLargeScale.cpp
 )
 
+set ( VISO_SOURCES
+    src/viso2/timer.h
+    src/viso2/filter.h
+    src/viso2/filter.cpp
+    src/viso2/matrix.h
+    src/viso2/matrix.cpp
+    src/viso2/matcher.h
+    src/viso2/matcher.cpp
+    src/viso2/triangle.h
+    src/viso2/triangle.cpp
+    src/viso2/reconstruction.h
+    src/viso2/reconstruction.cpp
+    src/viso2/viso.h
+    src/viso2/viso.cpp
+    src/viso2/viso_mono.h
+    src/viso2/viso_mono.cpp
+    src/viso2/viso_stereo.h
+    src/viso2/viso_stereo.cpp
+)
+
 set ( ORB_SOURCES
     src/ORB/Settings.h
     src/ORB/Settings.cpp
@@ -112,14 +132,16 @@ find_package( Eigen3 3.1.0 REQUIRED )
 find_package( VTK 8 REQUIRED )
 find_package( PCL 1.9 REQUIRED )
 find_package( Pangolin REQUIRED )
+find_package( RTABMap REQUIRED )
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O3 -march=native ${OpenMP_C_FLAGS}")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O3 -march=native ${OpenMP_CXX_FLAGS}")
+set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O3 -march=native ${OpenMP_C_FLAGS}")
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O3 -march=native ${OpenMP_CXX_FLAGS}")
 set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 
 add_definitions( ${QT_DEFINITIONS} )
 include_directories( ${Qt5Widgets_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR} ${PCL_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR}/src/vimba/include )
 link_directories( ${PCL_LIBRARY_DIRS} )
+link_libraries( ${OpenCV_LIBS} ${PCL_LIBRARIES} ${EIGEN3_LIBS} ${CMAKE_CURRENT_SOURCE_DIR}/src/vimba/lib/libVimbaCPP.so )
 add_definitions( ${PCL_DEFINITIONS} )
 
 QT5_ADD_RESOURCES( RES_SOURCES ${RESOURCES} )
@@ -184,17 +206,40 @@ add_executable( cameraorbodometry ${COMMON_SOURCES} ${ANNOTATION_SOURCES} ${ORB_
     src/cameraodometry/main.cpp
 )
 
+add_executable( visoodometry ${COMMON_SOURCES} ${VISO_SOURCES}
+    src/visoodometry/main.cpp
+)
+
 add_executable( writer ${COMMON_SOURCES} ${RES_SOURCES}
     src/writer/writer.h
     src/writer/writer.cpp
     src/writer/main.cpp
 )
 
+add_executable( visualodometry ${COMMON_SOURCES} ${RES_SOURCES}
+    src/visualodometry/feature.h
+    src/visualodometry/feature.cpp
+    src/visualodometry/featuresProcessor.h
+    src/visualodometry/featuresProcessor.cpp
+    src/visualodometry/frame.h
+    src/visualodometry/frame.cpp
+    src/visualodometry/slam.h
+    src/visualodometry/slam.cpp
+    src/visualodometry/main.cpp
+)
+
+add_executable( rtabmapslam ${COMMON_SOURCES} ${RES_SOURCES}
+    src/rtabmapslam/main.cpp
+)
+
 target_include_directories( imagesorbodometry PRIVATE ${Pangolin_INCLUDE_DIRS} )
 target_include_directories( cameraorbodometry PRIVATE ${Pangolin_INCLUDE_DIRS} )
+target_include_directories( rtabmapslam PRIVATE ${RTABMap_INCLUDE_DIRS} )
 
-target_link_libraries( calibration ${Qt5Widgets_LIBRARIES} ${OpenCV_LIBS} ${EIGEN3_LIBS} ${CMAKE_CURRENT_SOURCE_DIR}/src/vimba/lib/libVimbaCPP.so ${YAML_CPP_LIBRARIES} )
-target_link_libraries( disparity ${Qt5Widgets_LIBRARIES} ${OpenCV_LIBS} ${EIGEN3_LIBS} ${VTK_LIBRARIES} ${PCL_LIBRARIES} ${CMAKE_CURRENT_SOURCE_DIR}/src/vimba/lib/libVimbaCPP.so ${YAML_CPP_LIBRARIES} )
-target_link_libraries( imagesorbodometry ${Qt5Widgets_LIBRARIES} ${Pangolin_LIBRARIES} ${OpenCV_LIBS} ${EIGEN3_LIBS} ${CMAKE_CURRENT_SOURCE_DIR}/src/vimba/lib/libVimbaCPP.so ${PROJECT_SOURCE_DIR}/src/DBoW2/lib/libDBoW2.so ${PROJECT_SOURCE_DIR}/src/g2o/lib/libg2o.so )
-target_link_libraries( cameraorbodometry ${Qt5Widgets_LIBRARIES} ${Pangolin_LIBRARIES} ${OpenCV_LIBS} ${EIGEN3_LIBS} ${CMAKE_CURRENT_SOURCE_DIR}/src/vimba/lib/libVimbaCPP.so ${PROJECT_SOURCE_DIR}/src/DBoW2/lib/libDBoW2.so ${PROJECT_SOURCE_DIR}/src/g2o/lib/libg2o.so )
-target_link_libraries( writer ${Qt5Widgets_LIBRARIES} ${OpenCV_LIBS} ${CMAKE_CURRENT_SOURCE_DIR}/src/vimba/lib/libVimbaCPP.so )
+target_link_libraries( calibration ${Qt5Widgets_LIBRARIES} ${YAML_CPP_LIBRARIES} )
+target_link_libraries( disparity ${Qt5Widgets_LIBRARIES} ${VTK_LIBRARIES} ${YAML_CPP_LIBRARIES} )
+target_link_libraries( imagesorbodometry ${Qt5Widgets_LIBRARIES} ${Pangolin_LIBRARIES} ${PROJECT_SOURCE_DIR}/src/DBoW2/lib/libDBoW2.so ${PROJECT_SOURCE_DIR}/src/g2o/lib/libg2o.so )
+target_link_libraries( cameraorbodometry ${Qt5Widgets_LIBRARIES} ${Pangolin_LIBRARIES} ${PROJECT_SOURCE_DIR}/src/DBoW2/lib/libDBoW2.so ${PROJECT_SOURCE_DIR}/src/g2o/lib/libg2o.so )
+target_link_libraries( visoodometry ${Qt5Widgets_LIBRARIES} png )
+target_link_libraries( writer ${Qt5Widgets_LIBRARIES} )
+target_link_libraries( rtabmapslam ${RTABMap_LIBRARIES} )

@@ -39,10 +39,18 @@ public:
     int frameWidth() const;
     int frameHeight() const;
 
+    void setFx( const double value );
+    void setFy( const double value );
+    void setCx( const double value );
+    void setCy( const double value );
+
     double fx() const;
     double fy() const;
     double cx() const;
     double cy() const;
+
+    void shiftPrincipalValues( const cv::Point2i &value );
+
     double k1() const;
     double k2() const;
     double k3() const;

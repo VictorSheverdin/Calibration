@@ -90,6 +90,26 @@ int MonocularCalibrationDataShort::frameHeight() const
     return m_frameSize.height;
 }
 
+void MonocularCalibrationDataShort::setFx( const double value )
+{
+    m_cameraMatrix.at< double >( 0, 0 ) = value;
+}
+
+void MonocularCalibrationDataShort::setFy( const double value )
+{
+    m_cameraMatrix.at< double >( 1, 1 ) = value;
+}
+
+void MonocularCalibrationDataShort::setCx( const double value )
+{
+    m_cameraMatrix.at< double >( 0, 2 ) = value;
+}
+
+void MonocularCalibrationDataShort::setCy( const double value )
+{
+    m_cameraMatrix.at< double >( 1, 2 ) = value;
+}
+
 double MonocularCalibrationDataShort::fx() const
 {
     return m_cameraMatrix.at< double >( 0, 0 );
@@ -108,6 +128,12 @@ double MonocularCalibrationDataShort::cx() const
 double MonocularCalibrationDataShort::cy() const
 {
     return m_cameraMatrix.at< double >( 1, 2 );
+}
+
+void MonocularCalibrationDataShort::shiftPrincipalValues( const cv::Point2i &value )
+{
+    m_cameraMatrix.at< double >( 0, 2 ) += value.x;
+    m_cameraMatrix.at< double >( 1, 2 ) += value.y;
 }
 
 double MonocularCalibrationDataShort::k1() const

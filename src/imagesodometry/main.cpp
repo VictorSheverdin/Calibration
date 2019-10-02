@@ -41,11 +41,9 @@ using namespace std;
 
 std::string pathToVocabulary = "/home/victor/calibration/ORBvoc.txt";
 std::string pathToSettings = "/home/victor/calibration/calibration.yaml";
-QString pathToImages = "/home/victor/datasets/Polygon/";
 
 int main( int argc, char **argv )
 {
-
 
     QString leftDir;
     QString rightDir;
@@ -94,8 +92,6 @@ int main( int argc, char **argv )
             {
                 auto vstrImageLeft = leftDir + "/" + QString::number(i) + "_left.jpg";
                 auto vstrImageRight = rightDir + "/" + QString::number(i) + "_right.jpg";
-
-                qDebug() << vstrImageLeft << vstrImageRight;
 
                 imLeft = cv::imread( vstrImageLeft.toStdString(), cv::IMREAD_UNCHANGED );
                 imRight = cv::imread( vstrImageRight.toStdString(), cv::IMREAD_UNCHANGED );

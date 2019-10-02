@@ -191,11 +191,9 @@ void MasterCamera::initialize( const std::string &ip )
 
     SP_SET( m_frameObserver, new FrameObserver( m_camera ) );
 
-    checkVimbaStatus( SP_ACCESS( m_camera )->StartContinuousImageAcquisition( m_numFrames,  m_frameObserver ), "Can't start image acquisition" );
-
     connect( m_frameObserver.get(), &FrameObserver::receivedFrame, this, &MasterCamera::receivedFrame );
 
-    m_camera->StartCapture();
+    checkVimbaStatus( SP_ACCESS( m_camera )->StartContinuousImageAcquisition( m_numFrames,  m_frameObserver ), "Can't start image acquisition" );
 
 }
 
@@ -237,9 +235,9 @@ void SlaveCamera::initialize( const std::string &ip )
 
     SP_SET( m_frameObserver, new FrameObserver( m_camera ) );
 
-    checkVimbaStatus( SP_ACCESS( m_camera )->StartContinuousImageAcquisition( m_numFrames,  m_frameObserver ), "Can't start image acquisition" );
-
     connect( m_frameObserver.get(), &FrameObserver::receivedFrame, this, &SlaveCamera::receivedFrame );
+
+    checkVimbaStatus( SP_ACCESS( m_camera )->StartContinuousImageAcquisition( m_numFrames,  m_frameObserver ), "Can't start image acquisition" );
 
 }
 

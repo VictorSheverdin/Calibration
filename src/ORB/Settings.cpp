@@ -83,7 +83,7 @@ void Settings::initialize()
 
     m_rgb = 1;
 
-    m_features = 10000;
+    m_features = 5000;
     m_scaleFactor = 1.2;
     m_levels = 16;
     m_iniThFAST = 77;
