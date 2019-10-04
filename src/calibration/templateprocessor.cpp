@@ -177,6 +177,7 @@ bool TemplateProcessor::processPreview(const Frame &frame, CvImage *preview, std
     bool ret = false;
 
     if ( !frame.empty() ) {
+
         auto extent = std::max( frame.width(), frame.height() );
 
         cv::Mat sourceFrame;
