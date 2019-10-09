@@ -157,7 +157,7 @@ MonocularCalibrationData CalibrationWidgetBase::calcMonocularCalibration( const 
     return ret;
 
 }
-/*
+
 MonocularCalibrationData CalibrationWidgetBase::calcMonocularCalibration( const std::vector< std::vector< cv::Point2f > > &points, cv::Size &frameSize, const cv::Size &count, const double size )
 {
     MonocularCalibrationData ret;
@@ -228,7 +228,7 @@ MonocularCalibrationData CalibrationWidgetBase::calcMonocularCalibration( const 
     return ret;
 
 }
-*/
+
 StereoCalibrationData CalibrationWidgetBase::calcStereoCalibration(const QList< CalibrationIconBase * > &icons, const cv::Size &count, const double size )
 {
     StereoCalibrationData ret;

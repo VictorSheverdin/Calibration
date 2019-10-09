@@ -32,7 +32,7 @@ StereoEfficientLargeScale::StereoEfficientLargeScale()
 void StereoEfficientLargeScale::operator()(const cv::Mat& leftim, const cv::Mat& rightim, cv::Mat& leftdisp, cv::Mat& rightdisp, int bd)
 {
 	Mat l,r;
-    if(leftim.channels()==3){cvtColor(leftim,l,cv::COLOR_BGR2GRAY);cout<<"convert gray"<<endl;}
+    if(leftim.channels()==3){cvtColor(leftim,l,cv::COLOR_BGR2GRAY);}
 	else l=leftim;
     if(rightim.channels()==3)cvtColor(rightim,r,cv::COLOR_BGR2GRAY);
 	else r=rightim;

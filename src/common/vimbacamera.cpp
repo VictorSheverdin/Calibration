@@ -276,8 +276,6 @@ void StereoCamera::updateFrame()
         m_framesQueue.push( StereoFrame( leftFrame, rightFrame ) );
         m_framesMutex.unlock();
 
-        qDebug() << "Difference time:" << leftFrame.timeDiff( rightFrame );
-
         emit receivedFrame();
 
     }

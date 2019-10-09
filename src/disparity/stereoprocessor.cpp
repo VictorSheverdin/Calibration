@@ -273,11 +273,8 @@ void BMGPUDisparityProcessor::setTextureThreshold( const int textureThreshold )
 
 cv::Mat BMGPUDisparityProcessor::processDisparity( const CvImage &left, const CvImage &right )
 {
-    CvImage leftGray;
-    CvImage rightGray;
-
-    cv::cvtColor( left,  leftGray,  cv::COLOR_BGR2GRAY );
-    cv::cvtColor( right, rightGray, cv::COLOR_BGR2GRAY );
+    CvImage leftGray = preprocess( left );
+    CvImage rightGray = preprocess( right );
 
     cv::cuda::GpuMat leftGPU( leftGray.size(), CV_8U );
     cv::cuda::GpuMat rightGPU( leftGray.size(), CV_8U );
@@ -289,10 +286,10 @@ cv::Mat BMGPUDisparityProcessor::processDisparity( const CvImage &left, const Cv
 
     m_matcher->compute( leftGPU, rightGPU, dispGPU );
 
-    cv::Ptr < cv::cuda::DisparityBilateralFilter > dispFilter = cv::cuda::createDisparityBilateralFilter( m_matcher->getNumDisparities(), 5, 1 );
-    dispFilter->apply( dispGPU, leftGPU, dispGPU );
+    //cv::Ptr < cv::cuda::DisparityBilateralFilter > dispFilter = cv::cuda::createDisparityBilateralFilter( m_matcher->getNumDisparities(), 5, 1 );
+    //dispFilter->apply( dispGPU, leftGPU, dispGPU );
 
-   // cv::cuda::normalize( dispGPU, dispGPU, 0, 255, cv::NORM_MINMAX, CV_8U );
+    //cv::cuda::normalize( dispGPU, dispGPU, 0, 255, cv::NORM_MINMAX, CV_8U );
     cv::Mat res( leftGray.size(), CV_8U );
 
     dispGPU.download( res );
@@ -425,11 +422,8 @@ void GMDisparityProcessor::setP2(int p2)
 
 cv::Mat GMDisparityProcessor::processDisparity( const CvImage &left, const CvImage &right )
 {
-    CvImage leftGray;
-    CvImage rightGray;
-
-    cv::cvtColor( left,  leftGray,  cv::COLOR_BGR2GRAY );
-    cv::cvtColor( right, rightGray, cv::COLOR_BGR2GRAY );
+    CvImage leftGray = preprocess( left );
+    CvImage rightGray = preprocess( right );
 
     cv::Mat leftDisp;
 
@@ -535,17 +529,11 @@ void BPDisparityProcessor::setMsgType( const int value )
 
 cv::Mat BPDisparityProcessor::processDisparity( const CvImage &left, const CvImage &right )
 {
-    CvImage leftScaled;
-    CvImage rightScaled;
-
-    cv::resize( left, leftScaled, cv::Size(), 0.5, 0.5, INTER_LANCZOS4 );
-    cv::resize( right, rightScaled, cv::Size(), 0.5, 0.5, INTER_LANCZOS4 );
-
     CvImage leftGray;
     CvImage rightGray;
 
-    cv::cvtColor( leftScaled,  leftGray,  cv::COLOR_BGR2GRAY );
-    cv::cvtColor( rightScaled, rightGray, cv::COLOR_BGR2GRAY );
+    leftGray = preprocess( left );
+    rightGray = preprocess( right );
 
     cv::cuda::GpuMat leftGPU;
     cv::cuda::GpuMat rightGPU;
@@ -557,15 +545,13 @@ cv::Mat BPDisparityProcessor::processDisparity( const CvImage &left, const CvIma
 
     m_matcher->compute( leftGPU, rightGPU, leftDisp );
 
+    // cv::cuda::normalize( leftDisp, leftDisp, 0, 255, cv::NORM_MINMAX, CV_8U );
+
     cv::Mat res;
 
     leftDisp.download( res );
 
-    cv::Mat resScaled;
-
-    cv::resize( res, resScaled, cv::Size(), 2.0, 2.0, INTER_LANCZOS4 );
-
-    return resScaled;
+    return res;
 
 }
 
@@ -583,17 +569,11 @@ void CSBPDisparityProcessor::initialize()
 
 cv::Mat CSBPDisparityProcessor::processDisparity( const CvImage &left, const CvImage &right )
 {
-    CvImage leftScaled;
-    CvImage rightScaled;
-
-    cv::resize( left, leftScaled, cv::Size(), 0.5, 0.5, INTER_LANCZOS4 );
-    cv::resize( right, rightScaled, cv::Size(), 0.5, 0.5, INTER_LANCZOS4 );
-
     CvImage leftGray;
     CvImage rightGray;
 
-    leftGray = preprocess( leftScaled );
-    rightGray = preprocess( rightScaled );
+    leftGray = preprocess( left );
+    rightGray = preprocess( right );
 
     cv::cuda::GpuMat leftGPU;
     cv::cuda::GpuMat rightGPU;
@@ -605,17 +585,13 @@ cv::Mat CSBPDisparityProcessor::processDisparity( const CvImage &left, const CvI
 
     m_matcher->compute( leftGPU, rightGPU, leftDisp );
 
-    cv::cuda::normalize( leftDisp, leftDisp, 0, 255, cv::NORM_MINMAX, CV_8U );
+    // cv::cuda::normalize( leftDisp, leftDisp, 0, 255, cv::NORM_MINMAX, CV_8U );
 
     cv::Mat res;
 
     leftDisp.download( res );
 
-    cv::Mat resScaled;
-
-    cv::resize( res, resScaled, cv::Size(), 2.0, 2.0, INTER_LANCZOS4 );
-
-    return resScaled;
+    return res;
 }
 
 // ElasDisparityProcessor
@@ -634,7 +610,7 @@ cv::Mat ElasDisparityProcessor::processDisparity( const CvImage &left, const CvI
 {
     cv::Mat dest;
 
-    m_matcher->operator()( left, right, dest, 200 );
+    m_matcher->operator()( right, left, dest, 200 );
 
     return dest;
 
