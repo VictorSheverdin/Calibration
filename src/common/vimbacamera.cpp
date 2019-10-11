@@ -262,7 +262,7 @@ void StereoCamera::updateFrame()
     m_leftCamera.lockMutex();
     m_rightCamera.lockMutex();
 
-    if ( std::abs( std::chrono::duration_cast< std::chrono::microseconds >( m_leftCamera.getTimeUnsafe() - m_rightCamera.getTimeUnsafe() ).count() ) < 2000 ) {
+    if ( std::abs( std::chrono::duration_cast< std::chrono::microseconds >( m_leftCamera.getTimeUnsafe() - m_rightCamera.getTimeUnsafe() ).count() ) < 500 ) {
         leftFrame = m_leftCamera.getFrameUnsafe();
         rightFrame = m_rightCamera.getFrameUnsafe();
     }

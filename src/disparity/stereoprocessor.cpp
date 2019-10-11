@@ -6,6 +6,8 @@
 
 #include "src/libelas/StereoEfficientLargeScale.h"
 
+const double MISSING_Z = 10000.;
+
 // DisparityProcessorBase
 DisparityProcessorBase::DisparityProcessorBase()
 {
@@ -175,6 +177,8 @@ cv::Mat BMDisparityProcessor::processDisparity( const CvImage &left, const CvIma
 
     m_leftMatcher->compute( leftGray, rightGray, leftDisp );
 
+    // std::cout << leftDisp;
+
     // cv::normalize( leftDisp, leftDisp, 0.0, 255, cv::NORM_MINMAX, CV_8U );
 
     return leftDisp;
@@ -273,29 +277,34 @@ void BMGPUDisparityProcessor::setTextureThreshold( const int textureThreshold )
 
 cv::Mat BMGPUDisparityProcessor::processDisparity( const CvImage &left, const CvImage &right )
 {
-    CvImage leftGray = preprocess( left );
-    CvImage rightGray = preprocess( right );
+    cv::Mat leftGray = preprocess( left );
+    cv::Mat rightGray = preprocess( right );
 
-    cv::cuda::GpuMat leftGPU( leftGray.size(), CV_8U );
-    cv::cuda::GpuMat rightGPU( leftGray.size(), CV_8U );
+    cv::cuda::GpuMat leftGPU;
+    cv::cuda::GpuMat rightGPU;
 
     leftGPU.upload( leftGray );
     rightGPU.upload( rightGray );
 
     cv::cuda::GpuMat dispGPU( leftGray.size(), CV_8U );
 
-    m_matcher->compute( leftGPU, rightGPU, dispGPU );
+    m_matcher->compute( rightGPU, leftGPU, dispGPU );
 
-    //cv::Ptr < cv::cuda::DisparityBilateralFilter > dispFilter = cv::cuda::createDisparityBilateralFilter( m_matcher->getNumDisparities(), 5, 1 );
-    //dispFilter->apply( dispGPU, leftGPU, dispGPU );
+    cv::Ptr < cv::cuda::DisparityBilateralFilter > dispFilter = cv::cuda::createDisparityBilateralFilter( m_matcher->getNumDisparities(), 5, 1 );
+    dispFilter->apply( dispGPU, leftGPU, dispGPU );
 
-    //cv::cuda::normalize( dispGPU, dispGPU, 0, 255, cv::NORM_MINMAX, CV_8U );
+    cv::cuda::normalize( dispGPU, dispGPU, 0, 255, cv::NORM_MINMAX, CV_8U );
     cv::Mat res( leftGray.size(), CV_8U );
 
     dispGPU.download( res );
 
-    return res;
+    cv::Mat floatRes;
 
+    res.convertTo( floatRes, CV_32F );
+
+    // std::cout << floatRes;
+
+    return floatRes;
 }
 
 // GMDisparityProcessor
@@ -535,6 +544,9 @@ cv::Mat BPDisparityProcessor::processDisparity( const CvImage &left, const CvIma
     leftGray = preprocess( left );
     rightGray = preprocess( right );
 
+    cv::resize( leftGray, leftGray, cv::Size(), 0.5, 0.5 );
+    cv::resize( rightGray, rightGray, cv::Size(), 0.5, 0.5 );
+
     cv::cuda::GpuMat leftGPU;
     cv::cuda::GpuMat rightGPU;
 
@@ -543,7 +555,7 @@ cv::Mat BPDisparityProcessor::processDisparity( const CvImage &left, const CvIma
 
     cv::cuda::GpuMat leftDisp;
 
-    m_matcher->compute( leftGPU, rightGPU, leftDisp );
+    m_matcher->compute( rightGPU, leftGPU, leftDisp );
 
     // cv::cuda::normalize( leftDisp, leftDisp, 0, 255, cv::NORM_MINMAX, CV_8U );
 
@@ -583,7 +595,7 @@ cv::Mat CSBPDisparityProcessor::processDisparity( const CvImage &left, const CvI
 
     cv::cuda::GpuMat leftDisp;
 
-    m_matcher->compute( leftGPU, rightGPU, leftDisp );
+    m_matcher->compute( rightGPU, leftGPU, leftDisp );
 
     // cv::cuda::normalize( leftDisp, leftDisp, 0, 255, cv::NORM_MINMAX, CV_8U );
 
@@ -722,6 +734,11 @@ void StereoProcessor::setDisparityProcessor(const std::shared_ptr< DisparityProc
     m_disparityProcessor = proc;
 }
 
+bool isValidPoint( const cv::Vec3f& pt )
+{
+    return pt[2] != MISSING_Z && !std::isinf( pt[2] );
+}
+
 StereoResult StereoProcessor::process( const StereoFrame &frame )
 {
     StereoResult ret;
@@ -744,9 +761,32 @@ StereoResult StereoProcessor::process( const StereoFrame &frame )
             CvImage leftCroppedFrame;
             CvImage rightCroppedFrame;
 
-            if (!m_calibration.leftROI().empty() && !m_calibration.rightROI().empty()) {
-                leftCroppedFrame = leftRectifiedImage( m_calibration.leftROI() );
-                rightCroppedFrame = rightRectifiedImage( m_calibration.leftROI() );
+            if ( !m_calibration.leftROI().empty() && !m_calibration.rightROI().empty() ) {
+
+                auto leftCropRect = m_calibration.leftROI();
+                auto rightCropRect = m_calibration.rightROI();
+
+                auto rectWidth = std::min( leftCropRect.width, rightCropRect.width );
+                auto rectHeight = std::min( leftCropRect.height, rightCropRect.height );
+
+                leftCropRect.width = rectWidth;
+                rightCropRect.width = rectWidth;
+
+                leftCropRect.height = rectHeight;
+                rightCropRect.height = rectHeight;
+
+                cv::Rect cropRect;
+
+                cropRect.x = std::max( m_calibration.leftROI().x, m_calibration.rightROI().x );
+                cropRect.y = std::max( m_calibration.leftROI().y, m_calibration.rightROI().y );
+                cropRect.width = std::min( m_calibration.leftROI().x + m_calibration.leftROI().width, m_calibration.rightROI().x + m_calibration.rightROI().width ) - cropRect.x;
+                cropRect.height = std::min( m_calibration.leftROI().y + m_calibration.leftROI().height, m_calibration.rightROI().y + m_calibration.rightROI().height ) - cropRect.y;
+                //cropRect.width = std::min( m_calibration.leftROI().width, m_calibration.rightROI().width );
+                //cropRect.height = std::min( m_calibration.leftROI().height, m_calibration.rightROI().height );
+
+                leftCroppedFrame = leftRectifiedImage( cropRect );
+                rightCroppedFrame = rightRectifiedImage( cropRect );
+
             }
 
             auto previewImage = stackImages( leftCroppedFrame, rightCroppedFrame );
@@ -779,8 +819,7 @@ StereoResult StereoProcessor::process( const StereoFrame &frame )
 
                         cv::Point3f point = points.at< cv::Point3f >(rows, cols);
 
-                        if ( point.x > -1000 && point.y > -1000 && point.z > 0 &&
-                             point.x < 1000 && point.y < 1000 && point.z < 1000 ) {
+                        if ( isValidPoint( point ) ) {
 
                             pcl::PointXYZRGB pclPoint;
                             pclPoint.x = -point.x;

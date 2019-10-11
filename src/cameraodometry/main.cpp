@@ -47,7 +47,7 @@ int main( int , char ** )
 
     StereoCamera camera( "192.168.80.66", "192.168.80.82" );
 
-    MonocularCalibrationDataShort calibrationData( pathToSettings );
+    StereoCalibrationDataShort calibrationData( pathToSettings );
     ORB_SLAM2::Settings settings( calibrationData );
 
     ORB_SLAM2::System SLAM( pathToVocabulary, settings, ORB_SLAM2::System::STEREO, true );
