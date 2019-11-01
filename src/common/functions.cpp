@@ -23,7 +23,7 @@ CvImage resizeTo( const CvImage &image, unsigned int size )
         auto maxSize = std::max( image.width(), image.height() );
 
         if ( maxSize != 0 ) {
-            double scaleFactor = static_cast<double>(size) / static_cast<double>(maxSize);
+            double scaleFactor = static_cast<double>( size ) / static_cast<double>( maxSize );
 
             cv::resize( image, ret, cv::Size(), scaleFactor, scaleFactor, cv::INTER_LANCZOS4 );
 
@@ -79,13 +79,40 @@ CvImage colorizeDisparity( const cv::Mat &disparity )
 
 }
 
-void checkVimbaStatus(VmbErrorType status, std::string message)
+void checkVimbaStatus( VmbErrorType status, std::string message )
 {
     if (status != VmbErrorSuccess)
     {
         throw std::runtime_error(
             message + "; status = " + std::to_string(status) );
     }
+}
+
+bool drawFeaturePoint( CvImage *target, const cv::Point2f &pt, const cv::Scalar &color )
+{
+    if ( !target )
+        return false;
+
+    cv::circle( *target, pt, 5, color, -1 );
+
+    return true;
+}
+
+bool drawFeaturePoints( CvImage *target, const std::vector< cv::KeyPoint > &keypoints, const cv::Scalar &color )
+{
+    if ( !target )
+        return false;
+
+    for ( auto &i : keypoints )
+        drawFeaturePoint( target, i.pt, color );
+
+    return true;
+
+}
+
+void drawLine( CvImage *target, const cv::Point2f &pt1, const cv::Point2f &pt2, const cv::Scalar &color )
+{
+    cv::line( *target, pt1, pt2, color );
 }
 
 void vimbaRunCommand( AVT::VmbAPI::VimbaSystem &system, const std::string &key )

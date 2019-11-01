@@ -48,32 +48,59 @@ StereoRectificationProcessor::StereoRectificationProcessor( const std::string &f
     m_calibrationData.loadYaml( fileName );
 }
 
-CvImage StereoRectificationProcessor::rectifyLeft( const CvImage &image )
+bool StereoRectificationProcessor::rectifyLeft( const CvImage &image , CvImage *result )
 {
-    CvImage ret;
+    if ( !result || !isValid() )
+        return false;
 
-    cv::remap( image, ret, m_calibrationData.leftRMap(), m_calibrationData.leftDMap(), cv::INTER_LANCZOS4 );
+    cv::remap( image, *result, m_calibrationData.leftRMap(), m_calibrationData.leftDMap(), cv::INTER_CUBIC );
 
-    return ret;
+    if (!m_calibrationData.leftROI().empty() && !m_calibrationData.rightROI().empty())
+        *result = (*result)( cropRect( m_calibrationData.leftROI(), m_calibrationData.rightROI() ) );
+
+    return true;
 
 }
 
-CvImage StereoRectificationProcessor::rectifyRight( const CvImage &image )
+bool StereoRectificationProcessor::rectifyRight( const CvImage &image, CvImage *result )
 {
-    CvImage ret;
+    if ( !result || !isValid() )
+        return false;
 
-    cv::remap( image, ret, m_calibrationData.rightRMap(), m_calibrationData.rightDMap(), cv::INTER_LANCZOS4 );
+    cv::remap( image, *result, m_calibrationData.rightRMap(), m_calibrationData.rightDMap(), cv::INTER_CUBIC );
 
-    return ret;
+    if ( !m_calibrationData.leftROI().empty() && !m_calibrationData.rightROI().empty())
+        *result = (*result)( cropRect( m_calibrationData.leftROI(), m_calibrationData.rightROI() ) );
+
+    return true;
 
 }
 
-void StereoRectificationProcessor::rectify( const CvImage &leftImage, const CvImage &rightImage, CvImage *leftResult, CvImage *rightResult )
+bool StereoRectificationProcessor::rectify( const CvImage &leftImage, const CvImage &rightImage, CvImage *leftResult, CvImage *rightResult )
 {
-    if ( leftResult )
-        *leftResult = rectifyLeft( leftImage );
+    if ( !rectifyLeft( leftImage, leftResult ) )
+        return false;
 
-    if ( rightResult )
-        *rightResult = rectifyRight( rightImage );
+    if ( !rectifyRight( rightImage, rightResult ) )
+        return false;
 
+    return true;
+
+}
+
+bool StereoRectificationProcessor::isValid() const
+{
+    return m_calibrationData.isOk();
+}
+
+cv::Rect StereoRectificationProcessor::cropRect( const cv::Rect &leftCropRect, const cv::Rect &rightCropRect )
+{
+    cv::Rect ret;
+
+    ret.x = std::max( leftCropRect.x, rightCropRect.x );
+    ret.y = std::max( leftCropRect.y, rightCropRect.y );
+    ret.width = std::min( leftCropRect.x + leftCropRect.width, rightCropRect.x + rightCropRect.width ) - ret.x;
+    ret.height = std::min( leftCropRect.y + leftCropRect.height, rightCropRect.y + rightCropRect.height ) - ret.y;
+
+    return ret;
 }

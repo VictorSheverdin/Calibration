@@ -288,7 +288,7 @@ cv::Mat BMGPUDisparityProcessor::processDisparity( const CvImage &left, const Cv
 
     cv::cuda::GpuMat dispGPU( leftGray.size(), CV_8U );
 
-    m_matcher->compute( rightGPU, leftGPU, dispGPU );
+    m_matcher->compute( leftGPU, rightGPU, dispGPU );
 
     cv::Ptr < cv::cuda::DisparityBilateralFilter > dispFilter = cv::cuda::createDisparityBilateralFilter( m_matcher->getNumDisparities(), 5, 1 );
     dispFilter->apply( dispGPU, leftGPU, dispGPU );
@@ -305,6 +305,7 @@ cv::Mat BMGPUDisparityProcessor::processDisparity( const CvImage &left, const Cv
     // std::cout << floatRes;
 
     return floatRes;
+
 }
 
 // GMDisparityProcessor
@@ -555,7 +556,7 @@ cv::Mat BPDisparityProcessor::processDisparity( const CvImage &left, const CvIma
 
     cv::cuda::GpuMat leftDisp;
 
-    m_matcher->compute( rightGPU, leftGPU, leftDisp );
+    m_matcher->compute( leftGPU, rightGPU, leftDisp );
 
     // cv::cuda::normalize( leftDisp, leftDisp, 0, 255, cv::NORM_MINMAX, CV_8U );
 
@@ -595,7 +596,7 @@ cv::Mat CSBPDisparityProcessor::processDisparity( const CvImage &left, const CvI
 
     cv::cuda::GpuMat leftDisp;
 
-    m_matcher->compute( rightGPU, leftGPU, leftDisp );
+    m_matcher->compute( leftGPU, rightGPU, leftDisp );
 
     // cv::cuda::normalize( leftDisp, leftDisp, 0, 255, cv::NORM_MINMAX, CV_8U );
 
@@ -604,6 +605,7 @@ cv::Mat CSBPDisparityProcessor::processDisparity( const CvImage &left, const CvI
     leftDisp.download( res );
 
     return res;
+
 }
 
 // ElasDisparityProcessor
@@ -622,7 +624,7 @@ cv::Mat ElasDisparityProcessor::processDisparity( const CvImage &left, const CvI
 {
     cv::Mat dest;
 
-    m_matcher->operator()( right, left, dest, 200 );
+    m_matcher->operator()( left, right, dest, 200 );
 
     return dest;
 

@@ -25,6 +25,8 @@ set ( COMMON_SOURCES
     src/common/calibrationdatabase.cpp
     src/common/rectificationprocessor.h
     src/common/rectificationprocessor.cpp
+    src/common/featureprocessor.h
+    src/common/featureprocessor.cpp
     src/common/ipwidget.h
     src/common/ipwidget.cpp
     src/common/documentarea.h
@@ -210,12 +212,6 @@ add_executable( visoodometry ${COMMON_SOURCES} ${VISO_SOURCES}
     src/visoodometry/main.cpp
 )
 
-add_executable( writer ${COMMON_SOURCES} ${RES_SOURCES}
-    src/writer/writer.h
-    src/writer/writer.cpp
-    src/writer/main.cpp
-)
-
 add_executable( visualodometry ${COMMON_SOURCES} ${RES_SOURCES}
     src/visualodometry/feature.h
     src/visualodometry/feature.cpp
@@ -232,6 +228,22 @@ add_executable( rtabmapslam ${COMMON_SOURCES} ${RES_SOURCES}
     src/rtabmapslam/main.cpp
 )
 
+add_executable( slam ${COMMON_SOURCES} ${RES_SOURCES}
+    src/slam/map.h
+    src/slam/worldpoint.h
+    src/slam/frame.h
+    src/slam/keyframe.h
+    src/slam/framepoint.h
+    src/slam/system.h
+    src/slam/map.cpp
+    src/slam/worldpoint.cpp
+    src/slam/frame.cpp
+    src/slam/keyframe.cpp
+    src/slam/framepoint.cpp
+    src/slam/system.cpp
+    src/slam/main.cpp
+)
+
 target_include_directories( imagesorbodometry PRIVATE ${Pangolin_INCLUDE_DIRS} )
 target_include_directories( cameraorbodometry PRIVATE ${Pangolin_INCLUDE_DIRS} )
 target_include_directories( rtabmapslam PRIVATE ${RTABMap_INCLUDE_DIRS} )
@@ -241,5 +253,4 @@ target_link_libraries( disparity ${Qt5Widgets_LIBRARIES} ${VTK_LIBRARIES} ${YAML
 target_link_libraries( imagesorbodometry ${Qt5Widgets_LIBRARIES} ${Pangolin_LIBRARIES} ${PROJECT_SOURCE_DIR}/src/DBoW2/lib/libDBoW2.so ${PROJECT_SOURCE_DIR}/src/g2o/lib/libg2o.so )
 target_link_libraries( cameraorbodometry ${Qt5Widgets_LIBRARIES} ${Pangolin_LIBRARIES} ${PROJECT_SOURCE_DIR}/src/DBoW2/lib/libDBoW2.so ${PROJECT_SOURCE_DIR}/src/g2o/lib/libg2o.so )
 target_link_libraries( visoodometry ${Qt5Widgets_LIBRARIES} png )
-target_link_libraries( writer ${Qt5Widgets_LIBRARIES} )
 target_link_libraries( rtabmapslam ${RTABMap_LIBRARIES} )

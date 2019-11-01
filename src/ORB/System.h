@@ -81,6 +81,7 @@ public:
 
     // This stops local mapping thread (map building) and performs only camera tracking.
     void ActivateLocalizationMode();
+
     // This resumes local mapping thread and performs SLAM again.
     void DeactivateLocalizationMode();
 

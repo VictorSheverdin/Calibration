@@ -31,12 +31,16 @@ public:
     StereoRectificationProcessor( const StereoCalibrationDataShort &calibrationData );
     StereoRectificationProcessor( const std::string &fileName );
 
-    CvImage rectifyLeft( const CvImage &image );
-    CvImage rectifyRight( const CvImage &image );
+    bool rectifyLeft( const CvImage &image, CvImage *result );
+    bool rectifyRight( const CvImage &image , CvImage *result );
 
-    void rectify( const CvImage &leftImage, const CvImage &rightImage, CvImage *leftResult, CvImage *rightResult );
+    bool rectify( const CvImage &leftImage, const CvImage &rightImage, CvImage *leftResult, CvImage *rightResult );
+
+    bool isValid() const;
 
 protected:
     StereoCalibrationDataShort m_calibrationData;
+
+    static cv::Rect cropRect( const cv::Rect &leftCropRect, const cv::Rect &rightCropRect );
 
 };

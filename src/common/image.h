@@ -24,6 +24,7 @@ class CvImage : public cv::Mat
 public:
     CvImage();
     CvImage( const QString &fileName );
+    CvImage( const std::string &fileName );
     CvImage( int width, int height, int type );
     CvImage( cv::Size size, int type );
     CvImage( int width, int height, int type, const cv::Scalar& color );

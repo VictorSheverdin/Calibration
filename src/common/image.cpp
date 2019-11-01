@@ -58,6 +58,11 @@ CvImage::CvImage( const QString &fileName )
 {
 }
 
+CvImage::CvImage( const std::string &fileName )
+    : cv::Mat( cv::imread( fileName ) )
+{
+}
+
 CvImage::CvImage(int width, int height, int type)
     : cv::Mat( height, width, type )
 {

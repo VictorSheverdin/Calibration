@@ -30,7 +30,7 @@ using namespace std;
 TermCriteria termcrit(TermCriteria::COUNT|TermCriteria::EPS,20,0.03);
 Size subPixWinSize(10,10), winSize(31,31);
 
-void featureTracking(Mat sourceFrame, Mat targetFrame, vector<Point2f>& points1, vector<Point2f>& points2 )
+void featureTracking(Mat sourceFrame, Mat targetFrame, vector< KeyPoint >& points1, vector< KeyPoint >& points2 )
 {
     cv::Mat gray1;
     cv::cvtColor(sourceFrame, gray1, COLOR_BGR2GRAY);
@@ -38,20 +38,21 @@ void featureTracking(Mat sourceFrame, Mat targetFrame, vector<Point2f>& points1,
     cv::Mat gray2;
     cv::cvtColor(targetFrame, gray2, COLOR_BGR2GRAY);
 
-    vector<Point2f> trackingPoints;
-    vector<Point2f> resultPoints;
-
-    static auto detector = cv::AKAZE::create();
+    static auto detector = cv::AgastFeatureDetector::create( 50 );
+    static auto descriptor = cv::xfeatures2d::DAISY::create();
 
     std::vector< cv::KeyPoint > sourceKeypoints;
+    detector->detect( gray1, sourceKeypoints );
+
     cv::Mat sourceDescriptors;
-    detector->detectAndCompute( gray1, cv::noArray(), sourceKeypoints, sourceDescriptors );
+    descriptor->compute( gray1, sourceKeypoints, sourceDescriptors );
 
     std::vector< cv::KeyPoint > targetKeypoints;
     cv::Mat targetDescriptors;
-    detector->detectAndCompute( gray2, cv::noArray(), targetKeypoints, targetDescriptors );
+    detector->detect( gray2, targetKeypoints );
+    descriptor->compute( gray2, targetKeypoints, targetDescriptors );
 
-    static auto  matcher = cv::BFMatcher::create();
+    static auto matcher = cv::FlannBasedMatcher::create();
 
     std::vector< std::vector< DMatch > > matches;
     matcher->knnMatch( sourceDescriptors, targetDescriptors, matches, 2 );
@@ -60,15 +61,19 @@ void featureTracking(Mat sourceFrame, Mat targetFrame, vector<Point2f>& points1,
     points2.clear();
 
     for ( size_t i = 0; i < matches.size(); ++i ) {
-        if ( matches[i][0].distance < 0.75 * matches[i][1].distance ) {
-            points1.push_back( sourceKeypoints[ matches[i][0].queryIdx ].pt );
-            points2.push_back( targetKeypoints[ matches[i][0].trainIdx ].pt );
+        if ( matches[i][0].distance < 2.0/3.0 * matches[i][1].distance ) {
+            points1.push_back( sourceKeypoints[ matches[i][0].queryIdx ] );
+            points2.push_back( targetKeypoints[ matches[i][0].trainIdx ] );
 
         }
 
     }
 
-    /*cv::goodFeaturesToTrack( gray1, trackingPoints, 5000, 0.1, 10, cv::noArray(), 3, true, 0.04 );
+
+    vector<Point2f> trackingPoints;
+    vector<Point2f> resultPoints;
+
+    cv::goodFeaturesToTrack( gray1, trackingPoints, 5000, 0.1, 10, cv::noArray(), 3, true, 0.04 );
 
     vector<uchar> status;
     std::vector<float> err;
@@ -90,27 +95,27 @@ void featureTracking(Mat sourceFrame, Mat targetFrame, vector<Point2f>& points1,
 
         for (auto i = 0; i < status.size(); ++i ) {
             if ( status[i] && err[i] < minErr + 0.5 * ( maxErr - minErr ) ) {
-                points1.push_back( trackingPoints[i] );
-                points2.push_back( resultPoints[i] );
+                points1.push_back( cv::KeyPoint( trackingPoints[i], 0 ) );
+                points2.push_back( cv::KeyPoint( resultPoints[i], 0 ) );
             }
 
         }
 
-    }*/
+    }
 
 }
 
-void drawPoints( Mat frame, vector<Point2f>& points, const cv::Scalar &color = cv::Scalar(0, 0, 255, 255) )
+void drawPoints( Mat frame, vector<KeyPoint>& points, const cv::Scalar &color = cv::Scalar(0, 0, 255, 255) )
 {
     for (auto &i : points)
-        cv::circle(frame, i, 5, color, -1);
+        cv::circle(frame, i.pt, 5, color, -1);
 
 }
 
-void drawLines(Mat frame, vector<Point2f>& points1, vector<Point2f>& points2)
+void drawLines(Mat frame, vector<KeyPoint>& points1, vector<KeyPoint>& points2)
 {
     for ( size_t i = 0; i <points1.size(); ++i )
-        cv::line(frame, points1[i], points2[i], cv::Scalar(0, 255, 0, 255));
+        cv::line(frame, points1[i].pt, points2[i].pt, cv::Scalar(0, 255, 0, 255));
 
 }
 
@@ -161,9 +166,9 @@ int main( int argc, char** argv )
 
         cv::Mat captureFrame;
         cv::Mat prevFrame;
-        vector<cv::Point2f> prevFeaturePoints;
+        vector<cv::KeyPoint> prevFeaturePoints;
         cv::Mat curFrame;
-        vector<cv::Point2f> curFeaturePoints;
+        vector<cv::KeyPoint> curFeaturePoints;
 
         int i = 10000;
 
@@ -199,39 +204,53 @@ int main( int argc, char** argv )
                         Mat R, t;
                         cv::Mat f;
                         cv::Mat e;
-                        f = cv::findFundamentalMat( prevFeaturePoints, curFeaturePoints, cv::noArray() );
+
+                        vector<cv::Point2f> prevPoints;
+                        vector<cv::Point2f> curPoints;
+
+                        for ( auto &i : prevFeaturePoints )
+                            prevPoints.push_back( i.pt );
+
+                        for ( auto &i : curFeaturePoints )
+                            curPoints.push_back( i.pt );
+
+                        f = cv::findFundamentalMat( prevPoints, curPoints, cv::noArray() );
                         e = /*cv::findEssentialMat( prevFeaturePoints, curFeaturePoints, camMatrix )*/
                                 camMatrix.t() * f * camMatrix;
 
-                        vector<cv::Point2f> prevRefinedPoints;
-                        vector<cv::Point2f> curRefinedPoints;
+                        vector<cv::KeyPoint> prevRefinedPoints = prevFeaturePoints;
+                        vector<cv::KeyPoint> curRefinedPoints = curFeaturePoints;
 
+                        /*prevRefinedPoints.clear();
+                        curRefinedPoints.clear();
                         for ( size_t i = 0; i < prevFeaturePoints.size(); ++i ) {
                             cv::Mat p1( 1, 3, CV_64FC1 );
-                            p1.at<double>( 0, 0 ) = prevFeaturePoints[i].x;
-                            p1.at<double>( 0, 1 ) = prevFeaturePoints[i].y;
+                            p1.at<double>( 0, 0 ) = prevFeaturePoints[i].pt.x;
+                            p1.at<double>( 0, 1 ) = prevFeaturePoints[i].pt.y;
                             p1.at<double>( 0, 2 ) = 1.0;
 
                             cv::Mat p2( 3, 1, CV_64FC1 );
-                            p2.at<double>( 0, 0 ) = curFeaturePoints[i].x;
-                            p2.at<double>( 1, 0 ) = curFeaturePoints[i].y;
+                            p2.at<double>( 0, 0 ) = curFeaturePoints[i].pt.x;
+                            p2.at<double>( 1, 0 ) = curFeaturePoints[i].pt.y;
                             p2.at<double>( 2, 0 ) = 1.0;
 
                             cv::Mat prod = p1 * f * p2;
 
-                            if ( fabs( prod.at< double >( 0, 0 ) ) < 0.9 ) {
+                            if ( fabs( prod.at< double >( 0, 0 ) ) < 0.5 ) {
                                 prevRefinedPoints.push_back( prevFeaturePoints[i] );
                                 curRefinedPoints.push_back( curFeaturePoints[i] );
                             }
 
-                        }
+                            std:: cout << prod.at< double >( 0, 0 ) << " ";
+
+                        }*/
 
                         if ( prevRefinedPoints.size() > 8 ) {
 
                             cv::Mat renderFrame;
                             curFrame.copyTo(renderFrame);
                             drawPoints( renderFrame, curRefinedPoints );
-                            drawLines(renderFrame, prevRefinedPoints, curRefinedPoints);
+                            drawLines( renderFrame, prevRefinedPoints, curRefinedPoints );
 
                             cv::imshow("Features", renderFrame);
 
@@ -239,13 +258,13 @@ int main( int argc, char** argv )
                             cv::Mat curPts(2, curRefinedPoints.size(), CV_64F);
 
                             for (auto i = 0; i < prevRefinedPoints.size(); ++i) {
-                                prevPts.at<double>(0, i) = prevRefinedPoints[i].x;
-                                prevPts.at<double>(1, i) = prevRefinedPoints[i].y;
+                                prevPts.at<double>(0, i) = prevRefinedPoints[i].pt.x;
+                                prevPts.at<double>(1, i) = prevRefinedPoints[i].pt.y;
                             }
 
                             for (auto i = 0; i < curRefinedPoints.size(); ++i) {
-                                curPts.at<double>(0, i) = curRefinedPoints[i].x;
-                                curPts.at<double>(1, i) = curRefinedPoints[i].y;
+                                curPts.at<double>(0, i) = curRefinedPoints[i].pt.x;
+                                curPts.at<double>(1, i) = curRefinedPoints[i].pt.y;
                             }
 
                             std::vector<cv::Mat> rvec;
@@ -253,8 +272,8 @@ int main( int argc, char** argv )
 
                             cv::sfm::motionFromEssential(e, rvec, tvec);
 
-                            cv::Mat pt1 = (Mat_<double>(2,1) << prevRefinedPoints.front().x, prevRefinedPoints.front().y);
-                            cv::Mat pt2 = (Mat_<double>(2,1) << curRefinedPoints.front().x, curRefinedPoints.front().y);
+                            cv::Mat pt1 = (Mat_<double>(2,1) << prevRefinedPoints.front().pt.x, prevRefinedPoints.front().pt.y);
+                            cv::Mat pt2 = (Mat_<double>(2,1) << curRefinedPoints.front().pt.x, curRefinedPoints.front().pt.y);
 
                             int id = cv::sfm::motionFromEssentialChooseSolution(rvec, tvec, camMatrix, pt1, camMatrix, pt2);
 
@@ -279,12 +298,12 @@ int main( int argc, char** argv )
                                 pts[0].create(2, prevRefinedPoints.size());
                                 pts[1].create(2, curRefinedPoints.size());
                                 for (auto i = 0; i < prevRefinedPoints.size(); ++i) {
-                                    pts[0].row(0).col(i) = prevRefinedPoints[i].x;
-                                    pts[0].row(1).col(i) = prevRefinedPoints[i].y;
+                                    pts[0].row(0).col(i) = prevRefinedPoints[i].pt.x;
+                                    pts[0].row(1).col(i) = prevRefinedPoints[i].pt.y;
                                 }
                                 for (auto i = 0; i < curRefinedPoints.size(); ++i) {
-                                    pts[1].row(0).col(i) = curRefinedPoints[i].x;
-                                    pts[1].row(1).col(i) = curRefinedPoints[i].y;
+                                    pts[1].row(0).col(i) = curRefinedPoints[i].pt.x;
+                                    pts[1].row(1).col(i) = curRefinedPoints[i].pt.y;
                                 }
 
                                 cv::Mat points3d;
@@ -307,7 +326,7 @@ int main( int argc, char** argv )
                                                           pointVector.at<double>(1),
                                                           pointVector.at<double>(2));
                                         points.push_back(point);
-                                        colors.push_back( curFrame.at< cv::Vec4b >( curRefinedPoints[i].x, curRefinedPoints[i].y ) );
+                                        colors.push_back( curFrame.at< cv::Vec4b >( curRefinedPoints[i].pt.x, curRefinedPoints[i].pt.y ) );
 
                                     }
 
