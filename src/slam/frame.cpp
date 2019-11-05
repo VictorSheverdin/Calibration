@@ -57,36 +57,80 @@ std::shared_ptr<MonoFramePoint> MonoFrame::createFramePoint( const size_t keyPoi
 
 }
 
+// DoubleFrameBase
+DoubleFrameBase::DoubleFrameBase()
+{
+}
+
+DoubleFrameBase::DoubleFrameBase( const CvImage &image1,  const CvImage &image2 )
+{
+    load( image1, image2 );
+}
+
+void DoubleFrameBase::load( const CvImage &image1,  const CvImage &image2 )
+{
+    m_frame1 = std::make_shared< MonoFrame >( image1 );
+    m_frame2 = std::make_shared< MonoFrame >( image2 );
+}
+
 // StereoFrame
 StereoFrame::StereoFrame()
 {
 }
 
 StereoFrame::StereoFrame( const CvImage &leftImage,  const CvImage &rightImage )
+    : DoubleFrameBase( leftImage, rightImage )
 {
-    load( leftImage, rightImage );
-}
-
-void StereoFrame::load( const CvImage &leftImage,  const CvImage &rightImage )
-{
-    m_leftFrame.load( leftImage );
-    m_rightFrame.load( rightImage );
 }
 
 void StereoFrame::triangulatePoints()
 {
-    std::vector< cv::DMatch > matches;
+    if ( leftFrame() && rightFrame() ) {
 
-    m_processor.match( m_leftFrame.m_keyPoints ,m_leftFrame.m_descriptors, m_rightFrame.m_keyPoints, m_rightFrame.m_descriptors, &matches );
+        std::vector< cv::DMatch > matches;
 
-    for ( auto &i : matches ) {
-        auto leftPoint = m_leftFrame.createFramePoint( i.queryIdx );
-        auto rightPoint = m_rightFrame.createFramePoint( i.trainIdx );
+        m_processor.match( leftFrame()->m_keyPoints, leftFrame()->m_descriptors, rightFrame()->m_keyPoints, rightFrame()->m_descriptors, &matches );
 
-        createFramePoint( leftPoint, rightPoint );
+        for ( auto &i : matches ) {
+            auto leftPoint = leftFrame()->createFramePoint( i.queryIdx );
+            auto rightPoint = rightFrame()->createFramePoint( i.trainIdx );
+
+            createFramePoint( leftPoint, rightPoint );
+
+        }
 
     }
 
+}
+
+void StereoFrame::setLeftFrame( const std::shared_ptr<MonoFrame> &value )
+{
+    m_frame1 = value;
+}
+
+void StereoFrame::setRightFrame( const std::shared_ptr<MonoFrame> &value )
+{
+    m_frame2 = value;
+}
+
+std::shared_ptr< MonoFrame > &StereoFrame::leftFrame()
+{
+    return m_frame1;
+}
+
+std::shared_ptr< MonoFrame > &StereoFrame::rightFrame()
+{
+    return m_frame2;
+}
+
+const std::shared_ptr< MonoFrame > &StereoFrame::leftFrame() const
+{
+    return m_frame1;
+}
+
+const std::shared_ptr< MonoFrame > &StereoFrame::rightFrame() const
+{
+    return m_frame2;
 }
 
 std::shared_ptr< StereoFramePoint > StereoFrame::createFramePoint( const std::shared_ptr< MonoFramePoint > &leftPoint, const std::shared_ptr< MonoFramePoint > &rightPoint )
@@ -105,8 +149,8 @@ CvImage StereoFrame::drawKeyPoints( const CvImage &leftImage, const CvImage &rig
     CvImage right;
     rightImage.copyTo( right );
 
-    m_leftFrame.drawKeyPoints( &left );
-    m_rightFrame.drawKeyPoints( &right );
+    leftFrame()->drawKeyPoints( &left );
+    rightFrame()->drawKeyPoints( &right );
 
     return stackImages( left, right );
 }
@@ -135,6 +179,61 @@ CvImage StereoFrame::drawStereoPoints(const CvImage &leftImage, const CvImage &r
     }
 
     return ret;
+
+}
+
+// ConsecutiveFrame
+ConsecutiveFrame::ConsecutiveFrame()
+{
+}
+
+ConsecutiveFrame::ConsecutiveFrame( const CvImage &leftImage, const CvImage &rightImage )
+    : DoubleFrameBase( leftImage, rightImage )
+{
+}
+
+void ConsecutiveFrame::recoverPose()
+{
+    if ( m_frame1 && m_frame2 ) {
+
+        std::vector< cv::DMatch > matches;
+
+        m_processor.match( m_frame1->m_keyPoints, m_frame1->m_descriptors, m_frame2->m_keyPoints, m_frame2->m_descriptors, &matches );
+
+        for ( auto &i : matches ) {
+            auto point1 = m_frame1->createFramePoint( i.queryIdx );
+            auto point2 = m_frame2->createFramePoint( i.trainIdx );
+
+            createFramePoint( point1, point2 );
+
+        }
+
+    }
+}
+
+CvImage ConsecutiveFrame::drawTrack( const CvImage &image ) const
+{
+    CvImage ret;
+
+    image.copyTo( ret );
+
+    for ( auto &i : m_framePoints )
+        drawLine( &ret, i->m_framePoint1->point(), i->m_framePoint2->point() );
+
+    for ( auto &i : m_framePoints )
+        drawFeaturePoint( &ret, i->m_framePoint2->point() );
+
+    return ret;
+
+}
+
+std::shared_ptr< ConsecutiveFramePoint > ConsecutiveFrame::createFramePoint( const std::shared_ptr< MonoFramePoint > &point1, const std::shared_ptr< MonoFramePoint > &point2 )
+{
+    auto frame = std::shared_ptr< ConsecutiveFramePoint >( new ConsecutiveFramePoint( point1, point2 ) );
+
+    m_framePoints.push_back( frame );
+
+    return frame;
 
 }
 

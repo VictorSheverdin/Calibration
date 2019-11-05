@@ -47,14 +47,33 @@ bool System::track( const CvImage &leftImage, const CvImage &rightImage )
     if ( !m_rectificationProcessor.rectify( leftImage, rightImage, &leftRectifiedImage, &rightRectifiedImage ) )
         return false;
 
-    StereoFrame frame( leftRectifiedImage, rightRectifiedImage );
-    frame.triangulatePoints();
+    // leftRectifiedImage = leftImage;
+    // rightRectifiedImage = rightImage;
 
-    auto keyPoints = frame.drawKeyPoints( leftRectifiedImage, rightRectifiedImage );
-    cv::imshow( "KeyPoints", keyPoints );
+    // cv::resize( leftRectifiedImage, leftRectifiedImage, cv::Size(), 0.5, 0.5 );
+    // cv::resize( rightRectifiedImage, rightRectifiedImage, cv::Size(), 0.5, 0.5 );
 
-    auto stereoPoints = frame.drawStereoPoints( leftRectifiedImage, rightRectifiedImage );
-    cv::imshow( "StereoPoints", stereoPoints );
+    static StereoFrame previousStereoFrame;
+
+    StereoFrame stereoFrame( leftRectifiedImage, rightRectifiedImage );
+    // stereoFrame.triangulatePoints();
+
+    auto stereoCorrespondencies = stereoFrame.drawStereoPoints( leftRectifiedImage, rightRectifiedImage );
+    cv::imshow( "StereoPoints", stereoCorrespondencies );
+
+    static CvImage previousLeftImage;
+
+    if ( !previousLeftImage.empty() ) {
+
+        ConsecutiveFrame frame( previousLeftImage, leftRectifiedImage );
+        frame.recoverPose();
+
+        auto track = frame.drawTrack( leftRectifiedImage );
+        cv::imshow( "KeyPoints", track );
+
+    }
+
+    previousLeftImage = leftRectifiedImage;
 
     cv::waitKey(15);
 

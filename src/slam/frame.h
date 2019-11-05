@@ -31,6 +31,7 @@ private:
 class MonoFrame : public FrameBase
 {
     friend class StereoFrame;
+    friend class ConsecutiveFrame;
     friend class MonoFramePoint;
 
 public:
@@ -52,29 +53,67 @@ protected:
 private:
 };
 
-class StereoFrame : public FrameBase
+class DoubleFrameBase : public FrameBase
+{
+public:
+    DoubleFrameBase();
+    DoubleFrameBase( const CvImage &image1, const CvImage &image2 );
+
+    void load( const CvImage &image1, const CvImage &image2 );
+
+protected:
+    std::shared_ptr< MonoFrame > m_frame1;
+    std::shared_ptr< MonoFrame > m_frame2;
+
+};
+
+class StereoFrame : public DoubleFrameBase
 {
     friend class StereoFramePoint;
 
 public:
     StereoFrame();
-    StereoFrame( const CvImage &leftImage,  const CvImage &rightImage );
+    StereoFrame( const CvImage &leftImage, const CvImage &rightImage );
 
-    void load( const CvImage &leftImage,  const CvImage &rightImage );
     CvImage drawKeyPoints( const CvImage &leftImage, const CvImage &rightImage ) const;
     CvImage drawStereoPoints( const CvImage &leftImage, const CvImage &rightImage ) const;
 
     void triangulatePoints();
 
 protected:
-    MonoFrame m_leftFrame;
-    MonoFrame m_rightFrame;
+    void setLeftFrame( const std::shared_ptr< MonoFrame > &value );
+    void setRightFrame( const std::shared_ptr< MonoFrame > &value );
+
+    std::shared_ptr< MonoFrame > &leftFrame();
+    std::shared_ptr< MonoFrame > &rightFrame();
+
+    const std::shared_ptr< MonoFrame > &leftFrame() const;
+    const std::shared_ptr< MonoFrame > &rightFrame() const;
 
     std::vector< std::shared_ptr< StereoFramePoint > > m_framePoints;
 
     std::shared_ptr< StereoFramePoint > createFramePoint( const std::shared_ptr< MonoFramePoint > &leftPoint, const std::shared_ptr< MonoFramePoint > &rightPoint );
 
 private:
+};
+
+class ConsecutiveFrame : public DoubleFrameBase
+{
+    friend class ConsecutiveFramePoint;
+
+public:
+    ConsecutiveFrame();
+    ConsecutiveFrame( const CvImage &leftImage, const CvImage &rightImage );
+
+    CvImage drawTrack( const CvImage &image ) const;
+
+    void recoverPose();
+
+protected:
+    std::vector< std::shared_ptr< ConsecutiveFramePoint > > m_framePoints;
+
+    std::shared_ptr< ConsecutiveFramePoint > createFramePoint( const std::shared_ptr< MonoFramePoint > &point1, const std::shared_ptr< MonoFramePoint > &point2 );
+
 };
 
 }

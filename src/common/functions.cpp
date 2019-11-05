@@ -93,7 +93,7 @@ bool drawFeaturePoint( CvImage *target, const cv::Point2f &pt, const cv::Scalar 
     if ( !target )
         return false;
 
-    cv::circle( *target, pt, 5, color, -1 );
+    cv::circle( *target, pt, 3, color, -1 );
 
     return true;
 }

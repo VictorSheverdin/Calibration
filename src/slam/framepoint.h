@@ -33,9 +33,22 @@ protected:
     WorldPoint *m_parentWorldPoint; // parent world point
 
 private:
+
 };
 
-class StereoFramePoint : public FramePointBase
+class DoubleFramePointBase : public FramePointBase
+{
+public:
+
+protected:
+    DoubleFramePointBase( const std::shared_ptr< MonoFramePoint > &point1, const std::shared_ptr< MonoFramePoint > &point2 );
+
+    std::shared_ptr< MonoFramePoint > m_framePoint1;
+    std::shared_ptr< MonoFramePoint > m_framePoint2;
+
+};
+
+class StereoFramePoint : public DoubleFramePointBase
 {
     friend class StereoFrame;
 
@@ -46,8 +59,23 @@ public:
 protected:
     StereoFramePoint( const std::shared_ptr< MonoFramePoint > &leftPoint, const std::shared_ptr< MonoFramePoint > &rightPoint );
 
-    std::shared_ptr< MonoFramePoint > m_leftFramePoint;
-    std::shared_ptr< MonoFramePoint > m_rightFramePoint;
+    std::shared_ptr< MonoFramePoint > &leftFramePoint();
+    std::shared_ptr< MonoFramePoint > &rightFramePoint();
+
+    const std::shared_ptr< MonoFramePoint > &leftFramePoint() const;
+    const std::shared_ptr< MonoFramePoint > &rightFramePoint() const ;
+
+private:
+};
+
+class ConsecutiveFramePoint : public DoubleFramePointBase
+{
+    friend class ConsecutiveFrame;
+
+public:
+
+protected:
+    ConsecutiveFramePoint( const std::shared_ptr< MonoFramePoint > &leftPoint, const std::shared_ptr< MonoFramePoint > &rightPoint );
 
 private:
 };

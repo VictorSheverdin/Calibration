@@ -22,21 +22,52 @@ namespace slam {
         return m_parentFrame->m_keyPoints[ m_keyPointIndex ].pt;
     }
 
+    // DoubleFramePointBase
+    DoubleFramePointBase::DoubleFramePointBase( const std::shared_ptr< MonoFramePoint > &point1, const std::shared_ptr< MonoFramePoint > &point2 )
+        : m_framePoint1( point1 ), m_framePoint2( point2 )
+    {
+    }
+
     // StereoFramePoint
     StereoFramePoint::StereoFramePoint(const std::shared_ptr<MonoFramePoint> &leftPoint, const std::shared_ptr<MonoFramePoint> &rightPoint )
-        : m_leftFramePoint( leftPoint ), m_rightFramePoint( rightPoint )
+        : DoubleFramePointBase( leftPoint, rightPoint )
     {
     }
 
     const cv::Point2f &StereoFramePoint::leftPoint() const
     {
-        return m_leftFramePoint->point();
+        return leftFramePoint()->point();
     }
 
     const cv::Point2f &StereoFramePoint::rightPoint() const
     {
-        return m_rightFramePoint->point();
+        return rightFramePoint()->point();
     }
 
+    std::shared_ptr< MonoFramePoint > &StereoFramePoint::leftFramePoint()
+    {
+        return m_framePoint1;
+    }
+
+    std::shared_ptr< MonoFramePoint > &StereoFramePoint::rightFramePoint()
+    {
+        return m_framePoint2;
+    }
+
+    const std::shared_ptr< MonoFramePoint > &StereoFramePoint::leftFramePoint() const
+    {
+        return m_framePoint1;
+    }
+
+    const std::shared_ptr< MonoFramePoint > &StereoFramePoint::rightFramePoint() const
+    {
+        return m_framePoint2;
+    }
+
+    // ConsecutiveFramePoint
+    ConsecutiveFramePoint::ConsecutiveFramePoint( const std::shared_ptr< MonoFramePoint > &leftPoint, const std::shared_ptr< MonoFramePoint > &rightPoint )
+        : DoubleFramePointBase( leftPoint, rightPoint )
+    {
+    }
 
 }
