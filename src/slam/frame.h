@@ -11,108 +11,138 @@ namespace slam {
 
 class FrameBase
 {
-public:
+protected:
     FrameBase();
     virtual ~FrameBase() = default;
 
-protected:
-    std::vector< WorldPoint > m_worlPoints;
-
-    cv::Mat m_projectionMatrix;
+    cv::Mat m_cameraMatrix;
 
     cv::Mat m_rotation;
     cv::Mat m_translation;
 
-    static FeatureProcessor m_processor;
-
-private:
 };
 
 class MonoFrame : public FrameBase
 {
+protected:
+    MonoFrame();
+
+};
+
+class FeatureFrame : public MonoFrame, public std::enable_shared_from_this< FeatureFrame >
+{
     friend class StereoFrame;
     friend class ConsecutiveFrame;
-    friend class MonoFramePoint;
+    friend class FeaturePoint;
 
 public:
-    MonoFrame();
-    MonoFrame( const CvImage &image );
+    using FramePtr = std::shared_ptr< FeatureFrame >;
+    using PointPtr = std::shared_ptr< FeaturePoint >;
+
+    static FramePtr create();
+    static FramePtr create( const CvImage &image );
 
     void load( const CvImage &image );
+
+    size_t pointsCount() const;
+
     bool drawKeyPoints( CvImage *target ) const;
-    bool drawFramePoints( CvImage *target ) const;
+    bool drawPoints( CvImage *target ) const;
 
 protected:
+    FeatureFrame();
+    FeatureFrame( const CvImage &image );
+
     std::vector< cv::KeyPoint > m_keyPoints;
     cv::Mat m_descriptors;
 
-    std::vector< std::shared_ptr< MonoFramePoint > > m_framePoints;
+    std::vector< PointPtr > m_framePoints;
 
-    std::shared_ptr< MonoFramePoint > createFramePoint( const size_t keyPointIndex );
+    static FeatureProcessor m_processor;
 
-private:
+    PointPtr createFramePoint( const size_t keyPointIndex );
+
+};
+
+class Frame : public MonoFrame
+{
 };
 
 class DoubleFrameBase : public FrameBase
 {
 public:
-    DoubleFrameBase();
-    DoubleFrameBase( const CvImage &image1, const CvImage &image2 );
+    using MonoFramePtr = std::shared_ptr< MonoFrame >;
+    using MonoPointPtr = std::shared_ptr< MonoPoint >;
 
-    void load( const CvImage &image1, const CvImage &image2 );
+    void setFrames( const MonoFramePtr frame1, const MonoFramePtr frame2 );
+
+    MonoFramePtr frame1() const;
+    MonoFramePtr frame2() const;
 
 protected:
-    std::shared_ptr< MonoFrame > m_frame1;
-    std::shared_ptr< MonoFrame > m_frame2;
+    DoubleFrameBase();
+
+    MonoFramePtr m_frame1;
+    MonoFramePtr m_frame2;
+
+    static FeatureMatcher m_matcher;
 
 };
 
 class StereoFrame : public DoubleFrameBase
 {
-    friend class StereoFramePoint;
+    friend class StereoPoint;
 
 public:
-    StereoFrame();
-    StereoFrame( const CvImage &leftImage, const CvImage &rightImage );
+    using FeatureFramePtr = std::shared_ptr< FeatureFrame >;
+    using PointPtr = std::shared_ptr< StereoPoint >;
+
+    using FramePtr = std::shared_ptr< StereoFrame >;
+
+    static FramePtr create();
+
+    void load( const CvImage &leftImage, const CvImage &rightImage );
+    void matchFrames( const FeatureFramePtr leftFrame, const FeatureFramePtr rightFrame );
+
+    MonoFramePtr leftFrame() const;
+    MonoFramePtr rightFrame() const;
 
     CvImage drawKeyPoints( const CvImage &leftImage, const CvImage &rightImage ) const;
     CvImage drawStereoPoints( const CvImage &leftImage, const CvImage &rightImage ) const;
 
-    void triangulatePoints();
-
 protected:
-    void setLeftFrame( const std::shared_ptr< MonoFrame > &value );
-    void setRightFrame( const std::shared_ptr< MonoFrame > &value );
+    StereoFrame();
 
-    std::shared_ptr< MonoFrame > &leftFrame();
-    std::shared_ptr< MonoFrame > &rightFrame();
+    std::vector< PointPtr > m_framePoints;
 
-    const std::shared_ptr< MonoFrame > &leftFrame() const;
-    const std::shared_ptr< MonoFrame > &rightFrame() const;
-
-    std::vector< std::shared_ptr< StereoFramePoint > > m_framePoints;
-
-    std::shared_ptr< StereoFramePoint > createFramePoint( const std::shared_ptr< MonoFramePoint > &leftPoint, const std::shared_ptr< MonoFramePoint > &rightPoint );
+    PointPtr createFramePoint( const MonoPointPtr leftPoint, const MonoPointPtr rightPoint );
 
 private:
 };
 
 class ConsecutiveFrame : public DoubleFrameBase
 {
-    friend class ConsecutiveFramePoint;
+    friend class ConsecutivePoint;
 
 public:
-    ConsecutiveFrame();
-    ConsecutiveFrame( const CvImage &leftImage, const CvImage &rightImage );
+    using FeatureFramePtr = std::shared_ptr< FeatureFrame >;
+    using PointPtr = std::shared_ptr< ConsecutivePoint >;
+
+    using FramePtr = std::shared_ptr< ConsecutiveFrame >;
+
+    static FramePtr create();
+
+    void load( const CvImage &image1, const CvImage &image2 );
+    void matchFrames( const FeatureFramePtr frame1, const FeatureFramePtr frame2 );
 
     CvImage drawTrack( const CvImage &image ) const;
 
-    void recoverPose();
+protected:    
+    ConsecutiveFrame();
 
-protected:
-    std::vector< std::shared_ptr< ConsecutiveFramePoint > > m_framePoints;
+    std::vector< PointPtr > m_framePoints;
 
-    std::shared_ptr< ConsecutiveFramePoint > createFramePoint( const std::shared_ptr< MonoFramePoint > &point1, const std::shared_ptr< MonoFramePoint > &point2 );
+    PointPtr createFramePoint( const MonoPointPtr point1, const MonoPointPtr point2 );
 
 };
 

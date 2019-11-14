@@ -8,8 +8,6 @@ FeatureProcessorBase::FeatureProcessorBase()
 }
 
 // FeatureProcessor
-double FeatureProcessor::m_threshold = 0.8;
-
 FeatureProcessor::FeatureProcessor()
 {
     initialize();
@@ -19,28 +17,41 @@ void FeatureProcessor::initialize()
 {
     m_detector = cv::AgastFeatureDetector::create( 50 );
     m_descriptor = cv::xfeatures2d::DAISY::create();
-
-    m_matcher = cv::FlannBasedMatcher::create();
 }
 
 void FeatureProcessor::extract( const CvImage &image, std::vector< cv::KeyPoint > *keypoints, cv::Mat *descriptors )
 {    
     if ( keypoints ) {
 
-        /*CvImage gray;
-
-        cv::cvtColor( image, gray, cv::COLOR_BGR2GRAY );*/
-
-        m_detector->detect( /*gray*/image, *keypoints );
+        m_detector->detect( image, *keypoints );
 
         if ( descriptors)
-            m_descriptor->compute( /*gray*/image, *keypoints, *descriptors );
+            m_descriptor->compute( image, *keypoints, *descriptors );
 
     }
 
 }
 
-void FeatureProcessor::match( std::vector< cv::KeyPoint > &queryKeypoints, const cv::Mat &queryDescriptors,
+// FeatureMatcherBase
+FeatureMatcherBase::FeatureMatcherBase()
+{
+}
+
+// FeatureMatcher
+double FeatureMatcher::m_threshold = 0.8;
+
+FeatureMatcher::FeatureMatcher()
+{
+    initialize();
+}
+
+void FeatureMatcher::initialize()
+{
+    m_matcher = cv::FlannBasedMatcher::create();
+}
+
+
+void FeatureMatcher::match( std::vector< cv::KeyPoint > &queryKeypoints, const cv::Mat &queryDescriptors,
                               std::vector< cv::KeyPoint > &trainKeypoints, const cv::Mat &trainDescriptors, std::vector< cv::DMatch > *matches )
 {
     if (matches ) {
@@ -89,7 +100,7 @@ void FeatureProcessor::match( std::vector< cv::KeyPoint > &queryKeypoints, const
 
         for ( size_t i = 0; i < inliers.size(); ++i )
             if ( inliers[ i ] )
-                matches->push_back( symMatches[i] );
+                matches->push_back( symMatches[ i ] );
 
     }
 

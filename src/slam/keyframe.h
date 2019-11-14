@@ -11,7 +11,7 @@ protected:
 private:
 };
 
-class MonoKeyFrame : public MonoFrame
+class MonoKeyFrame : public FeatureFrame
 {
 public:
 protected:

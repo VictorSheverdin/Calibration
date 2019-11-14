@@ -111,6 +111,7 @@ const CvImage &MonocularCalibrationData::previewImage() const
 bool MonocularCalibrationData::saveYaml( const std::string &fileName ) const
 {
     if ( isOk() ) {
+
         cv::FileStorage fs( fileName, cv::FileStorage::WRITE );
 
         time_t rawtime; time( &rawtime );

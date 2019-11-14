@@ -3,13 +3,15 @@
 #include "src/common/calibrationdatabase.h"
 #include "src/common/rectificationprocessor.h"
 
-#include "map.h"
+#include "world.h"
 
 namespace slam {
 
 class System
 {
 public:
+    using WorldPtr = World::WorldPtr;
+
     System( const StereoCalibrationDataShort &calibration );
     System( const std::string &calibrationFile );
 
@@ -19,7 +21,7 @@ public:
 protected:
     StereoRectificationProcessor m_rectificationProcessor;
 
-    Map m_map;
+    WorldPtr m_world;
 
 private:
     void initialize();

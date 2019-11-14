@@ -88,8 +88,11 @@ int main( int argc, char **argv )
 
             double tframe = 0;
 
-            for( int i = 10000; i < 30000; ++i )
+            for( int i = 5800; i < 13000; ++i )
             {
+
+                std::cout << i << std::endl;
+
                 auto vstrImageLeft = leftDir + "/" + QString::number(i) + "_left.jpg";
                 auto vstrImageRight = rightDir + "/" + QString::number(i) + "_right.jpg";
 
@@ -121,8 +124,9 @@ int main( int argc, char **argv )
 
             }
 
+            SLAM.SaveTrajectory("/home/victor/trajectory.txt");
+//            getchar();
 
-            getchar();
 
             SLAM.Shutdown();
 

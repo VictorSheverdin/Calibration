@@ -19,6 +19,8 @@ public:
 
     CvImage undistort( const CvImage &image );
 
+    const MonocularCalibrationDataShort &calibration() const;
+
 protected:
     MonocularCalibrationDataShort m_calibrationData;
 
@@ -37,6 +39,8 @@ public:
     bool rectify( const CvImage &leftImage, const CvImage &rightImage, CvImage *leftResult, CvImage *rightResult );
 
     bool isValid() const;
+
+    const StereoCalibrationDataShort &calibration() const;
 
 protected:
     StereoCalibrationDataShort m_calibrationData;

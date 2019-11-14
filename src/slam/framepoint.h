@@ -4,80 +4,107 @@
 
 namespace slam {
 
-class MonoFrame;
+class FeatureFrame;
 class WorldPoint;
+class PointTrack;
 
-class FramePointBase
+class PointBase
+{
+protected:
+    PointBase();
+};
+
+class MonoPoint : public PointBase
 {
 public:
-protected:
-    FramePointBase();
+    using TrackPtr = std::weak_ptr< PointTrack >;
 
-private:
+    virtual const cv::Point2f &point() const = 0;
+
+    void setTrack( const TrackPtr track );
+    TrackPtr track() const;
+
+protected:
+    MonoPoint();
+
+    TrackPtr m_track;
 
 };
 
-class MonoFramePoint : public FramePointBase
+class FeaturePoint : public MonoPoint
 {
-    friend class MonoFrame;
-
 public:
-    const cv::Point2f &point() const;
+    using FramePtr = std::weak_ptr< FeatureFrame >;
+    using PointPtr = std::shared_ptr< FeaturePoint >;
+
+    virtual const cv::Point2f &point() const override;
+
+    static PointPtr create( const FramePtr parentFrame, const size_t keyPointIndex );
 
 protected:
-    MonoFramePoint( const MonoFrame *parentFrame, const size_t keyPointIndex );
+    FeaturePoint( const FramePtr parentFrame, const size_t keyPointIndex );
 
-    const MonoFrame *m_parentFrame; // Parent frame
+    const FramePtr m_parentFrame; // Parent frame
     size_t m_keyPointIndex; // Index of keypoint in parent frame
 
-    WorldPoint *m_parentWorldPoint; // parent world point
-
 private:
 
 };
 
-class DoubleFramePointBase : public FramePointBase
+class Point : public MonoPoint
+{
+};
+
+class DoublePoint : public PointBase
 {
 public:
+    using MonoPointPtr = std::shared_ptr< MonoPoint >;
+
+    void setMonoPoints( const MonoPointPtr point1, const MonoPointPtr point2 );
+
+    MonoPointPtr monoPoint1() const;
+    MonoPointPtr monoPoint2() const;
 
 protected:
-    DoubleFramePointBase( const std::shared_ptr< MonoFramePoint > &point1, const std::shared_ptr< MonoFramePoint > &point2 );
+    DoublePoint( const MonoPointPtr point1, const MonoPointPtr point2 );
 
-    std::shared_ptr< MonoFramePoint > m_framePoint1;
-    std::shared_ptr< MonoFramePoint > m_framePoint2;
+    MonoPointPtr m_point1;
+    MonoPointPtr m_point2;
 
 };
 
-class StereoFramePoint : public DoubleFramePointBase
+class StereoPoint : public DoublePoint
 {
     friend class StereoFrame;
 
 public:
+    using WorldPointPtr = std::weak_ptr< WorldPoint >;
+
     const cv::Point2f &leftPoint() const;
     const cv::Point2f &rightPoint() const;
 
+    MonoPointPtr leftMonoPoint() const;
+    MonoPointPtr rightMonoPoint() const;
+
+    void setWorldPoint( const WorldPointPtr value );
+    WorldPointPtr worldPoint() const;
+
 protected:
-    StereoFramePoint( const std::shared_ptr< MonoFramePoint > &leftPoint, const std::shared_ptr< MonoFramePoint > &rightPoint );
+    StereoPoint( const MonoPointPtr leftPoint, const MonoPointPtr rightPoint );
 
-    std::shared_ptr< MonoFramePoint > &leftFramePoint();
-    std::shared_ptr< MonoFramePoint > &rightFramePoint();
+    WorldPointPtr m_worldPoint;
 
-    const std::shared_ptr< MonoFramePoint > &leftFramePoint() const;
-    const std::shared_ptr< MonoFramePoint > &rightFramePoint() const ;
-
-private:
 };
 
-class ConsecutiveFramePoint : public DoubleFramePointBase
+class ConsecutivePoint : public DoublePoint
 {
     friend class ConsecutiveFrame;
 
 public:
 
 protected:
-    ConsecutiveFramePoint( const std::shared_ptr< MonoFramePoint > &leftPoint, const std::shared_ptr< MonoFramePoint > &rightPoint );
+    ConsecutivePoint( const MonoPointPtr point1, const MonoPointPtr point2 );
 
-private:
 };
 
 }

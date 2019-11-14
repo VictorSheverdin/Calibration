@@ -33,6 +33,11 @@ CvImage MonoUndistortionProcessor::undistort( const CvImage &image )
 
 }
 
+const MonocularCalibrationDataShort &MonoUndistortionProcessor::calibration() const
+{
+    return m_calibrationData;
+}
+
 // StereoRectificationProcessor
 StereoRectificationProcessor::StereoRectificationProcessor()
 {
@@ -91,6 +96,11 @@ bool StereoRectificationProcessor::rectify( const CvImage &leftImage, const CvIm
 bool StereoRectificationProcessor::isValid() const
 {
     return m_calibrationData.isOk();
+}
+
+const StereoCalibrationDataShort &StereoRectificationProcessor::calibration() const
+{
+    return m_calibrationData;
 }
 
 cv::Rect StereoRectificationProcessor::cropRect( const cv::Rect &leftCropRect, const cv::Rect &rightCropRect )

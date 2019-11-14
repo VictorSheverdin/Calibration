@@ -10,7 +10,7 @@ int main( int argc, char** argv )
 
     slam::System slamSystem( path + "calibration.yaml" );
 
-    for ( auto i = 10000; i < 11000; ++i ) {
+    for ( auto i = 5500; i < 15000; ++i ) {
         std::string leftFile = leftPath + std::to_string( i ) + "_left.jpg";
         std::string rightFile = rightPath + std::to_string( i ) + "_right.jpg";
 

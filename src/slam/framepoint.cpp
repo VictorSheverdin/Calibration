@@ -6,67 +6,103 @@
 
 namespace slam {
 
-    // FramePointBase
-    FramePointBase::FramePointBase()
+    // PointBase
+    PointBase::PointBase()
     {
     }
 
-    // MonoFramePoint
-    MonoFramePoint::MonoFramePoint( const MonoFrame *parentFrame , const size_t keyPointIndex )
-        : m_parentFrame( parentFrame ), m_keyPointIndex( keyPointIndex ), m_parentWorldPoint( nullptr )
+    // MonoPoint
+    MonoPoint::MonoPoint()
     {
     }
 
-    const cv::Point2f &MonoFramePoint::point() const
+    void MonoPoint::setTrack( const TrackPtr track )
     {
-        return m_parentFrame->m_keyPoints[ m_keyPointIndex ].pt;
+        m_track = track;
     }
 
-    // DoubleFramePointBase
-    DoubleFramePointBase::DoubleFramePointBase( const std::shared_ptr< MonoFramePoint > &point1, const std::shared_ptr< MonoFramePoint > &point2 )
-        : m_framePoint1( point1 ), m_framePoint2( point2 )
+    MonoPoint::TrackPtr MonoPoint::track() const
+    {
+        return m_track;
+    }
+
+    // FeaturePoint
+    FeaturePoint::FeaturePoint( const FramePtr parentFrame , const size_t keyPointIndex )
+        : m_parentFrame( parentFrame ), m_keyPointIndex( keyPointIndex )
     {
     }
 
-    // StereoFramePoint
-    StereoFramePoint::StereoFramePoint(const std::shared_ptr<MonoFramePoint> &leftPoint, const std::shared_ptr<MonoFramePoint> &rightPoint )
-        : DoubleFramePointBase( leftPoint, rightPoint )
+    FeaturePoint::PointPtr FeaturePoint::create( const FramePtr parentFrame, const size_t keyPointIndex )
+    {
+        return PointPtr( new FeaturePoint( parentFrame, keyPointIndex ) );
+    }
+
+    const cv::Point2f &FeaturePoint::point() const
+    {
+        return m_parentFrame.lock()->m_keyPoints[ m_keyPointIndex ].pt;
+    }
+
+    // DoublePoint
+    DoublePoint::DoublePoint( const MonoPointPtr point1, const MonoPointPtr point2 )
+    {
+        setMonoPoints( point1, point2 );
+    }
+
+    void DoublePoint::setMonoPoints( const MonoPointPtr point1, const MonoPointPtr point2 )
+    {
+        m_point1 = point1;
+        m_point2 = point2;
+    }
+
+    DoublePoint::MonoPointPtr DoublePoint::monoPoint1() const
+    {
+        return m_point1;
+    }
+
+    DoublePoint::MonoPointPtr DoublePoint::monoPoint2() const
+    {
+        return m_point2;
+    }
+
+    // StereoPoint
+    StereoPoint::StereoPoint( const MonoPointPtr leftPoint, const MonoPointPtr rightPoint )
+        : DoublePoint( leftPoint, rightPoint )
     {
     }
 
-    const cv::Point2f &StereoFramePoint::leftPoint() const
+    const cv::Point2f &StereoPoint::leftPoint() const
     {
-        return leftFramePoint()->point();
+        return leftMonoPoint()->point();
     }
 
-    const cv::Point2f &StereoFramePoint::rightPoint() const
+    const cv::Point2f &StereoPoint::rightPoint() const
     {
-        return rightFramePoint()->point();
+        return rightMonoPoint()->point();
     }
 
-    std::shared_ptr< MonoFramePoint > &StereoFramePoint::leftFramePoint()
+    StereoPoint::MonoPointPtr StereoPoint::leftMonoPoint() const
     {
-        return m_framePoint1;
+        return monoPoint1();
     }
 
-    std::shared_ptr< MonoFramePoint > &StereoFramePoint::rightFramePoint()
+    StereoPoint::MonoPointPtr StereoPoint::rightMonoPoint() const
     {
-        return m_framePoint2;
+        return monoPoint2();
     }
 
-    const std::shared_ptr< MonoFramePoint > &StereoFramePoint::leftFramePoint() const
+    void StereoPoint::setWorldPoint( const WorldPointPtr value )
     {
-        return m_framePoint1;
+        m_worldPoint = value;
     }
 
-    const std::shared_ptr< MonoFramePoint > &StereoFramePoint::rightFramePoint() const
+    StereoPoint::WorldPointPtr StereoPoint::worldPoint() const
     {
-        return m_framePoint2;
+        return m_worldPoint;
     }
 
-    // ConsecutiveFramePoint
-    ConsecutiveFramePoint::ConsecutiveFramePoint( const std::shared_ptr< MonoFramePoint > &leftPoint, const std::shared_ptr< MonoFramePoint > &rightPoint )
-        : DoubleFramePointBase( leftPoint, rightPoint )
+    // ConsecutivePoint
+    ConsecutivePoint::ConsecutivePoint( const MonoPointPtr point1, const MonoPointPtr point2 )
+        : DoublePoint( point1, point2 )
     {
     }
 

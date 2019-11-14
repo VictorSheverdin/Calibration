@@ -4,6 +4,8 @@
 
 #include "src/common/functions.h"
 
+#include "frame.h"
+
 namespace slam {
 
 System::System( const StereoCalibrationDataShort &calibration )
@@ -20,14 +22,7 @@ System::System( const std::string &calibrationFile )
 
 void System::initialize()
 {
-    cv::namedWindow( "KeyPoints", cv::WINDOW_KEEPRATIO );
-    cv::resizeWindow( "KeyPoints", 800, 600 );
-    cv::moveWindow( "KeyPoints", 80, 10 );
-
-    cv::namedWindow( "StereoPoints", cv::WINDOW_KEEPRATIO );
-    cv::resizeWindow( "StereoPoints", 800, 600 );
-    cv::moveWindow( "StereoPoints", 900, 10 );
-
+    m_world = World::create( m_rectificationProcessor.calibration() );
 }
 
 bool System::track( const std::string &leftFile, const std::string &rightFile )
@@ -47,37 +42,7 @@ bool System::track( const CvImage &leftImage, const CvImage &rightImage )
     if ( !m_rectificationProcessor.rectify( leftImage, rightImage, &leftRectifiedImage, &rightRectifiedImage ) )
         return false;
 
-    // leftRectifiedImage = leftImage;
-    // rightRectifiedImage = rightImage;
-
-    // cv::resize( leftRectifiedImage, leftRectifiedImage, cv::Size(), 0.5, 0.5 );
-    // cv::resize( rightRectifiedImage, rightRectifiedImage, cv::Size(), 0.5, 0.5 );
-
-    static StereoFrame previousStereoFrame;
-
-    StereoFrame stereoFrame( leftRectifiedImage, rightRectifiedImage );
-    // stereoFrame.triangulatePoints();
-
-    auto stereoCorrespondencies = stereoFrame.drawStereoPoints( leftRectifiedImage, rightRectifiedImage );
-    cv::imshow( "StereoPoints", stereoCorrespondencies );
-
-    static CvImage previousLeftImage;
-
-    if ( !previousLeftImage.empty() ) {
-
-        ConsecutiveFrame frame( previousLeftImage, leftRectifiedImage );
-        frame.recoverPose();
-
-        auto track = frame.drawTrack( leftRectifiedImage );
-        cv::imshow( "KeyPoints", track );
-
-    }
-
-    previousLeftImage = leftRectifiedImage;
-
-    cv::waitKey(15);
-
-    return true;
+    return m_world->track( leftRectifiedImage, rightRectifiedImage );
 
 }
 

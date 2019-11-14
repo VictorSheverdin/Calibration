@@ -4,18 +4,24 @@
 
 namespace slam {
 
-class MonoFramePoint;
+class World;
 
-class WorldPoint
+class WorldPoint : std::enable_shared_from_this< WorldPoint >
 {
 public:
-    WorldPoint();
-    WorldPoint( const cv::Vec3d &point );
+    using WorldPtr = std::weak_ptr< World >;
+    using PointPtr = std::shared_ptr< WorldPoint >;
+
+    static PointPtr create( const WorldPtr parentWorld );
+    static PointPtr create( const WorldPtr parentWorld, const cv::Vec3f &point );
 
 protected:
-    cv::Vec3d m_point;
+    WorldPoint( const WorldPtr parentWorld );
+    WorldPoint( const WorldPtr parentWorld, const cv::Vec3f &point );
 
-    std::vector< std::shared_ptr< MonoFramePoint > > m_childFramePoints;
+    WorldPtr m_parentWorld;
+
+    cv::Vec3f m_point;
 
 private:
 };
