@@ -10,7 +10,7 @@ namespace slam {
 class FrameBase;
 class WorldPoint;
 
-class World : std::enable_shared_from_this< World >
+class World : public std::enable_shared_from_this< World >
 {
 public:
     using WorldPtr = std::shared_ptr< World >;
@@ -24,6 +24,11 @@ public:
     WorldPointPtr createWorldPoint( const cv::Vec3f &pt );
 
     bool track( const CvImage &leftImage, const CvImage &rightImage );
+
+    std::vector< WorldPointPtr > &worldPoints();
+    const std::vector< WorldPointPtr > &worldPoints() const;
+
+    void addWorldPoint( const WorldPointPtr &point );
 
 protected:
     World( const StereoCalibrationDataShort &calibration );

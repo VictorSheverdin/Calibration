@@ -42,6 +42,9 @@ bool System::track( const CvImage &leftImage, const CvImage &rightImage )
     if ( !m_rectificationProcessor.rectify( leftImage, rightImage, &leftRectifiedImage, &rightRectifiedImage ) )
         return false;
 
+    // cv::resize( leftRectifiedImage, leftRectifiedImage, cv::Size(), 0.5, 0.5, cv::INTER_AREA );
+    // cv::resize( rightRectifiedImage, rightRectifiedImage, cv::Size(), 0.5, 0.5, cv::INTER_AREA );
+
     return m_world->track( leftRectifiedImage, rightRectifiedImage );
 
 }

@@ -88,23 +88,23 @@ void checkVimbaStatus( VmbErrorType status, std::string message )
     }
 }
 
-bool drawFeaturePoint( CvImage *target, const cv::Point2f &pt, const cv::Scalar &color )
+bool drawFeaturePoint( CvImage *target, const cv::Point2f &pt, const int radius, const cv::Scalar &color )
 {
     if ( !target )
         return false;
 
-    cv::circle( *target, pt, 3, color, -1 );
+    cv::circle( *target, pt, radius, color, -1 );
 
     return true;
 }
 
-bool drawFeaturePoints( CvImage *target, const std::vector< cv::KeyPoint > &keypoints, const cv::Scalar &color )
+bool drawFeaturePoints( CvImage *target, const std::vector< cv::KeyPoint > &keypoints, const int radius, const cv::Scalar &color )
 {
     if ( !target )
         return false;
 
     for ( auto &i : keypoints )
-        drawFeaturePoint( target, i.pt, color );
+        drawFeaturePoint( target, i.pt, radius, color );
 
     return true;
 

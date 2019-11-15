@@ -24,15 +24,31 @@ protected:
 
 class MonoFrame : public FrameBase
 {
+public:
+    using PointPtr = std::shared_ptr< MonoPoint >;
+
+    std::vector< PointPtr > &points();
+    const std::vector< PointPtr > &points() const;
+
+    PointPtr point( const size_t index ) const;
+
+    size_t pointsCount() const;
+
+    size_t tracksCount() const;
+
+    bool drawPoints( CvImage *target ) const;
+
 protected:
     MonoFrame();
+
+    std::vector< PointPtr > m_points;
 
 };
 
 class FeatureFrame : public MonoFrame, public std::enable_shared_from_this< FeatureFrame >
 {
     friend class StereoFrame;
-    friend class ConsecutiveFrame;
+    friend class AdjacentFrame;
     friend class FeaturePoint;
 
 public:
@@ -40,23 +56,16 @@ public:
     using PointPtr = std::shared_ptr< FeaturePoint >;
 
     static FramePtr create();
-    static FramePtr create( const CvImage &image );
 
     void load( const CvImage &image );
 
-    size_t pointsCount() const;
-
     bool drawKeyPoints( CvImage *target ) const;
-    bool drawPoints( CvImage *target ) const;
 
 protected:
     FeatureFrame();
-    FeatureFrame( const CvImage &image );
 
     std::vector< cv::KeyPoint > m_keyPoints;
     cv::Mat m_descriptors;
-
-    std::vector< PointPtr > m_framePoints;
 
     static FeatureProcessor m_processor;
 
@@ -91,12 +100,8 @@ protected:
 
 class StereoFrame : public DoubleFrameBase
 {
-    friend class StereoPoint;
-
 public:
     using FeatureFramePtr = std::shared_ptr< FeatureFrame >;
-    using PointPtr = std::shared_ptr< StereoPoint >;
-
     using FramePtr = std::shared_ptr< StereoFrame >;
 
     static FramePtr create();
@@ -113,22 +118,13 @@ public:
 protected:
     StereoFrame();
 
-    std::vector< PointPtr > m_framePoints;
-
-    PointPtr createFramePoint( const MonoPointPtr leftPoint, const MonoPointPtr rightPoint );
-
-private:
 };
 
-class ConsecutiveFrame : public DoubleFrameBase
+class AdjacentFrame : public DoubleFrameBase
 {
-    friend class ConsecutivePoint;
-
 public:
     using FeatureFramePtr = std::shared_ptr< FeatureFrame >;
-    using PointPtr = std::shared_ptr< ConsecutivePoint >;
-
-    using FramePtr = std::shared_ptr< ConsecutiveFrame >;
+    using FramePtr = std::shared_ptr< AdjacentFrame >;
 
     static FramePtr create();
 
@@ -138,11 +134,7 @@ public:
     CvImage drawTrack( const CvImage &image ) const;
 
 protected:    
-    ConsecutiveFrame();
-
-    std::vector< PointPtr > m_framePoints;
-
-    PointPtr createFramePoint( const MonoPointPtr point1, const MonoPointPtr point2 );
+    AdjacentFrame();
 
 };
 

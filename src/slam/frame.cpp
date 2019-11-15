@@ -14,7 +14,50 @@ FrameBase::FrameBase()
 // MonoFrame
 MonoFrame::MonoFrame()
 {
+}
 
+std::vector< MonoFrame::PointPtr > &MonoFrame::points()
+{
+    return m_points;
+}
+
+const std::vector< MonoFrame::PointPtr > &MonoFrame::points() const
+{
+    return m_points;
+}
+
+MonoFrame::PointPtr MonoFrame::point( const size_t index ) const
+{
+    return m_points[ index ];
+}
+
+size_t MonoFrame::pointsCount() const
+{
+    return m_points.size();
+}
+
+size_t MonoFrame::tracksCount() const
+{
+    size_t count = 0;
+
+    for ( auto &i : m_points )
+        if ( i )
+            if ( i->prevPoint() || i->nextPoint() )
+                ++count;
+
+    return count;
+
+}
+
+bool MonoFrame::drawPoints( CvImage *target ) const
+{
+    if ( !target )
+        return false;
+
+    for ( auto &i : m_points )
+        drawFeaturePoint( target, i->point() );
+
+    return true;
 }
 
 // FeatureFrame
@@ -24,29 +67,17 @@ FeatureFrame::FeatureFrame()
 {
 }
 
-FeatureFrame::FeatureFrame( const CvImage &image )
-{
-    load( image );
-}
-
 FeatureFrame::FramePtr FeatureFrame::create()
 {
     return FramePtr( new FeatureFrame() );
 }
 
-FeatureFrame::FramePtr FeatureFrame::create( const CvImage &image )
-{
-    return FramePtr( new FeatureFrame( image ) );
-}
-
 void FeatureFrame::load( const CvImage &image )
 {
     m_processor.extract( image, &m_keyPoints, &m_descriptors );
-}
 
-size_t FeatureFrame::pointsCount() const
-{
-    return m_framePoints.size();
+    for ( size_t i = 0; i < m_keyPoints.size(); ++i )
+        createFramePoint( i );
 }
 
 bool FeatureFrame::drawKeyPoints( CvImage *target ) const
@@ -54,27 +85,16 @@ bool FeatureFrame::drawKeyPoints( CvImage *target ) const
     return drawFeaturePoints( target, m_keyPoints );
 }
 
-bool FeatureFrame::drawPoints( CvImage *target ) const
-{
-    if ( !target )
-        return false;
-
-    for ( auto &i : m_framePoints )
-        drawFeaturePoint( target, i->point() );
-
-    return true;
-}
-
 FeatureFrame::PointPtr FeatureFrame::createFramePoint( const size_t keyPointIndex )
 {
     if ( keyPointIndex >= m_keyPoints.size() )
         return PointPtr();
 
-    auto frame = FeaturePoint::create( shared_from_this(), keyPointIndex );
+    auto point = FeaturePoint::create( shared_from_this(), keyPointIndex );
 
-    m_framePoints.push_back( frame );
+    m_points.push_back( point );
 
-    return frame;
+    return point;
 
 }
 
@@ -113,7 +133,13 @@ StereoFrame::FramePtr StereoFrame::create()
 
 void StereoFrame::load( const CvImage &leftImage, const CvImage &rightImage )
 {
-    matchFrames( FeatureFrame::create( leftImage ), FeatureFrame::create( rightImage ) );
+    auto leftFrame = FeatureFrame::create();
+    leftFrame->load( leftImage );
+
+    auto rightFrame = FeatureFrame::create();
+    rightFrame->load( rightImage );
+
+    matchFrames( leftFrame, rightFrame );
 }
 
 void StereoFrame::matchFrames( const FeatureFramePtr leftFrame, const FeatureFramePtr rightFrame )
@@ -127,10 +153,11 @@ void StereoFrame::matchFrames( const FeatureFramePtr leftFrame, const FeatureFra
         m_matcher.match( leftFrame->m_keyPoints, leftFrame->m_descriptors, rightFrame->m_keyPoints, rightFrame->m_descriptors, &matches );
 
         for ( auto &i : matches ) {
-            auto leftPoint = leftFrame->createFramePoint( i.queryIdx );
-            auto rightPoint = rightFrame->createFramePoint( i.trainIdx );
+            auto leftPoint = leftFrame->point( i.queryIdx );
+            auto rightPoint = rightFrame->point( i.trainIdx );
 
-            createFramePoint( leftPoint, rightPoint );
+            leftPoint->setStereoPoint( rightPoint );
+            rightPoint->setStereoPoint( leftPoint );
 
         }
 
@@ -146,15 +173,6 @@ DoubleFrameBase::MonoFramePtr StereoFrame::leftFrame() const
 DoubleFrameBase::MonoFramePtr StereoFrame::rightFrame() const
 {
     return frame2();
-}
-
-StereoFrame::PointPtr StereoFrame::createFramePoint( const MonoPointPtr leftPoint, const MonoPointPtr rightPoint )
-{
-    auto frame = std::shared_ptr< StereoPoint >( new StereoPoint( leftPoint, rightPoint ) );
-
-    m_framePoints.push_back( frame );
-
-    return frame;
 }
 
 CvImage StereoFrame::drawKeyPoints( const CvImage &leftImage, const CvImage &rightImage ) const
@@ -173,9 +191,6 @@ CvImage StereoFrame::drawKeyPoints( const CvImage &leftImage, const CvImage &rig
     if ( rightFeatureFrame )
         rightFeatureFrame->drawKeyPoints( &right );
 
-    if ( leftFeatureFrame && rightFeatureFrame )
-        std::cout << leftFeatureFrame->pointsCount() << " " << rightFeatureFrame->pointsCount() << std::endl;
-
     return stackImages( left, right );
 }
 
@@ -185,20 +200,34 @@ CvImage StereoFrame::drawStereoPoints( const CvImage &leftImage, const CvImage &
 
     ret = stackImages( leftImage, rightImage );
 
-    for ( auto &i : m_framePoints ) {
-        auto rightPoint = i->rightPoint();
-        rightPoint.x += leftImage.width();
+    if ( leftFrame() ) {
 
-        drawLine( &ret, i->leftPoint(), rightPoint );
+        for ( auto &i : leftFrame()->points() ) {
 
-    }
+            if ( i && i->stereoPoint() ) {
 
-    for ( auto &i : m_framePoints ) {
-        auto rightPoint = i->rightPoint();
-        rightPoint.x += leftImage.width();
+                auto rightPoint = i->stereoPoint()->point();
+                rightPoint.x += leftImage.width();
 
-        drawFeaturePoint( &ret, i->leftPoint() );
-        drawFeaturePoint( &ret, rightPoint );
+                drawLine( &ret, i->point(), rightPoint );
+
+            }
+
+        }
+
+        for ( auto &i : leftFrame()->points() ) {
+
+            if ( i && i->stereoPoint() ) {
+
+                auto rightPoint = i->stereoPoint()->point();
+                rightPoint.x += leftImage.width();
+
+                drawFeaturePoint( &ret, i->point() );
+                drawFeaturePoint( &ret, rightPoint );
+
+            }
+
+        }
 
     }
 
@@ -206,22 +235,29 @@ CvImage StereoFrame::drawStereoPoints( const CvImage &leftImage, const CvImage &
 
 }
 
-// ConsecutiveFrame
-ConsecutiveFrame::ConsecutiveFrame()
+// AdjacentFrame
+AdjacentFrame::AdjacentFrame()
 {
 }
 
-ConsecutiveFrame::FramePtr ConsecutiveFrame::create()
+AdjacentFrame::FramePtr AdjacentFrame::create()
 {
-    return FramePtr( new ConsecutiveFrame() );
+    return FramePtr( new AdjacentFrame() );
 }
 
-void ConsecutiveFrame::load( const CvImage &image1, const CvImage &image2 )
+void AdjacentFrame::load( const CvImage &image1, const CvImage &image2 )
 {
-    setFrames( FeatureFrame::create( image1 ), FeatureFrame::create( image2 ) );
+    auto frame1 = FeatureFrame::create();
+    frame1->load( image1 );
+
+    auto frame2 = FeatureFrame::create();
+    frame2->load( image2 );
+
+    setFrames( frame1, frame2 );
+
 }
 
-void ConsecutiveFrame::matchFrames( const FeatureFramePtr frame1, const FeatureFramePtr frame2 )
+void AdjacentFrame::matchFrames( const FeatureFramePtr frame1, const FeatureFramePtr frame2 )
 {
     if ( frame1 && frame2 ) {
 
@@ -232,10 +268,11 @@ void ConsecutiveFrame::matchFrames( const FeatureFramePtr frame1, const FeatureF
         m_matcher.match( frame1->m_keyPoints, frame1->m_descriptors, frame2->m_keyPoints, frame2->m_descriptors, &matches );
 
         for ( auto &i : matches ) {
-            auto point1 = frame1->createFramePoint( i.queryIdx );
-            auto point2 = frame2->createFramePoint( i.trainIdx );
+            auto point1 = frame1->point( i.queryIdx );
+            auto point2 = frame2->point( i.trainIdx );
 
-            createFramePoint( point1, point2 );
+            point1->setNextPoint( point2 );
+            point2->setPrevPoint( point1 );
 
         }
 
@@ -243,29 +280,25 @@ void ConsecutiveFrame::matchFrames( const FeatureFramePtr frame1, const FeatureF
 
 }
 
-CvImage ConsecutiveFrame::drawTrack( const CvImage &image ) const
+CvImage AdjacentFrame::drawTrack( const CvImage &image ) const
 {
     CvImage ret;
 
     image.copyTo( ret );
 
-    for ( auto &i : m_framePoints )
-        drawLine( &ret, i->m_point1->point(), i->m_point2->point() );
+    if ( m_frame2 ) {
 
-    for ( auto &i : m_framePoints )
-        drawFeaturePoint( &ret, i->m_point2->point() );
+        for ( auto &i : m_frame2->points() )
+            if ( i )
+                i->drawTrack( &ret );
+
+        for ( auto &i : m_frame2->points() )
+            if ( i && i->prevPoint() )
+                drawFeaturePoint( &ret, i->point(), 2 );
+
+    }
 
     return ret;
-
-}
-
-ConsecutiveFrame::PointPtr ConsecutiveFrame::createFramePoint(const MonoPointPtr point1, const MonoPointPtr point2 )
-{
-    auto frame = PointPtr( new ConsecutivePoint( point1, point2 ) );
-
-    m_framePoints.push_back( frame );
-
-    return frame;
 
 }
 

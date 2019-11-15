@@ -1,12 +1,11 @@
 #pragma once
 
-#include <opencv2/opencv.hpp>
+#include "src/common/image.h"
 
 namespace slam {
 
 class FeatureFrame;
 class WorldPoint;
-class PointTrack;
 
 class PointBase
 {
@@ -17,17 +16,36 @@ protected:
 class MonoPoint : public PointBase
 {
 public:
-    using TrackPtr = std::weak_ptr< PointTrack >;
+    using AdjacentPtr = std::shared_ptr< MonoPoint >;
+    using WorldPointPtr = std::shared_ptr< WorldPoint >;
 
     virtual const cv::Point2f &point() const = 0;
 
-    void setTrack( const TrackPtr track );
-    TrackPtr track() const;
+    void setStereoPoint( const AdjacentPtr point );
+    AdjacentPtr stereoPoint() const;
+
+    void setNextPoint( const AdjacentPtr point );
+    AdjacentPtr nextPoint() const;
+
+    void setPrevPoint( const AdjacentPtr point );
+    AdjacentPtr prevPoint() const;
+
+    void setWorldPoint( const WorldPointPtr point );
+    WorldPointPtr worldPoint() const;
+
+     void drawTrack( CvImage *target ) const;
 
 protected:
+    using AdjacentPtrImpl = std::weak_ptr< MonoPoint >;
+    using WorldPointPtrImpl = std::weak_ptr< WorldPoint >;
+
     MonoPoint();
 
-    TrackPtr m_track;
+    AdjacentPtrImpl m_stereoPoint;
+    AdjacentPtrImpl m_nextPoint;
+    AdjacentPtrImpl m_prevPoint;
+
+    WorldPointPtrImpl m_worldPoint;
 
 };
 
@@ -70,40 +88,6 @@ protected:
 
     MonoPointPtr m_point1;
     MonoPointPtr m_point2;
-
-};
-
-class StereoPoint : public DoublePoint
-{
-    friend class StereoFrame;
-
-public:
-    using WorldPointPtr = std::weak_ptr< WorldPoint >;
-
-    const cv::Point2f &leftPoint() const;
-    const cv::Point2f &rightPoint() const;
-
-    MonoPointPtr leftMonoPoint() const;
-    MonoPointPtr rightMonoPoint() const;
-
-    void setWorldPoint( const WorldPointPtr value );
-    WorldPointPtr worldPoint() const;
-
-protected:
-    StereoPoint( const MonoPointPtr leftPoint, const MonoPointPtr rightPoint );
-
-    WorldPointPtr m_worldPoint;
-
-};
-
-class ConsecutivePoint : public DoublePoint
-{
-    friend class ConsecutiveFrame;
-
-public:
-
-protected:
-    ConsecutivePoint( const MonoPointPtr point1, const MonoPointPtr point2 );
 
 };
 

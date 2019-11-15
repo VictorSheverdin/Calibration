@@ -4,6 +4,8 @@
 
 #include "frame.h"
 
+#include "src/common/functions.h"
+
 namespace slam {
 
     // PointBase
@@ -16,14 +18,57 @@ namespace slam {
     {
     }
 
-    void MonoPoint::setTrack( const TrackPtr track )
+    void MonoPoint::setStereoPoint( const AdjacentPtr point )
     {
-        m_track = track;
+        m_stereoPoint = point;
     }
 
-    MonoPoint::TrackPtr MonoPoint::track() const
+    MonoPoint::AdjacentPtr MonoPoint::stereoPoint() const
     {
-        return m_track;
+        return m_stereoPoint.lock();
+    }
+
+    void MonoPoint::setNextPoint( const AdjacentPtr point )
+    {
+        m_nextPoint = point;
+    }
+
+    MonoPoint::AdjacentPtr MonoPoint::nextPoint() const
+    {
+        return m_nextPoint.lock();
+    }
+
+    void MonoPoint::setPrevPoint( const AdjacentPtr point )
+    {
+        m_prevPoint = point;
+    }
+
+    MonoPoint::AdjacentPtr MonoPoint::prevPoint() const
+    {
+        return m_prevPoint.lock();
+    }
+
+    void MonoPoint::setWorldPoint( const WorldPointPtr point )
+    {
+        m_worldPoint = point;
+    }
+
+    MonoPoint::WorldPointPtr MonoPoint::worldPoint() const
+    {
+        return m_worldPoint.lock();
+    }
+
+    void MonoPoint::drawTrack( CvImage *target ) const
+    {
+        if ( prevPoint() ) {
+
+            drawLine( target, prevPoint()->point(), point() );
+
+            prevPoint()->drawTrack( target );
+
+
+        }
+
     }
 
     // FeaturePoint
@@ -62,48 +107,6 @@ namespace slam {
     DoublePoint::MonoPointPtr DoublePoint::monoPoint2() const
     {
         return m_point2;
-    }
-
-    // StereoPoint
-    StereoPoint::StereoPoint( const MonoPointPtr leftPoint, const MonoPointPtr rightPoint )
-        : DoublePoint( leftPoint, rightPoint )
-    {
-    }
-
-    const cv::Point2f &StereoPoint::leftPoint() const
-    {
-        return leftMonoPoint()->point();
-    }
-
-    const cv::Point2f &StereoPoint::rightPoint() const
-    {
-        return rightMonoPoint()->point();
-    }
-
-    StereoPoint::MonoPointPtr StereoPoint::leftMonoPoint() const
-    {
-        return monoPoint1();
-    }
-
-    StereoPoint::MonoPointPtr StereoPoint::rightMonoPoint() const
-    {
-        return monoPoint2();
-    }
-
-    void StereoPoint::setWorldPoint( const WorldPointPtr value )
-    {
-        m_worldPoint = value;
-    }
-
-    StereoPoint::WorldPointPtr StereoPoint::worldPoint() const
-    {
-        return m_worldPoint;
-    }
-
-    // ConsecutivePoint
-    ConsecutivePoint::ConsecutivePoint( const MonoPointPtr point1, const MonoPointPtr point2 )
-        : DoublePoint( point1, point2 )
-    {
     }
 
 }

@@ -15,14 +15,13 @@ FeatureProcessor::FeatureProcessor()
 
 void FeatureProcessor::initialize()
 {
-    m_detector = cv::AgastFeatureDetector::create( 50 );
+    m_detector = cv::GFTTDetector::create( 8000 );
     m_descriptor = cv::xfeatures2d::DAISY::create();
 }
 
 void FeatureProcessor::extract( const CvImage &image, std::vector< cv::KeyPoint > *keypoints, cv::Mat *descriptors )
 {    
     if ( keypoints ) {
-
         m_detector->detect( image, *keypoints );
 
         if ( descriptors)

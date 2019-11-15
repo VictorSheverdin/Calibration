@@ -234,14 +234,12 @@ add_executable( slam ${COMMON_SOURCES} ${RES_SOURCES}
     src/slam/frame.h
     src/slam/keyframe.h
     src/slam/framepoint.h
-    src/slam/pointtrack.h
     src/slam/system.h
     src/slam/world.cpp
     src/slam/worldpoint.cpp
     src/slam/frame.cpp
     src/slam/keyframe.cpp
     src/slam/framepoint.cpp
-    src/slam/pointtrack.cpp
     src/slam/system.cpp
     src/slam/main.cpp
 )
