@@ -99,14 +99,77 @@ namespace slam {
         m_point2 = point2;
     }
 
-    DoublePoint::MonoPointPtr DoublePoint::monoPoint1() const
+    DoublePoint::MonoPointPtr DoublePoint::monoFramePoint1() const
     {
         return m_point1;
     }
 
-    DoublePoint::MonoPointPtr DoublePoint::monoPoint2() const
+    DoublePoint::MonoPointPtr DoublePoint::monoFramePoint2() const
     {
         return m_point2;
     }
+
+    // SpatialPoint
+    SpatialPoint::SpatialPoint()
+    {
+    }
+
+    void SpatialPoint::setSpatialPoint( const cv::Vec3d &value )
+    {
+        m_spatialPoint = value;
+    }
+
+    const cv::Vec3d &SpatialPoint::spatialPoint() const
+    {
+        return m_spatialPoint;
+    }
+
+    void SpatialPoint::setSpatialColor( const cv::Vec4b &value )
+    {
+        m_spatialColor = value;
+    }
+
+    const cv::Vec4b &SpatialPoint::spatialColor() const
+    {
+        return m_spatialColor;
+    }
+
+    // StereoPoint
+    StereoPoint::StereoPoint( const MonoPointPtr leftPoint, const MonoPointPtr rightPoint )
+        : DoublePoint( leftPoint, rightPoint )
+    {
+    }
+
+    StereoPoint::MonoPointPtr StereoPoint::leftFramePoint() const
+    {
+        return monoFramePoint1();
+    }
+
+    StereoPoint::MonoPointPtr StereoPoint::rightFramePoint() const
+    {
+        return monoFramePoint2();
+    }
+
+    cv::Point2f StereoPoint::leftPoint() const
+    {
+        return leftFramePoint()->point();
+    }
+
+    cv::Point2f StereoPoint::rightPoint() const
+    {
+        return rightFramePoint()->point();
+    }
+
+    // SpatialStereoPoint
+    SpatialStereoPoint::SpatialStereoPoint( const StereoPoint &stereoPoint )
+        : StereoPoint( stereoPoint )
+    {
+    }
+
+    SpatialStereoPoint::SpatialStereoPoint( const MonoPointPtr leftPoint, const MonoPointPtr rightPoint )
+        : StereoPoint( leftPoint, rightPoint )
+    {
+    }
+
 
 }

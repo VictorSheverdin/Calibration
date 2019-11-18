@@ -5,6 +5,8 @@
 
 #include "src/common/calibrationdatabase.h"
 
+class cv::viz::Viz3d;
+
 namespace slam {
 
 class FrameBase;
@@ -37,6 +39,8 @@ protected:
     std::vector< WorldPointPtr > m_worldPoints;
 
     StereoCalibrationDataShort m_calibration;
+
+    std::shared_ptr< cv::viz::Viz3d > m_vizWindow;
 
 private:
     void initialize();

@@ -2,7 +2,10 @@
 
 #include "frame.h"
 
+#include "src/common/defs.h"
 #include "src/common/functions.h"
+
+#include <opencv2/sfm.hpp>
 
 namespace slam {
 
@@ -14,19 +17,54 @@ FrameBase::FrameBase()
 // MonoFrame
 MonoFrame::MonoFrame()
 {
+    initialize();
 }
 
-std::vector< MonoFrame::PointPtr > &MonoFrame::points()
+void MonoFrame::initialize()
+{
+    m_rtMatrix = cv::Mat( 3, 4, CV_64F );
+
+    setCameraMatrix( cv::Mat::eye( 3, 3, CV_64F ) );
+
+    setRotation( cv::Mat::eye( 3, 3, CV_64F ) );
+    setTranslation( cv::Mat::zeros( 3, 1, CV_64F ) );
+}
+
+std::vector< MonoFrame::PointPtr > &MonoFrame::framePoints()
 {
     return m_points;
 }
 
-const std::vector< MonoFrame::PointPtr > &MonoFrame::points() const
+const std::vector< MonoFrame::PointPtr > &MonoFrame::framePoints() const
 {
     return m_points;
 }
 
-MonoFrame::PointPtr MonoFrame::point( const size_t index ) const
+std::vector< cv::Point2f > MonoFrame::points() const
+{
+    std::vector< cv::Point2f > ret;
+
+    for ( auto &i : m_points )
+        if ( i )
+            ret.push_back( i->point() );
+
+    return ret;
+
+}
+
+std::vector< StereoPoint > MonoFrame::stereoPoints() const
+{
+    std::vector< StereoPoint > ret;
+
+    for ( auto &i : m_points ) {
+        if ( i && i->stereoPoint() )
+            ret.push_back( StereoPoint( i, i->stereoPoint() ));
+    }
+
+    return ret;
+}
+
+MonoFrame::PointPtr MonoFrame::framePoint( const size_t index ) const
 {
     return m_points[ index ];
 }
@@ -58,6 +96,50 @@ bool MonoFrame::drawPoints( CvImage *target ) const
         drawFeaturePoint( target, i->point() );
 
     return true;
+}
+
+void MonoFrame::setCameraMatrix( const cv::Mat &value )
+{
+    m_projectionMatrix = cv::Mat();
+
+    m_cameraMatrix = value;
+}
+
+const cv::Mat &MonoFrame::cameraMatrix() const
+{
+    return m_cameraMatrix;
+}
+
+void MonoFrame::setRotation( const cv::Mat &value )
+{
+    m_projectionMatrix = cv::Mat();
+
+    value.copyTo( m_rtMatrix.rowRange( 0, 3 ).colRange( 0, 3 ) );
+}
+
+const cv::Mat MonoFrame::rotation() const
+{
+    return m_rtMatrix.rowRange( 0, 3 ).colRange( 0, 3 );
+}
+
+void MonoFrame::setTranslation( const cv::Mat &value )
+{
+    m_projectionMatrix = cv::Mat();
+
+    value.copyTo( m_rtMatrix.rowRange( 0, 3 ).col( 3 ) );
+}
+
+const cv::Mat MonoFrame::translation() const
+{
+    return m_rtMatrix.rowRange( 0, 3 ).col( 3 );
+}
+
+const cv::Mat &MonoFrame::projectionMatrix() const
+{
+    if ( m_projectionMatrix.empty() )
+        m_projectionMatrix = m_cameraMatrix * m_rtMatrix;
+
+    return m_projectionMatrix;
 }
 
 // FeatureFrame
@@ -140,6 +222,7 @@ void StereoFrame::load( const CvImage &leftImage, const CvImage &rightImage )
     rightFrame->load( rightImage );
 
     matchFrames( leftFrame, rightFrame );
+
 }
 
 void StereoFrame::matchFrames( const FeatureFramePtr leftFrame, const FeatureFramePtr rightFrame )
@@ -153,8 +236,8 @@ void StereoFrame::matchFrames( const FeatureFramePtr leftFrame, const FeatureFra
         m_matcher.match( leftFrame->m_keyPoints, leftFrame->m_descriptors, rightFrame->m_keyPoints, rightFrame->m_descriptors, &matches );
 
         for ( auto &i : matches ) {
-            auto leftPoint = leftFrame->point( i.queryIdx );
-            auto rightPoint = rightFrame->point( i.trainIdx );
+            auto leftPoint = leftFrame->framePoint( i.queryIdx );
+            auto rightPoint = rightFrame->framePoint( i.trainIdx );
 
             leftPoint->setStereoPoint( rightPoint );
             rightPoint->setStereoPoint( leftPoint );
@@ -162,6 +245,54 @@ void StereoFrame::matchFrames( const FeatureFramePtr leftFrame, const FeatureFra
         }
 
     }
+
+}
+
+std::vector< SpatialStereoPoint > StereoFrame::triangulatePoints( const CvImage &leftImage )
+{
+    std::vector< SpatialStereoPoint > ret;
+
+    cv::Mat points3d;
+
+    auto stereoPoints = this->stereoPoints();
+
+    cv::Mat_< double > leftPoints( 2, stereoPoints.size() ),
+                       rightPoints( 2, stereoPoints.size() );
+
+    for ( size_t i = 0; i < stereoPoints.size(); ++i ) {
+        leftPoints.row(0).col(i) = stereoPoints[i].leftPoint().x;
+        leftPoints.row(1).col(i) = stereoPoints[i].leftPoint().y;
+        rightPoints.row(0).col(i) = stereoPoints[i].rightPoint().x;
+        rightPoints.row(1).col(i) = stereoPoints[i].rightPoint().y;
+
+    }
+
+    cv::triangulatePoints( leftFrame()->projectionMatrix(), rightFrame()->projectionMatrix(), leftPoints, rightPoints, points3d );
+
+    for ( size_t i = 0; i < stereoPoints.size(); ++i ) {
+
+        auto w = points3d.at< double >( 3, i );
+
+        if ( std::abs( w ) > DOUBLE_EPS ) {
+            auto x = points3d.at< double >( 0, i ) / w;
+            auto y = -points3d.at< double >( 1, i ) / w;
+            auto z = points3d.at< double >( 2, i ) / w;
+
+            SpatialStereoPoint spatialPoint( stereoPoints[ i ] );
+
+            spatialPoint.setSpatialPoint( cv::Vec3d( x, y, z ) );
+
+            auto color = leftImage.at< cv::Vec3b >( stereoPoints[i].leftPoint().x, stereoPoints[i].leftPoint().y );
+
+            spatialPoint.setSpatialColor( cv::Vec4b( color[0], color[1], color[2], 255 ) );
+
+            ret.push_back( spatialPoint );
+
+        }
+
+    }
+
+    return ret;
 
 }
 
@@ -173,6 +304,11 @@ DoubleFrameBase::MonoFramePtr StereoFrame::leftFrame() const
 DoubleFrameBase::MonoFramePtr StereoFrame::rightFrame() const
 {
     return frame2();
+}
+
+std::vector< StereoPoint > StereoFrame::stereoPoints() const
+{
+    return leftFrame()->stereoPoints();
 }
 
 CvImage StereoFrame::drawKeyPoints( const CvImage &leftImage, const CvImage &rightImage ) const
@@ -202,7 +338,7 @@ CvImage StereoFrame::drawStereoPoints( const CvImage &leftImage, const CvImage &
 
     if ( leftFrame() ) {
 
-        for ( auto &i : leftFrame()->points() ) {
+        for ( auto &i : leftFrame()->framePoints() ) {
 
             if ( i && i->stereoPoint() ) {
 
@@ -215,7 +351,7 @@ CvImage StereoFrame::drawStereoPoints( const CvImage &leftImage, const CvImage &
 
         }
 
-        for ( auto &i : leftFrame()->points() ) {
+        for ( auto &i : leftFrame()->framePoints() ) {
 
             if ( i && i->stereoPoint() ) {
 
@@ -268,8 +404,8 @@ void AdjacentFrame::matchFrames( const FeatureFramePtr frame1, const FeatureFram
         m_matcher.match( frame1->m_keyPoints, frame1->m_descriptors, frame2->m_keyPoints, frame2->m_descriptors, &matches );
 
         for ( auto &i : matches ) {
-            auto point1 = frame1->point( i.queryIdx );
-            auto point2 = frame2->point( i.trainIdx );
+            auto point1 = frame1->framePoint( i.queryIdx );
+            auto point2 = frame2->framePoint( i.trainIdx );
 
             point1->setNextPoint( point2 );
             point2->setPrevPoint( point1 );
@@ -288,11 +424,11 @@ CvImage AdjacentFrame::drawTrack( const CvImage &image ) const
 
     if ( m_frame2 ) {
 
-        for ( auto &i : m_frame2->points() )
+        for ( auto &i : m_frame2->framePoints() )
             if ( i )
                 i->drawTrack( &ret );
 
-        for ( auto &i : m_frame2->points() )
+        for ( auto &i : m_frame2->framePoints() )
             if ( i && i->prevPoint() )
                 drawFeaturePoint( &ret, i->point(), 2 );
 

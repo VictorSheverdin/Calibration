@@ -80,14 +80,52 @@ public:
 
     void setMonoPoints( const MonoPointPtr point1, const MonoPointPtr point2 );
 
-    MonoPointPtr monoPoint1() const;
-    MonoPointPtr monoPoint2() const;
+    MonoPointPtr monoFramePoint1() const;
+    MonoPointPtr monoFramePoint2() const;
 
 protected:
     DoublePoint( const MonoPointPtr point1, const MonoPointPtr point2 );
 
     MonoPointPtr m_point1;
     MonoPointPtr m_point2;
+
+
+};
+
+class SpatialPoint
+{
+public:
+    void setSpatialPoint( const cv::Vec3d &value );
+    const cv::Vec3d &spatialPoint() const;
+
+    void setSpatialColor( const cv::Vec4b &value );
+    const cv::Vec4b &spatialColor() const;
+
+protected:
+    SpatialPoint();
+
+    cv::Vec3d m_spatialPoint;
+    cv::Vec4b m_spatialColor;
+};
+
+class StereoPoint : public DoublePoint
+{
+public:
+    StereoPoint( const MonoPointPtr leftPoint, const MonoPointPtr rightPoint );
+
+    MonoPointPtr leftFramePoint() const;
+    MonoPointPtr rightFramePoint() const;
+
+    cv::Point2f leftPoint() const;
+    cv::Point2f rightPoint() const;
+
+};
+
+class SpatialStereoPoint : public StereoPoint, public SpatialPoint
+{
+public:
+    SpatialStereoPoint( const StereoPoint &stereoPoint );
+    SpatialStereoPoint( const MonoPointPtr leftPoint, const MonoPointPtr rightPoint );
 
 };
 

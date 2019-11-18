@@ -15,7 +15,7 @@ FeatureProcessor::FeatureProcessor()
 
 void FeatureProcessor::initialize()
 {
-    m_detector = cv::GFTTDetector::create( 8000 );
+    m_detector = cv::GFTTDetector::create( 3000 );
     m_descriptor = cv::xfeatures2d::DAISY::create();
 }
 

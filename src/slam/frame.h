@@ -14,12 +14,6 @@ class FrameBase
 protected:
     FrameBase();
     virtual ~FrameBase() = default;
-
-    cv::Mat m_cameraMatrix;
-
-    cv::Mat m_rotation;
-    cv::Mat m_translation;
-
 };
 
 class MonoFrame : public FrameBase
@@ -27,21 +21,43 @@ class MonoFrame : public FrameBase
 public:
     using PointPtr = std::shared_ptr< MonoPoint >;
 
-    std::vector< PointPtr > &points();
-    const std::vector< PointPtr > &points() const;
+    std::vector< PointPtr > &framePoints();
+    const std::vector< PointPtr > &framePoints() const;
 
-    PointPtr point( const size_t index ) const;
+    std::vector< cv::Point2f > points() const;
+    std::vector< StereoPoint > stereoPoints() const;
+
+    PointPtr framePoint( const size_t index ) const;
 
     size_t pointsCount() const;
-
     size_t tracksCount() const;
 
     bool drawPoints( CvImage *target ) const;
+
+    void setCameraMatrix( const cv::Mat &value );
+    const cv::Mat &cameraMatrix() const;
+
+    void setRotation( const cv::Mat &value );
+    const cv::Mat rotation() const;
+
+    void setTranslation( const cv::Mat &value );
+    const cv::Mat translation() const;
+
+    const cv::Mat &projectionMatrix() const;
 
 protected:
     MonoFrame();
 
     std::vector< PointPtr > m_points;
+
+    cv::Mat m_cameraMatrix;
+
+    cv::Mat m_rtMatrix;
+
+    mutable cv::Mat m_projectionMatrix;
+
+private:
+    void initialize();
 
 };
 
@@ -108,9 +124,12 @@ public:
 
     void load( const CvImage &leftImage, const CvImage &rightImage );
     void matchFrames( const FeatureFramePtr leftFrame, const FeatureFramePtr rightFrame );
+    std::vector< SpatialStereoPoint > triangulatePoints( const CvImage &leftImage );
 
     MonoFramePtr leftFrame() const;
     MonoFramePtr rightFrame() const;
+
+    std::vector< StereoPoint > stereoPoints() const;
 
     CvImage drawKeyPoints( const CvImage &leftImage, const CvImage &rightImage ) const;
     CvImage drawStereoPoints( const CvImage &leftImage, const CvImage &rightImage ) const;
