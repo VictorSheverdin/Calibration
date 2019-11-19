@@ -5,6 +5,8 @@
 #include "src/common/defs.h"
 #include "src/common/functions.h"
 
+#include "world.h"
+
 #include <opencv2/sfm.hpp>
 
 namespace slam {
@@ -158,8 +160,11 @@ void FeatureFrame::load( const CvImage &image )
 {
     m_processor.extract( image, &m_keyPoints, &m_descriptors );
 
-    for ( size_t i = 0; i < m_keyPoints.size(); ++i )
-        createFramePoint( i );
+    for ( size_t i = 0; i < m_keyPoints.size(); ++i ) {
+        auto color = image.at< cv::Vec3b >( m_keyPoints[ i ].pt );
+        createFramePoint( i, cv::Scalar( color[0], color[1], color[2], 255 ) );
+
+    }
 }
 
 bool FeatureFrame::drawKeyPoints( CvImage *target ) const
@@ -167,12 +172,12 @@ bool FeatureFrame::drawKeyPoints( CvImage *target ) const
     return drawFeaturePoints( target, m_keyPoints );
 }
 
-FeatureFrame::PointPtr FeatureFrame::createFramePoint( const size_t keyPointIndex )
+FeatureFrame::PointPtr FeatureFrame::createFramePoint( const size_t keyPointIndex , const cv::Scalar &color )
 {
     if ( keyPointIndex >= m_keyPoints.size() )
         return PointPtr();
 
-    auto point = FeaturePoint::create( shared_from_this(), keyPointIndex );
+    auto point = FeaturePoint::create( shared_from_this(), keyPointIndex, color );
 
     m_points.push_back( point );
 
@@ -221,15 +226,16 @@ void StereoFrame::load( const CvImage &leftImage, const CvImage &rightImage )
     auto rightFrame = FeatureFrame::create();
     rightFrame->load( rightImage );
 
-    matchFrames( leftFrame, rightFrame );
+    setFrames( leftFrame, rightFrame );
 
 }
 
-void StereoFrame::matchFrames( const FeatureFramePtr leftFrame, const FeatureFramePtr rightFrame )
+void StereoFrame::matchFrames()
 {
-    if ( leftFrame && rightFrame ) {
+    auto leftFrame = std::dynamic_pointer_cast< FeatureFrame >( this->leftFrame() );
+    auto rightFrame = std::dynamic_pointer_cast< FeatureFrame >( this->rightFrame() );
 
-        setFrames( leftFrame, rightFrame );
+    if ( leftFrame && rightFrame ) {
 
         std::vector< cv::DMatch > matches;
 
@@ -248,54 +254,6 @@ void StereoFrame::matchFrames( const FeatureFramePtr leftFrame, const FeatureFra
 
 }
 
-std::vector< SpatialStereoPoint > StereoFrame::triangulatePoints( const CvImage &leftImage )
-{
-    std::vector< SpatialStereoPoint > ret;
-
-    cv::Mat points3d;
-
-    auto stereoPoints = this->stereoPoints();
-
-    cv::Mat_< double > leftPoints( 2, stereoPoints.size() ),
-                       rightPoints( 2, stereoPoints.size() );
-
-    for ( size_t i = 0; i < stereoPoints.size(); ++i ) {
-        leftPoints.row(0).col(i) = stereoPoints[i].leftPoint().x;
-        leftPoints.row(1).col(i) = stereoPoints[i].leftPoint().y;
-        rightPoints.row(0).col(i) = stereoPoints[i].rightPoint().x;
-        rightPoints.row(1).col(i) = stereoPoints[i].rightPoint().y;
-
-    }
-
-    cv::triangulatePoints( leftFrame()->projectionMatrix(), rightFrame()->projectionMatrix(), leftPoints, rightPoints, points3d );
-
-    for ( size_t i = 0; i < stereoPoints.size(); ++i ) {
-
-        auto w = points3d.at< double >( 3, i );
-
-        if ( std::abs( w ) > DOUBLE_EPS ) {
-            auto x = points3d.at< double >( 0, i ) / w;
-            auto y = -points3d.at< double >( 1, i ) / w;
-            auto z = points3d.at< double >( 2, i ) / w;
-
-            SpatialStereoPoint spatialPoint( stereoPoints[ i ] );
-
-            spatialPoint.setSpatialPoint( cv::Vec3d( x, y, z ) );
-
-            auto color = leftImage.at< cv::Vec3b >( stereoPoints[i].leftPoint().x, stereoPoints[i].leftPoint().y );
-
-            spatialPoint.setSpatialColor( cv::Vec4b( color[0], color[1], color[2], 255 ) );
-
-            ret.push_back( spatialPoint );
-
-        }
-
-    }
-
-    return ret;
-
-}
-
 DoubleFrameBase::MonoFramePtr StereoFrame::leftFrame() const
 {
     return frame1();
@@ -308,7 +266,13 @@ DoubleFrameBase::MonoFramePtr StereoFrame::rightFrame() const
 
 std::vector< StereoPoint > StereoFrame::stereoPoints() const
 {
-    return leftFrame()->stereoPoints();
+    auto leftFrame = this->leftFrame();
+
+    if (leftFrame)
+        return leftFrame->stereoPoints();
+    else
+        return std::vector< StereoPoint >();
+
 }
 
 CvImage StereoFrame::drawKeyPoints( const CvImage &leftImage, const CvImage &rightImage ) const
@@ -368,6 +332,75 @@ CvImage StereoFrame::drawStereoPoints( const CvImage &leftImage, const CvImage &
     }
 
     return ret;
+
+}
+
+// WorldStereoFrame
+WorldStereoFrame::WorldStereoFrame( const WorldPtr &parentWorld )
+    : m_parentWorld( parentWorld )
+{
+}
+
+WorldStereoFrame::FramePtr WorldStereoFrame::create( const WorldPtr &parentWorld )
+{
+    return FramePtr( new WorldStereoFrame( parentWorld ) );
+}
+
+void WorldStereoFrame::triangulatePoints()
+{
+    auto world = m_parentWorld.lock();
+
+    if ( world ) {
+
+        cv::Mat points3d;
+
+        auto stereoPoints = this->stereoPoints();
+
+        cv::Mat_< double > leftPoints( 2, stereoPoints.size() ),
+                           rightPoints( 2, stereoPoints.size() );
+
+        for ( size_t i = 0; i < stereoPoints.size(); ++i ) {
+            leftPoints.row(0).col(i) = stereoPoints[i].leftPoint().x;
+            leftPoints.row(1).col(i) = stereoPoints[i].leftPoint().y;
+            rightPoints.row(0).col(i) = stereoPoints[i].rightPoint().x;
+            rightPoints.row(1).col(i) = stereoPoints[i].rightPoint().y;
+
+        }
+
+        cv::triangulatePoints( leftFrame()->projectionMatrix(), rightFrame()->projectionMatrix(), leftPoints, rightPoints, points3d );
+
+        for ( size_t i = 0; i < stereoPoints.size(); ++i ) {
+
+            auto w = points3d.at< double >( 3, i );
+
+            if ( std::abs( w ) > DOUBLE_EPS ) {
+                auto x = points3d.at< double >( 0, i ) / w;
+                auto y = -points3d.at< double >( 1, i ) / w;
+                auto z = points3d.at< double >( 2, i ) / w;
+
+                if ( !stereoPoints[i].leftFramePoint()->worldPoint() || !stereoPoints[i].rightFramePoint()->worldPoint() ) {
+
+                    if ( !stereoPoints[i].leftFramePoint()->worldPoint() && !stereoPoints[i].rightFramePoint()->worldPoint() ) {
+                        auto worldPoint = world->createWorldPoint( cv::Vec3d( x, y, z ), stereoPoints[i].leftFramePoint()->color() );
+                        stereoPoints[i].leftFramePoint()->setWorldPoint( worldPoint );
+                        stereoPoints[i].rightFramePoint()->setWorldPoint( worldPoint );
+
+                    }
+                    else {
+                        if ( !stereoPoints[i].leftFramePoint()->worldPoint() )
+                            stereoPoints[i].leftFramePoint()->setWorldPoint( stereoPoints[i].rightFramePoint()->worldPoint() );
+                        else
+                            stereoPoints[i].rightFramePoint()->setWorldPoint( stereoPoints[i].leftFramePoint()->worldPoint() );
+
+                    }
+
+                }
+
+            }
+
+        }
+
+    }
 
 }
 

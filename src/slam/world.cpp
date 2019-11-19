@@ -65,6 +65,16 @@ World::WorldPointPtr World::createWorldPoint( const cv::Vec3f &pt )
 
 }
 
+World::WorldPointPtr World::createWorldPoint( const cv::Vec3f &pt, const cv::Scalar &color )
+{
+    auto point = WorldPoint::create( shared_from_this(), pt, color );
+
+    addWorldPoint( point );
+
+    return point;
+
+}
+
 std::vector< World::WorldPointPtr > &World::worldPoints()
 {
     return m_worldPoints;
@@ -82,9 +92,10 @@ void World::addWorldPoint( const WorldPointPtr &point )
 
 bool World::track( const CvImage &leftImage, const CvImage &rightImage )
 {
-    auto stereoFrame = StereoFrame::create();
+    auto stereoFrame = WorldStereoFrame::create( shared_from_this() );
 
     stereoFrame->load( leftImage, rightImage  );
+    stereoFrame->matchFrames();
 
     auto keyPoints = stereoFrame->drawKeyPoints( leftImage, rightImage );
     cv::imshow( "KeyPoints", keyPoints );
@@ -92,20 +103,25 @@ bool World::track( const CvImage &leftImage, const CvImage &rightImage )
     auto stereoCorrespondencies = stereoFrame->drawStereoPoints( leftImage, rightImage );
     cv::imshow( "Stereo", stereoCorrespondencies );
 
-    stereoFrame->leftFrame()->setCameraMatrix( m_calibration.leftCameraResults().cameraMatrix() );
+    auto leftFrame = stereoFrame->leftFrame();
+    auto rightFrame = stereoFrame->rightFrame();
 
-    stereoFrame->rightFrame()->setCameraMatrix( m_calibration.rightCameraResults().cameraMatrix() );
-    stereoFrame->rightFrame()->setTranslation( m_calibration.translationVector() );
-    stereoFrame->rightFrame()->setRotation( m_calibration.rotationMatrix() );
+    if ( leftFrame && rightFrame ) {
+        leftFrame->setCameraMatrix( m_calibration.leftCameraResults().cameraMatrix() );
+        stereoFrame->rightFrame()->setCameraMatrix( m_calibration.rightCameraResults().cameraMatrix() );
+        stereoFrame->rightFrame()->setTranslation( m_calibration.translationVector() );
+        stereoFrame->rightFrame()->setRotation( m_calibration.rotationMatrix() );
 
-    auto stereoPoints = stereoFrame->triangulatePoints( leftImage );
+    }
+
+    stereoFrame->triangulatePoints();
 
     std::vector< cv::Vec3d > points;
     std::vector< cv::Vec4b > colors;
 
-    for ( auto &i : stereoPoints ) {
-        points.push_back( i.spatialPoint() );
-        colors.push_back( i.spatialColor() );
+    for ( auto &i : m_worldPoints ) {
+        points.push_back( i->point() );
+        colors.push_back( i->color() );
     }
 
     if ( !points.empty() ) {
@@ -138,8 +154,6 @@ bool World::track( const CvImage &leftImage, const CvImage &rightImage )
 
         auto leftTrack = consecutiveLeftFrame->drawTrack( leftImage );
         auto rightTrack = consecutiveRightFrame->drawTrack( rightImage );
-
-        std::cout << stereoFrame->leftFrame()->tracksCount() << " " << stereoFrame->rightFrame()->tracksCount() << std::endl;
 
         auto track = stackImages( leftTrack, rightTrack );
 

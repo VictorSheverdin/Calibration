@@ -24,6 +24,7 @@ public:
 
     WorldPointPtr createWorldPoint();
     WorldPointPtr createWorldPoint( const cv::Vec3f &pt );
+    WorldPointPtr createWorldPoint( const cv::Vec3f &pt, const cv::Scalar &color );
 
     bool track( const CvImage &leftImage, const CvImage &rightImage );
 

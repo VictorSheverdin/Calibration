@@ -85,7 +85,7 @@ protected:
 
     static FeatureProcessor m_processor;
 
-    PointPtr createFramePoint( const size_t keyPointIndex );
+    PointPtr createFramePoint( const size_t keyPointIndex, const cv::Scalar &color );
 
 };
 
@@ -123,8 +123,7 @@ public:
     static FramePtr create();
 
     void load( const CvImage &leftImage, const CvImage &rightImage );
-    void matchFrames( const FeatureFramePtr leftFrame, const FeatureFramePtr rightFrame );
-    std::vector< SpatialStereoPoint > triangulatePoints( const CvImage &leftImage );
+    void matchFrames();
 
     MonoFramePtr leftFrame() const;
     MonoFramePtr rightFrame() const;
@@ -136,6 +135,27 @@ public:
 
 protected:
     StereoFrame();
+
+};
+
+class World;
+
+class WorldStereoFrame : public StereoFrame
+{
+public:
+    using WorldPtr = std::shared_ptr< World >;
+    using FramePtr = std::shared_ptr< WorldStereoFrame >;
+
+    static FramePtr create( const WorldPtr &parentWorld );
+
+    void triangulatePoints();
+
+protected:
+    using WorldPtrImpl = std::weak_ptr< World >;
+
+    WorldStereoFrame( const WorldPtr &parentWorld );
+
+    WorldPtrImpl m_parentWorld;
 
 };
 

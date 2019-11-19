@@ -14,14 +14,23 @@ public:
 
     static PointPtr create( const WorldPtr &parentWorld );
     static PointPtr create( const WorldPtr &parentWorld, const cv::Vec3f &point );
+    static PointPtr create( const WorldPtr &parentWorld, const cv::Vec3f &point, const cv::Scalar &color );
+
+    void setPoint( const cv::Vec3f &value );
+    const cv::Vec3f &point() const;
+
+    void setColor( const cv::Scalar &value );
+    const cv::Scalar &color() const;
 
 protected:
     WorldPoint( const WorldPtr &parentWorld );
     WorldPoint( const WorldPtr &parentWorld, const cv::Vec3f &point );
+    WorldPoint( const WorldPtr &parentWorld, const cv::Vec3f &point, const cv::Scalar &color );
 
     WorldPtr m_parentWorld;
 
     cv::Vec3f m_point;
+    cv::Scalar m_color;
 
 };
 

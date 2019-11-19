@@ -33,6 +33,9 @@ public:
     void setWorldPoint( const WorldPointPtr point );
     WorldPointPtr worldPoint() const;
 
+    void setColor( const cv::Scalar &value );
+    const cv::Scalar &color() const;
+
      void drawTrack( CvImage *target ) const;
 
 protected:
@@ -40,12 +43,15 @@ protected:
     using WorldPointPtrImpl = std::weak_ptr< WorldPoint >;
 
     MonoPoint();
+    MonoPoint( const cv::Scalar &color );
 
     AdjacentPtrImpl m_stereoPoint;
     AdjacentPtrImpl m_nextPoint;
     AdjacentPtrImpl m_prevPoint;
 
     WorldPointPtrImpl m_worldPoint;
+
+    cv::Scalar m_color;
 
 };
 
@@ -57,10 +63,10 @@ public:
 
     virtual const cv::Point2f &point() const override;
 
-    static PointPtr create( const FramePtr parentFrame, const size_t keyPointIndex );
+    static PointPtr create( const FramePtr parentFrame, const size_t keyPointIndex, const cv::Scalar &color );
 
 protected:
-    FeaturePoint( const FramePtr parentFrame, const size_t keyPointIndex );
+    FeaturePoint( const FramePtr parentFrame, const size_t keyPointIndex, const cv::Scalar &color );
 
     const FramePtr m_parentFrame; // Parent frame
     size_t m_keyPointIndex; // Index of keypoint in parent frame
@@ -92,22 +98,6 @@ protected:
 
 };
 
-class SpatialPoint
-{
-public:
-    void setSpatialPoint( const cv::Vec3d &value );
-    const cv::Vec3d &spatialPoint() const;
-
-    void setSpatialColor( const cv::Vec4b &value );
-    const cv::Vec4b &spatialColor() const;
-
-protected:
-    SpatialPoint();
-
-    cv::Vec3d m_spatialPoint;
-    cv::Vec4b m_spatialColor;
-};
-
 class StereoPoint : public DoublePoint
 {
 public:
@@ -118,14 +108,6 @@ public:
 
     cv::Point2f leftPoint() const;
     cv::Point2f rightPoint() const;
-
-};
-
-class SpatialStereoPoint : public StereoPoint, public SpatialPoint
-{
-public:
-    SpatialStereoPoint( const StereoPoint &stereoPoint );
-    SpatialStereoPoint( const MonoPointPtr leftPoint, const MonoPointPtr rightPoint );
 
 };
 

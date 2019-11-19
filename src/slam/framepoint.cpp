@@ -18,6 +18,11 @@ namespace slam {
     {
     }
 
+    MonoPoint::MonoPoint( const cv::Scalar &color )
+    {
+        setColor( color );
+    }
+
     void MonoPoint::setStereoPoint( const AdjacentPtr point )
     {
         m_stereoPoint = point;
@@ -58,6 +63,16 @@ namespace slam {
         return m_worldPoint.lock();
     }
 
+    void MonoPoint::setColor( const cv::Scalar &value )
+    {
+        m_color = value;
+    }
+
+    const cv::Scalar &MonoPoint::color() const
+    {
+        return m_color;
+    }
+
     void MonoPoint::drawTrack( CvImage *target ) const
     {
         if ( prevPoint() ) {
@@ -72,14 +87,14 @@ namespace slam {
     }
 
     // FeaturePoint
-    FeaturePoint::FeaturePoint( const FramePtr parentFrame , const size_t keyPointIndex )
-        : m_parentFrame( parentFrame ), m_keyPointIndex( keyPointIndex )
+    FeaturePoint::FeaturePoint( const FramePtr parentFrame , const size_t keyPointIndex , const cv::Scalar &color)
+        : MonoPoint( color ), m_parentFrame( parentFrame ), m_keyPointIndex( keyPointIndex )
     {
     }
 
-    FeaturePoint::PointPtr FeaturePoint::create( const FramePtr parentFrame, const size_t keyPointIndex )
+    FeaturePoint::PointPtr FeaturePoint::create( const FramePtr parentFrame, const size_t keyPointIndex, const cv::Scalar &color )
     {
-        return PointPtr( new FeaturePoint( parentFrame, keyPointIndex ) );
+        return PointPtr( new FeaturePoint( parentFrame, keyPointIndex, color ) );
     }
 
     const cv::Point2f &FeaturePoint::point() const
@@ -109,31 +124,6 @@ namespace slam {
         return m_point2;
     }
 
-    // SpatialPoint
-    SpatialPoint::SpatialPoint()
-    {
-    }
-
-    void SpatialPoint::setSpatialPoint( const cv::Vec3d &value )
-    {
-        m_spatialPoint = value;
-    }
-
-    const cv::Vec3d &SpatialPoint::spatialPoint() const
-    {
-        return m_spatialPoint;
-    }
-
-    void SpatialPoint::setSpatialColor( const cv::Vec4b &value )
-    {
-        m_spatialColor = value;
-    }
-
-    const cv::Vec4b &SpatialPoint::spatialColor() const
-    {
-        return m_spatialColor;
-    }
-
     // StereoPoint
     StereoPoint::StereoPoint( const MonoPointPtr leftPoint, const MonoPointPtr rightPoint )
         : DoublePoint( leftPoint, rightPoint )
@@ -159,17 +149,5 @@ namespace slam {
     {
         return rightFramePoint()->point();
     }
-
-    // SpatialStereoPoint
-    SpatialStereoPoint::SpatialStereoPoint( const StereoPoint &stereoPoint )
-        : StereoPoint( stereoPoint )
-    {
-    }
-
-    SpatialStereoPoint::SpatialStereoPoint( const MonoPointPtr leftPoint, const MonoPointPtr rightPoint )
-        : StereoPoint( leftPoint, rightPoint )
-    {
-    }
-
 
 }
