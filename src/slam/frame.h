@@ -27,6 +27,8 @@ public:
     std::vector< cv::Point2f > points() const;
     std::vector< StereoPoint > stereoPoints() const;
 
+    std::vector< AdjacentPoint > adjacentPoints() const;
+
     PointPtr framePoint( const size_t index ) const;
 
     size_t pointsCount() const;
@@ -43,6 +45,7 @@ public:
     void setTranslation( const cv::Mat &value );
     const cv::Mat translation() const;
 
+    void setProjectionMatrix( const cv::Mat &value );
     const cv::Mat &projectionMatrix() const;
 
 protected:
@@ -148,6 +151,8 @@ public:
 
     static FramePtr create( const WorldPtr &parentWorld );
 
+    const WorldPtr parentWorld() const;
+
     void triangulatePoints();
 
 protected:
@@ -170,10 +175,36 @@ public:
     void load( const CvImage &image1, const CvImage &image2 );
     void matchFrames( const FeatureFramePtr frame1, const FeatureFramePtr frame2 );
 
+    MonoFramePtr previousFrame() const;
+    MonoFramePtr nextFrame() const;
+
+    std::vector< AdjacentPoint > adjacentPoints() const;
+
     CvImage drawTrack( const CvImage &image ) const;
 
 protected:    
     AdjacentFrame();
+
+};
+
+class WorldAdjacentFrame : public AdjacentFrame
+{
+public:
+    using WorldPtr = std::shared_ptr< World >;
+    using FramePtr = std::shared_ptr< WorldAdjacentFrame >;
+
+    static FramePtr create( const WorldPtr &parentWorld );
+
+    const WorldPtr parentWorld() const;
+
+    void triangulatePoints();
+
+protected:
+    using WorldPtrImpl = std::weak_ptr< World >;
+
+    WorldAdjacentFrame( const WorldPtr &parentWorld );
+
+    WorldPtrImpl m_parentWorld;
 
 };
 

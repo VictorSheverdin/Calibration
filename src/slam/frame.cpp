@@ -66,6 +66,18 @@ std::vector< StereoPoint > MonoFrame::stereoPoints() const
     return ret;
 }
 
+std::vector< AdjacentPoint > MonoFrame::adjacentPoints() const
+{
+    std::vector< AdjacentPoint > ret;
+
+    for ( auto &i : m_points ) {
+        if ( i && i->nextPoint() )
+            ret.push_back( AdjacentPoint( i, i->nextPoint() ));
+    }
+
+    return ret;
+}
+
 MonoFrame::PointPtr MonoFrame::framePoint( const size_t index ) const
 {
     return m_points[ index ];
@@ -134,6 +146,11 @@ void MonoFrame::setTranslation( const cv::Mat &value )
 const cv::Mat MonoFrame::translation() const
 {
     return m_rtMatrix.rowRange( 0, 3 ).col( 3 );
+}
+
+void MonoFrame::setProjectionMatrix( const cv::Mat &value )
+{
+    m_projectionMatrix = value;
 }
 
 const cv::Mat &MonoFrame::projectionMatrix() const
@@ -245,8 +262,13 @@ void StereoFrame::matchFrames()
             auto leftPoint = leftFrame->framePoint( i.queryIdx );
             auto rightPoint = rightFrame->framePoint( i.trainIdx );
 
-            leftPoint->setStereoPoint( rightPoint );
-            rightPoint->setStereoPoint( leftPoint );
+            double lenght = cv::norm( leftPoint->point() - rightPoint->point() );
+
+            if ( lenght >= 5 ) {
+                leftPoint->setStereoPoint( rightPoint );
+                rightPoint->setStereoPoint( leftPoint );
+
+            }
 
         }
 
@@ -346,9 +368,14 @@ WorldStereoFrame::FramePtr WorldStereoFrame::create( const WorldPtr &parentWorld
     return FramePtr( new WorldStereoFrame( parentWorld ) );
 }
 
+const WorldStereoFrame::WorldPtr WorldStereoFrame::parentWorld() const
+{
+    return m_parentWorld.lock();
+}
+
 void WorldStereoFrame::triangulatePoints()
 {
-    auto world = m_parentWorld.lock();
+    auto world = parentWorld();
 
     if ( world ) {
 
@@ -356,7 +383,7 @@ void WorldStereoFrame::triangulatePoints()
 
         auto stereoPoints = this->stereoPoints();
 
-        cv::Mat_< double > leftPoints( 2, stereoPoints.size() ),
+        cv::Mat_< float > leftPoints( 2, stereoPoints.size() ),
                            rightPoints( 2, stereoPoints.size() );
 
         for ( size_t i = 0; i < stereoPoints.size(); ++i ) {
@@ -369,32 +396,42 @@ void WorldStereoFrame::triangulatePoints()
 
         cv::triangulatePoints( leftFrame()->projectionMatrix(), rightFrame()->projectionMatrix(), leftPoints, rightPoints, points3d );
 
+        //std::cout << leftFrame()->projectionMatrix() << std::endl;
+        //std::cout << rightFrame()->projectionMatrix() << std::endl;
+
         for ( size_t i = 0; i < stereoPoints.size(); ++i ) {
 
-            auto w = points3d.at< double >( 3, i );
+            auto w = points3d.at< float >( 3, i );
 
-            if ( std::abs( w ) > DOUBLE_EPS ) {
-                auto x = points3d.at< double >( 0, i ) / w;
-                auto y = -points3d.at< double >( 1, i ) / w;
-                auto z = points3d.at< double >( 2, i ) / w;
+            auto x = points3d.at< float >( 0, i ) / w;
+            auto y = points3d.at< float >( 1, i ) / w;
+            auto z = points3d.at< float >( 2, i ) / w;
+
+            auto pt = cv::Vec3f( x, y, z );
+
+            if ( std::abs( w ) > FLOAT_EPS ) {
 
                 if ( !stereoPoints[i].leftFramePoint()->worldPoint() || !stereoPoints[i].rightFramePoint()->worldPoint() ) {
 
                     if ( !stereoPoints[i].leftFramePoint()->worldPoint() && !stereoPoints[i].rightFramePoint()->worldPoint() ) {
-                        auto worldPoint = world->createWorldPoint( cv::Vec3d( x, y, z ), stereoPoints[i].leftFramePoint()->color() );
+
+                        auto worldPoint = world->createWorldPoint( pt, stereoPoints[i].leftFramePoint()->color() );
                         stereoPoints[i].leftFramePoint()->setWorldPoint( worldPoint );
                         stereoPoints[i].rightFramePoint()->setWorldPoint( worldPoint );
 
                     }
-                    else {
-                        if ( !stereoPoints[i].leftFramePoint()->worldPoint() )
-                            stereoPoints[i].leftFramePoint()->setWorldPoint( stereoPoints[i].rightFramePoint()->worldPoint() );
-                        else
-                            stereoPoints[i].rightFramePoint()->setWorldPoint( stereoPoints[i].leftFramePoint()->worldPoint() );
-
-                    }
 
                 }
+                else {
+                    if ( !stereoPoints[i].leftFramePoint()->worldPoint() )
+                        stereoPoints[i].leftFramePoint()->setWorldPoint( stereoPoints[i].rightFramePoint()->worldPoint() );
+                    else
+                        stereoPoints[i].rightFramePoint()->setWorldPoint( stereoPoints[i].leftFramePoint()->worldPoint() );
+
+                    stereoPoints[i].leftFramePoint()->worldPoint()->setPoint( pt );
+
+                }
+
 
             }
 
@@ -440,12 +477,44 @@ void AdjacentFrame::matchFrames( const FeatureFramePtr frame1, const FeatureFram
             auto point1 = frame1->framePoint( i.queryIdx );
             auto point2 = frame2->framePoint( i.trainIdx );
 
-            point1->setNextPoint( point2 );
-            point2->setPrevPoint( point1 );
+            double lenght = cv::norm( point1->point() - point2->point() );
+
+            if ( lenght >= 10 ) {
+
+                point1->setNextPoint( point2 );
+                point2->setPrevPoint( point1 );
+
+                auto worlPoint = point1->worldPoint();
+
+                if ( worlPoint )
+                    point2->setWorldPoint( worlPoint );
+
+            }
 
         }
 
     }
+
+}
+
+AdjacentFrame::MonoFramePtr AdjacentFrame::previousFrame() const
+{
+    return frame1();
+}
+
+AdjacentFrame::MonoFramePtr AdjacentFrame::nextFrame() const
+{
+    return frame2();
+}
+
+std::vector< AdjacentPoint > AdjacentFrame::adjacentPoints() const
+{
+    auto prevFrame = this->previousFrame();
+
+    if (prevFrame)
+        return prevFrame->adjacentPoints();
+    else
+        return std::vector< AdjacentPoint >();
 
 }
 
@@ -468,6 +537,86 @@ CvImage AdjacentFrame::drawTrack( const CvImage &image ) const
     }
 
     return ret;
+
+}
+
+// WorldAdjacentFrame
+WorldAdjacentFrame::WorldAdjacentFrame( const WorldPtr &parentWorld )
+    : m_parentWorld( parentWorld )
+{
+}
+
+WorldAdjacentFrame::FramePtr WorldAdjacentFrame::create( const WorldPtr &parentWorld )
+{
+    return FramePtr( new WorldAdjacentFrame( parentWorld ) );
+}
+
+const WorldAdjacentFrame::WorldPtr WorldAdjacentFrame::parentWorld() const
+{
+    return m_parentWorld.lock();
+}
+
+void WorldAdjacentFrame::triangulatePoints()
+{
+    auto world = parentWorld();
+
+    if ( world ) {
+
+        cv::Mat points3d;
+
+        auto adjacentPoints = this->adjacentPoints();
+
+        cv::Mat_< float > prevPoints( 2, adjacentPoints.size() ),
+                           nextPoints( 2, adjacentPoints.size() );
+
+        for ( size_t i = 0; i < adjacentPoints.size(); ++i ) {
+            prevPoints.row( 0 ).col( i ) = adjacentPoints[ i ].previousPoint().x;
+            prevPoints.row( 1 ).col( i ) = adjacentPoints[ i ].previousPoint().y;
+            nextPoints.row( 0 ).col( i ) = adjacentPoints[ i ].nextPoint().x;
+            nextPoints.row( 1 ).col( i ) = adjacentPoints[ i ].nextPoint().y;
+
+        }
+
+        cv::triangulatePoints( previousFrame()->projectionMatrix(), nextFrame()->projectionMatrix(), prevPoints, nextPoints, points3d );
+
+        for ( size_t i = 0; i < adjacentPoints.size(); ++i ) {
+
+            auto w = points3d.at< float >( 3, i );
+
+            auto x = points3d.at< float >( 0, i ) / w;
+            auto y = points3d.at< float >( 1, i ) / w;
+            auto z = points3d.at< float >( 2, i ) / w;
+
+            auto pt = cv::Vec3f( x, y, z );
+
+            if ( std::abs( w ) > FLOAT_EPS ) {
+                if ( !adjacentPoints[i].previousFramePoint()->worldPoint() || !adjacentPoints[i].nextFramePoint()->worldPoint() ) {
+
+                    if ( !adjacentPoints[i].previousFramePoint()->worldPoint() && !adjacentPoints[i].previousFramePoint()->worldPoint() ) {
+
+                        auto worldPoint = world->createWorldPoint( pt, adjacentPoints[i].previousFramePoint()->color() );
+                        adjacentPoints[i].previousFramePoint()->setWorldPoint( worldPoint );
+                        adjacentPoints[i].nextFramePoint()->setWorldPoint( worldPoint );
+
+                    }
+
+                }
+                else {
+                    if ( !adjacentPoints[i].previousFramePoint()->worldPoint() )
+                        adjacentPoints[i].previousFramePoint()->setWorldPoint( adjacentPoints[i].nextFramePoint()->worldPoint() );
+                    else
+                        adjacentPoints[i].nextFramePoint()->setWorldPoint( adjacentPoints[i].previousFramePoint()->worldPoint() );
+
+                    adjacentPoints[i].previousFramePoint()->worldPoint()->setPoint( pt );
+
+                }
+
+
+            }
+
+        }
+
+    }
 
 }
 

@@ -60,8 +60,8 @@ bool StereoRectificationProcessor::rectifyLeft( const CvImage &image , CvImage *
 
     cv::remap( image, *result, m_calibrationData.leftRMap(), m_calibrationData.leftDMap(), cv::INTER_CUBIC );
 
-    if (!m_calibrationData.leftROI().empty() && !m_calibrationData.rightROI().empty())
-        *result = (*result)( cropRect( m_calibrationData.leftROI(), m_calibrationData.rightROI() ) );
+    //if (!m_calibrationData.leftROI().empty() && !m_calibrationData.rightROI().empty())
+    //    *result = (*result)( cropRect( m_calibrationData.leftROI(), m_calibrationData.rightROI() ) );
 
     return true;
 
@@ -74,8 +74,8 @@ bool StereoRectificationProcessor::rectifyRight( const CvImage &image, CvImage *
 
     cv::remap( image, *result, m_calibrationData.rightRMap(), m_calibrationData.rightDMap(), cv::INTER_CUBIC );
 
-    if ( !m_calibrationData.leftROI().empty() && !m_calibrationData.rightROI().empty())
-        *result = (*result)( cropRect( m_calibrationData.leftROI(), m_calibrationData.rightROI() ) );
+    //if ( !m_calibrationData.leftROI().empty() && !m_calibrationData.rightROI().empty())
+    //    *result = (*result)( cropRect( m_calibrationData.leftROI(), m_calibrationData.rightROI() ) );
 
     return true;
 

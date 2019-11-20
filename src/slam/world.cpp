@@ -9,8 +9,6 @@
 #include "src/common/defs.h"
 #include "src/common/functions.h"
 
-#include <opencv2/viz.hpp>
-
 namespace slam {
 
 World::World( const StereoCalibrationDataShort &calibration )
@@ -21,23 +19,6 @@ World::World( const StereoCalibrationDataShort &calibration )
 
 void World::initialize()
 {
-    cv::namedWindow( "KeyPoints", cv::WINDOW_KEEPRATIO );
-    cv::resizeWindow( "KeyPoints", 800, 600 );
-    cv::moveWindow( "KeyPoints", 80, 10 );
-
-    cv::namedWindow( "Stereo", cv::WINDOW_KEEPRATIO );
-    cv::resizeWindow( "Stereo", 800, 600 );
-    cv::moveWindow( "Stereo", 880, 10 );
-
-    cv::namedWindow( "Track", cv::WINDOW_KEEPRATIO );
-    cv::resizeWindow( "Track", 800, 600 );
-    cv::moveWindow( "Track", 80, 900 );
-
-    m_vizWindow = std::make_shared< cv::viz::Viz3d >( "Viz3d" );
-    m_vizWindow->showWidget( "coordSystemWidget", cv::viz::WCoordinateSystem() );
-    m_vizWindow->setWindowPosition( cv::Point( 880, 900 ) );
-    m_vizWindow->setWindowSize( cv::Size( 800, 600 ) );
-
 }
 
 World::WorldPtr World::create( const StereoCalibrationDataShort &calibration )
@@ -75,6 +56,16 @@ World::WorldPointPtr World::createWorldPoint( const cv::Vec3f &pt, const cv::Sca
 
 }
 
+std::list< World::FramePtr > &World::frames()
+{
+    return m_frames;
+}
+
+const std::list< World::FramePtr > &World::frames() const
+{
+    return m_frames;
+}
+
 std::vector< World::WorldPointPtr > &World::worldPoints()
 {
     return m_worldPoints;
@@ -83,6 +74,26 @@ std::vector< World::WorldPointPtr > &World::worldPoints()
 const std::vector< World::WorldPointPtr > &World::worldPoints() const
 {
     return m_worldPoints;
+}
+
+const World::FramePtr &World::backFrame() const
+{
+    return m_frames.back();
+}
+
+CvImage World::keyPointsImage() const
+{
+    return m_keyPointsImage;
+}
+
+CvImage World::stereoPointsImage() const
+{
+    return m_stereoPointsImage;
+}
+
+CvImage World::tracksImage() const
+{
+    return m_tracksImage;
 }
 
 void World::addWorldPoint( const WorldPointPtr &point )
@@ -97,74 +108,96 @@ bool World::track( const CvImage &leftImage, const CvImage &rightImage )
     stereoFrame->load( leftImage, rightImage  );
     stereoFrame->matchFrames();
 
-    auto keyPoints = stereoFrame->drawKeyPoints( leftImage, rightImage );
-    cv::imshow( "KeyPoints", keyPoints );
-
-    auto stereoCorrespondencies = stereoFrame->drawStereoPoints( leftImage, rightImage );
-    cv::imshow( "Stereo", stereoCorrespondencies );
-
-    auto leftFrame = stereoFrame->leftFrame();
-    auto rightFrame = stereoFrame->rightFrame();
-
-    if ( leftFrame && rightFrame ) {
-        leftFrame->setCameraMatrix( m_calibration.leftCameraResults().cameraMatrix() );
-        stereoFrame->rightFrame()->setCameraMatrix( m_calibration.rightCameraResults().cameraMatrix() );
-        stereoFrame->rightFrame()->setTranslation( m_calibration.translationVector() );
-        stereoFrame->rightFrame()->setRotation( m_calibration.rotationMatrix() );
-
-    }
-
-    stereoFrame->triangulatePoints();
-
-    std::vector< cv::Vec3d > points;
-    std::vector< cv::Vec4b > colors;
-
-    for ( auto &i : m_worldPoints ) {
-        points.push_back( i->point() );
-        colors.push_back( i->color() );
-    }
-
-    if ( !points.empty() ) {
-        cv::viz::WCloud cloud( points, colors );
-        cloud.setRenderingProperty( cv::viz::POINT_SIZE, 2 );
-        m_vizWindow->showWidget( "Point cloud", cloud );
-
-    }
-
-    std::vector< cv::Affine3d > trajectoryPoints;
-
-    cv::Affine3d cameraPose;
-    trajectoryPoints.push_back( cameraPose );
-
-    cv::viz::WTrajectory trajectory( trajectoryPoints );
-    m_vizWindow->showWidget( "trajectory", trajectory );
-
-    cv::viz::WTrajectoryFrustums trajectoryFrustums( trajectoryPoints, cv::Vec2d( 1, 1 ), 1 );
-    m_vizWindow->showWidget( "trajectoryFrustums", trajectoryFrustums );
+    m_keyPointsImage = stereoFrame->drawKeyPoints( leftImage, rightImage );
+    m_stereoPointsImage = stereoFrame->drawStereoPoints( leftImage, rightImage );
 
     if ( !m_frames.empty() ) {
 
         auto previousStereoFrame = std::dynamic_pointer_cast< StereoFrame >( m_frames.back() );
 
-        auto consecutiveLeftFrame = AdjacentFrame::create();
-        auto consecutiveRightFrame = AdjacentFrame::create();
+        auto consecutiveLeftFrame = WorldAdjacentFrame::create( shared_from_this() );
+        auto consecutiveRightFrame = WorldAdjacentFrame::create( shared_from_this() );
 
         consecutiveLeftFrame->matchFrames( std::dynamic_pointer_cast< FeatureFrame >( previousStereoFrame->leftFrame() ), std::dynamic_pointer_cast< FeatureFrame >( stereoFrame->leftFrame() ) );
         consecutiveRightFrame->matchFrames( std::dynamic_pointer_cast< FeatureFrame >( previousStereoFrame->rightFrame() ), std::dynamic_pointer_cast< FeatureFrame >( stereoFrame->rightFrame() ) );
 
+        std::vector< cv::Point3f > worldPoints;
+        std::vector< cv::Point2f > framePoints;
+
+        auto trackFrame = consecutiveLeftFrame->frame2();
+
+        for ( auto &i : trackFrame->framePoints() ) {
+            if ( i && i->worldPoint() ) {
+                worldPoints.push_back( i->worldPoint()->point() );
+                framePoints.push_back( i->point() );
+
+            }
+
+        }
+
+        if ( framePoints.size() >= m_minPnpPoints ) {
+
+            cv::Mat rvec;
+            cv::Mat tvec;
+
+            cv::solvePnPRansac( worldPoints, framePoints, m_calibration.leftCameraResults().cameraMatrix(), cv::noArray(), rvec, tvec );
+
+            cv::Mat rmat;
+            cv::Rodrigues( rvec, rmat );
+
+            auto leftFrame = stereoFrame->leftFrame();
+            auto rightFrame = stereoFrame->rightFrame();
+
+            leftFrame->setCameraMatrix( m_calibration.leftCameraResults().cameraMatrix() );
+            leftFrame->setTranslation( tvec );
+            leftFrame->setRotation( rmat );
+
+            rightFrame->setCameraMatrix( m_calibration.rightCameraResults().cameraMatrix() );
+            rightFrame->setTranslation( tvec + m_calibration.translationVector() );
+            rightFrame->setRotation( m_calibration.rotationMatrix() * rmat );
+
+            /*std::cout << std::endl;
+            std::cout << framePoints.size() << std::endl;
+            std::cout << "T:" << tvec << std::endl;
+            std::cout << "R:" << rmat << std::endl;
+            std::cout << std::endl;*/
+
+            stereoFrame->triangulatePoints();
+
+            m_frames.push_back( stereoFrame );
+
+        }
+
         auto leftTrack = consecutiveLeftFrame->drawTrack( leftImage );
         auto rightTrack = consecutiveRightFrame->drawTrack( rightImage );
 
-        auto track = stackImages( leftTrack, rightTrack );
-
-        cv::imshow( "Track", track );
+        m_tracksImage = stackImages( leftTrack, rightTrack );
 
     }
+    else {
+        auto leftFrame = stereoFrame->leftFrame();
+        auto rightFrame = stereoFrame->rightFrame();
 
-    m_frames.push_back( stereoFrame );
+        leftFrame->setCameraMatrix( m_calibration.leftCameraResults().cameraMatrix() );
+        leftFrame->setTranslation( cv::Mat::zeros( 3, 1, CV_64F ) );
+        leftFrame->setRotation( cv::Mat::eye( 3, 3, CV_64F ) );
+        std::cout << leftFrame->projectionMatrix() << std::endl;
+        leftFrame->setProjectionMatrix( m_calibration.leftProjectionMatrix() );
+        std::cout << leftFrame->projectionMatrix() << std::endl;
+        std::cout <<  std::endl;
 
-    m_vizWindow->spinOnce();
-    cv::waitKey( 1 );
+        rightFrame->setCameraMatrix( m_calibration.rightCameraResults().cameraMatrix() );
+        rightFrame->setTranslation( m_calibration.baselineVector() );
+        rightFrame->setRotation( cv::Mat::eye( 3, 3, CV_64F ) );
+        std::cout << rightFrame->projectionMatrix() << std::endl;
+        rightFrame->setProjectionMatrix( m_calibration.rightProjectionMatrix() );
+        std::cout << rightFrame->projectionMatrix() << std::endl;
+
+        stereoFrame->triangulatePoints();
+
+        m_frames.push_back( stereoFrame );
+
+    }
 
     return true;
 

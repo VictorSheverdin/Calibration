@@ -5,11 +5,10 @@
 
 #include "src/common/calibrationdatabase.h"
 
-class cv::viz::Viz3d;
-
 namespace slam {
 
 class FrameBase;
+class StereoFrame;
 class WorldPoint;
 
 class World : public std::enable_shared_from_this< World >
@@ -17,7 +16,7 @@ class World : public std::enable_shared_from_this< World >
 public:
     using WorldPtr = std::shared_ptr< World >;
 
-    using FramePtr = std::shared_ptr< FrameBase >;
+    using FramePtr = std::shared_ptr< StereoFrame >;
     using WorldPointPtr = std::shared_ptr< WorldPoint >;
 
     static WorldPtr create( const StereoCalibrationDataShort &calibration );
@@ -28,8 +27,17 @@ public:
 
     bool track( const CvImage &leftImage, const CvImage &rightImage );
 
+    std::list< FramePtr > &frames();
+    const std::list< FramePtr > &frames() const;
+
     std::vector< WorldPointPtr > &worldPoints();
     const std::vector< WorldPointPtr > &worldPoints() const;
+
+    const FramePtr &backFrame() const;
+
+    CvImage keyPointsImage() const;
+    CvImage stereoPointsImage() const;
+    CvImage tracksImage() const;
 
     void addWorldPoint( const WorldPointPtr &point );
 
@@ -41,7 +49,11 @@ protected:
 
     StereoCalibrationDataShort m_calibration;
 
-    std::shared_ptr< cv::viz::Viz3d > m_vizWindow;
+    CvImage m_keyPointsImage;
+    CvImage m_stereoPointsImage;
+    CvImage m_tracksImage;
+
+    static const int m_minPnpPoints = 10;
 
 private:
     void initialize();

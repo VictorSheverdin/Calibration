@@ -111,4 +111,17 @@ public:
 
 };
 
+class AdjacentPoint : public DoublePoint
+{
+public:
+    AdjacentPoint( const MonoPointPtr previousPoint, const MonoPointPtr nextPoint );
+
+    MonoPointPtr previousFramePoint() const;
+    MonoPointPtr nextFramePoint() const;
+
+    cv::Point2f previousPoint() const;
+    cv::Point2f nextPoint() const;
+
+};
+
 }

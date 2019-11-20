@@ -25,6 +25,41 @@ void System::initialize()
     m_world = World::create( m_rectificationProcessor.calibration() );
 }
 
+std::list< System::FramePtr > &System::frames()
+{
+    return m_world->frames();
+}
+
+const std::list< System::FramePtr > &System::frames() const
+{
+    return m_world->frames();
+}
+
+std::vector< System::WorldPointPtr > &System::worldPoints()
+{
+    return m_world->worldPoints();
+}
+
+const std::vector< System::WorldPointPtr > &System::worldPoints() const
+{
+    return m_world->worldPoints();
+}
+
+CvImage System::keyPointsImage() const
+{
+    return m_world->keyPointsImage();
+}
+
+CvImage System::stereoPointsImage() const
+{
+    return m_world->stereoPointsImage();
+}
+
+CvImage System::tracksImage() const
+{
+    return m_world->tracksImage();
+}
+
 bool System::track( const std::string &leftFile, const std::string &rightFile )
 {
     CvImage leftImage( leftFile );
@@ -41,9 +76,6 @@ bool System::track( const CvImage &leftImage, const CvImage &rightImage )
 
     if ( !m_rectificationProcessor.rectify( leftImage, rightImage, &leftRectifiedImage, &rightRectifiedImage ) )
         return false;
-
-    // cv::resize( leftRectifiedImage, leftRectifiedImage, cv::Size(), 0.5, 0.5, cv::INTER_AREA );
-    // cv::resize( rightRectifiedImage, rightRectifiedImage, cv::Size(), 0.5, 0.5, cv::INTER_AREA );
 
     return m_world->track( leftRectifiedImage, rightRectifiedImage );
 

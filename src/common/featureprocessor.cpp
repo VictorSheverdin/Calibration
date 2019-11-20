@@ -49,7 +49,6 @@ void FeatureMatcher::initialize()
     m_matcher = cv::FlannBasedMatcher::create();
 }
 
-
 void FeatureMatcher::match( std::vector< cv::KeyPoint > &queryKeypoints, const cv::Mat &queryDescriptors,
                               std::vector< cv::KeyPoint > &trainKeypoints, const cv::Mat &trainDescriptors, std::vector< cv::DMatch > *matches )
 {
