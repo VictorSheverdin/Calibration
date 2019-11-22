@@ -33,16 +33,15 @@ int main( int argc, char** argv )
 
     slam::System slamSystem( path + "calibration.yaml" );
 
-    std::mutex systemMutex;
-
     std::thread calcThread( [&] {
 
-
-        for ( auto i = 10000; i < 15000; i++ ) {
+        for ( auto i = 23000; i < 25000; i++ ) {
             std::string leftFile = leftPath + std::to_string( i ) + "_left.jpg";
             std::string rightFile = rightPath + std::to_string( i ) + "_right.jpg";
 
+            auto startTime = std::chrono::system_clock::now();
             slamSystem.track( leftFile, rightFile );
+            std::cout << std::chrono::duration_cast< std::chrono::milliseconds >( std::chrono::system_clock::now() - startTime ).count() << std::endl;
 
         }
 
@@ -55,7 +54,7 @@ int main( int argc, char** argv )
         CvImage keyPointsImage;
         CvImage stereoPointsImage;
         CvImage tracksImage;
-        std::vector< std::shared_ptr< slam::WorldPoint > > worldPoints;
+        std::list< std::shared_ptr< slam::WorldPoint > > worldPoints;
         std::list< std::shared_ptr< slam::StereoFrame > > frames;
 
         keyPointsImage = slamSystem.keyPointsImage();
@@ -86,18 +85,23 @@ int main( int argc, char** argv )
             cloud.setRenderingProperty( cv::viz::POINT_SIZE, 2 );
             vizWindow.showWidget( "Point cloud", cloud );
 
-            std::vector< cv::Affine3d > trajectoryPoints;
+            std::vector< cv::Affine3d > leftTrajectoryPoints;
+            std::vector< cv::Affine3d > rightTrajectoryPoints;
 
             for ( auto &i : frames ) {
-                cv::Affine3d cameraPose( i->leftFrame()->rotation(), i->leftFrame()->translation() );
-                trajectoryPoints.push_back( cameraPose );
+                leftTrajectoryPoints.push_back( cv::Affine3d( i->leftFrame()->rotation().t(), cv::Mat( - i->leftFrame()->rotation().t() * i->leftFrame()->translation() ) ) );
+                rightTrajectoryPoints.push_back( cv::Affine3d( i->rightFrame()->rotation().t(), cv::Mat( - i->rightFrame()->rotation().t() * i->rightFrame()->translation() ) ) );
             }
 
-            cv::viz::WTrajectory trajectory( trajectoryPoints );
-            vizWindow.showWidget( "trajectory", trajectory );
+            cv::viz::WTrajectory leftTrajectory( leftTrajectoryPoints );
+            vizWindow.showWidget( "leftTrajectory", leftTrajectory );
+            cv::viz::WTrajectoryFrustums leftTrajectoryFrustums( leftTrajectoryPoints, cv::Vec2d( 1, 1 ), 0.5 );
+            vizWindow.showWidget( "leftTrajectoryFrustums", leftTrajectoryFrustums );
 
-            cv::viz::WTrajectoryFrustums trajectoryFrustums( trajectoryPoints, cv::Vec2d( 1, 1 ), 1 );
-            vizWindow.showWidget( "trajectoryFrustums", trajectoryFrustums );
+            cv::viz::WTrajectory rightTrajectory( rightTrajectoryPoints );
+            vizWindow.showWidget( "rightTrajectory", rightTrajectory );
+            cv::viz::WTrajectoryFrustums rightTrajectoryFrustums( rightTrajectoryPoints, cv::Vec2d( 1, 1 ), 0.5 );
+            vizWindow.showWidget( "rightTrajectoryFrustums", rightTrajectoryFrustums );
 
         }
 

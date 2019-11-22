@@ -284,9 +284,9 @@ const cv::Mat &StereoCalibrationDataBase::translationVector() const
     return m_translationVector;
 }
 
-const cv::Mat &StereoCalibrationDataBase::baselineVector() const
+const cv::Mat StereoCalibrationDataBase::baselineVector() const
 {
-    return cv::Mat_< double >( 3, 1 ) << distance(), 0.0, 0.0;
+    return cv::Mat_< double >( 3, 1 ) << ( m_translationVector.at< double >( 0 ) > 0 ? distance() : -distance() ), 0.0, 0.0;
 }
 
 void StereoCalibrationDataBase::setFundamentalMatrix( const cv::Mat &value )

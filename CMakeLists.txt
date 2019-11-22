@@ -134,7 +134,9 @@ find_package( Eigen3 3.1.0 REQUIRED )
 find_package( VTK 8 REQUIRED )
 find_package( PCL 1.9 REQUIRED )
 find_package( Pangolin REQUIRED )
+find_package( SuiteSparse )
 find_package( RTABMap REQUIRED )
+find_package( G2O REQUIRED )
 
 set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O3 -march=native ${OpenMP_C_FLAGS}")
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O3 -march=native ${OpenMP_CXX_FLAGS}")
@@ -212,21 +214,9 @@ add_executable( visoodometry ${COMMON_SOURCES} ${VISO_SOURCES}
     src/visoodometry/main.cpp
 )
 
-add_executable( visualodometry ${COMMON_SOURCES} ${RES_SOURCES}
-    src/visualodometry/feature.h
-    src/visualodometry/feature.cpp
-    src/visualodometry/featuresProcessor.h
-    src/visualodometry/featuresProcessor.cpp
-    src/visualodometry/frame.h
-    src/visualodometry/frame.cpp
-    src/visualodometry/slam.h
-    src/visualodometry/slam.cpp
-    src/visualodometry/main.cpp
-)
-
-add_executable( rtabmapslam ${COMMON_SOURCES} ${RES_SOURCES}
-    src/rtabmapslam/main.cpp
-)
+#add_executable( rtabmapslam ${COMMON_SOURCES} ${RES_SOURCES}
+#    src/rtabmapslam/main.cpp
+#)
 
 add_executable( slam ${COMMON_SOURCES} ${RES_SOURCES}
     src/slam/world.h
@@ -234,23 +224,27 @@ add_executable( slam ${COMMON_SOURCES} ${RES_SOURCES}
     src/slam/frame.h
     src/slam/keyframe.h
     src/slam/framepoint.h
+    src/slam/optimizer.h
     src/slam/system.h
     src/slam/world.cpp
     src/slam/worldpoint.cpp
     src/slam/frame.cpp
     src/slam/keyframe.cpp
     src/slam/framepoint.cpp
+    src/slam/optimizer.cpp
     src/slam/system.cpp
     src/slam/main.cpp
 )
 
 target_include_directories( imagesorbodometry PRIVATE ${Pangolin_INCLUDE_DIRS} )
 target_include_directories( cameraorbodometry PRIVATE ${Pangolin_INCLUDE_DIRS} )
-target_include_directories( rtabmapslam PRIVATE ${RTABMap_INCLUDE_DIRS} )
+#target_include_directories( rtabmapslam PRIVATE ${RTABMap_INCLUDE_DIRS} )
+target_include_directories( slam PRIVATE ${G2O_INCLUDE_DIR} ${SUITESPARSE_INCLUDE_DIRS} )
 
 target_link_libraries( calibration ${Qt5Widgets_LIBRARIES} ${YAML_CPP_LIBRARIES} )
 target_link_libraries( disparity ${Qt5Widgets_LIBRARIES} ${VTK_LIBRARIES} ${YAML_CPP_LIBRARIES} )
 target_link_libraries( imagesorbodometry ${Qt5Widgets_LIBRARIES} ${Pangolin_LIBRARIES} ${PROJECT_SOURCE_DIR}/src/DBoW2/lib/libDBoW2.so ${PROJECT_SOURCE_DIR}/src/g2o/lib/libg2o.so )
 target_link_libraries( cameraorbodometry ${Qt5Widgets_LIBRARIES} ${Pangolin_LIBRARIES} ${PROJECT_SOURCE_DIR}/src/DBoW2/lib/libDBoW2.so ${PROJECT_SOURCE_DIR}/src/g2o/lib/libg2o.so )
 target_link_libraries( visoodometry ${Qt5Widgets_LIBRARIES} png )
-target_link_libraries( rtabmapslam ${RTABMap_LIBRARIES} )
+#target_link_libraries( rtabmapslam ${RTABMap_LIBRARIES} )
+target_link_libraries( slam PRIVATE ${G2O_INCLUDE_DIR} )

@@ -87,7 +87,7 @@ public:
     void setTranslationVector( const cv::Mat &value );
     const cv::Mat &translationVector() const;
 
-    const cv::Mat &baselineVector() const;
+    const cv::Mat baselineVector() const;
 
     void setFundamentalMatrix( const cv::Mat &value );
     const cv::Mat &fundamentalMatrix() const;

@@ -17,6 +17,9 @@ public:
     MonoUndistortionProcessor( const MonocularCalibrationDataShort &calibrationData );
     MonoUndistortionProcessor( const std::string &fileName );
 
+    void setCalibrationData( const MonocularCalibrationDataShort &calibrationData );
+    void loadFile( const std::string &fileName );
+
     CvImage undistort( const CvImage &image );
 
     const MonocularCalibrationDataShort &calibration() const;
@@ -32,6 +35,9 @@ public:
     StereoRectificationProcessor();
     StereoRectificationProcessor( const StereoCalibrationDataShort &calibrationData );
     StereoRectificationProcessor( const std::string &fileName );
+
+    void setCalibrationData( const StereoCalibrationDataShort &calibrationData );
+    void loadFile( const std::string &fileName );
 
     bool rectifyLeft( const CvImage &image, CvImage *result );
     bool rectifyRight( const CvImage &image , CvImage *result );

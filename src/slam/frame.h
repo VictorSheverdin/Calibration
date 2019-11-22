@@ -40,10 +40,10 @@ public:
     const cv::Mat &cameraMatrix() const;
 
     void setRotation( const cv::Mat &value );
-    const cv::Mat rotation() const;
+    const cv::Mat &rotation() const;
 
     void setTranslation( const cv::Mat &value );
-    const cv::Mat translation() const;
+    const cv::Mat &translation() const;
 
     void setProjectionMatrix( const cv::Mat &value );
     const cv::Mat &projectionMatrix() const;
@@ -55,7 +55,8 @@ protected:
 
     cv::Mat m_cameraMatrix;
 
-    cv::Mat m_rtMatrix;
+    cv::Mat m_r;
+    cv::Mat m_t;
 
     mutable cv::Mat m_projectionMatrix;
 
@@ -139,6 +140,8 @@ public:
 protected:
     StereoFrame();
 
+    static const int m_minLenght = 5;
+
 };
 
 class World;
@@ -173,7 +176,9 @@ public:
     static FramePtr create();
 
     void load( const CvImage &image1, const CvImage &image2 );
-    void matchFrames( const FeatureFramePtr frame1, const FeatureFramePtr frame2 );
+    void matchFrames();
+
+    bool track();
 
     MonoFramePtr previousFrame() const;
     MonoFramePtr nextFrame() const;
@@ -184,6 +189,9 @@ public:
 
 protected:    
     AdjacentFrame();
+
+    static const int m_minLenght = 5;
+    static const int m_minPnpPoints = 50;
 
 };
 

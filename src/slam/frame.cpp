@@ -24,8 +24,6 @@ MonoFrame::MonoFrame()
 
 void MonoFrame::initialize()
 {
-    m_rtMatrix = cv::Mat( 3, 4, CV_64F );
-
     setCameraMatrix( cv::Mat::eye( 3, 3, CV_64F ) );
 
     setRotation( cv::Mat::eye( 3, 3, CV_64F ) );
@@ -106,8 +104,10 @@ bool MonoFrame::drawPoints( CvImage *target ) const
     if ( !target )
         return false;
 
-    for ( auto &i : m_points )
-        drawFeaturePoint( target, i->point() );
+    auto points = this->points();
+
+    for ( auto &i : points )
+        drawFeaturePoint( target, i );
 
     return true;
 }
@@ -128,35 +128,52 @@ void MonoFrame::setRotation( const cv::Mat &value )
 {
     m_projectionMatrix = cv::Mat();
 
-    value.copyTo( m_rtMatrix.rowRange( 0, 3 ).colRange( 0, 3 ) );
+    m_r = value;
 }
 
-const cv::Mat MonoFrame::rotation() const
+const cv::Mat &MonoFrame::rotation() const
 {
-    return m_rtMatrix.rowRange( 0, 3 ).colRange( 0, 3 );
+    return m_r;
 }
 
 void MonoFrame::setTranslation( const cv::Mat &value )
 {
     m_projectionMatrix = cv::Mat();
 
-    value.copyTo( m_rtMatrix.rowRange( 0, 3 ).col( 3 ) );
+    m_t = value;
 }
 
-const cv::Mat MonoFrame::translation() const
+const cv::Mat &MonoFrame::translation() const
 {
-    return m_rtMatrix.rowRange( 0, 3 ).col( 3 );
+    return m_t;
 }
 
 void MonoFrame::setProjectionMatrix( const cv::Mat &value )
 {
     m_projectionMatrix = value;
+
+    cv::Mat r;
+    cv::Mat t;
+
+    cv::decomposeProjectionMatrix( m_projectionMatrix, m_cameraMatrix, r, t );
+
+    m_t.at< double >( 0, 0 ) = - t.at< double >( 0, 0 ) / t.at< double >( 3, 0 );
+    m_t.at< double >( 1, 0 ) = - t.at< double >( 1, 0 ) / t.at< double >( 3, 0 );
+    m_t.at< double >( 2, 0 ) = - t.at< double >( 1, 0 ) / t.at< double >( 3, 0 );
+
+    m_r = r.t();
+
 }
 
 const cv::Mat &MonoFrame::projectionMatrix() const
 {
-    if ( m_projectionMatrix.empty() )
-        m_projectionMatrix = m_cameraMatrix * m_rtMatrix;
+    if ( m_projectionMatrix.empty() ) {
+        auto extrinsicMatrix = cv::Mat( 3, 4, CV_64F );
+        m_r.copyTo( extrinsicMatrix.rowRange( 0, 3 ).colRange( 0, 3 ) );
+        m_t.copyTo( extrinsicMatrix.rowRange( 0, 3 ).col( 3 ) );
+        m_projectionMatrix = m_cameraMatrix * extrinsicMatrix;
+
+    }
 
     return m_projectionMatrix;
 }
@@ -264,7 +281,7 @@ void StereoFrame::matchFrames()
 
             double lenght = cv::norm( leftPoint->point() - rightPoint->point() );
 
-            if ( lenght >= 5 ) {
+            if ( lenght >= m_minLenght ) {
                 leftPoint->setStereoPoint( rightPoint );
                 rightPoint->setStereoPoint( leftPoint );
 
@@ -379,7 +396,7 @@ void WorldStereoFrame::triangulatePoints()
 
     if ( world ) {
 
-        cv::Mat points3d;
+        cv::Mat homogeneousPoints3d;
 
         auto stereoPoints = this->stereoPoints();
 
@@ -394,38 +411,30 @@ void WorldStereoFrame::triangulatePoints()
 
         }
 
-        cv::triangulatePoints( leftFrame()->projectionMatrix(), rightFrame()->projectionMatrix(), leftPoints, rightPoints, points3d );
-
-        //std::cout << leftFrame()->projectionMatrix() << std::endl;
-        //std::cout << rightFrame()->projectionMatrix() << std::endl;
+        cv::triangulatePoints( leftFrame()->projectionMatrix(), rightFrame()->projectionMatrix(), leftPoints, rightPoints, homogeneousPoints3d );
 
         for ( size_t i = 0; i < stereoPoints.size(); ++i ) {
 
-            auto w = points3d.at< float >( 3, i );
+            auto w = homogeneousPoints3d.at< float >( 3, i );
 
-            auto x = points3d.at< float >( 0, i ) / w;
-            auto y = points3d.at< float >( 1, i ) / w;
-            auto z = points3d.at< float >( 2, i ) / w;
+            auto x = homogeneousPoints3d.at< float >( 0, i ) / w;
+            auto y = homogeneousPoints3d.at< float >( 1, i ) / w;
+            auto z = homogeneousPoints3d.at< float >( 2, i ) / w;
 
             auto pt = cv::Vec3f( x, y, z );
 
             if ( std::abs( w ) > FLOAT_EPS ) {
 
-                if ( !stereoPoints[i].leftFramePoint()->worldPoint() || !stereoPoints[i].rightFramePoint()->worldPoint() ) {
-
-                    if ( !stereoPoints[i].leftFramePoint()->worldPoint() && !stereoPoints[i].rightFramePoint()->worldPoint() ) {
-
-                        auto worldPoint = world->createWorldPoint( pt, stereoPoints[i].leftFramePoint()->color() );
-                        stereoPoints[i].leftFramePoint()->setWorldPoint( worldPoint );
-                        stereoPoints[i].rightFramePoint()->setWorldPoint( worldPoint );
-
-                    }
+                if ( !stereoPoints[i].leftFramePoint()->worldPoint() && !stereoPoints[i].rightFramePoint()->worldPoint() ) {
+                    auto worldPoint = world->createWorldPoint( pt, stereoPoints[i].leftFramePoint()->color() );
+                    stereoPoints[i].leftFramePoint()->setWorldPoint( worldPoint );
+                    stereoPoints[i].rightFramePoint()->setWorldPoint( worldPoint );
 
                 }
                 else {
                     if ( !stereoPoints[i].leftFramePoint()->worldPoint() )
                         stereoPoints[i].leftFramePoint()->setWorldPoint( stereoPoints[i].rightFramePoint()->worldPoint() );
-                    else
+                    else if ( !stereoPoints[i].rightFramePoint()->worldPoint() )
                         stereoPoints[i].rightFramePoint()->setWorldPoint( stereoPoints[i].leftFramePoint()->worldPoint() );
 
                     stereoPoints[i].leftFramePoint()->worldPoint()->setPoint( pt );
@@ -463,11 +472,12 @@ void AdjacentFrame::load( const CvImage &image1, const CvImage &image2 )
 
 }
 
-void AdjacentFrame::matchFrames( const FeatureFramePtr frame1, const FeatureFramePtr frame2 )
+void AdjacentFrame::matchFrames()
 {
-    if ( frame1 && frame2 ) {
+    auto frame1 = std::dynamic_pointer_cast< FeatureFrame >( this->previousFrame() );
+    auto frame2 = std::dynamic_pointer_cast< FeatureFrame >( this->nextFrame() );
 
-        setFrames( frame1, frame2 );
+    if ( frame1 && frame2 ) {
 
         std::vector< cv::DMatch > matches;
 
@@ -479,7 +489,7 @@ void AdjacentFrame::matchFrames( const FeatureFramePtr frame1, const FeatureFram
 
             double lenght = cv::norm( point1->point() - point2->point() );
 
-            if ( lenght >= 10 ) {
+            if ( lenght >= m_minLenght ) {
 
                 point1->setNextPoint( point2 );
                 point2->setPrevPoint( point1 );
@@ -494,6 +504,42 @@ void AdjacentFrame::matchFrames( const FeatureFramePtr frame1, const FeatureFram
         }
 
     }
+
+}
+
+bool AdjacentFrame::track()
+{
+    std::vector< cv::Point3f > worldPoints;
+    std::vector< cv::Point2f > framePoints;
+
+    auto prevFrame = previousFrame();
+    auto frame = nextFrame();
+
+    for ( auto &i : frame->framePoints() ) {
+        if ( i && i->worldPoint() ) {
+            worldPoints.push_back( i->worldPoint()->point() );
+            framePoints.push_back( i->point() );
+
+        }
+
+    }
+
+    if ( worldPoints.size() < m_minPnpPoints )
+        return false;
+
+    cv::Mat rvec;
+    cv::Mat tvec;
+
+    cv::solvePnPRansac( worldPoints, framePoints, prevFrame->cameraMatrix(), cv::noArray(), rvec, tvec );
+
+    cv::Mat rmat;
+    cv::Rodrigues( rvec, rmat );
+
+    frame->setCameraMatrix( prevFrame->cameraMatrix() );
+    frame->setTranslation( tvec );
+    frame->setRotation( rmat );
+
+    return true;
 
 }
 
@@ -567,7 +613,7 @@ void WorldAdjacentFrame::triangulatePoints()
         auto adjacentPoints = this->adjacentPoints();
 
         cv::Mat_< float > prevPoints( 2, adjacentPoints.size() ),
-                           nextPoints( 2, adjacentPoints.size() );
+                          nextPoints( 2, adjacentPoints.size() );
 
         for ( size_t i = 0; i < adjacentPoints.size(); ++i ) {
             prevPoints.row( 0 ).col( i ) = adjacentPoints[ i ].previousPoint().x;
@@ -590,21 +636,16 @@ void WorldAdjacentFrame::triangulatePoints()
             auto pt = cv::Vec3f( x, y, z );
 
             if ( std::abs( w ) > FLOAT_EPS ) {
-                if ( !adjacentPoints[i].previousFramePoint()->worldPoint() || !adjacentPoints[i].nextFramePoint()->worldPoint() ) {
-
-                    if ( !adjacentPoints[i].previousFramePoint()->worldPoint() && !adjacentPoints[i].previousFramePoint()->worldPoint() ) {
-
-                        auto worldPoint = world->createWorldPoint( pt, adjacentPoints[i].previousFramePoint()->color() );
-                        adjacentPoints[i].previousFramePoint()->setWorldPoint( worldPoint );
-                        adjacentPoints[i].nextFramePoint()->setWorldPoint( worldPoint );
-
-                    }
+                if ( !adjacentPoints[i].previousFramePoint()->worldPoint() && !adjacentPoints[i].nextFramePoint()->worldPoint() ) {
+                    auto worldPoint = world->createWorldPoint( pt, adjacentPoints[i].previousFramePoint()->color() );
+                    adjacentPoints[i].previousFramePoint()->setWorldPoint( worldPoint );
+                    adjacentPoints[i].nextFramePoint()->setWorldPoint( worldPoint );
 
                 }
                 else {
                     if ( !adjacentPoints[i].previousFramePoint()->worldPoint() )
                         adjacentPoints[i].previousFramePoint()->setWorldPoint( adjacentPoints[i].nextFramePoint()->worldPoint() );
-                    else
+                    else if ( !adjacentPoints[i].nextFramePoint()->worldPoint() )
                         adjacentPoints[i].nextFramePoint()->setWorldPoint( adjacentPoints[i].previousFramePoint()->worldPoint() );
 
                     adjacentPoints[i].previousFramePoint()->worldPoint()->setPoint( pt );

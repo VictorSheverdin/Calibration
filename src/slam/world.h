@@ -30,8 +30,8 @@ public:
     std::list< FramePtr > &frames();
     const std::list< FramePtr > &frames() const;
 
-    std::vector< WorldPointPtr > &worldPoints();
-    const std::vector< WorldPointPtr > &worldPoints() const;
+    std::list< WorldPointPtr > &worldPoints();
+    const std::list< WorldPointPtr > &worldPoints() const;
 
     const FramePtr &backFrame() const;
 
@@ -45,7 +45,7 @@ protected:
     World( const StereoCalibrationDataShort &calibration );
 
     std::list< FramePtr > m_frames;
-    std::vector< WorldPointPtr > m_worldPoints;
+    std::list< WorldPointPtr > m_worldPoints;
 
     StereoCalibrationDataShort m_calibration;
 

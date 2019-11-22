@@ -21,8 +21,8 @@ public:
     std::list< FramePtr > &frames();
     const std::list< FramePtr > &frames() const;
 
-    std::vector< WorldPointPtr > &worldPoints();
-    const std::vector< WorldPointPtr > &worldPoints() const;
+    std::list< WorldPointPtr > &worldPoints();
+    const std::list< WorldPointPtr > &worldPoints() const;
 
     CvImage keyPointsImage() const;
     CvImage stereoPointsImage() const;
@@ -33,6 +33,8 @@ public:
 
 protected:
     StereoRectificationProcessor m_rectificationProcessor;
+    MonoUndistortionProcessor m_leftUndistortionProcessor;
+    MonoUndistortionProcessor m_rightUndistortionProcessor;
 
     WorldPtr m_world;
 

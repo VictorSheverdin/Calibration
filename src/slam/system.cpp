@@ -9,14 +9,20 @@
 namespace slam {
 
 System::System( const StereoCalibrationDataShort &calibration )
-    : m_rectificationProcessor( calibration )
+    : m_rectificationProcessor( calibration ),
+      m_leftUndistortionProcessor( calibration.leftCameraResults() ),
+      m_rightUndistortionProcessor( calibration.rightCameraResults() )
 {
     initialize();
 }
 
 System::System( const std::string &calibrationFile )
-    : m_rectificationProcessor( calibrationFile )
 {
+    m_rectificationProcessor.loadFile( calibrationFile );
+
+    m_leftUndistortionProcessor.setCalibrationData( m_rectificationProcessor.calibration().leftCameraResults() );
+    m_rightUndistortionProcessor.setCalibrationData( m_rectificationProcessor.calibration().rightCameraResults() );
+
     initialize();
 }
 
@@ -35,12 +41,12 @@ const std::list< System::FramePtr > &System::frames() const
     return m_world->frames();
 }
 
-std::vector< System::WorldPointPtr > &System::worldPoints()
+std::list< System::WorldPointPtr > &System::worldPoints()
 {
     return m_world->worldPoints();
 }
 
-const std::vector< System::WorldPointPtr > &System::worldPoints() const
+const std::list< System::WorldPointPtr > &System::worldPoints() const
 {
     return m_world->worldPoints();
 }

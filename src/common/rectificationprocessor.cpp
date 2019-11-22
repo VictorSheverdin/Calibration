@@ -13,15 +13,24 @@ MonoUndistortionProcessor::MonoUndistortionProcessor()
 }
 
 MonoUndistortionProcessor::MonoUndistortionProcessor( const MonocularCalibrationDataShort &calibrationData )
-    : m_calibrationData( calibrationData )
 {
+    setCalibrationData( calibrationData );
 }
 
 MonoUndistortionProcessor::MonoUndistortionProcessor( const std::string &fileName )
 {
-    m_calibrationData.loadYaml( fileName );
+    loadFile( fileName );
 }
 
+void MonoUndistortionProcessor::setCalibrationData( const MonocularCalibrationDataShort &calibrationData )
+{
+    m_calibrationData = calibrationData;
+}
+
+void MonoUndistortionProcessor::loadFile( const std::string &fileName )
+{
+    m_calibrationData.loadYaml( fileName );
+}
 
 CvImage MonoUndistortionProcessor::undistort( const CvImage &image )
 {
@@ -44,11 +53,21 @@ StereoRectificationProcessor::StereoRectificationProcessor()
 }
 
 StereoRectificationProcessor::StereoRectificationProcessor( const StereoCalibrationDataShort &calibrationData )
-    : m_calibrationData( calibrationData )
 {
+    setCalibrationData( calibrationData );
 }
 
 StereoRectificationProcessor::StereoRectificationProcessor( const std::string &fileName )
+{
+    loadFile( fileName );
+}
+
+void StereoRectificationProcessor::setCalibrationData( const StereoCalibrationDataShort &calibrationData )
+{
+    m_calibrationData = calibrationData;
+}
+
+void StereoRectificationProcessor::loadFile( const std::string &fileName )
 {
     m_calibrationData.loadYaml( fileName );
 }
