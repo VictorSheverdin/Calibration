@@ -8,8 +8,36 @@
 
 #include <thread>
 
+#include <opencv2/core/ocl.hpp>
+
 int main( int argc, char** argv )
 {
+    cv::ocl::Context context;
+    std::vector< cv::ocl::PlatformInfo > platforms;
+
+   cv::ocl::getPlatfomsInfo(platforms);
+
+    for (size_t i = 0; i < platforms.size(); i++)
+    {
+        const cv::ocl::PlatformInfo* platform = &platforms[i];
+        std::cout << "Platform Name: " << platform->name() << "\n" << std::endl;
+        cv::ocl::Device current_device;
+
+        for (int j = 0; j < platform->deviceNumber(); j++)
+        {
+            platform->getDevice(current_device, j);
+            int deviceType = current_device.type();
+            std::cout << "Device name:  " << current_device.name() << std::endl;
+            if (deviceType == 2)
+                std::cout << context.ndevices() << " CPU devices are detected." << std::endl;
+            if (deviceType == 4)
+                std::cout << context.ndevices() << " GPU devices are detected." << std::endl;
+        }
+
+    }
+
+    cv::ocl::setUseOpenCL(true);
+
     std::string path("/home/victor/Polygon/");
     std::string leftPath = path + "left/";
     std::string rightPath = path + "right/";
@@ -26,22 +54,24 @@ int main( int argc, char** argv )
     cv::resizeWindow( "Track", 800, 600 );
     cv::moveWindow( "Track", 80, 900 );
 
+    cv::namedWindow( "OpticalFlow", cv::WINDOW_KEEPRATIO );
+    cv::resizeWindow( "OpticalFlow", 800, 600 );
+    cv::moveWindow( "OpticalFlow", 880, 900 );
+
     cv::viz::Viz3d vizWindow( "Viz3d" );
     vizWindow.showWidget( "coordSystemWidget", cv::viz::WCoordinateSystem() );
-    vizWindow.setWindowPosition( cv::Point( 880, 900 ) );
+    vizWindow.setWindowPosition( cv::Point( 400, 450 ) );
     vizWindow.setWindowSize( cv::Size( 800, 600 ) );
 
     slam::System slamSystem( path + "calibration.yaml" );
 
-    std::thread calcThread( [&] {
+    std::thread calcThread( [ & ] {
 
-        for ( auto i = 23000; i < 25000; i++ ) {
+        for ( auto i = 24000; i < 30000; i++ ) {
             std::string leftFile = leftPath + std::to_string( i ) + "_left.jpg";
             std::string rightFile = rightPath + std::to_string( i ) + "_right.jpg";
 
-            auto startTime = std::chrono::system_clock::now();
             slamSystem.track( leftFile, rightFile );
-            std::cout << std::chrono::duration_cast< std::chrono::milliseconds >( std::chrono::system_clock::now() - startTime ).count() << std::endl;
 
         }
 
@@ -54,12 +84,14 @@ int main( int argc, char** argv )
         CvImage keyPointsImage;
         CvImage stereoPointsImage;
         CvImage tracksImage;
+        CvImage flowImage;
         std::list< std::shared_ptr< slam::WorldPoint > > worldPoints;
-        std::list< std::shared_ptr< slam::StereoFrame > > frames;
+        std::list< std::shared_ptr< slam::FrameBase > > frames;
 
         keyPointsImage = slamSystem.keyPointsImage();
         stereoPointsImage = slamSystem.stereoPointsImage();
         tracksImage = slamSystem.tracksImage();
+        flowImage = slamSystem.opticalFlowImage();
         worldPoints = slamSystem.worldPoints();
         frames = slamSystem.frames();
 
@@ -72,11 +104,15 @@ int main( int argc, char** argv )
         if ( !tracksImage.empty() )
             cv::imshow( "Track", tracksImage );
 
+        if ( !flowImage.empty() )
+            cv::imshow( "OpticalFlow", flowImage );
+
         std::vector< cv::Vec3d > points;
         std::vector< cv::Vec4b > colors;
 
         for ( auto &i : worldPoints ) {
-            points.push_back( i->point() );
+            auto point = i->point();
+            points.push_back( point );
             colors.push_back( i->color() );
         }
 
@@ -89,8 +125,14 @@ int main( int argc, char** argv )
             std::vector< cv::Affine3d > rightTrajectoryPoints;
 
             for ( auto &i : frames ) {
-                leftTrajectoryPoints.push_back( cv::Affine3d( i->leftFrame()->rotation().t(), cv::Mat( - i->leftFrame()->rotation().t() * i->leftFrame()->translation() ) ) );
-                rightTrajectoryPoints.push_back( cv::Affine3d( i->rightFrame()->rotation().t(), cv::Mat( - i->rightFrame()->rotation().t() * i->rightFrame()->translation() ) ) );
+
+                auto stereoFrame = std::dynamic_pointer_cast< slam::StereoFrame >( i );
+
+                if ( stereoFrame ) {
+                    leftTrajectoryPoints.push_back( cv::Affine3d( stereoFrame->leftFrame()->rotation().t(), cv::Mat( - stereoFrame->leftFrame()->rotation().t() * stereoFrame->leftFrame()->translation() ) ) );
+                    rightTrajectoryPoints.push_back( cv::Affine3d( stereoFrame->rightFrame()->rotation().t(), cv::Mat( - stereoFrame->rightFrame()->rotation().t() * stereoFrame->rightFrame()->translation() ) ) );
+
+                }
             }
 
             cv::viz::WTrajectory leftTrajectory( leftTrajectoryPoints );

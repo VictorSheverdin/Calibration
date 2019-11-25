@@ -15,17 +15,28 @@ FeatureProcessor::FeatureProcessor()
 
 void FeatureProcessor::initialize()
 {
-    m_detector = cv::FastFeatureDetector::create( 30 );
+    m_detector = cv::GFTTDetector::create( 2000 );
+
     m_descriptor = cv::xfeatures2d::DAISY::create();
+
 }
 
 void FeatureProcessor::extract( const CvImage &image, std::vector< cv::KeyPoint > *keypoints, cv::Mat *descriptors )
 {    
     if ( keypoints ) {
-        m_detector->detect( image, *keypoints );
 
+        auto uImage = image.getUMat( cv::ACCESS_READ );
+
+        auto timeStart = std::chrono::system_clock::now();
+        m_detector->detect( uImage, *keypoints );
+        std::cout << "=============================" << std::endl;
+        std::cout << "Feature detection time: " << std::chrono::duration_cast< std::chrono::microseconds >( std::chrono::system_clock::now() - timeStart ).count() << std::endl;
+
+        timeStart = std::chrono::system_clock::now();
         if ( descriptors )
             m_descriptor->compute( image, *keypoints, *descriptors );
+        std::cout << "Feature matching time: " << std::chrono::duration_cast< std::chrono::microseconds >( std::chrono::system_clock::now() - timeStart ).count() << std::endl;
+        std::cout << "=============================" << std::endl;
 
     }
 
@@ -49,7 +60,7 @@ void FeatureMatcher::initialize()
     m_matcher = cv::FlannBasedMatcher::create();
 }
 
-void FeatureMatcher::match( std::vector< cv::KeyPoint > &queryKeypoints, const cv::Mat &queryDescriptors,
+cv::Mat FeatureMatcher::match( std::vector< cv::KeyPoint > &queryKeypoints, const cv::Mat &queryDescriptors,
                               std::vector< cv::KeyPoint > &trainKeypoints, const cv::Mat &trainDescriptors, std::vector< cv::DMatch > *matches )
 {
     if (matches ) {
@@ -66,7 +77,7 @@ void FeatureMatcher::match( std::vector< cv::KeyPoint > &queryKeypoints, const c
             }
 
         }
-
+/*
         std::vector< cv::DMatch > revMatches;
         m_matcher->match( trainDescriptors, queryDescriptors, revMatches );
 
@@ -83,9 +94,14 @@ void FeatureMatcher::match( std::vector< cv::KeyPoint > &queryKeypoints, const c
 
             }
 
-        }
+        }*/
+
+        std::vector< cv::DMatch > &symMatches = fwdMatches;
 
         std::vector< cv::Point2f > points1, points2;
+
+        points1.reserve( queryKeypoints.size() );
+        points2.reserve( queryKeypoints.size() );
 
         for ( auto &i : symMatches ) {
             points1.push_back( queryKeypoints[ i.queryIdx ].pt );
@@ -94,13 +110,17 @@ void FeatureMatcher::match( std::vector< cv::KeyPoint > &queryKeypoints, const c
 
         std::vector< uchar > inliers( points1.size(), 0 );
 
-        cv::findFundamentalMat( points1, points2, inliers, cv::FM_LMEDS );
+        auto fMat = cv::findFundamentalMat( points1, points2, inliers, cv::FM_RANSAC );
 
         for ( size_t i = 0; i < inliers.size(); ++i )
             if ( inliers[ i ] )
                 matches->push_back( symMatches[ i ] );
 
+        return fMat;
+
     }
+
+    return cv::Mat();
 
 }
 

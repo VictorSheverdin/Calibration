@@ -4,7 +4,7 @@
 
 namespace slam {
 
-class FeatureFrame;
+class ProcessedFrame;
 class WorldPoint;
 
 class PointBase
@@ -20,21 +20,23 @@ public:
     using WorldPointPtr = std::shared_ptr< WorldPoint >;
 
     virtual const cv::Point2f &point() const = 0;
+    virtual const cv::Scalar &color() const = 0;
 
     void setStereoPoint( const AdjacentPtr point );
+    void clearStereoPoint();
     AdjacentPtr stereoPoint() const;
 
     void setNextPoint( const AdjacentPtr point );
+    void clearNextPoint();
     AdjacentPtr nextPoint() const;
 
     void setPrevPoint( const AdjacentPtr point );
+    void clearPrevPoint();
     AdjacentPtr prevPoint() const;
 
     void setWorldPoint( const WorldPointPtr point );
+    void clearWorldPoint();
     WorldPointPtr worldPoint() const;
-
-    void setColor( const cv::Scalar &value );
-    const cv::Scalar &color() const;
 
      void drawTrack( CvImage *target ) const;
 
@@ -43,7 +45,6 @@ protected:
     using WorldPointPtrImpl = std::weak_ptr< WorldPoint >;
 
     MonoPoint();
-    MonoPoint( const cv::Scalar &color );
 
     AdjacentPtrImpl m_stereoPoint;
     AdjacentPtrImpl m_nextPoint;
@@ -51,22 +52,21 @@ protected:
 
     WorldPointPtrImpl m_worldPoint;
 
-    cv::Scalar m_color;
-
 };
 
-class FeaturePoint : public MonoPoint
+class ProcessedPoint : public MonoPoint
 {
 public:
-    using FramePtr = std::weak_ptr< FeatureFrame >;
-    using PointPtr = std::shared_ptr< FeaturePoint >;
+    using FramePtr = std::weak_ptr< ProcessedFrame >;
+    using PointPtr = std::shared_ptr< ProcessedPoint >;
 
     virtual const cv::Point2f &point() const override;
+    virtual const cv::Scalar &color() const override;
 
-    static PointPtr create( const FramePtr parentFrame, const size_t keyPointIndex, const cv::Scalar &color );
+    static PointPtr create( const FramePtr parentFrame, const size_t keyPointIndex );
 
 protected:
-    FeaturePoint( const FramePtr parentFrame, const size_t keyPointIndex, const cv::Scalar &color );
+    ProcessedPoint( const FramePtr parentFrame, const size_t keyPointIndex );
 
     const FramePtr m_parentFrame; // Parent frame
     size_t m_keyPointIndex; // Index of keypoint in parent frame

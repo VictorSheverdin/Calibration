@@ -27,6 +27,7 @@ public:
     CvImage keyPointsImage() const;
     CvImage stereoPointsImage() const;
     CvImage tracksImage() const;
+    CvImage opticalFlowImage() const;
 
     bool track( const std::string &leftFile, const std::string &rightFile );
     bool track( const CvImage &leftImage, const CvImage &rightImage );

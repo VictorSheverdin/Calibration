@@ -18,14 +18,14 @@ namespace slam {
     {
     }
 
-    MonoPoint::MonoPoint( const cv::Scalar &color )
-    {
-        setColor( color );
-    }
-
     void MonoPoint::setStereoPoint( const AdjacentPtr point )
     {
         m_stereoPoint = point;
+    }
+
+    void MonoPoint::clearStereoPoint()
+    {
+        m_stereoPoint.reset();
     }
 
     MonoPoint::AdjacentPtr MonoPoint::stereoPoint() const
@@ -38,6 +38,11 @@ namespace slam {
         m_nextPoint = point;
     }
 
+    void MonoPoint::clearNextPoint()
+    {
+        m_nextPoint.reset();
+    }
+
     MonoPoint::AdjacentPtr MonoPoint::nextPoint() const
     {
         return m_nextPoint.lock();
@@ -46,6 +51,11 @@ namespace slam {
     void MonoPoint::setPrevPoint( const AdjacentPtr point )
     {
         m_prevPoint = point;
+    }
+
+    void MonoPoint::clearPrevPoint()
+    {
+        m_prevPoint.reset();
     }
 
     MonoPoint::AdjacentPtr MonoPoint::prevPoint() const
@@ -58,19 +68,14 @@ namespace slam {
         m_worldPoint = point;
     }
 
+    void MonoPoint::clearWorldPoint()
+    {
+        m_worldPoint.reset();
+    }
+
     MonoPoint::WorldPointPtr MonoPoint::worldPoint() const
     {
         return m_worldPoint.lock();
-    }
-
-    void MonoPoint::setColor( const cv::Scalar &value )
-    {
-        m_color = value;
-    }
-
-    const cv::Scalar &MonoPoint::color() const
-    {
-        return m_color;
     }
 
     void MonoPoint::drawTrack( CvImage *target ) const
@@ -86,20 +91,25 @@ namespace slam {
 
     }
 
-    // FeaturePoint
-    FeaturePoint::FeaturePoint( const FramePtr parentFrame , const size_t keyPointIndex , const cv::Scalar &color)
-        : MonoPoint( color ), m_parentFrame( parentFrame ), m_keyPointIndex( keyPointIndex )
+    // ProcessedPoint
+    ProcessedPoint::ProcessedPoint( const FramePtr parentFrame , const size_t keyPointIndex )
+        : m_parentFrame( parentFrame ), m_keyPointIndex( keyPointIndex )
     {
     }
 
-    FeaturePoint::PointPtr FeaturePoint::create( const FramePtr parentFrame, const size_t keyPointIndex, const cv::Scalar &color )
+    ProcessedPoint::PointPtr ProcessedPoint::create( const FramePtr parentFrame, const size_t keyPointIndex )
     {
-        return PointPtr( new FeaturePoint( parentFrame, keyPointIndex, color ) );
+        return PointPtr( new ProcessedPoint( parentFrame, keyPointIndex ) );
     }
 
-    const cv::Point2f &FeaturePoint::point() const
+    const cv::Point2f &ProcessedPoint::point() const
     {
         return m_parentFrame.lock()->m_keyPoints[ m_keyPointIndex ].pt;
+    }
+
+    const cv::Scalar &ProcessedPoint::color() const
+    {
+        return m_parentFrame.lock()->m_colors[ m_keyPointIndex ];
     }
 
     // DoublePoint

@@ -21,18 +21,12 @@ class MonoFrame : public FrameBase
 public:
     using PointPtr = std::shared_ptr< MonoPoint >;
 
-    std::vector< PointPtr > &framePoints();
-    const std::vector< PointPtr > &framePoints() const;
+    virtual std::vector< PointPtr > framePoints() const = 0;
 
     std::vector< cv::Point2f > points() const;
+
     std::vector< StereoPoint > stereoPoints() const;
-
     std::vector< AdjacentPoint > adjacentPoints() const;
-
-    PointPtr framePoint( const size_t index ) const;
-
-    size_t pointsCount() const;
-    size_t tracksCount() const;
 
     bool drawPoints( CvImage *target ) const;
 
@@ -51,8 +45,6 @@ public:
 protected:
     MonoFrame();
 
-    std::vector< PointPtr > m_points;
-
     cv::Mat m_cameraMatrix;
 
     cv::Mat m_r;
@@ -65,31 +57,41 @@ private:
 
 };
 
-class FeatureFrame : public MonoFrame, public std::enable_shared_from_this< FeatureFrame >
+class ProcessedFrame : public MonoFrame, public std::enable_shared_from_this< ProcessedFrame >
 {
     friend class StereoFrame;
     friend class AdjacentFrame;
-    friend class FeaturePoint;
+    friend class ProcessedPoint;
 
 public:
-    using FramePtr = std::shared_ptr< FeatureFrame >;
-    using PointPtr = std::shared_ptr< FeaturePoint >;
+    using FramePtr = std::shared_ptr< ProcessedFrame >;
+    using FeaturePointPtr = std::shared_ptr< ProcessedPoint >;
+
+    virtual std::vector< PointPtr > framePoints() const override;
+
+    FeaturePointPtr &framePoint( const size_t index );
+    const FeaturePointPtr &framePoint( const size_t index ) const;
 
     static FramePtr create();
 
     void load( const CvImage &image );
 
+    const std::vector< cv::KeyPoint > &keyPoints() const;
+
     bool drawKeyPoints( CvImage *target ) const;
 
 protected:
-    FeatureFrame();
+    ProcessedFrame();
 
     std::vector< cv::KeyPoint > m_keyPoints;
+    std::vector< cv::Scalar > m_colors;
     cv::Mat m_descriptors;
+
+    std::map< size_t, FeaturePointPtr > m_points;
 
     static FeatureProcessor m_processor;
 
-    PointPtr createFramePoint( const size_t keyPointIndex, const cv::Scalar &color );
+    FeaturePointPtr createFramePoint( const size_t keyPointIndex, const cv::Scalar &color );
 
 };
 
@@ -121,7 +123,7 @@ protected:
 class StereoFrame : public DoubleFrameBase
 {
 public:
-    using FeatureFramePtr = std::shared_ptr< FeatureFrame >;
+    using FeatureFramePtr = std::shared_ptr< ProcessedFrame >;
     using FramePtr = std::shared_ptr< StereoFrame >;
 
     static FramePtr create();
@@ -156,7 +158,7 @@ public:
 
     const WorldPtr parentWorld() const;
 
-    void triangulatePoints();
+    bool triangulatePoints();
 
 protected:
     using WorldPtrImpl = std::weak_ptr< World >;
@@ -170,12 +172,13 @@ protected:
 class AdjacentFrame : public DoubleFrameBase
 {
 public:
-    using FeatureFramePtr = std::shared_ptr< FeatureFrame >;
+    using FeatureFramePtr = std::shared_ptr< ProcessedFrame >;
     using FramePtr = std::shared_ptr< AdjacentFrame >;
 
     static FramePtr create();
 
-    void load( const CvImage &image1, const CvImage &image2 );
+    void load( const CvImage &prevImage, const CvImage &nextImage );
+    void calcOpticalFlow( const CvImage &prevImage, const CvImage &nextImage );
     void matchFrames();
 
     bool track();
@@ -186,9 +189,12 @@ public:
     std::vector< AdjacentPoint > adjacentPoints() const;
 
     CvImage drawTrack( const CvImage &image ) const;
+    CvImage drawOpticalFrow( const CvImage &image ) const;
 
 protected:    
     AdjacentFrame();
+
+    std::map< size_t, cv::Point2f > m_opticalFlow;
 
     static const int m_minLenght = 5;
     static const int m_minPnpPoints = 50;
@@ -205,7 +211,7 @@ public:
 
     const WorldPtr parentWorld() const;
 
-    void triangulatePoints();
+    bool triangulatePoints();
 
 protected:
     using WorldPtrImpl = std::weak_ptr< World >;

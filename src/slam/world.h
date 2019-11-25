@@ -16,7 +16,7 @@ class World : public std::enable_shared_from_this< World >
 public:
     using WorldPtr = std::shared_ptr< World >;
 
-    using FramePtr = std::shared_ptr< StereoFrame >;
+    using FramePtr = std::shared_ptr< FrameBase >;
     using WorldPointPtr = std::shared_ptr< WorldPoint >;
 
     static WorldPtr create( const StereoCalibrationDataShort &calibration );
@@ -38,6 +38,7 @@ public:
     CvImage keyPointsImage() const;
     CvImage stereoPointsImage() const;
     CvImage tracksImage() const;
+    CvImage opticalFlowImage() const;
 
     void addWorldPoint( const WorldPointPtr &point );
 
@@ -52,6 +53,7 @@ protected:
     CvImage m_keyPointsImage;
     CvImage m_stereoPointsImage;
     CvImage m_tracksImage;
+    CvImage m_opticalFlowImage;
 
     static const int m_minPnpPoints = 10;
 

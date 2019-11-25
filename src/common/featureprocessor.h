@@ -46,7 +46,7 @@ class FeatureMatcher : public FeatureMatcherBase
 public:
     FeatureMatcher();
 
-    void match( std::vector<cv::KeyPoint> &queryKeypoints, const cv::Mat &queryDescriptors,
+    cv::Mat match( std::vector<cv::KeyPoint> &queryKeypoints, const cv::Mat &queryDescriptors,
                 std::vector<cv::KeyPoint> &trainKeypoints, const cv::Mat &trainDescriptors,
                 std::vector< cv::DMatch > *matches );
 
@@ -59,3 +59,4 @@ private:
     void initialize();
 
 };
+

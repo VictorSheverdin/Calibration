@@ -103,8 +103,9 @@ bool drawFeaturePoints( CvImage *target, const std::vector< cv::KeyPoint > &keyp
     if ( !target )
         return false;
 
-    for ( auto &i : keypoints )
-        drawFeaturePoint( target, i.pt, radius, color );
+#pragma omp parallel for
+    for ( size_t i = 0; i < keypoints.size(); ++i )
+        drawFeaturePoint( target, keypoints[ i ].pt, radius, color );
 
     return true;
 
