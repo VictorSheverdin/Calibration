@@ -54,20 +54,16 @@ int main( int argc, char** argv )
     cv::resizeWindow( "Track", 800, 600 );
     cv::moveWindow( "Track", 80, 900 );
 
-    cv::namedWindow( "OpticalFlow", cv::WINDOW_KEEPRATIO );
-    cv::resizeWindow( "OpticalFlow", 800, 600 );
-    cv::moveWindow( "OpticalFlow", 880, 900 );
-
     cv::viz::Viz3d vizWindow( "Viz3d" );
     vizWindow.showWidget( "coordSystemWidget", cv::viz::WCoordinateSystem() );
-    vizWindow.setWindowPosition( cv::Point( 400, 450 ) );
+    vizWindow.setWindowPosition( cv::Point( 880, 900 ) );
     vizWindow.setWindowSize( cv::Size( 800, 600 ) );
 
     slam::System slamSystem( path + "calibration.yaml" );
 
     std::thread calcThread( [ & ] {
 
-        for ( auto i = 24000; i < 30000; i++ ) {
+        for ( auto i = 10000; i < 30000; i++ ) {
             std::string leftFile = leftPath + std::to_string( i ) + "_left.jpg";
             std::string rightFile = rightPath + std::to_string( i ) + "_right.jpg";
 
@@ -84,14 +80,12 @@ int main( int argc, char** argv )
         CvImage keyPointsImage;
         CvImage stereoPointsImage;
         CvImage tracksImage;
-        CvImage flowImage;
         std::list< std::shared_ptr< slam::WorldPoint > > worldPoints;
         std::list< std::shared_ptr< slam::FrameBase > > frames;
 
         keyPointsImage = slamSystem.keyPointsImage();
         stereoPointsImage = slamSystem.stereoPointsImage();
         tracksImage = slamSystem.tracksImage();
-        flowImage = slamSystem.opticalFlowImage();
         worldPoints = slamSystem.worldPoints();
         frames = slamSystem.frames();
 
@@ -104,9 +98,6 @@ int main( int argc, char** argv )
         if ( !tracksImage.empty() )
             cv::imshow( "Track", tracksImage );
 
-        if ( !flowImage.empty() )
-            cv::imshow( "OpticalFlow", flowImage );
-
         std::vector< cv::Vec3d > points;
         std::vector< cv::Vec4b > colors;
 
@@ -117,6 +108,7 @@ int main( int argc, char** argv )
         }
 
         if ( !points.empty() ) {
+
             cv::viz::WCloud cloud( points, colors );
             cloud.setRenderingProperty( cv::viz::POINT_SIZE, 2 );
             vizWindow.showWidget( "Point cloud", cloud );

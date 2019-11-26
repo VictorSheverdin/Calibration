@@ -38,7 +38,6 @@ public:
     CvImage keyPointsImage() const;
     CvImage stereoPointsImage() const;
     CvImage tracksImage() const;
-    CvImage opticalFlowImage() const;
 
     void addWorldPoint( const WorldPointPtr &point );
 
@@ -53,7 +52,6 @@ protected:
     CvImage m_keyPointsImage;
     CvImage m_stereoPointsImage;
     CvImage m_tracksImage;
-    CvImage m_opticalFlowImage;
 
     static const int m_minPnpPoints = 10;
 

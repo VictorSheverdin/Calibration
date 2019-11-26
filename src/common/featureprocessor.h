@@ -8,23 +8,49 @@
 class FeatureProcessorBase
 {
 public:
-    FeatureProcessorBase();
     virtual ~FeatureProcessorBase() = default;
 
 protected:
-private:
+    FeatureProcessorBase() = default;
+
+    cv::Ptr< cv::Feature2D > m_processor;
+
 };
 
-class FeatureProcessor : public FeatureProcessorBase
+class KeyPointProcessor : public FeatureProcessorBase
 {
 public:
-    FeatureProcessor();
-
-    void extract(const CvImage &image, std::vector< cv::KeyPoint > *keypoints, cv::Mat *descriptors );
+    void extractKeypoints( const CvImage &image, std::vector< cv::KeyPoint > *keypoints );
 
 protected:
-    cv::Ptr<cv::Feature2D> m_detector;
-    cv::Ptr<cv::Feature2D> m_descriptor;
+    KeyPointProcessor() = default;
+
+};
+
+class DescriptorProcessor : public FeatureProcessorBase
+{
+public:
+    void extractDescriptors( const CvImage &image, std::vector< cv::KeyPoint > &keypoints, cv::Mat *descriptors );
+
+protected:
+    DescriptorProcessor() = default;
+
+};
+
+class GFTTProcessor : public KeyPointProcessor
+{
+public:
+    GFTTProcessor();
+
+private:
+    void initialize();
+
+};
+
+class DaisyProcessor : public DescriptorProcessor
+{
+public:
+    DaisyProcessor();
 
 private:
     void initialize();
@@ -60,3 +86,17 @@ private:
 
 };
 
+class OpticalMatcher : public FeatureMatcherBase
+{
+public:
+    OpticalMatcher();
+
+    cv::Mat match( const CvImage &sourceImage, std::vector<cv::KeyPoint> &sourceKeypoints,
+                const CvImage &targetImage, std::vector<cv::KeyPoint> &targetKeypoints,
+                std::vector< cv::DMatch > *matches );
+
+protected:
+    static const int m_minPointsCount = 10;
+    static const double m_maxDistance;
+
+};

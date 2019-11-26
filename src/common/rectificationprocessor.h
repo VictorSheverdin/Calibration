@@ -42,7 +42,11 @@ public:
     bool rectifyLeft( const CvImage &image, CvImage *result );
     bool rectifyRight( const CvImage &image , CvImage *result );
 
+    bool cropLeft( const CvImage &image, CvImage *result );
+    bool cropRight( const CvImage &image , CvImage *result );
+
     bool rectify( const CvImage &leftImage, const CvImage &rightImage, CvImage *leftResult, CvImage *rightResult );
+    bool crop( const CvImage &leftImage, const CvImage &rightImage, CvImage *leftResult, CvImage *rightResult );
 
     bool isValid() const;
 
@@ -50,7 +54,5 @@ public:
 
 protected:
     StereoCalibrationDataShort m_calibrationData;
-
-    static cv::Rect cropRect( const cv::Rect &leftCropRect, const cv::Rect &rightCropRect );
 
 };

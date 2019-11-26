@@ -33,6 +33,9 @@ public:
     void setCameraMatrix( const cv::Mat &value );
     const cv::Mat &cameraMatrix() const;
 
+    void multiplicateCameraMatrix( const double value );
+    void movePrincipalPoint( const cv::Vec2f &value );
+
     void setRotation( const cv::Mat &value );
     const cv::Mat &rotation() const;
 
@@ -75,13 +78,20 @@ public:
     static FramePtr create();
 
     void load( const CvImage &image );
+    void extractKeyPoints();
+    void extractDescriptors();
+
+    const CvImage image() const;
+    void clearImage();
 
     const std::vector< cv::KeyPoint > &keyPoints() const;
 
-    bool drawKeyPoints( CvImage *target ) const;
+    CvImage drawKeyPoints() const;
 
 protected:
     ProcessedFrame();
+
+    CvImage m_image;
 
     std::vector< cv::KeyPoint > m_keyPoints;
     std::vector< cv::Scalar > m_colors;
@@ -89,7 +99,8 @@ protected:
 
     std::map< size_t, FeaturePointPtr > m_points;
 
-    static FeatureProcessor m_processor;
+    static GFTTProcessor m_keypointProcessor;
+    static DaisyProcessor m_descriptorProcessor;
 
     FeaturePointPtr createFramePoint( const size_t keyPointIndex, const cv::Scalar &color );
 
@@ -105,6 +116,10 @@ public:
     using MonoFramePtr = std::shared_ptr< MonoFrame >;
     using MonoPointPtr = std::shared_ptr< MonoPoint >;
 
+    void load( const CvImage &image1, const CvImage &image2 );
+    void extractKeyPoints();
+    void extractDescriptors();
+
     void setFrames( const MonoFramePtr frame1, const MonoFramePtr frame2 );
 
     MonoFramePtr frame1() const;
@@ -117,6 +132,7 @@ protected:
     MonoFramePtr m_frame2;
 
     static FeatureMatcher m_matcher;
+    static OpticalMatcher m_opticalMatcher;
 
 };
 
@@ -128,21 +144,24 @@ public:
 
     static FramePtr create();
 
-    void load( const CvImage &leftImage, const CvImage &rightImage );
-    void matchFrames();
+    cv::Mat matchOptical();
+    cv::Mat matchFeatures();
 
     MonoFramePtr leftFrame() const;
     MonoFramePtr rightFrame() const;
 
+    void clearImages();
+
     std::vector< StereoPoint > stereoPoints() const;
 
-    CvImage drawKeyPoints( const CvImage &leftImage, const CvImage &rightImage ) const;
-    CvImage drawStereoPoints( const CvImage &leftImage, const CvImage &rightImage ) const;
+    CvImage drawKeyPoints() const;
+    CvImage drawStereoPoints() const;
 
 protected:
     StereoFrame();
 
-    static const int m_minLenght = 5;
+    static const int m_minLenght = 3;
+    static const float m_maxYParallax;
 
 };
 
@@ -177,9 +196,8 @@ public:
 
     static FramePtr create();
 
-    void load( const CvImage &prevImage, const CvImage &nextImage );
-    void calcOpticalFlow( const CvImage &prevImage, const CvImage &nextImage );
-    void matchFrames();
+    cv::Mat matchOptical();
+    cv::Mat matchFeatures();
 
     bool track();
 
@@ -189,12 +207,9 @@ public:
     std::vector< AdjacentPoint > adjacentPoints() const;
 
     CvImage drawTrack( const CvImage &image ) const;
-    CvImage drawOpticalFrow( const CvImage &image ) const;
 
 protected:    
     AdjacentFrame();
-
-    std::map< size_t, cv::Point2f > m_opticalFlow;
 
     static const int m_minLenght = 5;
     static const int m_minPnpPoints = 50;

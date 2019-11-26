@@ -428,6 +428,18 @@ double StereoCalibrationDataBase::distance() const
     return sqrt( xTrans * xTrans + yTrans * yTrans + zTrans * zTrans );
 }
 
+cv::Rect StereoCalibrationDataBase::cropRect()
+{
+    cv::Rect ret;
+
+    ret.x = std::max( m_leftROI.x, m_rightROI.x );
+    ret.y = std::max( m_leftROI.y, m_rightROI.y );
+    ret.width = std::min( m_leftROI.x + m_leftROI.width, m_rightROI.x + m_rightROI.width ) - ret.x;
+    ret.height = std::min( m_leftROI.y + m_leftROI.height, m_rightROI.y + m_rightROI.height ) - ret.y;
+
+    return ret;
+}
+
 // StereoCalibrationDataShort
 StereoCalibrationDataShort::StereoCalibrationDataShort()
 {

@@ -97,6 +97,25 @@ const cv::Mat &MonoFrame::cameraMatrix() const
     return m_cameraMatrix;
 }
 
+void MonoFrame::multiplicateCameraMatrix( const double value )
+{
+    m_projectionMatrix = cv::Mat();
+
+    m_cameraMatrix.at< double >( 0, 0 ) *= value;
+    m_cameraMatrix.at< double >( 1, 1 ) *= value;
+    m_cameraMatrix.at< double >( 0, 2 ) *= value;
+    m_cameraMatrix.at< double >( 1, 2 ) *= value;
+
+}
+
+void MonoFrame::movePrincipalPoint( const cv::Vec2f &value )
+{
+    m_projectionMatrix = cv::Mat();
+
+    m_cameraMatrix.at< double >( 0, 2 ) += value[ 0 ];
+    m_cameraMatrix.at< double >( 1, 2 ) += value[ 1 ];
+}
+
 void MonoFrame::setRotation( const cv::Mat &value )
 {
     m_projectionMatrix = cv::Mat();
@@ -152,7 +171,8 @@ const cv::Mat &MonoFrame::projectionMatrix() const
 }
 
 // ProcessedFrame
-FeatureProcessor ProcessedFrame::m_processor;
+DaisyProcessor ProcessedFrame::m_descriptorProcessor;
+GFTTProcessor ProcessedFrame::m_keypointProcessor;
 
 ProcessedFrame::ProcessedFrame()
 {
@@ -189,14 +209,35 @@ ProcessedFrame::FramePtr ProcessedFrame::create()
 
 void ProcessedFrame::load( const CvImage &image )
 {
-    m_processor.extract( image, &m_keyPoints, &m_descriptors );
+    m_image = image;
+}
+
+void ProcessedFrame::extractKeyPoints()
+{
+    m_keypointProcessor.extractKeypoints( m_image, &m_keyPoints );
 
     m_colors.clear();
 
     for ( size_t i = 0; i < m_keyPoints.size(); ++i ) {
-        m_colors.push_back( image.at< cv::Vec3b >( m_keyPoints[ i ].pt ) );
+        m_colors.push_back( m_image.at< cv::Vec3b >( m_keyPoints[ i ].pt ) );
+
     }
 
+}
+
+void ProcessedFrame::extractDescriptors()
+{
+    m_descriptorProcessor.extractDescriptors( m_image, m_keyPoints, &m_descriptors );
+}
+
+const CvImage ProcessedFrame::image() const
+{
+    return m_image;
+}
+
+void ProcessedFrame::clearImage()
+{
+    m_image = CvImage();
 }
 
 const std::vector< cv::KeyPoint > &ProcessedFrame::keyPoints() const
@@ -204,9 +245,17 @@ const std::vector< cv::KeyPoint > &ProcessedFrame::keyPoints() const
     return m_keyPoints;
 }
 
-bool ProcessedFrame::drawKeyPoints( CvImage *target ) const
+CvImage ProcessedFrame::drawKeyPoints() const
 {
-    return drawFeaturePoints( target, m_keyPoints );
+    if ( !m_image.empty() ) {
+        CvImage ret;
+        m_image.copyTo( ret );
+        drawFeaturePoints( &ret, m_keyPoints );
+
+        return ret;
+    }
+
+    return CvImage();
 }
 
 ProcessedFrame::FeaturePointPtr ProcessedFrame::createFramePoint( const size_t keyPointIndex , const cv::Scalar &color )
@@ -224,9 +273,48 @@ ProcessedFrame::FeaturePointPtr ProcessedFrame::createFramePoint( const size_t k
 
 // DoubleFrameBase
 FeatureMatcher DoubleFrameBase::m_matcher;
+OpticalMatcher DoubleFrameBase::m_opticalMatcher;
 
 DoubleFrameBase::DoubleFrameBase()
 {
+}
+
+void DoubleFrameBase::load( const CvImage &image1, const CvImage &image2 )
+{
+    auto leftFrame = ProcessedFrame::create();
+    leftFrame->load( image1 );
+
+    auto rightFrame = ProcessedFrame::create();
+    rightFrame->load( image2 );
+
+    setFrames( leftFrame, rightFrame );
+
+}
+
+void DoubleFrameBase::extractKeyPoints()
+{
+    auto frame1 = std::dynamic_pointer_cast< ProcessedFrame >( this->frame1() );
+    auto frame2 = std::dynamic_pointer_cast< ProcessedFrame >( this->frame2() );
+
+    if ( frame1 )
+        frame1->extractKeyPoints();
+
+    if ( frame2 )
+        frame2->extractKeyPoints();
+
+}
+
+void DoubleFrameBase::extractDescriptors()
+{
+    auto frame1 = std::dynamic_pointer_cast< ProcessedFrame >( this->frame1() );
+    auto frame2 = std::dynamic_pointer_cast< ProcessedFrame >( this->frame2() );
+
+    if ( frame1 )
+        frame1->extractDescriptors();
+
+    if ( frame2 )
+        frame2->extractDescriptors();
+
 }
 
 void DoubleFrameBase::setFrames( const MonoFramePtr frame1, const MonoFramePtr frame2 )
@@ -246,6 +334,8 @@ DoubleFrameBase::MonoFramePtr DoubleFrameBase::frame2() const
 }
 
 // StereoFrame
+const float StereoFrame::m_maxYParallax = 2.0;
+
 StereoFrame::StereoFrame()
 {
 }
@@ -255,19 +345,7 @@ StereoFrame::FramePtr StereoFrame::create()
     return FramePtr( new StereoFrame() );
 }
 
-void StereoFrame::load( const CvImage &leftImage, const CvImage &rightImage )
-{
-    auto leftFrame = ProcessedFrame::create();
-    leftFrame->load( leftImage );
-
-    auto rightFrame = ProcessedFrame::create();
-    rightFrame->load( rightImage );
-
-    setFrames( leftFrame, rightFrame );
-
-}
-
-void StereoFrame::matchFrames()
+cv::Mat StereoFrame::matchOptical()
 {
     auto leftFrame = std::dynamic_pointer_cast< ProcessedFrame >( this->leftFrame() );
     auto rightFrame = std::dynamic_pointer_cast< ProcessedFrame >( this->rightFrame() );
@@ -276,7 +354,47 @@ void StereoFrame::matchFrames()
 
         std::vector< cv::DMatch > matches;
 
-        m_matcher.match( leftFrame->m_keyPoints, leftFrame->m_descriptors, rightFrame->m_keyPoints, rightFrame->m_descriptors, &matches );
+        auto fmat = m_opticalMatcher.match( leftFrame->image(), leftFrame->m_keyPoints, rightFrame->image(), rightFrame->m_keyPoints, &matches );
+
+        for ( auto &i : matches ) {
+            auto leftFramePoint = leftFrame->framePoint( i.queryIdx );
+            auto rightFramePoint = rightFrame->framePoint( i.trainIdx );
+
+            auto leftPoint = leftFramePoint->point();
+            auto rightPoint = rightFramePoint->point();
+
+            if ( leftPoint.x > rightPoint.x && fabs( leftPoint.y - rightPoint.y ) < m_maxYParallax ) {
+
+                double lenght = cv::norm( leftPoint - rightPoint );
+
+                if ( lenght > m_minLenght ) {
+                    leftFramePoint->setStereoPoint( rightFramePoint );
+                    rightFramePoint->setStereoPoint( leftFramePoint );
+
+                }
+
+            }
+
+        }
+
+        return fmat;
+
+    }
+
+    return cv::Mat();
+
+}
+
+cv::Mat StereoFrame::matchFeatures()
+{
+    auto leftFrame = std::dynamic_pointer_cast< ProcessedFrame >( this->leftFrame() );
+    auto rightFrame = std::dynamic_pointer_cast< ProcessedFrame >( this->rightFrame() );
+
+    if ( leftFrame && rightFrame ) {
+
+        std::vector< cv::DMatch > matches;
+
+        auto fmat = m_matcher.match( leftFrame->m_keyPoints, leftFrame->m_descriptors, rightFrame->m_keyPoints, rightFrame->m_descriptors, &matches );
 
         for ( auto &i : matches ) {
             auto leftPoint = leftFrame->framePoint( i.queryIdx );
@@ -292,7 +410,11 @@ void StereoFrame::matchFrames()
 
         }
 
+        return fmat;
+
     }
+
+    return cv::Mat();
 
 }
 
@@ -306,6 +428,18 @@ DoubleFrameBase::MonoFramePtr StereoFrame::rightFrame() const
     return frame2();
 }
 
+void StereoFrame::clearImages()
+{
+    auto leftFeatureFrame = std::dynamic_pointer_cast< ProcessedFrame >( this->leftFrame() );
+    auto rightFeatureFrame = std::dynamic_pointer_cast< ProcessedFrame >( this->rightFrame() );
+
+    if ( leftFeatureFrame )
+        leftFeatureFrame->clearImage();
+
+    if ( rightFeatureFrame )
+        rightFeatureFrame->clearImage();
+}
+
 std::vector< StereoPoint > StereoFrame::stereoPoints() const
 {
     auto leftFrame = this->leftFrame();
@@ -317,59 +451,67 @@ std::vector< StereoPoint > StereoFrame::stereoPoints() const
 
 }
 
-CvImage StereoFrame::drawKeyPoints( const CvImage &leftImage, const CvImage &rightImage ) const
+CvImage StereoFrame::drawKeyPoints() const
 {
-    CvImage left;
-    leftImage.copyTo( left );
-    CvImage right;
-    rightImage.copyTo( right );
+    CvImage leftImage;
+    CvImage rightImage;
 
-    auto leftFeatureFrame = dynamic_cast< ProcessedFrame * >( leftFrame().get() );
-    auto rightFeatureFrame = dynamic_cast< ProcessedFrame * >( rightFrame().get() );
+    auto leftFeatureFrame = std::dynamic_pointer_cast< ProcessedFrame >( this->leftFrame() );
+    auto rightFeatureFrame = std::dynamic_pointer_cast< ProcessedFrame >( this->rightFrame() );
 
     if ( leftFeatureFrame )
-        leftFeatureFrame->drawKeyPoints( &left );
+        leftImage = leftFeatureFrame->drawKeyPoints();
 
     if ( rightFeatureFrame )
-        rightFeatureFrame->drawKeyPoints( &right );
+        rightImage = rightFeatureFrame->drawKeyPoints();
 
-    return stackImages( left, right );
+    return stackImages( leftImage, rightImage );
 }
 
-CvImage StereoFrame::drawStereoPoints( const CvImage &leftImage, const CvImage &rightImage ) const
+CvImage StereoFrame::drawStereoPoints() const
 {
     CvImage ret;
 
-    ret = stackImages( leftImage, rightImage );
+    auto leftFeatureFrame = std::dynamic_pointer_cast< ProcessedFrame >( this->leftFrame() );
+    auto rightFeatureFrame = std::dynamic_pointer_cast< ProcessedFrame >( this->rightFrame() );
 
-    if ( leftFrame() ) {
+    if ( leftFeatureFrame && rightFeatureFrame ) {
 
-        auto framePoints = leftFrame()->framePoints();
+        auto leftImage = leftFeatureFrame->image();
+        auto rightImage = rightFeatureFrame->image();
+
+        if ( !leftImage.empty() && !rightImage.empty() ) {
+
+            ret = stackImages( leftImage, rightImage );
+
+            auto framePoints = leftFrame()->framePoints();
 
 #pragma omp parallel for
-        for ( size_t i = 0; i < framePoints.size(); ++i ) {
+            for ( size_t i = 0; i < framePoints.size(); ++i ) {
 
-            if ( framePoints[ i ] && framePoints[ i ]->stereoPoint() ) {
+                if ( framePoints[ i ] && framePoints[ i ]->stereoPoint() ) {
 
-                auto rightPoint = framePoints[ i ]->stereoPoint()->point();
-                rightPoint.x += leftImage.width();
+                    auto rightPoint = framePoints[ i ]->stereoPoint()->point();
+                    rightPoint.x += leftImage.width();
 
-                drawLine( &ret, framePoints[ i ]->point(), rightPoint );
+                    drawLine( &ret, framePoints[ i ]->point(), rightPoint );
+
+                }
 
             }
 
-        }
-
 #pragma omp parallel for
-        for ( size_t i = 0; i < framePoints.size(); ++i ) {
+            for ( size_t i = 0; i < framePoints.size(); ++i ) {
 
-            if ( framePoints[ i ] && framePoints[ i ]->stereoPoint() ) {
+                if ( framePoints[ i ] && framePoints[ i ]->stereoPoint() ) {
 
-                auto rightPoint = framePoints[ i ]->stereoPoint()->point();
-                rightPoint.x += leftImage.width();
+                    auto rightPoint = framePoints[ i ]->stereoPoint()->point();
+                    rightPoint.x += leftImage.width();
 
-                drawFeaturePoint( &ret, framePoints[ i ]->point() );
-                drawFeaturePoint( &ret, rightPoint );
+                    drawFeaturePoint( &ret, framePoints[ i ]->point() );
+                    drawFeaturePoint( &ret, rightPoint );
+
+                }
 
             }
 
@@ -475,100 +617,20 @@ AdjacentFrame::FramePtr AdjacentFrame::create()
     return FramePtr( new AdjacentFrame() );
 }
 
-void AdjacentFrame::load( const CvImage &prevImage, const CvImage &nextImage )
+cv::Mat AdjacentFrame::matchOptical()
 {
-    auto prevFrame = ProcessedFrame::create();
-    prevFrame->load( prevImage );
-
-    auto nextFrame = ProcessedFrame::create();
-    nextFrame->load( nextImage );
-
-    setFrames( prevFrame, nextFrame );
-
-}
-
-void AdjacentFrame::calcOpticalFlow( const CvImage &prevImage, const CvImage &nextImage )
-{
-    std::vector< cv::Point2f > prevPoints;
-    std::vector< cv::Point2f > nextPoints;
-
     auto prevFrame = std::dynamic_pointer_cast< ProcessedFrame >( this->previousFrame() );
+    auto nextFrame = std::dynamic_pointer_cast< ProcessedFrame >( this->nextFrame() );
 
-    if ( prevFrame ) {
-        auto keyPoints = prevFrame->keyPoints();
-
-        prevPoints.reserve( keyPoints.size() );
-
-        for ( auto &i : keyPoints )
-            prevPoints.push_back( i.pt );
-
-        std::vector< unsigned char > statuses;
-        std::vector< float > err;
-
-        cv::calcOpticalFlowPyrLK( prevImage, nextImage, prevPoints, nextPoints, statuses, err );
-
-        float minErr;
-        float maxErr;
-
-        if ( !err.empty() ) {
-
-            minErr = err.front();
-            maxErr = err.front();
-
-            for ( size_t i = 1; i < err.size(); ++i ) {
-                minErr = std::min( minErr, err[ i ] );
-                maxErr = std::max( maxErr, err[ i ] );
-            }
-
-        }
-
-        auto errDiff = maxErr - minErr;
-
-        std::vector< cv::Point2f > points1;
-        std::vector< cv::Point2f > points2;
-
-        points1.reserve( statuses.size() );
-        points2.reserve( statuses.size() );
-
-        std::map< size_t, size_t > indexMap;
-
-        for ( size_t i = 0; i < statuses.size(); ++i )
-            if ( statuses[i] && err[i] < minErr + errDiff / 3.f ) {
-                indexMap[ points1.size() ] = i;
-                points1.push_back( keyPoints[ i ].pt );
-                points2.push_back( nextPoints[ i ] );
-            }
-
-
-
-        std::vector< uchar > inliers( points1.size(), 0 );
-
-        auto fMat = cv::findFundamentalMat( points1, points2, inliers, cv::FM_RANSAC );
-
-        for ( size_t i = 0; i < inliers.size(); ++i )
-            if ( inliers[i] )
-                m_opticalFlow[ indexMap.at( i ) ] = points2[ i ];
-
-        std::cout << "!" << m_opticalFlow.size() << std::endl;
-
-    }
-
-}
-
-void AdjacentFrame::matchFrames()
-{
-    auto frame1 = std::dynamic_pointer_cast< ProcessedFrame >( this->previousFrame() );
-    auto frame2 = std::dynamic_pointer_cast< ProcessedFrame >( this->nextFrame() );
-
-    if ( frame1 && frame2 ) {
+    if ( prevFrame && nextFrame ) {
 
         std::vector< cv::DMatch > matches;
 
-        m_matcher.match( frame1->m_keyPoints, frame1->m_descriptors, frame2->m_keyPoints, frame2->m_descriptors, &matches );
+        auto fmat = m_opticalMatcher.match( prevFrame->image(), prevFrame->m_keyPoints, nextFrame->image(), nextFrame->m_keyPoints, &matches );
 
         for ( auto &i : matches ) {
-            auto point1 = frame1->framePoint( i.queryIdx );
-            auto point2 = frame2->framePoint( i.trainIdx );
+            auto point1 = prevFrame->framePoint( i.queryIdx );
+            auto point2 = nextFrame->framePoint( i.trainIdx );
 
             double lenght = cv::norm( point1->point() - point2->point() );
 
@@ -586,7 +648,50 @@ void AdjacentFrame::matchFrames()
 
         }
 
+        return fmat;
+
     }
+
+    return cv::Mat();
+
+}
+
+cv::Mat AdjacentFrame::matchFeatures()
+{
+    auto prevFrame = std::dynamic_pointer_cast< ProcessedFrame >( this->previousFrame() );
+    auto nextFrame = std::dynamic_pointer_cast< ProcessedFrame >( this->nextFrame() );
+
+    if ( prevFrame && nextFrame ) {
+
+        std::vector< cv::DMatch > matches;
+
+        auto fmat = m_matcher.match( prevFrame->m_keyPoints, prevFrame->m_descriptors, nextFrame->m_keyPoints, nextFrame->m_descriptors, &matches );
+
+        for ( auto &i : matches ) {
+            auto point1 = prevFrame->framePoint( i.queryIdx );
+            auto point2 = nextFrame->framePoint( i.trainIdx );
+
+            double lenght = cv::norm( point1->point() - point2->point() );
+
+            if ( lenght >= m_minLenght ) {
+
+                point1->setNextPoint( point2 );
+                point2->setPrevPoint( point1 );
+
+                auto worlPoint = point1->worldPoint();
+
+                if ( worlPoint )
+                    point2->setWorldPoint( worlPoint );
+
+            }
+
+        }
+
+        return fmat;
+
+    }
+
+    return cv::Mat();
 
 }
 
@@ -693,29 +798,6 @@ CvImage AdjacentFrame::drawTrack( const CvImage &image ) const
 
     return ret;
 
-}
-
-CvImage AdjacentFrame::drawOpticalFrow( const CvImage &image ) const
-{
-    CvImage ret;
-
-    image.copyTo( ret );
-
-    auto prevFrame = std::dynamic_pointer_cast< ProcessedFrame >( previousFrame() );
-
-    if ( prevFrame ) {
-
-        auto keyPoints = prevFrame->keyPoints();
-
-        for ( auto &i : m_opticalFlow )
-            drawLine( &ret, keyPoints.at( i.first ).pt, i.second, cv::Scalar( 15, 230, 230, 255 ) );
-
-        for ( auto &i : m_opticalFlow )
-            drawFeaturePoint( &ret, i.second );
-
-    }
-
-    return ret;
 }
 
 // WorldAdjacentFrame

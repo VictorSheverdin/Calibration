@@ -96,11 +96,6 @@ CvImage World::tracksImage() const
     return m_tracksImage;
 }
 
-CvImage World::opticalFlowImage() const
-{
-    return m_opticalFlowImage;
-}
-
 void World::addWorldPoint( const WorldPointPtr &point )
 {
     m_worldPoints.push_back( point );
@@ -113,15 +108,13 @@ bool World::track( const CvImage &leftImage, const CvImage &rightImage )
     auto timeStart = std::chrono::system_clock::now();
 
     stereoFrame->load( leftImage, rightImage );
-    stereoFrame->matchFrames();
+    stereoFrame->extractKeyPoints();
+    stereoFrame->matchOptical();
 
-    m_keyPointsImage = stereoFrame->drawKeyPoints( leftImage, rightImage );
-    m_stereoPointsImage = stereoFrame->drawStereoPoints( leftImage, rightImage );
+    m_keyPointsImage = stereoFrame->drawKeyPoints();
+    m_stereoPointsImage = stereoFrame->drawStereoPoints();
 
     static cv::Mat baselineVector;
-
-    static CvImage prevLeftImage;
-    static CvImage prevRightImage;
 
     if ( !m_frames.empty() ) {
 
@@ -132,42 +125,41 @@ bool World::track( const CvImage &leftImage, const CvImage &rightImage )
 
         consecutiveLeftFrame->setFrames( std::dynamic_pointer_cast< ProcessedFrame >( previousStereoFrame->leftFrame() ),
                                                 std::dynamic_pointer_cast< ProcessedFrame >( stereoFrame->leftFrame() ) );
-        consecutiveLeftFrame->matchFrames();
+
+        consecutiveLeftFrame->matchOptical();
 
         consecutiveRightFrame->setFrames( std::dynamic_pointer_cast< ProcessedFrame >( previousStereoFrame->rightFrame() ),
                                                 std::dynamic_pointer_cast< ProcessedFrame >( stereoFrame->rightFrame() ) );
-        consecutiveRightFrame->matchFrames();
+
+        consecutiveRightFrame->matchOptical();
 
         std::cout << "Matching time: " << std::chrono::duration_cast< std::chrono::microseconds >( std::chrono::system_clock::now() - timeStart ).count() << std::endl;
 
         timeStart = std::chrono::system_clock::now();
 
-        consecutiveLeftFrame->calcOpticalFlow( prevLeftImage, leftImage );
-        consecutiveRightFrame->calcOpticalFlow( prevRightImage, rightImage );
 
         if ( consecutiveLeftFrame->previousFrame()->adjacentPoints().size() > consecutiveRightFrame->previousFrame()->adjacentPoints().size() ) {
             consecutiveLeftFrame->track();
-            consecutiveRightFrame->track();
             consecutiveRightFrame->nextFrame()->setCameraMatrix( consecutiveRightFrame->previousFrame()->cameraMatrix() );
             consecutiveRightFrame->nextFrame()->setRotation( consecutiveLeftFrame->nextFrame()->rotation() );
             consecutiveRightFrame->nextFrame()->setTranslation( consecutiveLeftFrame->nextFrame()->translation() + baselineVector );
 
-            //consecutiveRightFrame->triangulatePoints();
+            // consecutiveRightFrame->triangulatePoints();
 
         }
         else {
-            consecutiveLeftFrame->track();
             consecutiveRightFrame->track();
             consecutiveLeftFrame->nextFrame()->setCameraMatrix( consecutiveLeftFrame->previousFrame()->cameraMatrix() );
             consecutiveLeftFrame->nextFrame()->setRotation( consecutiveRightFrame->nextFrame()->rotation() );
             consecutiveLeftFrame->nextFrame()->setTranslation( consecutiveRightFrame->nextFrame()->translation() - baselineVector );
 
-            //consecutiveLeftFrame->triangulatePoints();
+            // consecutiveLeftFrame->triangulatePoints();
+
         }
 
         stereoFrame->triangulatePoints();
 
-        std::cout << "Triangulation time: " << std::chrono::duration_cast< std::chrono::microseconds >( std::chrono::system_clock::now() - timeStart ).count() << std::endl;
+        std::cout << "Calculation time: " << std::chrono::duration_cast< std::chrono::microseconds >( std::chrono::system_clock::now() - timeStart ).count() << std::endl;
         std::cout << std::endl;
 
         auto leftTrack = consecutiveLeftFrame->drawTrack( leftImage );
@@ -175,15 +167,10 @@ bool World::track( const CvImage &leftImage, const CvImage &rightImage )
 
         m_tracksImage = stackImages( leftTrack, rightTrack );
 
-        auto leftFlow = consecutiveLeftFrame->drawOpticalFrow( leftImage );
-        auto rightFlow = consecutiveRightFrame->drawOpticalFrow( rightImage );
-
-        m_opticalFlowImage = stackImages( leftFlow, rightFlow );
+        previousStereoFrame->clearImages();
 
         m_frames.push_back( stereoFrame );
 
-        prevLeftImage = leftImage;
-        prevRightImage = rightImage;
     }
     else {
         auto leftFrame = stereoFrame->leftFrame();
@@ -192,24 +179,17 @@ bool World::track( const CvImage &leftImage, const CvImage &rightImage )
         leftFrame->setProjectionMatrix( m_calibration.leftProjectionMatrix() );
         rightFrame->setProjectionMatrix( m_calibration.rightProjectionMatrix() );
 
-        auto cameraMatrix = leftFrame->cameraMatrix();
+        auto cropRect = m_calibration.cropRect();
+        auto principal = cv::Vec2f( cropRect.x, cropRect.y );
 
-        cameraMatrix.at< double >( 0, 0 ) = cameraMatrix.at< double >( 0, 0 ) / 2.0;
-        cameraMatrix.at< double >( 1, 1 ) = cameraMatrix.at< double >( 1, 1 ) / 2.0;
-        cameraMatrix.at< double >( 0, 2 ) = cameraMatrix.at< double >( 0, 2 ) / 2.0;
-        cameraMatrix.at< double >( 1, 2 ) = cameraMatrix.at< double >( 1, 2 ) / 2.0;
-
-        leftFrame->setCameraMatrix( cameraMatrix );
-        rightFrame->setCameraMatrix( cameraMatrix );
+        leftFrame->movePrincipalPoint( principal );
+        rightFrame->movePrincipalPoint( principal );
 
         baselineVector = rightFrame->translation();
 
         stereoFrame->triangulatePoints();
 
         m_frames.push_back( stereoFrame );
-
-        prevLeftImage = leftImage;
-        prevRightImage = rightImage;
 
     }
 

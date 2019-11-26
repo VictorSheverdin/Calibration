@@ -66,11 +66,6 @@ CvImage System::tracksImage() const
     return m_world->tracksImage();
 }
 
-CvImage System::opticalFlowImage() const
-{
-    return m_world->opticalFlowImage();
-}
-
 bool System::track( const std::string &leftFile, const std::string &rightFile )
 {
     CvImage leftImage( leftFile );
@@ -85,13 +80,19 @@ bool System::track( const CvImage &leftImage, const CvImage &rightImage )
     CvImage leftRectifiedImage;
     CvImage rightRectifiedImage;
 
+    CvImage leftCroppedImage;
+    CvImage rightCroppedImage;
+
     if ( !m_rectificationProcessor.rectify( leftImage, rightImage, &leftRectifiedImage, &rightRectifiedImage ) )
         return false;
 
-    cv::resize( leftRectifiedImage, leftRectifiedImage, cv::Size(), 0.5, 0.5 );
-    cv::resize( rightRectifiedImage, rightRectifiedImage, cv::Size(), 0.5, 0.5 );
+    if ( !m_rectificationProcessor.crop( leftRectifiedImage, rightRectifiedImage, &leftCroppedImage, &rightCroppedImage ) )
+        return false;
 
-    return m_world->track( leftRectifiedImage, rightRectifiedImage );
+    //cv::resize( leftRectifiedImage, leftRectifiedImage, cv::Size(), 0.5, 0.5 );
+    //cv::resize( rightRectifiedImage, rightRectifiedImage, cv::Size(), 0.5, 0.5 );
+
+    return m_world->track( leftCroppedImage, rightCroppedImage );
 
 }
 
