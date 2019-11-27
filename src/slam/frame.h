@@ -4,7 +4,7 @@
 #include <opencv2/opencv.hpp>
 
 #include "framepoint.h"
-#include "worldpoint.h"
+#include "mappoint.h"
 #include "src/common/featureprocessor.h"
 
 namespace slam {
@@ -160,31 +160,31 @@ public:
 protected:
     StereoFrame();
 
-    static const int m_minLenght = 3;
+    static const int m_minLenght = 1;
     static const float m_maxYParallax;
 
 };
 
-class World;
+class Map;
 
-class WorldStereoFrame : public StereoFrame
+class MapStereoFrame : public StereoFrame
 {
 public:
-    using WorldPtr = std::shared_ptr< World >;
-    using FramePtr = std::shared_ptr< WorldStereoFrame >;
+    using MapPtr = std::shared_ptr< Map >;
+    using FramePtr = std::shared_ptr< MapStereoFrame >;
 
-    static FramePtr create( const WorldPtr &parentWorld );
+    static FramePtr create( const MapPtr &parentMap );
 
-    const WorldPtr parentWorld() const;
+    const MapPtr parentMap() const;
 
     bool triangulatePoints();
 
 protected:
-    using WorldPtrImpl = std::weak_ptr< World >;
+    using MapPtrImpl = std::weak_ptr< Map >;
 
-    WorldStereoFrame( const WorldPtr &parentWorld );
+    MapStereoFrame( const MapPtr &parentMap );
 
-    WorldPtrImpl m_parentWorld;
+    MapPtrImpl m_parentMap;
 
 };
 
@@ -206,34 +206,34 @@ public:
 
     std::vector< AdjacentPoint > adjacentPoints() const;
 
-    CvImage drawTrack( const CvImage &image ) const;
+    CvImage drawTrack() const;
 
 protected:    
     AdjacentFrame();
 
-    static const int m_minLenght = 5;
+    static const int m_minLenght = 1;
     static const int m_minPnpPoints = 50;
 
 };
 
-class WorldAdjacentFrame : public AdjacentFrame
+class MapAdjacentFrame : public AdjacentFrame
 {
 public:
-    using WorldPtr = std::shared_ptr< World >;
-    using FramePtr = std::shared_ptr< WorldAdjacentFrame >;
+    using MapPtr = std::shared_ptr< Map >;
+    using FramePtr = std::shared_ptr< MapAdjacentFrame >;
 
-    static FramePtr create( const WorldPtr &parentWorld );
+    static FramePtr create( const MapPtr &parentMap );
 
-    const WorldPtr parentWorld() const;
+    const MapPtr parentMap() const;
 
     bool triangulatePoints();
 
 protected:
-    using WorldPtrImpl = std::weak_ptr< World >;
+    using MapPtrImpl = std::weak_ptr< Map >;
 
-    WorldAdjacentFrame( const WorldPtr &parentWorld );
+    MapAdjacentFrame( const MapPtr &parentMap );
 
-    WorldPtrImpl m_parentWorld;
+    MapPtrImpl m_parentMap;
 
 };
 

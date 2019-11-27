@@ -1,63 +1,45 @@
 #pragma once
 
-#include <list>
-#include <memory>
-
 #include "src/common/calibrationdatabase.h"
+#include "src/common/rectificationprocessor.h"
+
+#include "map.h"
 
 namespace slam {
 
-class FrameBase;
-class StereoFrame;
-class WorldPoint;
-
-class World : public std::enable_shared_from_this< World >
+class World
 {
 public:
-    using WorldPtr = std::shared_ptr< World >;
+    using FramePtr = Map::FramePtr;
 
-    using FramePtr = std::shared_ptr< FrameBase >;
-    using WorldPointPtr = std::shared_ptr< WorldPoint >;
+    using MapPtr = Map::MapPtr;
+    using MapPointPtr = Map::MapPointPtr;
 
-    static WorldPtr create( const StereoCalibrationDataShort &calibration );
-
-    WorldPointPtr createWorldPoint();
-    WorldPointPtr createWorldPoint( const cv::Vec3f &pt );
-    WorldPointPtr createWorldPoint( const cv::Vec3f &pt, const cv::Scalar &color );
-
-    bool track( const CvImage &leftImage, const CvImage &rightImage );
+    World( const StereoCalibrationDataShort &calibration );
+    World( const std::string &calibrationFile );
 
     std::list< FramePtr > &frames();
     const std::list< FramePtr > &frames() const;
 
-    std::list< WorldPointPtr > &worldPoints();
-    const std::list< WorldPointPtr > &worldPoints() const;
-
-    const FramePtr &backFrame() const;
+    std::list< MapPointPtr > &mapPoints();
+    const std::list< MapPointPtr > &mapPoints() const;
 
     CvImage keyPointsImage() const;
     CvImage stereoPointsImage() const;
     CvImage tracksImage() const;
 
-    void addWorldPoint( const WorldPointPtr &point );
+    bool track( const std::string &leftFile, const std::string &rightFile );
+    bool track( const CvImage &leftImage, const CvImage &rightImage );
 
 protected:
-    World( const StereoCalibrationDataShort &calibration );
+    StereoRectificationProcessor m_rectificationProcessor;
+    MonoUndistortionProcessor m_leftUndistortionProcessor;
+    MonoUndistortionProcessor m_rightUndistortionProcessor;
 
-    std::list< FramePtr > m_frames;
-    std::list< WorldPointPtr > m_worldPoints;
-
-    StereoCalibrationDataShort m_calibration;
-
-    CvImage m_keyPointsImage;
-    CvImage m_stereoPointsImage;
-    CvImage m_tracksImage;
-
-    static const int m_minPnpPoints = 10;
+    MapPtr m_map;
 
 private:
     void initialize();
-
 };
 
 }

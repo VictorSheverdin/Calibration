@@ -1,7 +1,7 @@
 #include "src/common/precompiled.h"
 
-#include "system.h"
-#include "worldpoint.h"
+#include "world.h"
+#include "mappoint.h"
 #include "frame.h"
 
 #include <opencv2/viz.hpp>
@@ -10,7 +10,7 @@
 
 #include <opencv2/core/ocl.hpp>
 
-int main( int argc, char** argv )
+int main( int, char** )
 {
     cv::ocl::Context context;
     std::vector< cv::ocl::PlatformInfo > platforms;
@@ -59,15 +59,16 @@ int main( int argc, char** argv )
     vizWindow.setWindowPosition( cv::Point( 880, 900 ) );
     vizWindow.setWindowSize( cv::Size( 800, 600 ) );
 
-    slam::System slamSystem( path + "calibration.yaml" );
+    slam::World system( path + "calibration.yaml" );
 
     std::thread calcThread( [ & ] {
 
-        for ( auto i = 10000; i < 30000; i++ ) {
+        for ( auto i = 8170; i < 30000; i++ ) {
+            std::cout << "Processing frame " << i << std::endl;
             std::string leftFile = leftPath + std::to_string( i ) + "_left.jpg";
             std::string rightFile = rightPath + std::to_string( i ) + "_right.jpg";
 
-            slamSystem.track( leftFile, rightFile );
+            system.track( leftFile, rightFile );
 
         }
 
@@ -80,14 +81,14 @@ int main( int argc, char** argv )
         CvImage keyPointsImage;
         CvImage stereoPointsImage;
         CvImage tracksImage;
-        std::list< std::shared_ptr< slam::WorldPoint > > worldPoints;
+        std::list< std::shared_ptr< slam::MapPoint > > mapPoints;
         std::list< std::shared_ptr< slam::FrameBase > > frames;
 
-        keyPointsImage = slamSystem.keyPointsImage();
-        stereoPointsImage = slamSystem.stereoPointsImage();
-        tracksImage = slamSystem.tracksImage();
-        worldPoints = slamSystem.worldPoints();
-        frames = slamSystem.frames();
+        keyPointsImage = system.keyPointsImage();
+        stereoPointsImage = system.stereoPointsImage();
+        tracksImage = system.tracksImage();
+        mapPoints = system.mapPoints();
+        frames = system.frames();
 
         if ( !keyPointsImage.empty() )
             cv::imshow( "KeyPoints", keyPointsImage );
@@ -101,7 +102,7 @@ int main( int argc, char** argv )
         std::vector< cv::Vec3d > points;
         std::vector< cv::Vec4b > colors;
 
-        for ( auto &i : worldPoints ) {
+        for ( auto &i : mapPoints ) {
             auto point = i->point();
             points.push_back( point );
             colors.push_back( i->color() );
@@ -139,7 +140,7 @@ int main( int argc, char** argv )
 
         }
 
-        vizWindow.spinOnce();
+        vizWindow.spinOnce( 100 );
 
         cv::waitKey( 1 );
 

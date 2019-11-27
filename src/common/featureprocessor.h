@@ -96,7 +96,18 @@ public:
                 std::vector< cv::DMatch > *matches );
 
 protected:
+    cv::Ptr< cv::cuda::SparsePyrLKOpticalFlow > m_opticalProcessor;
+
+    cv::cuda::GpuMat m_gpuSourceImage;
+    cv::cuda::GpuMat m_gpuTargetImage;
+    cv::cuda::GpuMat m_gpuSourcePoints;
+    cv::cuda::GpuMat m_gpuOpticalPoints;
+    cv::cuda::GpuMat m_gpuStatuses;
+    cv::cuda::GpuMat m_gpuErr;
+
     static const int m_minPointsCount = 10;
     static const double m_maxDistance;
 
+private:
+    void initialize();
 };

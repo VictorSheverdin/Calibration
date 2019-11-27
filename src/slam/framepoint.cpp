@@ -63,19 +63,19 @@ namespace slam {
         return m_prevPoint.lock();
     }
 
-    void MonoPoint::setWorldPoint( const WorldPointPtr point )
+    void MonoPoint::setMapPoint( const MapPointPtr point )
     {
-        m_worldPoint = point;
+        m_mapPoint = point;
     }
 
-    void MonoPoint::clearWorldPoint()
+    void MonoPoint::clearMapPoint()
     {
-        m_worldPoint.reset();
+        m_mapPoint.reset();
     }
 
-    MonoPoint::WorldPointPtr MonoPoint::worldPoint() const
+    MonoPoint::MapPointPtr MonoPoint::mapPoint() const
     {
-        return m_worldPoint.lock();
+        return m_mapPoint.lock();
     }
 
     void MonoPoint::drawTrack( CvImage *target ) const

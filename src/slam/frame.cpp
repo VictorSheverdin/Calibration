@@ -5,7 +5,7 @@
 #include "src/common/defs.h"
 #include "src/common/functions.h"
 
-#include "world.h"
+#include "map.h"
 
 #include <opencv2/sfm.hpp>
 
@@ -523,27 +523,27 @@ CvImage StereoFrame::drawStereoPoints() const
 
 }
 
-// WorldStereoFrame
-WorldStereoFrame::WorldStereoFrame( const WorldPtr &parentWorld )
-    : m_parentWorld( parentWorld )
+// MapStereoFrame
+MapStereoFrame::MapStereoFrame( const MapPtr &parentMap )
+    : m_parentMap( parentMap )
 {
 }
 
-WorldStereoFrame::FramePtr WorldStereoFrame::create( const WorldPtr &parentWorld )
+MapStereoFrame::FramePtr MapStereoFrame::create( const MapPtr &parentMap )
 {
-    return FramePtr( new WorldStereoFrame( parentWorld ) );
+    return FramePtr( new MapStereoFrame( parentMap ) );
 }
 
-const WorldStereoFrame::WorldPtr WorldStereoFrame::parentWorld() const
+const MapStereoFrame::MapPtr MapStereoFrame::parentMap() const
 {
-    return m_parentWorld.lock();
+    return m_parentMap.lock();
 }
 
-bool WorldStereoFrame::triangulatePoints()
+bool MapStereoFrame::triangulatePoints()
 {
-    auto world = parentWorld();
+    auto map = parentMap();
 
-    if ( world ) {
+    if ( map ) {
 
         cv::Mat homogeneousPoints3d;
 
@@ -576,19 +576,19 @@ bool WorldStereoFrame::triangulatePoints()
 
                 if ( std::abs( w ) > FLOAT_EPS ) {
 
-                    if ( !stereoPoints[i].leftFramePoint()->worldPoint() && !stereoPoints[i].rightFramePoint()->worldPoint() ) {
-                        auto worldPoint = world->createWorldPoint( pt, stereoPoints[i].leftFramePoint()->color() );
-                        stereoPoints[i].leftFramePoint()->setWorldPoint( worldPoint );
-                        stereoPoints[i].rightFramePoint()->setWorldPoint( worldPoint );
+                    if ( !stereoPoints[i].leftFramePoint()->mapPoint() && !stereoPoints[i].rightFramePoint()->mapPoint() ) {
+                        auto mapPoint = map->createMapPoint( pt, stereoPoints[i].leftFramePoint()->color() );
+                        stereoPoints[i].leftFramePoint()->setMapPoint( mapPoint );
+                        stereoPoints[i].rightFramePoint()->setMapPoint( mapPoint );
 
                     }
                     else {
-                        if ( !stereoPoints[i].leftFramePoint()->worldPoint() )
-                            stereoPoints[i].leftFramePoint()->setWorldPoint( stereoPoints[i].rightFramePoint()->worldPoint() );
-                        else if ( !stereoPoints[i].rightFramePoint()->worldPoint() )
-                            stereoPoints[i].rightFramePoint()->setWorldPoint( stereoPoints[i].leftFramePoint()->worldPoint() );
+                        if ( !stereoPoints[i].leftFramePoint()->mapPoint() )
+                            stereoPoints[i].leftFramePoint()->setMapPoint( stereoPoints[i].rightFramePoint()->mapPoint() );
+                        else if ( !stereoPoints[i].rightFramePoint()->mapPoint() )
+                            stereoPoints[i].rightFramePoint()->setMapPoint( stereoPoints[i].leftFramePoint()->mapPoint() );
 
-                        stereoPoints[i].leftFramePoint()->worldPoint()->setPoint( pt );
+                        stereoPoints[i].leftFramePoint()->mapPoint()->setPoint( pt );
 
                     }
 
@@ -639,10 +639,10 @@ cv::Mat AdjacentFrame::matchOptical()
                 point1->setNextPoint( point2 );
                 point2->setPrevPoint( point1 );
 
-                auto worlPoint = point1->worldPoint();
+                auto worlPoint = point1->mapPoint();
 
                 if ( worlPoint )
-                    point2->setWorldPoint( worlPoint );
+                    point2->setMapPoint( worlPoint );
 
             }
 
@@ -678,10 +678,10 @@ cv::Mat AdjacentFrame::matchFeatures()
                 point1->setNextPoint( point2 );
                 point2->setPrevPoint( point1 );
 
-                auto worlPoint = point1->worldPoint();
+                auto worlPoint = point1->mapPoint();
 
                 if ( worlPoint )
-                    point2->setWorldPoint( worlPoint );
+                    point2->setMapPoint( worlPoint );
 
             }
 
@@ -708,8 +708,8 @@ bool AdjacentFrame::track()
         auto framePoints = nextFrame->framePoints();
 
         for ( auto &i : framePoints ) {
-            if ( i && i->worldPoint() ) {
-                points3d.push_back( i->worldPoint()->point() );
+            if ( i && i->mapPoint() ) {
+                points3d.push_back( i->mapPoint()->point() );
                 points2d.push_back( i->point() );
 
             }
@@ -774,15 +774,17 @@ std::vector< AdjacentPoint > AdjacentFrame::adjacentPoints() const
 
 }
 
-CvImage AdjacentFrame::drawTrack( const CvImage &image ) const
+CvImage AdjacentFrame::drawTrack() const
 {
     CvImage ret;
 
-    image.copyTo( ret );
+    auto nextFrame = std::dynamic_pointer_cast< ProcessedFrame >( this->nextFrame() );
 
-    if ( nextFrame() ) {
+    if ( nextFrame ) {
 
-        auto framePoints = nextFrame()->framePoints();
+        nextFrame->image().copyTo( ret );
+
+        auto framePoints = nextFrame->framePoints();
 
 #pragma omp parallel for
         for ( size_t i = 0; i < framePoints.size(); ++i )
@@ -800,27 +802,27 @@ CvImage AdjacentFrame::drawTrack( const CvImage &image ) const
 
 }
 
-// WorldAdjacentFrame
-WorldAdjacentFrame::WorldAdjacentFrame( const WorldPtr &parentWorld )
-    : m_parentWorld( parentWorld )
+// MapAdjacentFrame
+MapAdjacentFrame::MapAdjacentFrame( const MapPtr &parentMap )
+    : m_parentMap( parentMap )
 {
 }
 
-WorldAdjacentFrame::FramePtr WorldAdjacentFrame::create( const WorldPtr &parentWorld )
+MapAdjacentFrame::FramePtr MapAdjacentFrame::create( const MapPtr &parentMap )
 {
-    return FramePtr( new WorldAdjacentFrame( parentWorld ) );
+    return FramePtr( new MapAdjacentFrame( parentMap ) );
 }
 
-const WorldAdjacentFrame::WorldPtr WorldAdjacentFrame::parentWorld() const
+const MapAdjacentFrame::MapPtr MapAdjacentFrame::parentMap() const
 {
-    return m_parentWorld.lock();
+    return m_parentMap.lock();
 }
 
-bool WorldAdjacentFrame::triangulatePoints()
+bool MapAdjacentFrame::triangulatePoints()
 {
-    auto world = parentWorld();
+    auto map = parentMap();
 
-    if ( world ) {
+    if ( map ) {
 
         cv::Mat points3d;
 
@@ -852,19 +854,19 @@ bool WorldAdjacentFrame::triangulatePoints()
                 auto pt = cv::Vec3f( x, y, z );
 
                 if ( std::abs( w ) > FLOAT_EPS ) {
-                    if ( !adjacentPoints[i].previousFramePoint()->worldPoint() && !adjacentPoints[i].nextFramePoint()->worldPoint() ) {
-                        auto worldPoint = world->createWorldPoint( pt, adjacentPoints[i].previousFramePoint()->color() );
-                        adjacentPoints[i].previousFramePoint()->setWorldPoint( worldPoint );
-                        adjacentPoints[i].nextFramePoint()->setWorldPoint( worldPoint );
+                    if ( !adjacentPoints[i].previousFramePoint()->mapPoint() && !adjacentPoints[i].nextFramePoint()->mapPoint() ) {
+                        auto mapPoint = map->createMapPoint( pt, adjacentPoints[i].previousFramePoint()->color() );
+                        adjacentPoints[i].previousFramePoint()->setMapPoint( mapPoint );
+                        adjacentPoints[i].nextFramePoint()->setMapPoint( mapPoint );
 
                     }
                     else {
-                        if ( !adjacentPoints[i].previousFramePoint()->worldPoint() )
-                            adjacentPoints[i].previousFramePoint()->setWorldPoint( adjacentPoints[i].nextFramePoint()->worldPoint() );
-                        else if ( !adjacentPoints[i].nextFramePoint()->worldPoint() )
-                            adjacentPoints[i].nextFramePoint()->setWorldPoint( adjacentPoints[i].previousFramePoint()->worldPoint() );
+                        if ( !adjacentPoints[i].previousFramePoint()->mapPoint() )
+                            adjacentPoints[i].previousFramePoint()->setMapPoint( adjacentPoints[i].nextFramePoint()->mapPoint() );
+                        else if ( !adjacentPoints[i].nextFramePoint()->mapPoint() )
+                            adjacentPoints[i].nextFramePoint()->setMapPoint( adjacentPoints[i].previousFramePoint()->mapPoint() );
 
-                        adjacentPoints[i].previousFramePoint()->worldPoint()->setPoint( pt );
+                        adjacentPoints[i].previousFramePoint()->mapPoint()->setPoint( pt );
 
                     }
 

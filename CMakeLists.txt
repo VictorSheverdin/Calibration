@@ -219,20 +219,20 @@ add_executable( visoodometry ${COMMON_SOURCES} ${VISO_SOURCES}
 #)
 
 add_executable( slam ${COMMON_SOURCES} ${RES_SOURCES}
-    src/slam/world.h
-    src/slam/worldpoint.h
+    src/slam/map.h
+    src/slam/mappoint.h
     src/slam/frame.h
     src/slam/keyframe.h
     src/slam/framepoint.h
     src/slam/optimizer.h
-    src/slam/system.h
-    src/slam/world.cpp
-    src/slam/worldpoint.cpp
+    src/slam/world.h
+    src/slam/map.cpp
+    src/slam/mappoint.cpp
     src/slam/frame.cpp
     src/slam/keyframe.cpp
     src/slam/framepoint.cpp
     src/slam/optimizer.cpp
-    src/slam/system.cpp
+    src/slam/world.cpp
     src/slam/main.cpp
 )
 

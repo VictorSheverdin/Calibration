@@ -5,7 +5,7 @@
 namespace slam {
 
 class ProcessedFrame;
-class WorldPoint;
+class MapPoint;
 
 class PointBase
 {
@@ -17,7 +17,7 @@ class MonoPoint : public PointBase
 {
 public:
     using AdjacentPtr = std::shared_ptr< MonoPoint >;
-    using WorldPointPtr = std::shared_ptr< WorldPoint >;
+    using MapPointPtr = std::shared_ptr< MapPoint >;
 
     virtual const cv::Point2f &point() const = 0;
     virtual const cv::Scalar &color() const = 0;
@@ -34,15 +34,15 @@ public:
     void clearPrevPoint();
     AdjacentPtr prevPoint() const;
 
-    void setWorldPoint( const WorldPointPtr point );
-    void clearWorldPoint();
-    WorldPointPtr worldPoint() const;
+    void setMapPoint( const MapPointPtr point );
+    void clearMapPoint();
+    MapPointPtr mapPoint() const;
 
      void drawTrack( CvImage *target ) const;
 
 protected:
     using AdjacentPtrImpl = std::weak_ptr< MonoPoint >;
-    using WorldPointPtrImpl = std::weak_ptr< WorldPoint >;
+    using MapPointPtrImpl = std::weak_ptr< MapPoint >;
 
     MonoPoint();
 
@@ -50,7 +50,7 @@ protected:
     AdjacentPtrImpl m_nextPoint;
     AdjacentPtrImpl m_prevPoint;
 
-    WorldPointPtrImpl m_worldPoint;
+    MapPointPtrImpl m_mapPoint;
 
 };
 

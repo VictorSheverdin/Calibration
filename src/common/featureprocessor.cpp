@@ -2,21 +2,18 @@
 
 #include "featureprocessor.h"
 
+#include <opencv2/cudaoptflow.hpp>
+
 // KeyPointProcessor
 void KeyPointProcessor::extractKeypoints( const CvImage &image, std::vector< cv::KeyPoint > *keypoints )
 {
     if ( keypoints ) {
 
         // cv::Mat gray;
-
         // cv::cvtColor( image, gray, cv::COLOR_RGB2GRAY );
 
         auto uImage = image.getUMat( cv::ACCESS_READ );
-
-        auto timeStart = std::chrono::system_clock::now();
-        m_processor->detect( image, *keypoints );
-        std::cout << "Feature detection time: " << std::chrono::duration_cast< std::chrono::microseconds >( std::chrono::system_clock::now() - timeStart ).count() << std::endl;
-        std::cout << "=============================" << std::endl;
+        m_processor->detect( uImage, *keypoints );
 
     }
 
@@ -26,11 +23,7 @@ void KeyPointProcessor::extractKeypoints( const CvImage &image, std::vector< cv:
 void DescriptorProcessor::extractDescriptors( const CvImage &image, std::vector< cv::KeyPoint > &keypoints, cv::Mat *descriptors )
 {
     if ( descriptors ) {
-
-        auto timeStart = std::chrono::system_clock::now();
         m_processor->compute( image, keypoints, *descriptors );
-        std::cout << "Feature matching time: " << std::chrono::duration_cast< std::chrono::microseconds >( std::chrono::system_clock::now() - timeStart ).count() << std::endl;
-        std::cout << "=============================" << std::endl;
 
     }
 
@@ -56,7 +49,6 @@ DaisyProcessor::DaisyProcessor()
 void DaisyProcessor::initialize()
 {
     m_processor = cv::xfeatures2d::DAISY::create();
-
 }
 
 // FeatureMatcherBase
@@ -80,7 +72,7 @@ void FeatureMatcher::initialize()
 cv::Mat FeatureMatcher::match( std::vector< cv::KeyPoint > &queryKeypoints, const cv::Mat &queryDescriptors,
                               std::vector< cv::KeyPoint > &trainKeypoints, const cv::Mat &trainDescriptors, std::vector< cv::DMatch > *matches )
 {
-    if (matches ) {
+    if ( matches ) {
         matches->clear();
 
         std::vector< std::vector< cv::DMatch > > knnMatches;
@@ -142,10 +134,37 @@ cv::Mat FeatureMatcher::match( std::vector< cv::KeyPoint > &queryKeypoints, cons
 }
 
 // OpticalMatcher
-const double OpticalMatcher::m_maxDistance = 3.0;
+const double OpticalMatcher::m_maxDistance = 1.0;
 
 OpticalMatcher::OpticalMatcher()
 {
+    initialize();
+}
+
+void OpticalMatcher::initialize()
+{
+    m_opticalProcessor = cv::cuda::SparsePyrLKOpticalFlow::create();
+}
+
+void download( const cv::cuda::GpuMat& d_mat, std::vector< cv::Point2f >& vec )
+{
+    vec.resize(d_mat.cols);
+    cv::Mat mat( 1, d_mat.cols, CV_32FC2, (void*)&vec[0] );
+    d_mat.download(mat);
+}
+
+void download(const cv::cuda::GpuMat& d_mat, std::vector< uchar >& vec)
+{
+    vec.resize( d_mat.cols );
+    cv::Mat mat( 1, d_mat.cols, CV_8UC1, (void*)&vec[0] );
+    d_mat.download( mat );
+}
+
+void download(const cv::cuda::GpuMat& d_mat, std::vector< float >& vec)
+{
+    vec.resize( d_mat.cols );
+    cv::Mat mat( 1, d_mat.cols, CV_32FC1, (void*)&vec[0] );
+    d_mat.download( mat );
 }
 
 cv::Mat OpticalMatcher::match( const CvImage &sourceImage, std::vector<cv::KeyPoint> &sourceKeypoints,
@@ -167,7 +186,18 @@ cv::Mat OpticalMatcher::match( const CvImage &sourceImage, std::vector<cv::KeyPo
     std::vector< unsigned char > statuses;
     std::vector< float > err;
 
-    cv::calcOpticalFlowPyrLK( sourceImage, targetImage, sourcePoints, opticalPoints, statuses, err );
+    m_gpuSourceImage.upload( sourceImage );
+    m_gpuTargetImage.upload( targetImage );
+    m_gpuSourcePoints.upload( sourcePoints );
+
+    m_opticalProcessor->calc( m_gpuSourceImage, m_gpuTargetImage, m_gpuSourcePoints, m_gpuOpticalPoints, m_gpuStatuses, m_gpuErr );
+
+    download( m_gpuSourcePoints, sourcePoints );
+    download( m_gpuOpticalPoints, opticalPoints );
+    download( m_gpuStatuses, statuses );
+    download( m_gpuErr, err );
+
+    // cv::calcOpticalFlowPyrLK( sourceImage, targetImage, sourcePoints, opticalPoints, statuses, err );
 
     if ( !err.empty() ) {
 
@@ -235,7 +265,7 @@ cv::Mat OpticalMatcher::match( const CvImage &sourceImage, std::vector<cv::KeyPo
 
                         }
 
-                        if ( minDistance < m_maxDistance )
+                        if ( minDistance <= m_maxDistance )
                             matches->push_back( cv::DMatch( correspondences[ i ], minIndex, minDistance ) );
 
                     }
