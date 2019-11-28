@@ -167,7 +167,7 @@ void download(const cv::cuda::GpuMat& d_mat, std::vector< float >& vec)
     d_mat.download( mat );
 }
 
-cv::Mat OpticalMatcher::match( const CvImage &sourceImage, std::vector<cv::KeyPoint> &sourceKeypoints,
+cv::Mat OpticalMatcher::match( const CvImage &sourceImage, std::vector< cv::KeyPoint > &sourceKeypoints,
             const CvImage &targetImage, std::vector< cv::KeyPoint > &targetKeypoints,
             std::vector< cv::DMatch > *matches )
 {
@@ -246,20 +246,46 @@ cv::Mat OpticalMatcher::match( const CvImage &sourceImage, std::vector<cv::KeyPo
 
                 matches->reserve( inliers.size() );
 
+                using KeypointsRow = std::vector< int >;
+                using KeypointsMatrix = std::vector< KeypointsRow >;
+
+                KeypointsMatrix keypointsMatrix( targetImage.rows, KeypointsRow( targetImage.cols, -1 ) );
+
+                // Acceleration matrix
+#pragma omp parallel for
+                for ( size_t i = 0; i < targetKeypoints.size(); ++i )
+                    keypointsMatrix[ targetKeypoints[ i ].pt.y ][ targetKeypoints[ i ].pt.x ] = i;
+
                 for ( size_t i = 0; i < inliers.size(); ++i ) {
 
-                    if ( inliers[i] ) {
+                    if ( inliers[ i ] ) {
+
+                        auto pt = points2[ i ];
 
                         size_t minIndex = 0;
-                        auto minDistance = cv::norm( points2[ i ] - targetKeypoints.front().pt );
+                        auto minDistance = cv::norm( pt - targetKeypoints.front().pt );
 
-                        for ( size_t j = 1; j < targetKeypoints.size(); ++j ) {
+                        for ( size_t j = std::max( 0.0, pt.y - m_maxDistance );
+                                        j < std::min( keypointsMatrix.size(),
+                                                      static_cast< size_t >( pt.y + m_maxDistance + 1 ) ); ++j  ) {
 
-                            auto distance = cv::norm( points2[ i ] - targetKeypoints[ j ].pt );
+                            for ( size_t k = std::max( 0.0, pt.x - m_maxDistance );
+                                            k < std::min( keypointsMatrix.at( j ).size(),
+                                                          static_cast< size_t >( pt.x + m_maxDistance + 1 ) ); ++k  ) {
 
-                            if ( distance < minDistance ) {
-                                minDistance = distance;
-                                minIndex = j;
+                                auto index = keypointsMatrix[ j ][ k ];
+
+                                if ( index != -1 ) {
+
+                                    auto distance = cv::norm( pt - targetKeypoints[ index ].pt );
+
+                                    if ( distance < minDistance ) {
+                                        minDistance = distance;
+                                        minIndex = index;
+
+                                    }
+
+                                }
 
                             }
 

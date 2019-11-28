@@ -6,13 +6,15 @@
 
 #include "frame.h"
 
+#include "world.h"
+
 #include "src/common/defs.h"
 #include "src/common/functions.h"
 
 namespace slam {
 
-Map::Map( const StereoCalibrationDataShort &calibration )
-    : m_calibration( calibration )
+Map::Map(const WorldPtr &world )
+    : m_parentWorld( world )
 {
     initialize();
 }
@@ -21,9 +23,9 @@ void Map::initialize()
 {
 }
 
-Map::MapPtr Map::create( const StereoCalibrationDataShort &calibration )
+Map::MapPtr Map::create( const WorldPtr &world )
 {
-    return MapPtr( new Map( calibration ) );
+    return MapPtr( new Map( world ) );
 }
 
 Map::MapPointPtr Map::createMapPoint()
@@ -103,11 +105,30 @@ void Map::addMapPoint( const MapPointPtr &point )
 
 bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
 {
+    if ( m_parentWorld.expired() )
+        return false;
+
+    auto parentWorld = m_parentWorld.lock();
+
+    auto scaleFactor = parentWorld->scaleFactor();
+
+    CvImage resizedLeftImage;
+    CvImage resizedRightImage;
+
+    if ( std::abs( scaleFactor - 1.0 ) > DOUBLE_EPS ) {
+        cv::resize( leftImage, resizedLeftImage, cv::Size(), scaleFactor, scaleFactor );
+        cv::resize( rightImage, resizedRightImage, cv::Size(), scaleFactor, scaleFactor );
+    }
+    else {
+        resizedLeftImage = leftImage;
+        resizedRightImage = rightImage;
+    }
+
     auto stereoFrame = MapStereoFrame::create( shared_from_this() );
 
     auto timeStart = std::chrono::system_clock::now();
 
-    stereoFrame->load( leftImage, rightImage );
+    stereoFrame->load( resizedLeftImage, resizedRightImage );
     stereoFrame->extractKeyPoints();
     stereoFrame->matchOptical();
 
@@ -117,20 +138,23 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
     static cv::Mat baselineVector;
 
     if ( m_frames.empty() ) {
+
         auto leftFrame = stereoFrame->leftFrame();
         auto rightFrame = stereoFrame->rightFrame();
 
-        leftFrame->setProjectionMatrix( m_calibration.leftProjectionMatrix() );
-        rightFrame->setProjectionMatrix( m_calibration.rightProjectionMatrix() );
+        leftFrame->setProjectionMatrix( parentWorld->calibration().leftProjectionMatrix() );
+        rightFrame->setProjectionMatrix( parentWorld->calibration().rightProjectionMatrix() );
 
-        auto cropRect = m_calibration.cropRect();
+        auto cropRect = parentWorld->calibration().cropRect();
         auto principal = cv::Vec2f( -cropRect.x, -cropRect.y );
 
         leftFrame->movePrincipalPoint( principal );
         rightFrame->movePrincipalPoint( principal );
 
-        leftFrame->multiplicateCameraMatrix( 0.5 );
-        rightFrame->multiplicateCameraMatrix( 0.5 );
+        if ( std::abs( scaleFactor - 1.0 ) > DOUBLE_EPS ) {
+            leftFrame->multiplicateCameraMatrix( scaleFactor );
+            rightFrame->multiplicateCameraMatrix( scaleFactor );
+        }
 
         baselineVector = rightFrame->translation();
 

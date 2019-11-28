@@ -130,7 +130,7 @@ public:
 
     double distance() const;
 
-    cv::Rect cropRect();
+    cv::Rect cropRect() const;
 
 protected:
     unsigned int m_correspondFrameCount;

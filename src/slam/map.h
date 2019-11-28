@@ -10,6 +10,7 @@ namespace slam {
 class FrameBase;
 class StereoFrame;
 class MapPoint;
+class World;
 
 class Map : public std::enable_shared_from_this< Map >
 {
@@ -19,7 +20,9 @@ public:
     using FramePtr = std::shared_ptr< FrameBase >;
     using MapPointPtr = std::shared_ptr< MapPoint >;
 
-    static MapPtr create( const StereoCalibrationDataShort &calibration );
+    using WorldPtr = std::shared_ptr< World >;
+
+    static MapPtr create( const WorldPtr &world );
 
     MapPointPtr createMapPoint();
     MapPointPtr createMapPoint( const cv::Vec3f &pt );
@@ -42,12 +45,14 @@ public:
     void addMapPoint( const MapPointPtr &point );
 
 protected:
-    Map( const StereoCalibrationDataShort &calibration );
+    using WorldPtrImpl = std::weak_ptr< World >;
+
+    Map( const WorldPtr &world );
+
+    WorldPtrImpl m_parentWorld;
 
     std::list< FramePtr > m_frames;
     std::list< MapPointPtr > m_mapPoints;
-
-    StereoCalibrationDataShort m_calibration;
 
     CvImage m_keyPointsImage;
     CvImage m_stereoPointsImage;

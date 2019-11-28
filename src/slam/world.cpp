@@ -11,25 +11,31 @@ namespace slam {
 World::World( const StereoCalibrationDataShort &calibration )
 {
     m_rectificationProcessor.setCalibrationData( calibration );
-    m_leftUndistortionProcessor.setCalibrationData( calibration.leftCameraResults() );
-    m_rightUndistortionProcessor.setCalibrationData( calibration.rightCameraResults() );
 
     initialize();
 }
 
 World::World( const std::string &calibrationFile )
 {
-    m_rectificationProcessor.loadFile( calibrationFile );
+    m_scaleFactor = 1.0;
 
-    m_leftUndistortionProcessor.setCalibrationData( m_rectificationProcessor.calibration().leftCameraResults() );
-    m_rightUndistortionProcessor.setCalibrationData( m_rectificationProcessor.calibration().rightCameraResults() );
+    m_rectificationProcessor.loadFile( calibrationFile );
 
     initialize();
 }
 
 void World::initialize()
 {
-    m_map = Map::create( m_rectificationProcessor.calibration() );
+}
+
+World::WorldPtr World::create( const StereoCalibrationDataShort &calibration )
+{
+    return WorldPtr( new World( calibration ) );
+}
+
+World::WorldPtr World::create( const std::string &calibrationFile )
+{
+    return WorldPtr( new World( calibrationFile ) );
 }
 
 std::list< World::FramePtr > &World::frames()
@@ -90,11 +96,28 @@ bool World::track( const CvImage &leftImage, const CvImage &rightImage )
     if ( !m_rectificationProcessor.crop( leftRectifiedImage, rightRectifiedImage, &leftCroppedImage, &rightCroppedImage ) )
         return false;
 
-    cv::resize( leftCroppedImage, leftCroppedImage, cv::Size(), 0.5, 0.5 );
-    cv::resize( rightCroppedImage, rightCroppedImage, cv::Size(), 0.5, 0.5 );
-
     return m_map->track( leftCroppedImage, rightCroppedImage );
 
+}
+
+const StereoCalibrationDataShort &World::calibration() const
+{
+    return m_rectificationProcessor.calibration();
+}
+
+void World::setScaleFactor( const double value )
+{
+    m_scaleFactor = value;
+}
+
+double World::scaleFactor() const
+{
+    return m_scaleFactor;
+}
+
+void World::createMap()
+{
+    m_map = Map::create( shared_from_this() );
 }
 
 }

@@ -428,7 +428,7 @@ double StereoCalibrationDataBase::distance() const
     return sqrt( xTrans * xTrans + yTrans * yTrans + zTrans * zTrans );
 }
 
-cv::Rect StereoCalibrationDataBase::cropRect()
+cv::Rect StereoCalibrationDataBase::cropRect() const
 {
     cv::Rect ret;
 

@@ -59,7 +59,9 @@ int main( int, char** )
     vizWindow.setWindowPosition( cv::Point( 880, 900 ) );
     vizWindow.setWindowSize( cv::Size( 800, 600 ) );
 
-    slam::World system( path + "calibration.yaml" );
+    auto system = slam::World::create( path + "calibration.yaml" );
+    system->createMap();
+    system->setScaleFactor( 0.5 );
 
     std::thread calcThread( [ & ] {
 
@@ -68,7 +70,7 @@ int main( int, char** )
             std::string leftFile = leftPath + std::to_string( i ) + "_left.jpg";
             std::string rightFile = rightPath + std::to_string( i ) + "_right.jpg";
 
-            system.track( leftFile, rightFile );
+            system->track( leftFile, rightFile );
 
         }
 
@@ -84,11 +86,11 @@ int main( int, char** )
         std::list< std::shared_ptr< slam::MapPoint > > mapPoints;
         std::list< std::shared_ptr< slam::FrameBase > > frames;
 
-        keyPointsImage = system.keyPointsImage();
-        stereoPointsImage = system.stereoPointsImage();
-        tracksImage = system.tracksImage();
-        mapPoints = system.mapPoints();
-        frames = system.frames();
+        keyPointsImage = system->keyPointsImage();
+        stereoPointsImage = system->stereoPointsImage();
+        tracksImage = system->tracksImage();
+        mapPoints = system->mapPoints();
+        frames = system->frames();
 
         if ( !keyPointsImage.empty() )
             cv::imshow( "KeyPoints", keyPointsImage );
