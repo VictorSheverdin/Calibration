@@ -9,6 +9,9 @@
 
 namespace slam {
 
+class Map;
+class MapPoint;
+
 class FrameBase
 {
 protected:
@@ -45,6 +48,8 @@ public:
     void setProjectionMatrix( const cv::Mat &value );
     const cv::Mat &projectionMatrix() const;
 
+    cv::Point3d coordinates() const;
+
 protected:
     MonoFrame();
 
@@ -67,29 +72,44 @@ class ProcessedFrame : public MonoFrame, public std::enable_shared_from_this< Pr
     friend class ProcessedPoint;
 
 public:
+    using MapPtr = std::shared_ptr< Map >;
+
+    using MapPointPtr = std::shared_ptr< MapPoint >;
+
+    using MonoFramePtr = std::shared_ptr< MonoFrame >;
     using FramePtr = std::shared_ptr< ProcessedFrame >;
-    using FeaturePointPtr = std::shared_ptr< ProcessedPoint >;
+
+    using ProcessedPointPtr = std::shared_ptr< ProcessedPoint >;
 
     virtual std::vector< PointPtr > framePoints() const override;
 
-    FeaturePointPtr &framePoint( const size_t index );
-    const FeaturePointPtr &framePoint( const size_t index ) const;
+    MapPtr parentMap() const;
 
-    static FramePtr create();
+    ProcessedPointPtr &framePoint( const size_t index );
+    const ProcessedPointPtr &framePoint( const size_t index ) const;
+
+    static FramePtr create( const MapPtr &parentMap );
 
     void load( const CvImage &image );
     void extractKeyPoints();
     void extractDescriptors();
 
     const CvImage image() const;
+
     void clearImage();
+
+    void triangulatePoints();
 
     const std::vector< cv::KeyPoint > &keyPoints() const;
 
     CvImage drawKeyPoints() const;
 
 protected:
-    ProcessedFrame();
+    using MapPtrImpl = std::weak_ptr< Map >;
+
+    ProcessedFrame( const MapPtr &parentMap );
+
+    MapPtrImpl m_parentMap;
 
     CvImage m_image;
 
@@ -97,12 +117,18 @@ protected:
     std::vector< cv::Scalar > m_colors;
     cv::Mat m_descriptors;
 
-    std::map< size_t, FeaturePointPtr > m_points;
+    std::map< size_t, ProcessedPointPtr > m_points;
 
     static GFTTProcessor m_keypointProcessor;
     static DaisyProcessor m_descriptorProcessor;
 
-    FeaturePointPtr createFramePoint( const size_t keyPointIndex, const cv::Scalar &color );
+    ProcessedPointPtr createFramePoint( const size_t keyPointIndex, const cv::Scalar &color );
+
+    static const double m_minCameraDistance;
+    static const double m_minPointsDistance;
+
+private:
+    void initialize();
 
 };
 
@@ -116,7 +142,6 @@ public:
     using MonoFramePtr = std::shared_ptr< MonoFrame >;
     using MonoPointPtr = std::shared_ptr< MonoPoint >;
 
-    void load( const CvImage &image1, const CvImage &image2 );
     void extractKeyPoints();
     void extractDescriptors();
 
@@ -139,7 +164,7 @@ protected:
 class StereoFrame : public DoubleFrameBase
 {
 public:
-    using FeatureFramePtr = std::shared_ptr< ProcessedFrame >;
+    using ProcessedFramePtr = std::shared_ptr< ProcessedFrame >;
     using FramePtr = std::shared_ptr< StereoFrame >;
 
     static FramePtr create();
@@ -165,33 +190,37 @@ protected:
 
 };
 
-class Map;
-
-class MapStereoFrame : public StereoFrame
+class ProcessedStereoFrame : public StereoFrame
 {
 public:
     using MapPtr = std::shared_ptr< Map >;
-    using FramePtr = std::shared_ptr< MapStereoFrame >;
+    using FramePtr = std::shared_ptr< ProcessedStereoFrame >;
 
     static FramePtr create( const MapPtr &parentMap );
 
-    const MapPtr parentMap() const;
+    void load( const CvImage &image1, const CvImage &image2 );
+
+    MapPtr parentMap() const;
 
     bool triangulatePoints();
+
+    void clearMapPoints();
 
 protected:
     using MapPtrImpl = std::weak_ptr< Map >;
 
-    MapStereoFrame( const MapPtr &parentMap );
+    ProcessedStereoFrame( const MapPtr &parentMap );
 
     MapPtrImpl m_parentMap;
+
+    void removeMapPoints( const std::vector< MonoPointPtr > &points );
 
 };
 
 class AdjacentFrame : public DoubleFrameBase
 {
 public:
-    using FeatureFramePtr = std::shared_ptr< ProcessedFrame >;
+    using ProcessedFramePtr = std::shared_ptr< ProcessedFrame >;
     using FramePtr = std::shared_ptr< AdjacentFrame >;
 
     static FramePtr create();
@@ -213,27 +242,6 @@ protected:
 
     static const int m_minLenght = 1;
     static const int m_minPnpPoints = 50;
-
-};
-
-class MapAdjacentFrame : public AdjacentFrame
-{
-public:
-    using MapPtr = std::shared_ptr< Map >;
-    using FramePtr = std::shared_ptr< MapAdjacentFrame >;
-
-    static FramePtr create( const MapPtr &parentMap );
-
-    const MapPtr parentMap() const;
-
-    bool triangulatePoints();
-
-protected:
-    using MapPtrImpl = std::weak_ptr< Map >;
-
-    MapAdjacentFrame( const MapPtr &parentMap );
-
-    MapPtrImpl m_parentMap;
 
 };
 

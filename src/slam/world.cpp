@@ -48,12 +48,12 @@ const std::list< World::FramePtr > &World::frames() const
     return m_map->frames();
 }
 
-std::list< World::MapPointPtr > &World::mapPoints()
+std::set< World::MapPointPtr > &World::mapPoints()
 {
     return m_map->mapPoints();
 }
 
-const std::list< World::MapPointPtr > &World::mapPoints() const
+const std::set< World::MapPointPtr > &World::mapPoints() const
 {
     return m_map->mapPoints();
 }

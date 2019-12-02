@@ -58,6 +58,11 @@ Map::MapPointPtr Map::createMapPoint( const cv::Vec3f &pt, const cv::Scalar &col
 
 }
 
+void Map::removeMapPoint( const MapPointPtr &point )
+{
+    m_mapPoints.erase( point );
+}
+
 std::list< Map::FramePtr > &Map::frames()
 {
     return m_frames;
@@ -68,12 +73,12 @@ const std::list< Map::FramePtr > &Map::frames() const
     return m_frames;
 }
 
-std::list< Map::MapPointPtr > &Map::mapPoints()
+std::set< Map::MapPointPtr > &Map::mapPoints()
 {
     return m_mapPoints;
 }
 
-const std::list< Map::MapPointPtr > &Map::mapPoints() const
+const std::set< Map::MapPointPtr > &Map::mapPoints() const
 {
     return m_mapPoints;
 }
@@ -100,7 +105,7 @@ CvImage Map::tracksImage() const
 
 void Map::addMapPoint( const MapPointPtr &point )
 {
-    m_mapPoints.push_back( point );
+    m_mapPoints.insert( point );
 }
 
 bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
@@ -116,15 +121,15 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
     CvImage resizedRightImage;
 
     if ( std::abs( scaleFactor - 1.0 ) > DOUBLE_EPS ) {
-        cv::resize( leftImage, resizedLeftImage, cv::Size(), scaleFactor, scaleFactor );
-        cv::resize( rightImage, resizedRightImage, cv::Size(), scaleFactor, scaleFactor );
+        cv::resize( leftImage, resizedLeftImage, cv::Size(), scaleFactor, scaleFactor, cv::INTER_CUBIC );
+        cv::resize( rightImage, resizedRightImage, cv::Size(), scaleFactor, scaleFactor, cv::INTER_CUBIC );
     }
     else {
         resizedLeftImage = leftImage;
         resizedRightImage = rightImage;
     }
 
-    auto stereoFrame = MapStereoFrame::create( shared_from_this() );
+    auto stereoFrame = ProcessedStereoFrame::create( shared_from_this() );
 
     auto timeStart = std::chrono::system_clock::now();
 
@@ -165,18 +170,21 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
     }
     else {
 
-        auto previousStereoFrame = std::dynamic_pointer_cast< StereoFrame >( m_frames.back() );
+        auto previousStereoFrame = std::dynamic_pointer_cast< ProcessedStereoFrame >( m_frames.back() );
 
-        auto consecutiveLeftFrame = MapAdjacentFrame::create( shared_from_this() );
-        auto consecutiveRightFrame = MapAdjacentFrame::create( shared_from_this() );
+        auto consecutiveLeftFrame = AdjacentFrame::create();
+        auto consecutiveRightFrame = AdjacentFrame::create();
 
-        consecutiveLeftFrame->setFrames( std::dynamic_pointer_cast< ProcessedFrame >( previousStereoFrame->leftFrame() ),
-                                                std::dynamic_pointer_cast< ProcessedFrame >( stereoFrame->leftFrame() ) );
+        auto previousLeftFrame = std::dynamic_pointer_cast< ProcessedFrame >( previousStereoFrame->leftFrame() );
+        auto previousRightFrame = std::dynamic_pointer_cast< ProcessedFrame >( previousStereoFrame->rightFrame() );
+        auto nextLeftFrame = std::dynamic_pointer_cast< ProcessedFrame >( stereoFrame->leftFrame() );
+        auto nextRightFrame = std::dynamic_pointer_cast< ProcessedFrame >( stereoFrame->rightFrame() );
+
+        consecutiveLeftFrame->setFrames( previousLeftFrame, nextLeftFrame );
 
         consecutiveLeftFrame->matchOptical();
 
-        consecutiveRightFrame->setFrames( std::dynamic_pointer_cast< ProcessedFrame >( previousStereoFrame->rightFrame() ),
-                                                std::dynamic_pointer_cast< ProcessedFrame >( stereoFrame->rightFrame() ) );
+        consecutiveRightFrame->setFrames( previousRightFrame, nextRightFrame );
 
         consecutiveRightFrame->matchOptical();
 
@@ -188,8 +196,6 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
             consecutiveRightFrame->nextFrame()->setRotation( consecutiveLeftFrame->nextFrame()->rotation() );
             consecutiveRightFrame->nextFrame()->setTranslation( consecutiveLeftFrame->nextFrame()->translation() + baselineVector );
 
-            // consecutiveRightFrame->triangulatePoints();
-
         }
         else {
             consecutiveRightFrame->track();
@@ -197,13 +203,15 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
             consecutiveLeftFrame->nextFrame()->setRotation( consecutiveRightFrame->nextFrame()->rotation() );
             consecutiveLeftFrame->nextFrame()->setTranslation( consecutiveRightFrame->nextFrame()->translation() - baselineVector );
 
-            // consecutiveLeftFrame->triangulatePoints();
-
         }
+
+        nextLeftFrame->triangulatePoints();
+        nextRightFrame->triangulatePoints();
 
         stereoFrame->triangulatePoints();
 
         auto calcTime = std::chrono::system_clock::now();
+
         std::cout << "Matching time: "
                   << std::chrono::duration_cast< std::chrono::microseconds >( matchingTime - timeStart ).count() / 1.e6
                   << " sec. ";
@@ -219,6 +227,7 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
         m_tracksImage = stackImages( leftTrack, rightTrack );
 
         previousStereoFrame->clearImages();
+        previousStereoFrame->clearMapPoints();
 
         m_frames.push_back( stereoFrame );
 

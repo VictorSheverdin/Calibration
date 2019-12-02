@@ -23,8 +23,8 @@ public:
     std::list< FramePtr > &frames();
     const std::list< FramePtr > &frames() const;
 
-    std::list< MapPointPtr > &mapPoints();
-    const std::list< MapPointPtr > &mapPoints() const;
+    std::set< MapPointPtr > &mapPoints();
+    const std::set< MapPointPtr > &mapPoints() const;
 
     CvImage keyPointsImage() const;
     CvImage stereoPointsImage() const;

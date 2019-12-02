@@ -168,14 +168,30 @@ const cv::Mat &MonoFrame::projectionMatrix() const
     }
 
     return m_projectionMatrix;
+
+}
+
+cv::Point3d MonoFrame::coordinates() const
+{
+     return  cv::Point3d( m_t.at< double >( 0, 0 ), m_t.at< double >( 1, 0 ), m_t.at< double >( 2, 0 ) );
 }
 
 // ProcessedFrame
 DaisyProcessor ProcessedFrame::m_descriptorProcessor;
 GFTTProcessor ProcessedFrame::m_keypointProcessor;
 
-ProcessedFrame::ProcessedFrame()
+const double ProcessedFrame::m_minCameraDistance = 2.0;
+const double ProcessedFrame::m_minPointsDistance = 10.0;
+
+ProcessedFrame::ProcessedFrame( const MapPtr &parentMap )
+    : m_parentMap( parentMap )
 {
+    initialize();
+}
+
+void ProcessedFrame::initialize()
+{
+    m_keypointProcessor.setMaxFeatures( 5000 );
 }
 
 std::vector< ProcessedFrame::PointPtr > ProcessedFrame::framePoints() const
@@ -189,7 +205,12 @@ std::vector< ProcessedFrame::PointPtr > ProcessedFrame::framePoints() const
 
 }
 
-ProcessedFrame::FeaturePointPtr &ProcessedFrame::framePoint( const size_t index )
+ProcessedFrame::MapPtr ProcessedFrame::parentMap() const
+{
+    return m_parentMap.lock();
+}
+
+ProcessedFrame::ProcessedPointPtr &ProcessedFrame::framePoint( const size_t index )
 {
     if ( m_points.find( index ) == m_points.end() )
         createFramePoint( index, m_colors[ index ] );
@@ -197,14 +218,14 @@ ProcessedFrame::FeaturePointPtr &ProcessedFrame::framePoint( const size_t index 
     return m_points.at( index );
 }
 
-const ProcessedFrame::FeaturePointPtr &ProcessedFrame::framePoint( const size_t index ) const
+const ProcessedFrame::ProcessedPointPtr &ProcessedFrame::framePoint( const size_t index ) const
 {
     return m_points.at( index );
 }
 
-ProcessedFrame::FramePtr ProcessedFrame::create()
+ProcessedFrame::FramePtr ProcessedFrame::create( const MapPtr &parentMap )
 {
-    return FramePtr( new ProcessedFrame() );
+    return FramePtr( new ProcessedFrame( parentMap ) );
 }
 
 void ProcessedFrame::load( const CvImage &image )
@@ -240,6 +261,119 @@ void ProcessedFrame::clearImage()
     m_image = CvImage();
 }
 
+void ProcessedFrame::triangulatePoints()
+{
+    std::map< MonoFramePtr, std::vector< PointPtr > > frames;
+    std::map< PointPtr, ProcessedPointPtr > points;
+
+    for ( auto &i : m_points ) {
+
+        auto ptr = i.second;
+
+        if ( ptr ) {
+
+            auto prevPtr = ptr->prevPoint();
+
+            if ( prevPtr ) {
+
+                PointPtr j;
+
+                for ( j = prevPtr; j->prevPoint(); j = j->prevPoint() );
+
+                if ( j ) {
+
+                    auto parentFrame = j->parentFrame();
+
+                    if ( parentFrame ) {
+                        auto cameraDistance = cv::norm( coordinates() - parentFrame->coordinates() );
+                        auto pointsDistance = cv::norm( j->point() - ptr->point() );
+
+                        if ( cameraDistance > m_minCameraDistance && pointsDistance > m_minPointsDistance ) {
+                            frames[ parentFrame ].push_back( j );
+                            points[ j ] = ptr;
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+        }
+
+    }
+
+    for ( auto &i : frames ) {
+
+        cv::Mat points3d;
+
+        cv::Mat_< float > prevPoints( 2, i.second.size() ),
+                          nextPoints( 2, i.second.size() );
+
+        for ( size_t j = 0; j < i.second.size(); ++j ) {
+            auto prevPoint = i.second[ j ]->point();
+            prevPoints.row( 0 ).col( j ) = prevPoint.x;
+            prevPoints.row( 1 ).col( j ) = prevPoint.y;
+
+            auto nextPoint = points[ i.second[ j ] ]->point();
+            nextPoints.row( 0 ).col( j ) = nextPoint.x;
+            nextPoints.row( 1 ).col( j ) = nextPoint.y;
+
+        }
+
+        if ( !prevPoints.empty() && prevPoints.size() == nextPoints.size() ) {
+
+            cv::triangulatePoints( i.first->projectionMatrix(), projectionMatrix(), prevPoints, nextPoints, points3d );
+
+            for ( size_t j = 0; j < i.second.size(); ++j ) {
+
+                auto w = points3d.at< float >( 3, j );
+
+                auto x = points3d.at< float >( 0, j ) / w;
+                auto y = points3d.at< float >( 1, j ) / w;
+                auto z = points3d.at< float >( 2, j ) / w;
+
+                auto pt = cv::Vec3f( x, y, z );
+
+                if ( std::abs( w ) > FLOAT_EPS ) {
+
+                    MapPointPtr mapPoint;
+
+                    for ( auto k = i.second[ j ]; k; k = k->prevPoint() ) {
+
+
+                        if ( k ) {
+                            auto curMapPoint = k->mapPoint();
+
+                            if ( curMapPoint )
+                                mapPoint = curMapPoint;
+
+                        }
+
+                    }
+
+                    if ( !mapPoint ) {
+                        auto mapPoint = parentMap()->createMapPoint( pt, i.second[ j ]->color() );
+                        i.second[ j ]->setMapPoint( mapPoint );
+
+                    }
+                    else {
+                        mapPoint->setPoint( pt );
+                        mapPoint->setColor( i.second[ j ]->color() );
+
+                    }
+
+                }
+
+            }
+
+        }
+
+    }
+
+}
+
 const std::vector< cv::KeyPoint > &ProcessedFrame::keyPoints() const
 {
     return m_keyPoints;
@@ -258,10 +392,10 @@ CvImage ProcessedFrame::drawKeyPoints() const
     return CvImage();
 }
 
-ProcessedFrame::FeaturePointPtr ProcessedFrame::createFramePoint( const size_t keyPointIndex , const cv::Scalar &color )
+ProcessedFrame::ProcessedPointPtr ProcessedFrame::createFramePoint( const size_t keyPointIndex , const cv::Scalar &color )
 {
     if ( keyPointIndex >= m_keyPoints.size() )
-        return FeaturePointPtr();
+        return ProcessedPointPtr();
 
     auto point = ProcessedPoint::create( shared_from_this(), keyPointIndex );
 
@@ -277,18 +411,6 @@ OpticalMatcher DoubleFrameBase::m_opticalMatcher;
 
 DoubleFrameBase::DoubleFrameBase()
 {
-}
-
-void DoubleFrameBase::load( const CvImage &image1, const CvImage &image2 )
-{
-    auto leftFrame = ProcessedFrame::create();
-    leftFrame->load( image1 );
-
-    auto rightFrame = ProcessedFrame::create();
-    rightFrame->load( image2 );
-
-    setFrames( leftFrame, rightFrame );
-
 }
 
 void DoubleFrameBase::extractKeyPoints()
@@ -438,6 +560,7 @@ void StereoFrame::clearImages()
 
     if ( rightFeatureFrame )
         rightFeatureFrame->clearImage();
+
 }
 
 std::vector< StereoPoint > StereoFrame::stereoPoints() const
@@ -523,23 +646,35 @@ CvImage StereoFrame::drawStereoPoints() const
 
 }
 
-// MapStereoFrame
-MapStereoFrame::MapStereoFrame( const MapPtr &parentMap )
+// ProcessedStereoFrame
+ProcessedStereoFrame::ProcessedStereoFrame( const MapPtr &parentMap )
     : m_parentMap( parentMap )
 {
 }
 
-MapStereoFrame::FramePtr MapStereoFrame::create( const MapPtr &parentMap )
+ProcessedStereoFrame::FramePtr ProcessedStereoFrame::create( const MapPtr &parentMap )
 {
-    return FramePtr( new MapStereoFrame( parentMap ) );
+    return FramePtr( new ProcessedStereoFrame( parentMap ) );
 }
 
-const MapStereoFrame::MapPtr MapStereoFrame::parentMap() const
+void ProcessedStereoFrame::load( const CvImage &image1, const CvImage &image2 )
+{
+    auto leftFrame = ProcessedFrame::create( parentMap() );
+    leftFrame->load( image1 );
+
+    auto rightFrame = ProcessedFrame::create( parentMap() );
+    rightFrame->load( image2 );
+
+    setFrames( leftFrame, rightFrame );
+
+}
+
+ProcessedStereoFrame::MapPtr ProcessedStereoFrame::parentMap() const
 {
     return m_parentMap.lock();
 }
 
-bool MapStereoFrame::triangulatePoints()
+bool ProcessedStereoFrame::triangulatePoints()
 {
     auto map = parentMap();
 
@@ -606,6 +741,52 @@ bool MapStereoFrame::triangulatePoints()
     return false;
 
 }
+
+
+void ProcessedStereoFrame::removeMapPoints( const std::vector< MonoPointPtr > &points )
+{
+    auto parentMap = this->parentMap();
+
+    for ( auto &i : points ) {
+
+        if ( i ) {
+
+            auto mapPoint = i->mapPoint();
+
+            if ( mapPoint ) {
+
+                if ( !i->nextPoint() && !i->prevPoint() && ( !i->stereoPoint() || ( i->stereoPoint() &&
+                     !i->stereoPoint()->nextPoint() && !i->stereoPoint()->prevPoint() ) ) ) {
+
+                    parentMap->removeMapPoint( mapPoint );
+
+                }
+
+            }
+
+        }
+
+    }
+
+}
+
+void ProcessedStereoFrame::clearMapPoints()
+{
+    auto leftFeatureFrame = std::dynamic_pointer_cast< ProcessedFrame >( this->leftFrame() );
+    auto rightFeatureFrame = std::dynamic_pointer_cast< ProcessedFrame >( this->rightFrame() );
+
+    if ( leftFeatureFrame ) {
+        removeMapPoints( leftFeatureFrame->framePoints() );
+
+    }
+
+    if ( rightFeatureFrame ) {
+        removeMapPoints( rightFeatureFrame->framePoints() );
+
+    }
+
+}
+
 
 // AdjacentFrame
 AdjacentFrame::AdjacentFrame()
@@ -799,89 +980,6 @@ CvImage AdjacentFrame::drawTrack() const
     }
 
     return ret;
-
-}
-
-// MapAdjacentFrame
-MapAdjacentFrame::MapAdjacentFrame( const MapPtr &parentMap )
-    : m_parentMap( parentMap )
-{
-}
-
-MapAdjacentFrame::FramePtr MapAdjacentFrame::create( const MapPtr &parentMap )
-{
-    return FramePtr( new MapAdjacentFrame( parentMap ) );
-}
-
-const MapAdjacentFrame::MapPtr MapAdjacentFrame::parentMap() const
-{
-    return m_parentMap.lock();
-}
-
-bool MapAdjacentFrame::triangulatePoints()
-{
-    auto map = parentMap();
-
-    if ( map ) {
-
-        cv::Mat points3d;
-
-        auto adjacentPoints = this->adjacentPoints();
-
-        cv::Mat_< float > prevPoints( 2, adjacentPoints.size() ),
-                          nextPoints( 2, adjacentPoints.size() );
-
-        for ( size_t i = 0; i < adjacentPoints.size(); ++i ) {
-            prevPoints.row( 0 ).col( i ) = adjacentPoints[ i ].previousPoint().x;
-            prevPoints.row( 1 ).col( i ) = adjacentPoints[ i ].previousPoint().y;
-            nextPoints.row( 0 ).col( i ) = adjacentPoints[ i ].nextPoint().x;
-            nextPoints.row( 1 ).col( i ) = adjacentPoints[ i ].nextPoint().y;
-
-        }
-
-        if ( !prevPoints.empty() && prevPoints.size() == nextPoints.size() ) {
-
-            cv::triangulatePoints( previousFrame()->projectionMatrix(), nextFrame()->projectionMatrix(), prevPoints, nextPoints, points3d );
-
-            for ( size_t i = 0; i < adjacentPoints.size(); ++i ) {
-
-                auto w = points3d.at< float >( 3, i );
-
-                auto x = points3d.at< float >( 0, i ) / w;
-                auto y = points3d.at< float >( 1, i ) / w;
-                auto z = points3d.at< float >( 2, i ) / w;
-
-                auto pt = cv::Vec3f( x, y, z );
-
-                if ( std::abs( w ) > FLOAT_EPS ) {
-                    if ( !adjacentPoints[i].previousFramePoint()->mapPoint() && !adjacentPoints[i].nextFramePoint()->mapPoint() ) {
-                        auto mapPoint = map->createMapPoint( pt, adjacentPoints[i].previousFramePoint()->color() );
-                        adjacentPoints[i].previousFramePoint()->setMapPoint( mapPoint );
-                        adjacentPoints[i].nextFramePoint()->setMapPoint( mapPoint );
-
-                    }
-                    else {
-                        if ( !adjacentPoints[i].previousFramePoint()->mapPoint() )
-                            adjacentPoints[i].previousFramePoint()->setMapPoint( adjacentPoints[i].nextFramePoint()->mapPoint() );
-                        else if ( !adjacentPoints[i].nextFramePoint()->mapPoint() )
-                            adjacentPoints[i].nextFramePoint()->setMapPoint( adjacentPoints[i].previousFramePoint()->mapPoint() );
-
-                        adjacentPoints[i].previousFramePoint()->mapPoint()->setPoint( pt );
-
-                    }
-
-
-                }
-
-            }
-
-            return true;
-
-        }
-
-    }
-
-    return false;
 
 }
 

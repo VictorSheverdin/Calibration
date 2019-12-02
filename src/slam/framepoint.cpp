@@ -14,8 +14,14 @@ namespace slam {
     }
 
     // MonoPoint
-    MonoPoint::MonoPoint()
+    MonoPoint::MonoPoint( const FramePtr parentFrame )
+        : m_parentFrame( parentFrame )
     {
+    }
+
+    MonoPoint::FramePtr MonoPoint::parentFrame() const
+    {
+        return m_parentFrame.lock();
     }
 
     void MonoPoint::setStereoPoint( const AdjacentPtr point )
@@ -93,7 +99,7 @@ namespace slam {
 
     // ProcessedPoint
     ProcessedPoint::ProcessedPoint( const FramePtr parentFrame , const size_t keyPointIndex )
-        : m_parentFrame( parentFrame ), m_keyPointIndex( keyPointIndex )
+        : MonoPoint( parentFrame ), m_keyPointIndex( keyPointIndex )
     {
     }
 
@@ -102,14 +108,19 @@ namespace slam {
         return PointPtr( new ProcessedPoint( parentFrame, keyPointIndex ) );
     }
 
+    ProcessedPoint::FramePtr ProcessedPoint::parentFrame() const
+    {
+        return std::dynamic_pointer_cast< ProcessedFrame >( m_parentFrame.lock() );
+    }
+
     const cv::Point2f &ProcessedPoint::point() const
     {
-        return m_parentFrame.lock()->m_keyPoints[ m_keyPointIndex ].pt;
+        return parentFrame()->m_keyPoints[ m_keyPointIndex ].pt;
     }
 
     const cv::Scalar &ProcessedPoint::color() const
     {
-        return m_parentFrame.lock()->m_colors[ m_keyPointIndex ];
+        return parentFrame()->m_colors[ m_keyPointIndex ];
     }
 
     // DoublePoint

@@ -4,6 +4,7 @@
 
 namespace slam {
 
+class MonoFrame;
 class ProcessedFrame;
 class MapPoint;
 
@@ -16,11 +17,15 @@ protected:
 class MonoPoint : public PointBase
 {
 public:
+    using FramePtr = std::shared_ptr< MonoFrame >;
+
     using AdjacentPtr = std::shared_ptr< MonoPoint >;
     using MapPointPtr = std::shared_ptr< MapPoint >;
 
     virtual const cv::Point2f &point() const = 0;
     virtual const cv::Scalar &color() const = 0;
+
+    FramePtr parentFrame() const;
 
     void setStereoPoint( const AdjacentPtr point );
     void clearStereoPoint();
@@ -41,10 +46,14 @@ public:
      void drawTrack( CvImage *target ) const;
 
 protected:
+     using FramePtrImpl = std::weak_ptr< MonoFrame >;
+
     using AdjacentPtrImpl = std::weak_ptr< MonoPoint >;
     using MapPointPtrImpl = std::weak_ptr< MapPoint >;
 
-    MonoPoint();
+    MonoPoint( const FramePtr parentFrame );
+
+    const FramePtrImpl m_parentFrame; // Parent frame
 
     AdjacentPtrImpl m_stereoPoint;
     AdjacentPtrImpl m_nextPoint;
@@ -57,7 +66,7 @@ protected:
 class ProcessedPoint : public MonoPoint
 {
 public:
-    using FramePtr = std::weak_ptr< ProcessedFrame >;
+    using FramePtr = std::shared_ptr< ProcessedFrame >;
     using PointPtr = std::shared_ptr< ProcessedPoint >;
 
     virtual const cv::Point2f &point() const override;
@@ -65,10 +74,13 @@ public:
 
     static PointPtr create( const FramePtr parentFrame, const size_t keyPointIndex );
 
+    FramePtr parentFrame() const;
+
 protected:
+    using FramePtrImpl = std::weak_ptr< ProcessedFrame >;
+
     ProcessedPoint( const FramePtr parentFrame, const size_t keyPointIndex );
 
-    const FramePtr m_parentFrame; // Parent frame
     size_t m_keyPointIndex; // Index of keypoint in parent frame
 
 private:

@@ -28,13 +28,15 @@ public:
     MapPointPtr createMapPoint( const cv::Vec3f &pt );
     MapPointPtr createMapPoint( const cv::Vec3f &pt, const cv::Scalar &color );
 
+    void removeMapPoint( const MapPointPtr &point );
+
     bool track( const CvImage &leftImage, const CvImage &rightImage );
 
     std::list< FramePtr > &frames();
     const std::list< FramePtr > &frames() const;
 
-    std::list< MapPointPtr > &mapPoints();
-    const std::list< MapPointPtr > &mapPoints() const;
+    std::set< MapPointPtr > &mapPoints();
+    const std::set< MapPointPtr > &mapPoints() const;
 
     const FramePtr &backFrame() const;
 
@@ -52,7 +54,7 @@ protected:
     WorldPtrImpl m_parentWorld;
 
     std::list< FramePtr > m_frames;
-    std::list< MapPointPtr > m_mapPoints;
+    std::set< MapPointPtr > m_mapPoints;
 
     CvImage m_keyPointsImage;
     CvImage m_stereoPointsImage;

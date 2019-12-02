@@ -36,7 +36,7 @@ int main( int, char** )
 
     }
 
-    cv::ocl::setUseOpenCL(true);
+    cv::ocl::setUseOpenCL( true );
 
     std::string path("/home/victor/Polygon/");
     std::string leftPath = path + "left/";
@@ -59,18 +59,21 @@ int main( int, char** )
     vizWindow.setWindowPosition( cv::Point( 880, 900 ) );
     vizWindow.setWindowSize( cv::Size( 800, 600 ) );
 
+
     auto system = slam::World::create( path + "calibration.yaml" );
     system->createMap();
     system->setScaleFactor( 0.5 );
 
     std::thread calcThread( [ & ] {
 
-        for ( auto i = 8170; i < 30000; i++ ) {
+        for ( auto i = /*8170*/10000; i < 30000; i++ ) {
             std::cout << "Processing frame " << i << std::endl;
             std::string leftFile = leftPath + std::to_string( i ) + "_left.jpg";
             std::string rightFile = rightPath + std::to_string( i ) + "_right.jpg";
 
             system->track( leftFile, rightFile );
+
+            // std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
 
         }
 
@@ -83,7 +86,7 @@ int main( int, char** )
         CvImage keyPointsImage;
         CvImage stereoPointsImage;
         CvImage tracksImage;
-        std::list< std::shared_ptr< slam::MapPoint > > mapPoints;
+        std::set< std::shared_ptr< slam::MapPoint > > mapPoints;
         std::list< std::shared_ptr< slam::FrameBase > > frames;
 
         keyPointsImage = system->keyPointsImage();
@@ -105,9 +108,13 @@ int main( int, char** )
         std::vector< cv::Vec4b > colors;
 
         for ( auto &i : mapPoints ) {
-            auto point = i->point();
-            points.push_back( point );
-            colors.push_back( i->color() );
+            if ( i ) {
+                auto point = i->point();
+                points.push_back( point );
+                colors.push_back( i->color() );
+
+            }
+
         }
 
         if ( !points.empty() ) {

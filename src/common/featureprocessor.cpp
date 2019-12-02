@@ -8,10 +8,6 @@
 void KeyPointProcessor::extractKeypoints( const CvImage &image, std::vector< cv::KeyPoint > *keypoints )
 {
     if ( keypoints ) {
-
-        // cv::Mat gray;
-        // cv::cvtColor( image, gray, cv::COLOR_RGB2GRAY );
-
         auto uImage = image.getUMat( cv::ACCESS_READ );
         m_processor->detect( uImage, *keypoints );
 
@@ -37,7 +33,22 @@ GFTTProcessor::GFTTProcessor()
 
 void GFTTProcessor::initialize()
 {
-    m_processor = cv::GFTTDetector::create( 5000 );
+    m_processor = cv::GFTTDetector::create();
+}
+
+cv::Ptr< cv::GFTTDetector > GFTTProcessor::processor() const
+{
+    return std::dynamic_pointer_cast< cv::GFTTDetector >( m_processor );
+}
+
+void GFTTProcessor::setMaxFeatures( const int value )
+{
+    processor()->setMaxFeatures( value );
+}
+
+int GFTTProcessor::maxFeatures() const
+{
+    return processor()->getMaxFeatures();
 }
 
 // DaisyProcessor
@@ -86,7 +97,7 @@ cv::Mat FeatureMatcher::match( std::vector< cv::KeyPoint > &queryKeypoints, cons
             }
 
         }
-/*
+
         std::vector< cv::DMatch > revMatches;
         m_matcher->match( trainDescriptors, queryDescriptors, revMatches );
 
@@ -103,9 +114,7 @@ cv::Mat FeatureMatcher::match( std::vector< cv::KeyPoint > &queryKeypoints, cons
 
             }
 
-        }*/
-
-        std::vector< cv::DMatch > &symMatches = fwdMatches;
+        }
 
         std::vector< cv::Point2f > points1, points2;
 

@@ -42,6 +42,11 @@ class GFTTProcessor : public KeyPointProcessor
 public:
     GFTTProcessor();
 
+    cv::Ptr< cv::GFTTDetector > processor() const;
+
+    void setMaxFeatures( const int value );
+    int maxFeatures() const;
+
 private:
     void initialize();
 

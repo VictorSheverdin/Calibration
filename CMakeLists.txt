@@ -222,14 +222,12 @@ add_executable( slam ${COMMON_SOURCES} ${RES_SOURCES}
     src/slam/map.h
     src/slam/mappoint.h
     src/slam/frame.h
-    src/slam/keyframe.h
     src/slam/framepoint.h
     src/slam/optimizer.h
     src/slam/world.h
     src/slam/map.cpp
     src/slam/mappoint.cpp
     src/slam/frame.cpp
-    src/slam/keyframe.cpp
     src/slam/framepoint.cpp
     src/slam/optimizer.cpp
     src/slam/world.cpp
