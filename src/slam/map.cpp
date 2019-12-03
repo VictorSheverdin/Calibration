@@ -257,8 +257,8 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
 
         m_tracksImage = stackImages( leftTrack, rightTrack );
 
-        //nextLeftFrame->triangulatePoints();
-        //nextRightFrame->triangulatePoints();
+        nextLeftFrame->triangulatePoints();
+        nextRightFrame->triangulatePoints();
 
         stereoFrame->triangulatePoints();
 

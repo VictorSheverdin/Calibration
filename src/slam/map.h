@@ -69,11 +69,11 @@ protected:
     static const int m_minKeyPoints = 500;
     static const int m_maxKeyPoints = 25000;
 
-    static const int m_goodTrackPoints = 100;
+    static const int m_goodTrackPoints = 200;
     static const int m_overageTrackPoints = 300;
 
-    static const int m_goodStereoPoints = 300;
-    static const int m_overageStereoPoints = 2000;
+    static const int m_goodStereoPoints = 400;
+    static const int m_overageStereoPoints = 1000;
 
 private:
     void initialize();

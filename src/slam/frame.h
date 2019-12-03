@@ -145,7 +145,7 @@ public:
     using MonoFramePtr = std::shared_ptr< MonoFrame >;
     using MonoPointPtr = std::shared_ptr< MonoPoint >;
 
-    void setFrames( const MonoFramePtr frame1, const MonoFramePtr frame2 );
+    void setFrames( const MonoFramePtr &frame1, const MonoFramePtr &frame2 );
 
     MonoFramePtr frame1() const;
     MonoFramePtr frame2() const;
@@ -156,32 +156,26 @@ protected:
     MonoFramePtr m_frame1;
     MonoFramePtr m_frame2;
 
-    static FeatureMatcher m_matcher;
-    static OpticalMatcher m_opticalMatcher;
-
-};
-
-class StereoFrame : public DoubleFrame
-{
-public:
-    using ProcessedFramePtr = std::shared_ptr< ProcessedFrame >;
-    using FramePtr = std::shared_ptr< StereoFrame >;
-
-    static FramePtr create();
-
-protected:
-    StereoFrame();
-
 };
 
 class ProcessedDoubleFrame : public DoubleFrame
 {
 public:
+    using ProcessedFramePtr = std::shared_ptr< ProcessedFrame >;
+
+    void setFrames( const ProcessedFramePtr &frame1, const ProcessedFramePtr &frame2 );
+
+    ProcessedFramePtr frame1() const;
+    ProcessedFramePtr frame2() const;
+
     void extractKeyPoints();
     void extractDescriptors();
 
 protected:
     ProcessedDoubleFrame();
+
+    static FeatureMatcher m_matcher;
+    static OpticalMatcher m_opticalMatcher;
 
 };
 
@@ -195,8 +189,8 @@ public:
 
     void load( const CvImage &image1, const CvImage &image2 );
 
-    MonoFramePtr leftFrame() const;
-    MonoFramePtr rightFrame() const;
+    ProcessedFramePtr leftFrame() const;
+    ProcessedFramePtr rightFrame() const;
 
     cv::Mat matchOptical();
     cv::Mat matchFeatures();
@@ -228,14 +222,13 @@ protected:
     static const int m_minLenght = 1;
     static const float m_maxYParallax;
 
-    void removeMapPoints( const std::vector< MonoPointPtr > &points );
+    void clearMapPoints( const std::vector< MonoPointPtr > &points );
 
 };
 
 class AdjacentFrame : public ProcessedDoubleFrame
 {
 public:
-    using ProcessedFramePtr = std::shared_ptr< ProcessedFrame >;
     using FramePtr = std::shared_ptr< AdjacentFrame >;
 
     static FramePtr create();
@@ -245,8 +238,8 @@ public:
 
     bool track();
 
-    MonoFramePtr previousFrame() const;
-    MonoFramePtr nextFrame() const;
+    ProcessedFramePtr previousFrame() const;
+    ProcessedFramePtr nextFrame() const;
 
     std::vector< AdjacentPoint > adjacentPoints() const;
     int adjacentPointsCount() const;
@@ -261,6 +254,18 @@ protected:
 
     static const int m_minLenght = 1;
     static const int m_minPnpPoints = 50;
+
+};
+
+class StereoFrame : public DoubleFrame
+{
+public:
+    using FramePtr = std::shared_ptr< StereoFrame >;
+
+    static FramePtr create();
+
+protected:
+    StereoFrame();
 
 };
 

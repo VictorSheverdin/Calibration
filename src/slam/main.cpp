@@ -103,7 +103,9 @@ int main( int, char** )
 
         for ( auto &i : mapPoints ) {
             if ( i ) {
+
                 auto point = i->point();
+
                 points.push_back( point );
                 colors.push_back( i->color() );
 
