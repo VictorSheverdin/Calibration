@@ -116,6 +116,21 @@ void drawLine( CvImage *target, const cv::Point2f &pt1, const cv::Point2f &pt2, 
     cv::line( *target, pt1, pt2, color );
 }
 
+void drawLabel( CvImage *target, const std::string text, int height, int fontFace, const int thickness, const cv::Scalar &color )
+{
+    if ( target ) {
+
+        auto fontScale = cv::getFontScaleFromHeight( fontFace, height, thickness );
+
+        auto fontSize = cv::getTextSize( text, fontFace, fontScale, thickness, nullptr );
+
+        cv::putText( *target, text, cv::Point( target->width() - fontSize.width, target->height() - fontSize.height ),
+                     fontFace, fontScale, color, thickness, cv::LINE_AA );
+
+    }
+
+}
+
 void vimbaRunCommand( AVT::VmbAPI::VimbaSystem &system, const std::string &key )
 {
     AVT::VmbAPI::FeaturePtr feature;

@@ -21,6 +21,7 @@ Map::Map(const WorldPtr &world )
 
 void Map::initialize()
 {
+    ProcessedFrame::setMaxFeatures( m_minKeyPoints );
 }
 
 Map::MapPtr Map::create( const WorldPtr &world )
@@ -108,6 +109,16 @@ void Map::addMapPoint( const MapPointPtr &point )
     m_mapPoints.insert( point );
 }
 
+const cv::Mat &Map::baselineVector() const
+{
+    return m_baselineVector;
+}
+
+double Map::baselineLenght() const
+{
+    return cv::norm( m_baselineVector );
+}
+
 bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
 {
     if ( m_parentWorld.expired() )
@@ -131,18 +142,28 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
 
     auto stereoFrame = ProcessedStereoFrame::create( shared_from_this() );
 
-    auto timeStart = std::chrono::system_clock::now();
-
     stereoFrame->load( resizedLeftImage, resizedRightImage );
-    stereoFrame->extractKeyPoints();
-    stereoFrame->matchOptical();
-
-    m_keyPointsImage = stereoFrame->drawKeyPoints();
-    m_stereoPointsImage = stereoFrame->drawStereoPoints();
-
-    static cv::Mat baselineVector;
 
     if ( m_frames.empty() ) {
+
+        int stereoPointsCount;
+        int keyPointsCount = ProcessedStereoFrame::maxFeatures();
+
+        do {
+            stereoFrame->extractKeyPoints();
+            stereoFrame->matchOptical();
+
+            stereoPointsCount = stereoFrame->stereoPointsCount();
+
+            if ( stereoPointsCount < m_goodStereoPoints ) {
+                keyPointsCount = std::max( m_minKeyPoints, /*m_goodStereoPoints * ProcessedStereoFrame::maxFeatures() / stereoPointsCount*/keyPointsCount * 2 );
+                ProcessedStereoFrame::setMaxFeatures( keyPointsCount );
+            }
+
+        } while( stereoPointsCount < m_goodStereoPoints && keyPointsCount < m_maxKeyPoints );
+
+        m_keyPointsImage = stereoFrame->drawKeyPoints();
+        m_stereoPointsImage = stereoFrame->drawStereoPoints();
 
         auto leftFrame = stereoFrame->leftFrame();
         auto rightFrame = stereoFrame->rightFrame();
@@ -161,7 +182,7 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
             rightFrame->multiplicateCameraMatrix( scaleFactor );
         }
 
-        baselineVector = rightFrame->translation();
+        m_baselineVector = rightFrame->translation();
 
         stereoFrame->triangulatePoints();
 
@@ -170,10 +191,14 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
     }
     else {
 
-        auto previousStereoFrame = std::dynamic_pointer_cast< ProcessedStereoFrame >( m_frames.back() );
+        int stereoPointsCount;
+        int trackPointsCount;
+        int keyPointsCount = ProcessedStereoFrame::maxFeatures();
 
         auto consecutiveLeftFrame = AdjacentFrame::create();
         auto consecutiveRightFrame = AdjacentFrame::create();
+
+        auto previousStereoFrame = std::dynamic_pointer_cast< ProcessedStereoFrame >( m_frames.back() );
 
         auto previousLeftFrame = std::dynamic_pointer_cast< ProcessedFrame >( previousStereoFrame->leftFrame() );
         auto previousRightFrame = std::dynamic_pointer_cast< ProcessedFrame >( previousStereoFrame->rightFrame() );
@@ -181,50 +206,61 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
         auto nextRightFrame = std::dynamic_pointer_cast< ProcessedFrame >( stereoFrame->rightFrame() );
 
         consecutiveLeftFrame->setFrames( previousLeftFrame, nextLeftFrame );
-
-        consecutiveLeftFrame->matchOptical();
-
         consecutiveRightFrame->setFrames( previousRightFrame, nextRightFrame );
 
-        consecutiveRightFrame->matchOptical();
+        do {
 
-        auto matchingTime = std::chrono::system_clock::now();
+            stereoFrame->extractKeyPoints();
+            stereoFrame->matchOptical();
 
-        if ( consecutiveLeftFrame->previousFrame()->adjacentPoints().size() > consecutiveRightFrame->previousFrame()->adjacentPoints().size() ) {
-            consecutiveLeftFrame->track();
-            consecutiveRightFrame->nextFrame()->setCameraMatrix( consecutiveRightFrame->previousFrame()->cameraMatrix() );
-            consecutiveRightFrame->nextFrame()->setRotation( consecutiveLeftFrame->nextFrame()->rotation() );
-            consecutiveRightFrame->nextFrame()->setTranslation( consecutiveLeftFrame->nextFrame()->translation() + baselineVector );
+            stereoPointsCount = stereoFrame->stereoPointsCount();
 
-        }
-        else {
-            consecutiveRightFrame->track();
-            consecutiveLeftFrame->nextFrame()->setCameraMatrix( consecutiveLeftFrame->previousFrame()->cameraMatrix() );
-            consecutiveLeftFrame->nextFrame()->setRotation( consecutiveRightFrame->nextFrame()->rotation() );
-            consecutiveLeftFrame->nextFrame()->setTranslation( consecutiveRightFrame->nextFrame()->translation() - baselineVector );
+            consecutiveLeftFrame->matchOptical();
+            consecutiveRightFrame->matchOptical();
 
-        }
+            if ( consecutiveLeftFrame->previousFrame()->adjacentPoints().size() > consecutiveRightFrame->previousFrame()->adjacentPoints().size() ) {
+                consecutiveLeftFrame->track();
+                consecutiveRightFrame->nextFrame()->setCameraMatrix( consecutiveRightFrame->previousFrame()->cameraMatrix() );
+                consecutiveRightFrame->nextFrame()->setRotation( consecutiveLeftFrame->nextFrame()->rotation() );
+                consecutiveRightFrame->nextFrame()->setTranslation( consecutiveLeftFrame->nextFrame()->translation() + m_baselineVector );
 
-        nextLeftFrame->triangulatePoints();
-        nextRightFrame->triangulatePoints();
+                trackPointsCount = consecutiveLeftFrame->trackPointsCount();
 
-        stereoFrame->triangulatePoints();
+            }
+            else {
+                consecutiveRightFrame->track();
+                consecutiveLeftFrame->nextFrame()->setCameraMatrix( consecutiveLeftFrame->previousFrame()->cameraMatrix() );
+                consecutiveLeftFrame->nextFrame()->setRotation( consecutiveRightFrame->nextFrame()->rotation() );
+                consecutiveLeftFrame->nextFrame()->setTranslation( consecutiveRightFrame->nextFrame()->translation() - m_baselineVector );
 
-        auto calcTime = std::chrono::system_clock::now();
+                trackPointsCount = consecutiveLeftFrame->trackPointsCount();
 
-        std::cout << "Matching time: "
-                  << std::chrono::duration_cast< std::chrono::microseconds >( matchingTime - timeStart ).count() / 1.e6
-                  << " sec. ";
-        std::cout << "Calculation time: "
-                  << std::chrono::duration_cast< std::chrono::microseconds >( calcTime - matchingTime ).count() / 1.e6
-                  << " sec." << std::endl;
+            }
 
-        std::cout << std::endl;
+            if ( trackPointsCount < m_goodTrackPoints || stereoPointsCount < m_goodStereoPoints ) {
+                keyPointsCount = std::max( m_minKeyPoints, keyPointsCount * 2 );
+                ProcessedStereoFrame::setMaxFeatures( keyPointsCount );
+
+            }
+            else if ( trackPointsCount > m_overageTrackPoints || stereoPointsCount > m_overageStereoPoints ) {
+                keyPointsCount = std::max( m_minKeyPoints, keyPointsCount / 2 );
+                ProcessedStereoFrame::setMaxFeatures( keyPointsCount );
+            }
+
+        } while( trackPointsCount < m_goodTrackPoints && keyPointsCount < m_maxKeyPoints );
+
+        m_keyPointsImage = stereoFrame->drawKeyPoints();
+        m_stereoPointsImage = stereoFrame->drawStereoPoints();
 
         auto leftTrack = consecutiveLeftFrame->drawTrack();
         auto rightTrack = consecutiveRightFrame->drawTrack();
 
         m_tracksImage = stackImages( leftTrack, rightTrack );
+
+        //nextLeftFrame->triangulatePoints();
+        //nextRightFrame->triangulatePoints();
+
+        stereoFrame->triangulatePoints();
 
         previousStereoFrame->clearImages();
         previousStereoFrame->clearMapPoints();

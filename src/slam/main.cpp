@@ -62,18 +62,18 @@ int main( int, char** )
 
     auto system = slam::World::create( path + "calibration.yaml" );
     system->createMap();
-    system->setScaleFactor( 0.5 );
+    // system->setScaleFactor( 0.5 );
 
     std::thread calcThread( [ & ] {
 
-        for ( auto i = /*8170*/10000; i < 30000; i++ ) {
+        for ( auto i = /*8170*/5900; i < 30000; i++ ) {
             std::cout << "Processing frame " << i << std::endl;
             std::string leftFile = leftPath + std::to_string( i ) + "_left.jpg";
             std::string rightFile = rightPath + std::to_string( i ) + "_right.jpg";
 
             system->track( leftFile, rightFile );
 
-            // std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
+            // std::this_thread::sleep_for( std::chrono::seconds( 3 ) );
 
         }
 
@@ -83,17 +83,11 @@ int main( int, char** )
 
     while ( true ) {
 
-        CvImage keyPointsImage;
-        CvImage stereoPointsImage;
-        CvImage tracksImage;
-        std::set< std::shared_ptr< slam::MapPoint > > mapPoints;
-        std::list< std::shared_ptr< slam::FrameBase > > frames;
-
-        keyPointsImage = system->keyPointsImage();
-        stereoPointsImage = system->stereoPointsImage();
-        tracksImage = system->tracksImage();
-        mapPoints = system->mapPoints();
-        frames = system->frames();
+        auto keyPointsImage = system->keyPointsImage();
+        auto stereoPointsImage = system->stereoPointsImage();
+        auto tracksImage = system->tracksImage();
+        auto mapPoints = system->mapPoints();
+        auto frames = system->frames();
 
         if ( !keyPointsImage.empty() )
             cv::imshow( "KeyPoints", keyPointsImage );
@@ -128,7 +122,7 @@ int main( int, char** )
 
             for ( auto &i : frames ) {
 
-                auto stereoFrame = std::dynamic_pointer_cast< slam::StereoFrame >( i );
+                auto stereoFrame = std::dynamic_pointer_cast< slam::ProcessedStereoFrame >( i );
 
                 if ( stereoFrame ) {
                     leftTrajectoryPoints.push_back( cv::Affine3d( stereoFrame->leftFrame()->rotation().t(), cv::Mat( - stereoFrame->leftFrame()->rotation().t() * stereoFrame->leftFrame()->translation() ) ) );

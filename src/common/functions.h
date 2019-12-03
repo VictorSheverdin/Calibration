@@ -17,10 +17,12 @@ CvImage colorizeDisparity( const cv::Mat &disparity );
 
 void checkVimbaStatus( VmbErrorType status, std::string message );
 
-bool drawFeaturePoint( CvImage *target, const cv::Point2f &pt, const int radius = 3, const cv::Scalar &color = cv::Scalar(0, 0, 255, 255) );
-bool drawFeaturePoints( CvImage *target, const std::vector<cv::KeyPoint> &keypoints, const int radius = 3, const cv::Scalar &color = cv::Scalar(0, 0, 255, 255) );
+bool drawFeaturePoint( CvImage *target, const cv::Point2f &pt, const int radius = 3, const cv::Scalar &color = cv::Scalar( 0, 0, 255, 255 ) );
+bool drawFeaturePoints( CvImage *target, const std::vector<cv::KeyPoint> &keypoints, const int radius = 3, const cv::Scalar &color = cv::Scalar( 0, 0, 255, 255 ) );
 
-void drawLine( CvImage *target, const cv::Point2f &pt1, const cv::Point2f &pt2, const cv::Scalar &color = cv::Scalar(0, 255, 0, 100) );
+void drawLine( CvImage *target, const cv::Point2f &pt1, const cv::Point2f &pt2, const cv::Scalar &color = cv::Scalar( 0, 255, 0, 100 ) );
+
+void drawLabel( CvImage *target, const std::string text, int height, int fontFace = cv::FONT_HERSHEY_TRIPLEX, const int thickness = 1, const cv::Scalar &color = cv::Scalar( 255, 255, 255, 255 ) );
 
 template <typename FeatureT>
 void setVimbaFeature( AVT::VmbAPI::CameraPtr camera, const std::string &key, FeatureT value )

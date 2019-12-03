@@ -7,8 +7,7 @@
 
 namespace slam {
 
-class FrameBase;
-class StereoFrame;
+class DoubleFrame;
 class MapPoint;
 class World;
 
@@ -17,7 +16,7 @@ class Map : public std::enable_shared_from_this< Map >
 public:
     using MapPtr = std::shared_ptr< Map >;
 
-    using FramePtr = std::shared_ptr< FrameBase >;
+    using FramePtr = std::shared_ptr< DoubleFrame >;
     using MapPointPtr = std::shared_ptr< MapPoint >;
 
     using WorldPtr = std::shared_ptr< World >;
@@ -46,6 +45,9 @@ public:
 
     void addMapPoint( const MapPointPtr &point );
 
+    const cv::Mat &baselineVector() const;
+    double baselineLenght() const;
+
 protected:
     using WorldPtrImpl = std::weak_ptr< World >;
 
@@ -56,11 +58,22 @@ protected:
     std::list< FramePtr > m_frames;
     std::set< MapPointPtr > m_mapPoints;
 
+    cv::Mat m_baselineVector;
+
     CvImage m_keyPointsImage;
     CvImage m_stereoPointsImage;
     CvImage m_tracksImage;
 
     static const int m_minPnpPoints = 10;
+
+    static const int m_minKeyPoints = 500;
+    static const int m_maxKeyPoints = 25000;
+
+    static const int m_goodTrackPoints = 100;
+    static const int m_overageTrackPoints = 300;
+
+    static const int m_goodStereoPoints = 300;
+    static const int m_overageStereoPoints = 2000;
 
 private:
     void initialize();
