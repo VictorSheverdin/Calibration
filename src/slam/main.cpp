@@ -1,5 +1,7 @@
 #include "src/common/precompiled.h"
 
+#include "src/common/rectificationprocessor.h"
+
 #include "world.h"
 #include "mappoint.h"
 #include "frame.h"
@@ -59,19 +61,50 @@ int main( int, char** )
     vizWindow.setWindowPosition( cv::Point( 880, 900 ) );
     vizWindow.setWindowSize( cv::Size( 800, 600 ) );
 
+    StereoCalibrationDataShort calibration( path + "calibration.yaml" );
 
-    auto system = slam::World::create( path + "calibration.yaml" );
+    auto system = slam::World::create( calibration );
     system->createMap();
-    // system->setScaleFactor( 0.5 );
+
+    auto scaleFactor = 1.0;
+
+    system->multiplicateCameraMatrix( scaleFactor );
+
+    auto cropRect = calibration.cropRect();
+    auto principal = cv::Vec2f( -cropRect.x, -cropRect.y );
+
+    system->movePrincipalPoint( principal );
 
     std::thread calcThread( [ & ] {
 
+        StereoRectificationProcessor rectificationProcessor( path + "calibration.yaml" );
+
         for ( auto i = /*8170*/5900; i < 30000; i++ ) {
+
             std::cout << "Processing frame " << i << std::endl;
             std::string leftFile = leftPath + std::to_string( i ) + "_left.jpg";
             std::string rightFile = rightPath + std::to_string( i ) + "_right.jpg";
 
-            system->track( leftFile, rightFile );
+            CvImage leftImage( leftFile );
+            CvImage rightImage( rightFile );
+
+            CvImage leftRectifiedImage;
+            CvImage rightRectifiedImage;
+
+            CvImage leftCroppedImage;
+            CvImage rightCroppedImage;
+
+            if ( rectificationProcessor.rectify( leftImage, rightImage, &leftRectifiedImage, &rightRectifiedImage )
+                        && rectificationProcessor.crop( leftRectifiedImage, rightRectifiedImage, &leftCroppedImage, &rightCroppedImage ) ) {
+
+                CvImage leftResizedImage;
+                CvImage rightResizedImage;
+
+                cv::resize( leftCroppedImage, leftResizedImage, cv::Size(), scaleFactor, scaleFactor, cv::INTER_CUBIC );
+                cv::resize( rightCroppedImage, rightResizedImage, cv::Size(), scaleFactor, scaleFactor, cv::INTER_CUBIC );
+
+                system->track( leftResizedImage, rightResizedImage );
+            }
 
             // std::this_thread::sleep_for( std::chrono::seconds( 3 ) );
 
@@ -102,6 +135,7 @@ int main( int, char** )
         std::vector< cv::Vec4b > colors;
 
         for ( auto &i : mapPoints ) {
+
             if ( i ) {
 
                 auto point = i->point();
@@ -124,14 +158,17 @@ int main( int, char** )
 
             for ( auto &i : frames ) {
 
-                auto stereoFrame = std::dynamic_pointer_cast< slam::ProcessedStereoFrame >( i );
+                auto stereoFrame = std::dynamic_pointer_cast< slam::StereoFrame >( i );
 
                 if ( stereoFrame ) {
+
                     leftTrajectoryPoints.push_back( cv::Affine3d( stereoFrame->leftFrame()->rotation().t(), cv::Mat( - stereoFrame->leftFrame()->rotation().t() * stereoFrame->leftFrame()->translation() ) ) );
                     rightTrajectoryPoints.push_back( cv::Affine3d( stereoFrame->rightFrame()->rotation().t(), cv::Mat( - stereoFrame->rightFrame()->rotation().t() * stereoFrame->rightFrame()->translation() ) ) );
 
                 }
             }
+
+            std::cout << points.size() << " " << frames.size() << std::endl;
 
             cv::viz::WTrajectory leftTrajectory( leftTrajectoryPoints );
             vizWindow.showWidget( "leftTrajectory", leftTrajectory );
@@ -145,7 +182,7 @@ int main( int, char** )
 
         }
 
-        vizWindow.spinOnce( 100 );
+        vizWindow.spinOnce( 150 );
 
         cv::waitKey( 1 );
 

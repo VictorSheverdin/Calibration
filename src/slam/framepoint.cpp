@@ -14,7 +14,7 @@ namespace slam {
     }
 
     // MonoPoint
-    MonoPoint::MonoPoint( const FramePtr parentFrame )
+    MonoPoint::MonoPoint( const FramePtr &parentFrame )
         : m_parentFrame( parentFrame )
     {
     }
@@ -24,7 +24,7 @@ namespace slam {
         return m_parentFrame.lock();
     }
 
-    void MonoPoint::setStereoPoint( const AdjacentPtr point )
+    void MonoPoint::setStereoPoint( const AdjacentPtr &point )
     {
         m_stereoPoint = point;
     }
@@ -39,7 +39,7 @@ namespace slam {
         return m_stereoPoint.lock();
     }
 
-    void MonoPoint::setNextPoint( const AdjacentPtr point )
+    void MonoPoint::setNextPoint( const AdjacentPtr &point )
     {
         m_nextPoint = point;
     }
@@ -54,7 +54,7 @@ namespace slam {
         return m_nextPoint.lock();
     }
 
-    void MonoPoint::setPrevPoint( const AdjacentPtr point )
+    void MonoPoint::setPrevPoint( const AdjacentPtr &point )
     {
         m_prevPoint = point;
     }
@@ -69,7 +69,7 @@ namespace slam {
         return m_prevPoint.lock();
     }
 
-    void MonoPoint::setMapPoint( const MapPointPtr point )
+    void MonoPoint::setMapPoint( const MapPointPtr &point )
     {
         m_mapPoint = point;
     }
@@ -98,12 +98,12 @@ namespace slam {
     }
 
     // ProcessedPoint
-    ProcessedPoint::ProcessedPoint( const FramePtr parentFrame , const size_t keyPointIndex )
+    ProcessedPoint::ProcessedPoint( const FramePtr &parentFrame , const size_t keyPointIndex )
         : MonoPoint( parentFrame ), m_keyPointIndex( keyPointIndex )
     {
     }
 
-    ProcessedPoint::PointPtr ProcessedPoint::create( const FramePtr parentFrame, const size_t keyPointIndex )
+    ProcessedPoint::PointPtr ProcessedPoint::create( const FramePtr &parentFrame, const size_t keyPointIndex )
     {
         return PointPtr( new ProcessedPoint( parentFrame, keyPointIndex ) );
     }
@@ -121,6 +121,95 @@ namespace slam {
     const cv::Scalar &ProcessedPoint::color() const
     {
         return parentFrame()->m_colors[ m_keyPointIndex ];
+    }
+
+    // FramePoint
+    FramePoint::FramePoint( const FramePtr &parentFrame )
+        : MonoPoint( parentFrame)
+    {
+    }
+
+    FramePoint::FramePoint( const FramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color )
+        : MonoPoint( parentFrame)
+    {
+        set( point, color );
+    }
+
+    const cv::Point2f &FramePoint::point() const
+    {
+        return m_point;
+    }
+
+    const cv::Scalar &FramePoint::color() const
+    {
+        return m_color;
+    }
+
+    FramePoint::PointPtr FramePoint::create( const FramePtr &parentFrame )
+    {
+        return PointPtr( new FramePoint( parentFrame ) );
+    }
+
+    FramePoint::PointPtr FramePoint::create( const FramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color )
+    {
+        return PointPtr( new FramePoint( parentFrame, point, color ) );
+    }
+
+    FramePoint::FramePtr FramePoint::parentFrame() const
+    {
+        return std::dynamic_pointer_cast< Frame >( m_parentFrame.lock() );
+    }
+
+    void FramePoint::replace( const ProcessedPointPtr &point )
+    {
+        if ( point ) {
+
+            auto stereoPoint = point->stereoPoint();
+
+            setStereoPoint( stereoPoint );
+
+            if ( stereoPoint )
+                stereoPoint->setStereoPoint( shared_from_this() );
+
+            auto nextPoint = point->nextPoint();
+
+            setNextPoint( nextPoint );
+
+            if ( nextPoint )
+                nextPoint->setPrevPoint( shared_from_this() );
+
+            auto prevPoint = point->prevPoint();
+
+            setPrevPoint( prevPoint );
+
+            if ( prevPoint )
+                prevPoint->setNextPoint( shared_from_this() );
+
+            setMapPoint( point->mapPoint() );
+
+            point->clearMapPoint();
+            point->clearNextPoint();
+            point->clearPrevPoint();
+            point->clearStereoPoint();
+
+        }
+
+    }
+
+    void FramePoint::setPoint( const cv::Point2f &point )
+    {
+        m_point = point;
+    }
+
+    void FramePoint::setColor( const cv::Scalar &color )
+    {
+        m_color = color;
+    }
+
+    void FramePoint::set( const cv::Point2f &point, const cv::Scalar &color )
+    {
+        setPoint( point );
+        setColor( color );
     }
 
     // DoublePoint

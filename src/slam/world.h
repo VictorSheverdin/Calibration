@@ -10,6 +10,7 @@ namespace slam {
 class World : public std::enable_shared_from_this< World >
 {
 public:
+
     using WorldPtr = std::shared_ptr< World >;
 
     using FramePtr = Map::FramePtr;
@@ -19,6 +20,7 @@ public:
 
     static WorldPtr create( const StereoCalibrationDataShort &calibration );
     static WorldPtr create( const std::string &calibrationFile );
+    static WorldPtr create( const ProjectionMatrix &leftProjectionMatrix, const ProjectionMatrix &rightProjectionMatrix );
 
     std::list< FramePtr > &frames();
     const std::list< FramePtr > &frames() const;
@@ -30,12 +32,15 @@ public:
     CvImage stereoPointsImage() const;
     CvImage tracksImage() const;
 
-    bool track( const std::string &leftFile, const std::string &rightFile );
     bool track( const CvImage &leftImage, const CvImage &rightImage );
 
     const StereoCalibrationDataShort &calibration() const;
 
-    void setScaleFactor( const double value );
+    const ProjectionMatrix &leftProjectionMatrix() const;
+    const ProjectionMatrix &rightProjectionMatrix() const;
+
+    void multiplicateCameraMatrix( const double value );
+    void movePrincipalPoint( const cv::Vec2f &value );
     double scaleFactor() const;
 
     void createMap();
@@ -43,8 +48,12 @@ public:
 protected:
     World( const StereoCalibrationDataShort &calibration );
     World( const std::string &calibrationFile );
+    World( const ProjectionMatrix &leftProjectionMatrix, const ProjectionMatrix &rightProjectionMatrix );
 
     StereoRectificationProcessor m_rectificationProcessor;
+
+    ProjectionMatrix m_leftProjectionMatrix;
+    ProjectionMatrix m_rightProjectionMatrix;
 
     MapPtr m_map;
 
@@ -52,6 +61,7 @@ protected:
 
 private:
     void initialize();
+
 };
 
 }

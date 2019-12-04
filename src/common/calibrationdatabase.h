@@ -2,6 +2,40 @@
 
 #include "src/common/image.h"
 
+class ProjectionMatrix
+{
+public:
+    ProjectionMatrix();
+    ProjectionMatrix( const cv::Mat &projectionMatrix );
+
+    void setCameraMatrix( const cv::Mat &value );
+    const cv::Mat &cameraMatrix() const;
+
+    void multiplicateCameraMatrix( const double value );
+    void movePrincipalPoint( const cv::Vec2f &value );
+
+    void setRotation( const cv::Mat &value );
+    const cv::Mat &rotation() const;
+
+    void setTranslation( const cv::Mat &value );
+    const cv::Mat &translation() const;
+
+    void setProjectionMatrix( const cv::Mat &value );
+    const cv::Mat &projectionMatrix() const;
+
+protected:
+    cv::Mat m_cameraMatrix;
+
+    cv::Mat m_r;
+    cv::Mat m_t;
+
+    mutable cv::Mat m_projectionMatrix;
+
+private:
+    void initialize();
+
+};
+
 class CalibrationDataBase
 {
 public:
@@ -142,8 +176,10 @@ protected:
 
     cv::Mat m_leftRectifyMatrix;
     cv::Mat m_rightRectifyMatrix;
+
     cv::Mat m_leftProjectionMatrix;
     cv::Mat m_rightProjectionMatrix;
+
     cv::Mat m_disparityToDepthMatrix;
 
     cv::Rect m_leftROI;

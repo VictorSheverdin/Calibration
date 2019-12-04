@@ -5,6 +5,9 @@
 
 #include "framepoint.h"
 #include "mappoint.h"
+
+#include "src/common/calibrationdatabase.h"
+
 #include "src/common/featureprocessor.h"
 
 namespace slam {
@@ -19,7 +22,7 @@ protected:
     virtual ~FrameBase() = default;
 };
 
-class MonoFrame : public FrameBase
+class MonoFrame : public FrameBase, public ProjectionMatrix
 {
 public:
     using PointPtr = std::shared_ptr< MonoPoint >;
@@ -33,32 +36,10 @@ public:
 
     bool drawPoints( CvImage *target ) const;
 
-    void setCameraMatrix( const cv::Mat &value );
-    const cv::Mat &cameraMatrix() const;
-
-    void multiplicateCameraMatrix( const double value );
-    void movePrincipalPoint( const cv::Vec2f &value );
-
-    void setRotation( const cv::Mat &value );
-    const cv::Mat &rotation() const;
-
-    void setTranslation( const cv::Mat &value );
-    const cv::Mat &translation() const;
-
-    void setProjectionMatrix( const cv::Mat &value );
-    const cv::Mat &projectionMatrix() const;
-
-    cv::Point3d coordinates() const;
+    cv::Point3d point() const;
 
 protected:
     MonoFrame();
-
-    cv::Mat m_cameraMatrix;
-
-    cv::Mat m_r;
-    cv::Mat m_t;
-
-    mutable cv::Mat m_projectionMatrix;
 
 private:
     void initialize();
@@ -135,8 +116,28 @@ private:
 
 };
 
-class Frame : public MonoFrame
+class Frame : public MonoFrame, public std::enable_shared_from_this< Frame >
 {
+public:
+    using FramePtr = std::shared_ptr< Frame >;
+    using ProcessedFramePtr = std::shared_ptr< ProcessedFrame >;
+
+    using FramePointPtr = std::shared_ptr< FramePoint >;
+
+    virtual std::vector< PointPtr > framePoints() const override;
+
+    static FramePtr create();
+
+    void replace( const ProcessedFramePtr &frame );
+
+protected:
+    Frame();
+
+    std::list< FramePointPtr > m_points;
+
+    FramePointPtr createFramePoint( const cv::Point2f &point, const cv::Scalar &color );
+
+private:
 };
 
 class DoubleFrame : public FrameBase
@@ -260,12 +261,22 @@ protected:
 class StereoFrame : public DoubleFrame
 {
 public:
-    using FramePtr = std::shared_ptr< StereoFrame >;
+    using FramePtr = std::shared_ptr< Frame >;
+    using StereoFramePtr = std::shared_ptr< StereoFrame >;
+    using ProcessedStereoFramePtr = std::shared_ptr< ProcessedStereoFrame >;
 
-    static FramePtr create();
+    static StereoFramePtr create();
+
+    FramePtr leftFrame() const;
+    FramePtr rightFrame() const;
+
+    void replace( const ProcessedStereoFramePtr &frame );
 
 protected:
     StereoFrame();
+
+private:
+    void initialize();
 
 };
 

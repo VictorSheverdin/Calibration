@@ -128,21 +128,9 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
 
     auto scaleFactor = parentWorld->scaleFactor();
 
-    CvImage resizedLeftImage;
-    CvImage resizedRightImage;
-
-    if ( std::abs( scaleFactor - 1.0 ) > DOUBLE_EPS ) {
-        cv::resize( leftImage, resizedLeftImage, cv::Size(), scaleFactor, scaleFactor, cv::INTER_CUBIC );
-        cv::resize( rightImage, resizedRightImage, cv::Size(), scaleFactor, scaleFactor, cv::INTER_CUBIC );
-    }
-    else {
-        resizedLeftImage = leftImage;
-        resizedRightImage = rightImage;
-    }
-
     auto stereoFrame = ProcessedStereoFrame::create( shared_from_this() );
 
-    stereoFrame->load( resizedLeftImage, resizedRightImage );
+    stereoFrame->load( leftImage, rightImage );
 
     if ( m_frames.empty() ) {
 
@@ -245,6 +233,7 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
             else if ( trackPointsCount > m_overageTrackPoints || stereoPointsCount > m_overageStereoPoints ) {
                 keyPointsCount = std::max( m_minKeyPoints, keyPointsCount / 2 );
                 ProcessedStereoFrame::setMaxFeatures( keyPointsCount );
+
             }
 
         } while( trackPointsCount < m_goodTrackPoints && keyPointsCount < m_maxKeyPoints );
@@ -257,13 +246,20 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
 
         m_tracksImage = stackImages( leftTrack, rightTrack );
 
-        nextLeftFrame->triangulatePoints();
-        nextRightFrame->triangulatePoints();
+        // nextLeftFrame->triangulatePoints();
+        // nextRightFrame->triangulatePoints();
 
         stereoFrame->triangulatePoints();
 
-        previousStereoFrame->clearImages();
         previousStereoFrame->clearMapPoints();
+
+        auto replacedFrame = StereoFrame::create();
+
+        replacedFrame->replace( previousStereoFrame );
+
+        m_frames.pop_back();
+
+        m_frames.push_back( replacedFrame );
 
         m_frames.push_back( stereoFrame );
 

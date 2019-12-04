@@ -24,10 +24,6 @@ MonoFrame::MonoFrame()
 
 void MonoFrame::initialize()
 {
-    setCameraMatrix( cv::Mat::eye( 3, 3, CV_64F ) );
-
-    setRotation( cv::Mat::eye( 3, 3, CV_64F ) );
-    setTranslation( cv::Mat::zeros( 3, 1, CV_64F ) );
 }
 
 std::vector< cv::Point2f > MonoFrame::points() const
@@ -85,95 +81,11 @@ bool MonoFrame::drawPoints( CvImage *target ) const
     return true;
 }
 
-void MonoFrame::setCameraMatrix( const cv::Mat &value )
+cv::Point3d MonoFrame::point() const
 {
-    m_projectionMatrix = cv::Mat();
+    auto t = translation();
 
-    m_cameraMatrix = value;
-}
-
-const cv::Mat &MonoFrame::cameraMatrix() const
-{
-    return m_cameraMatrix;
-}
-
-void MonoFrame::multiplicateCameraMatrix( const double value )
-{
-    m_projectionMatrix = cv::Mat();
-
-    m_cameraMatrix.at< double >( 0, 0 ) *= value;
-    m_cameraMatrix.at< double >( 1, 1 ) *= value;
-    m_cameraMatrix.at< double >( 0, 2 ) *= value;
-    m_cameraMatrix.at< double >( 1, 2 ) *= value;
-
-}
-
-void MonoFrame::movePrincipalPoint( const cv::Vec2f &value )
-{
-    m_projectionMatrix = cv::Mat();
-
-    m_cameraMatrix.at< double >( 0, 2 ) += value[ 0 ];
-    m_cameraMatrix.at< double >( 1, 2 ) += value[ 1 ];
-}
-
-void MonoFrame::setRotation( const cv::Mat &value )
-{
-    m_projectionMatrix = cv::Mat();
-
-    m_r = value;
-}
-
-const cv::Mat &MonoFrame::rotation() const
-{
-    return m_r;
-}
-
-void MonoFrame::setTranslation( const cv::Mat &value )
-{
-    m_projectionMatrix = cv::Mat();
-
-    m_t = value;
-}
-
-const cv::Mat &MonoFrame::translation() const
-{
-    return m_t;
-}
-
-void MonoFrame::setProjectionMatrix( const cv::Mat &value )
-{
-    m_projectionMatrix = value;
-
-    cv::Mat r;
-    cv::Mat t;
-
-    cv::decomposeProjectionMatrix( m_projectionMatrix, m_cameraMatrix, r, t );
-
-    m_t.at< double >( 0, 0 ) = - t.at< double >( 0, 0 ) / t.at< double >( 3, 0 );
-    m_t.at< double >( 1, 0 ) = - t.at< double >( 1, 0 ) / t.at< double >( 3, 0 );
-    m_t.at< double >( 2, 0 ) = - t.at< double >( 1, 0 ) / t.at< double >( 3, 0 );
-
-    m_r = r.t();
-
-}
-
-const cv::Mat &MonoFrame::projectionMatrix() const
-{
-    if ( m_projectionMatrix.empty() ) {
-        auto extrinsicMatrix = cv::Mat( 3, 4, CV_64F );
-        m_r.copyTo( extrinsicMatrix.rowRange( 0, 3 ).colRange( 0, 3 ) );
-        m_t.copyTo( extrinsicMatrix.rowRange( 0, 3 ).col( 3 ) );
-        m_projectionMatrix = m_cameraMatrix * extrinsicMatrix;
-
-    }
-
-    return m_projectionMatrix;
-
-}
-
-cv::Point3d MonoFrame::coordinates() const
-{
-     return  cv::Point3d( m_t.at< double >( 0, 0 ), m_t.at< double >( 1, 0 ), m_t.at< double >( 2, 0 ) );
+     return  cv::Point3d( t.at< double >( 0, 0 ), t.at< double >( 1, 0 ), t.at< double >( 2, 0 ) );
 }
 
 // ProcessedFrame
@@ -286,7 +198,7 @@ void ProcessedFrame::triangulatePoints()
                     auto parentFrame = j->parentFrame();
 
                     if ( parentFrame ) {
-                        auto cameraDistance = cv::norm( coordinates() - parentFrame->coordinates() );
+                        auto cameraDistance = cv::norm( point() - parentFrame->point() );
                         auto pointsDistance = cv::norm( j->point() - ptr->point() );
 
                         if ( cameraDistance > m_minCameraDistanceFactor * parentMap()->baselineLenght() && pointsDistance > m_minPointsDistance ) {
@@ -413,6 +325,60 @@ void ProcessedFrame::setMaxFeatures( const int value )
 int ProcessedFrame::maxFeatures()
 {
     return m_keypointProcessor.maxFeatures();
+}
+
+// Frame
+Frame::Frame()
+{
+}
+
+std::vector< Frame::PointPtr > Frame::framePoints() const
+{
+    std::vector< PointPtr > ret;
+
+    for ( auto &i : m_points )
+        ret.push_back( i );
+
+    return ret;
+}
+
+Frame::FramePtr Frame::create()
+{
+    return FramePtr( new Frame() );
+}
+
+void Frame::replace( const ProcessedFramePtr &frame )
+{
+    if ( frame ) {
+
+        setProjectionMatrix( frame->projectionMatrix() );
+
+        auto points = frame->framePoints();
+
+        for ( auto &i : points ) {
+
+            auto processedPoint = std::dynamic_pointer_cast< ProcessedPoint >( i );
+
+            if ( processedPoint ) {
+                auto point = createFramePoint( processedPoint->point(), processedPoint->color() );
+                point->replace( processedPoint );
+
+            }
+
+        }
+
+    }
+
+}
+
+Frame::FramePointPtr Frame::createFramePoint( const cv::Point2f &point, const cv::Scalar &color )
+{
+    auto ret = FramePoint::create( shared_from_this(), point, color );
+
+    m_points.push_back( ret );
+
+    return ret;
+
 }
 
 // DoubleFrame
@@ -1061,11 +1027,45 @@ CvImage AdjacentFrame::drawTrack() const
 // StereoFrame
 StereoFrame::StereoFrame()
 {
+    initialize();
 }
 
-StereoFrame::FramePtr StereoFrame::create()
+void StereoFrame::initialize()
 {
-    return FramePtr( new StereoFrame() );
+    setFrames( Frame::create(), Frame::create() );
+}
+
+StereoFrame::StereoFramePtr StereoFrame::create()
+{
+    return StereoFramePtr( new StereoFrame() );
+}
+
+
+StereoFrame::FramePtr StereoFrame::leftFrame() const
+{
+    return std::dynamic_pointer_cast< Frame >( DoubleFrame::frame1() );
+}
+
+StereoFrame::FramePtr StereoFrame::rightFrame() const
+{
+    return std::dynamic_pointer_cast< Frame >( DoubleFrame::frame2() );
+}
+
+void StereoFrame::replace( const ProcessedStereoFramePtr &frame )
+{
+    if ( frame ) {
+        auto leftFrame = this->leftFrame();
+        auto leftProcessedFrame = frame->leftFrame();
+        auto rightFrame = this->rightFrame();
+        auto rightProcessedFrame = frame->rightFrame();
+
+        if ( leftFrame && leftProcessedFrame )
+            leftFrame->replace( leftProcessedFrame );
+
+        if ( rightFrame && rightProcessedFrame )
+            rightFrame->replace( rightProcessedFrame );
+
+    }
 }
 
 }

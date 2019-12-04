@@ -17,15 +17,20 @@ World::World( const StereoCalibrationDataShort &calibration )
 
 World::World( const std::string &calibrationFile )
 {
-    m_scaleFactor = 1.0;
-
     m_rectificationProcessor.loadFile( calibrationFile );
 
     initialize();
 }
 
+World::World( const ProjectionMatrix &leftProjectionMatrix, const ProjectionMatrix &rightProjectionMatrix )
+    : m_leftProjectionMatrix( leftProjectionMatrix ), m_rightProjectionMatrix( rightProjectionMatrix )
+{
+    initialize();
+}
+
 void World::initialize()
 {
+    m_scaleFactor = 1.0;
 }
 
 World::WorldPtr World::create( const StereoCalibrationDataShort &calibration )
@@ -36,6 +41,11 @@ World::WorldPtr World::create( const StereoCalibrationDataShort &calibration )
 World::WorldPtr World::create( const std::string &calibrationFile )
 {
     return WorldPtr( new World( calibrationFile ) );
+}
+
+World::WorldPtr World::create( const ProjectionMatrix &leftProjectionMatrix, const ProjectionMatrix &rightProjectionMatrix )
+{
+    return WorldPtr( new World( leftProjectionMatrix, rightProjectionMatrix ) );
 }
 
 std::list< World::FramePtr > &World::frames()
@@ -73,31 +83,9 @@ CvImage World::tracksImage() const
     return m_map->tracksImage();
 }
 
-bool World::track( const std::string &leftFile, const std::string &rightFile )
-{
-    CvImage leftImage( leftFile );
-    CvImage rightImage( rightFile );
-
-    return track( leftImage, rightImage );
-
-}
-
 bool World::track( const CvImage &leftImage, const CvImage &rightImage )
 {
-    CvImage leftRectifiedImage;
-    CvImage rightRectifiedImage;
-
-    CvImage leftCroppedImage;
-    CvImage rightCroppedImage;
-
-    if ( !m_rectificationProcessor.rectify( leftImage, rightImage, &leftRectifiedImage, &rightRectifiedImage ) )
-        return false;
-
-    if ( !m_rectificationProcessor.crop( leftRectifiedImage, rightRectifiedImage, &leftCroppedImage, &rightCroppedImage ) )
-        return false;
-
-    return m_map->track( leftCroppedImage, rightCroppedImage );
-
+    return m_map->track( leftImage, rightImage );
 }
 
 const StereoCalibrationDataShort &World::calibration() const
@@ -105,9 +93,30 @@ const StereoCalibrationDataShort &World::calibration() const
     return m_rectificationProcessor.calibration();
 }
 
-void World::setScaleFactor( const double value )
+const ProjectionMatrix &World::leftProjectionMatrix() const
+{
+    return m_leftProjectionMatrix;
+}
+
+const ProjectionMatrix &World::rightProjectionMatrix() const
+{
+    return m_rightProjectionMatrix;
+}
+
+void World::multiplicateCameraMatrix( const double value )
 {
     m_scaleFactor = value;
+
+    m_leftProjectionMatrix.multiplicateCameraMatrix( value );
+    m_rightProjectionMatrix.multiplicateCameraMatrix( value );
+
+}
+
+void World::movePrincipalPoint( const cv::Vec2f &value )
+{
+    m_leftProjectionMatrix.movePrincipalPoint( value );
+    m_rightProjectionMatrix.movePrincipalPoint( value );
+
 }
 
 double World::scaleFactor() const

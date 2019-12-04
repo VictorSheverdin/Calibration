@@ -4,6 +4,7 @@
 
 namespace slam {
 
+class Frame;
 class MonoFrame;
 class ProcessedFrame;
 class MapPoint;
@@ -27,19 +28,19 @@ public:
 
     FramePtr parentFrame() const;
 
-    void setStereoPoint( const AdjacentPtr point );
+    void setStereoPoint( const AdjacentPtr &point );
     void clearStereoPoint();
     AdjacentPtr stereoPoint() const;
 
-    void setNextPoint( const AdjacentPtr point );
+    void setNextPoint( const AdjacentPtr &point );
     void clearNextPoint();
     AdjacentPtr nextPoint() const;
 
-    void setPrevPoint( const AdjacentPtr point );
+    void setPrevPoint( const AdjacentPtr &point );
     void clearPrevPoint();
     AdjacentPtr prevPoint() const;
 
-    void setMapPoint( const MapPointPtr point );
+    void setMapPoint( const MapPointPtr &point );
     void clearMapPoint();
     MapPointPtr mapPoint() const;
 
@@ -51,7 +52,7 @@ protected:
     using AdjacentPtrImpl = std::weak_ptr< MonoPoint >;
     using MapPointPtrImpl = std::weak_ptr< MapPoint >;
 
-    MonoPoint( const FramePtr parentFrame );
+    MonoPoint( const FramePtr &parentFrame );
 
     const FramePtrImpl m_parentFrame; // Parent frame
 
@@ -63,7 +64,7 @@ protected:
 
 };
 
-class ProcessedPoint : public MonoPoint
+class ProcessedPoint : public MonoPoint, public std::enable_shared_from_this< ProcessedPoint >
 {
 public:
     using FramePtr = std::shared_ptr< ProcessedFrame >;
@@ -72,23 +73,49 @@ public:
     virtual const cv::Point2f &point() const override;
     virtual const cv::Scalar &color() const override;
 
-    static PointPtr create( const FramePtr parentFrame, const size_t keyPointIndex );
+    static PointPtr create( const FramePtr &parentFrame, const size_t keyPointIndex );
 
     FramePtr parentFrame() const;
 
 protected:
     using FramePtrImpl = std::weak_ptr< ProcessedFrame >;
 
-    ProcessedPoint( const FramePtr parentFrame, const size_t keyPointIndex );
+    ProcessedPoint( const FramePtr &parentFrame, const size_t keyPointIndex );
 
     size_t m_keyPointIndex; // Index of keypoint in parent frame
 
-private:
-
 };
 
-class Point : public MonoPoint
+class FramePoint : public MonoPoint, public std::enable_shared_from_this< FramePoint >
 {
+public:
+    using FramePtr = std::shared_ptr< Frame >;
+    using PointPtr = std::shared_ptr< FramePoint >;
+
+    using ProcessedPointPtr = std::shared_ptr< ProcessedPoint >;
+
+    virtual const cv::Point2f &point() const override;
+    virtual const cv::Scalar &color() const override;
+
+    static PointPtr create( const FramePtr &parentFrame );
+    static PointPtr create( const FramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color );
+
+    FramePtr parentFrame() const;
+
+    void replace( const ProcessedPointPtr &point );
+
+    void setPoint( const cv::Point2f &point );
+    void setColor( const cv::Scalar &color );
+
+    void set( const cv::Point2f &point, const cv::Scalar &color );
+
+protected:
+    FramePoint( const FramePtr &parentFrame );
+    FramePoint( const FramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color );
+
+    cv::Point2f m_point;
+    cv::Scalar m_color;
+
 };
 
 class DoublePoint : public PointBase
