@@ -151,6 +151,8 @@ public:
     MonoFramePtr frame1() const;
     MonoFramePtr frame2() const;
 
+    void setProjectionMatrix( const ProjectionMatrix &matrix1, const ProjectionMatrix &matrix2 );
+
 protected:
     DoubleFrame();
 
@@ -192,6 +194,8 @@ public:
 
     ProcessedFramePtr leftFrame() const;
     ProcessedFramePtr rightFrame() const;
+
+    void setProjectionMatrix( const ProjectionMatrix &leftMatrix, const ProjectionMatrix &rightMatrix );
 
     cv::Mat matchOptical();
     cv::Mat matchFeatures();
@@ -269,6 +273,8 @@ public:
 
     FramePtr leftFrame() const;
     FramePtr rightFrame() const;
+
+    void setProjectionMatrix( const ProjectionMatrix &leftMatrix, const ProjectionMatrix &rightMatrix );
 
     void replace( const ProcessedStereoFramePtr &frame );
 

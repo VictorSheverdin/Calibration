@@ -57,23 +57,24 @@ int main( int, char** )
     cv::moveWindow( "Track", 80, 900 );
 
     cv::viz::Viz3d vizWindow( "Viz3d" );
-    vizWindow.showWidget( "coordSystemWidget", cv::viz::WCoordinateSystem() );
     vizWindow.setWindowPosition( cv::Point( 880, 900 ) );
     vizWindow.setWindowSize( cv::Size( 800, 600 ) );
 
+    vizWindow.showWidget( "coordSystemWidget", cv::viz::WCoordinateSystem() );
+
     StereoCalibrationDataShort calibration( path + "calibration.yaml" );
 
-    auto system = slam::World::create( calibration );
+    auto system = slam::World::create( calibration.leftProjectionMatrix(), calibration.rightProjectionMatrix() );
     system->createMap();
 
     auto scaleFactor = 1.0;
-
-    system->multiplicateCameraMatrix( scaleFactor );
 
     auto cropRect = calibration.cropRect();
     auto principal = cv::Vec2f( -cropRect.x, -cropRect.y );
 
     system->movePrincipalPoint( principal );
+
+    system->multiplicateCameraMatrix( scaleFactor );
 
     std::thread calcThread( [ & ] {
 
@@ -104,6 +105,7 @@ int main( int, char** )
                 cv::resize( rightCroppedImage, rightResizedImage, cv::Size(), scaleFactor, scaleFactor, cv::INTER_CUBIC );
 
                 system->track( leftResizedImage, rightResizedImage );
+
             }
 
             // std::this_thread::sleep_for( std::chrono::seconds( 3 ) );
@@ -167,8 +169,6 @@ int main( int, char** )
 
                 }
             }
-
-            std::cout << points.size() << " " << frames.size() << std::endl;
 
             cv::viz::WTrajectory leftTrajectory( leftTrajectoryPoints );
             vizWindow.showWidget( "leftTrajectory", leftTrajectory );

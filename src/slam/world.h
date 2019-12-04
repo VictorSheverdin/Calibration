@@ -18,8 +18,6 @@ public:
     using MapPtr = Map::MapPtr;
     using MapPointPtr = Map::MapPointPtr;
 
-    static WorldPtr create( const StereoCalibrationDataShort &calibration );
-    static WorldPtr create( const std::string &calibrationFile );
     static WorldPtr create( const ProjectionMatrix &leftProjectionMatrix, const ProjectionMatrix &rightProjectionMatrix );
 
     std::list< FramePtr > &frames();
@@ -34,30 +32,26 @@ public:
 
     bool track( const CvImage &leftImage, const CvImage &rightImage );
 
-    const StereoCalibrationDataShort &calibration() const;
-
     const ProjectionMatrix &leftProjectionMatrix() const;
     const ProjectionMatrix &rightProjectionMatrix() const;
 
     void multiplicateCameraMatrix( const double value );
     void movePrincipalPoint( const cv::Vec2f &value );
-    double scaleFactor() const;
 
     void createMap();
 
-protected:
-    World( const StereoCalibrationDataShort &calibration );
-    World( const std::string &calibrationFile );
-    World( const ProjectionMatrix &leftProjectionMatrix, const ProjectionMatrix &rightProjectionMatrix );
+    const cv::Mat &baselineVector() const;
+    double baselineLenght() const;
 
-    StereoRectificationProcessor m_rectificationProcessor;
+protected:
+    World( const ProjectionMatrix &leftProjectionMatrix, const ProjectionMatrix &rightProjectionMatrix );
 
     ProjectionMatrix m_leftProjectionMatrix;
     ProjectionMatrix m_rightProjectionMatrix;
 
-    MapPtr m_map;
+    cv::Mat m_baselineVector;
 
-    double m_scaleFactor;
+    MapPtr m_map;
 
 private:
     void initialize();

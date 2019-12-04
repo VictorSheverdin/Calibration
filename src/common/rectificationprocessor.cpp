@@ -99,7 +99,9 @@ bool StereoRectificationProcessor::cropLeft( const CvImage &image, CvImage *resu
     if ( !result || !isValid() )
         return false;
 
-    if ( m_calibrationData.leftROI().empty() || m_calibrationData.rightROI().empty() )
+    auto cropRect = m_calibrationData.cropRect();
+
+    if ( cropRect.empty() )
         return false;
 
     *result = image( m_calibrationData.cropRect() );

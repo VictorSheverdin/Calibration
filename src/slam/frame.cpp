@@ -402,6 +402,12 @@ DoubleFrame::MonoFramePtr DoubleFrame::frame2() const
     return m_frame2;
 }
 
+void DoubleFrame::setProjectionMatrix( const ProjectionMatrix &matrix1, const ProjectionMatrix &matrix2 )
+{
+    m_frame1->setProjectionMatrix( matrix1 );
+    m_frame2->setProjectionMatrix( matrix2 );
+}
+
 // ProcessedDoubleFrame
 FeatureMatcher ProcessedDoubleFrame::m_matcher;
 OpticalMatcher ProcessedDoubleFrame::m_opticalMatcher;
@@ -481,9 +487,14 @@ ProcessedStereoFrame::ProcessedFramePtr ProcessedStereoFrame::leftFrame() const
     return frame1();
 }
 
-ProcessedDoubleFrame::ProcessedFramePtr ProcessedStereoFrame::rightFrame() const
+ProcessedStereoFrame::ProcessedFramePtr ProcessedStereoFrame::rightFrame() const
 {
     return frame2();
+}
+
+void ProcessedStereoFrame::setProjectionMatrix( const ProjectionMatrix &leftMatrix, const ProjectionMatrix &rightMatrix )
+{
+    ProcessedDoubleFrame::setProjectionMatrix( leftMatrix, rightMatrix );
 }
 
 cv::Mat ProcessedStereoFrame::matchOptical()
@@ -983,6 +994,7 @@ std::vector< AdjacentFrame::MonoPointPtr > AdjacentFrame::trackPoints() const
         for ( auto &i : framePoints ) {
             if ( i && i->mapPoint() ) {
                 ret.push_back( i );
+
             }
 
         }
@@ -1049,6 +1061,11 @@ StereoFrame::FramePtr StereoFrame::leftFrame() const
 StereoFrame::FramePtr StereoFrame::rightFrame() const
 {
     return std::dynamic_pointer_cast< Frame >( DoubleFrame::frame2() );
+}
+
+void StereoFrame::setProjectionMatrix( const ProjectionMatrix &leftMatrix, const ProjectionMatrix &rightMatrix )
+{
+    DoubleFrame::setProjectionMatrix( leftMatrix, rightMatrix );
 }
 
 void StereoFrame::replace( const ProcessedStereoFramePtr &frame )

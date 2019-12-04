@@ -23,7 +23,9 @@ public:
     void setProjectionMatrix( const cv::Mat &value );
     const cv::Mat &projectionMatrix() const;
 
-protected:
+    operator cv::Mat() const;
+
+private:
     cv::Mat m_cameraMatrix;
 
     cv::Mat m_r;
@@ -31,7 +33,6 @@ protected:
 
     mutable cv::Mat m_projectionMatrix;
 
-private:
     void initialize();
 
 };
@@ -136,10 +137,12 @@ public:
     const cv::Mat &rightRectifyMatrix() const;
 
     void setLeftProjectionMatrix( const cv::Mat &value );
-    const cv::Mat &leftProjectionMatrix() const;
+    void setLeftProjectionMatrix( const ProjectionMatrix &value );
+    const ProjectionMatrix &leftProjectionMatrix() const;
 
     void setRightProjectionMatrix( const cv::Mat &value );
-    const cv::Mat &rightProjectionMatrix() const;
+    void setRightProjectionMatrix( const ProjectionMatrix &value );
+    const ProjectionMatrix &rightProjectionMatrix() const;
 
     void setDisparityToDepthMatrix( const cv::Mat &value );
     const cv::Mat &disparityToDepthMatrix() const;
@@ -177,8 +180,8 @@ protected:
     cv::Mat m_leftRectifyMatrix;
     cv::Mat m_rightRectifyMatrix;
 
-    cv::Mat m_leftProjectionMatrix;
-    cv::Mat m_rightProjectionMatrix;
+    ProjectionMatrix m_leftProjectionMatrix;
+    ProjectionMatrix m_rightProjectionMatrix;
 
     cv::Mat m_disparityToDepthMatrix;
 

@@ -8,39 +8,17 @@
 
 namespace slam {
 
-World::World( const StereoCalibrationDataShort &calibration )
-{
-    m_rectificationProcessor.setCalibrationData( calibration );
-
-    initialize();
-}
-
-World::World( const std::string &calibrationFile )
-{
-    m_rectificationProcessor.loadFile( calibrationFile );
-
-    initialize();
-}
-
 World::World( const ProjectionMatrix &leftProjectionMatrix, const ProjectionMatrix &rightProjectionMatrix )
     : m_leftProjectionMatrix( leftProjectionMatrix ), m_rightProjectionMatrix( rightProjectionMatrix )
 {
     initialize();
+
+    m_baselineVector = rightProjectionMatrix.translation() - leftProjectionMatrix.translation();
+
 }
 
 void World::initialize()
 {
-    m_scaleFactor = 1.0;
-}
-
-World::WorldPtr World::create( const StereoCalibrationDataShort &calibration )
-{
-    return WorldPtr( new World( calibration ) );
-}
-
-World::WorldPtr World::create( const std::string &calibrationFile )
-{
-    return WorldPtr( new World( calibrationFile ) );
 }
 
 World::WorldPtr World::create( const ProjectionMatrix &leftProjectionMatrix, const ProjectionMatrix &rightProjectionMatrix )
@@ -88,11 +66,6 @@ bool World::track( const CvImage &leftImage, const CvImage &rightImage )
     return m_map->track( leftImage, rightImage );
 }
 
-const StereoCalibrationDataShort &World::calibration() const
-{
-    return m_rectificationProcessor.calibration();
-}
-
 const ProjectionMatrix &World::leftProjectionMatrix() const
 {
     return m_leftProjectionMatrix;
@@ -105,8 +78,6 @@ const ProjectionMatrix &World::rightProjectionMatrix() const
 
 void World::multiplicateCameraMatrix( const double value )
 {
-    m_scaleFactor = value;
-
     m_leftProjectionMatrix.multiplicateCameraMatrix( value );
     m_rightProjectionMatrix.multiplicateCameraMatrix( value );
 
@@ -119,14 +90,19 @@ void World::movePrincipalPoint( const cv::Vec2f &value )
 
 }
 
-double World::scaleFactor() const
-{
-    return m_scaleFactor;
-}
-
 void World::createMap()
 {
     m_map = Map::create( shared_from_this() );
+}
+
+const cv::Mat &World::baselineVector() const
+{
+    return m_baselineVector;
+}
+
+double World::baselineLenght() const
+{
+    return cv::norm( m_baselineVector );
 }
 
 }

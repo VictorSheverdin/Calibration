@@ -109,24 +109,27 @@ void Map::addMapPoint( const MapPointPtr &point )
     m_mapPoints.insert( point );
 }
 
+Map::WorldPtr Map::parentWorld() const
+{
+    return m_parentWorld.lock();
+}
+
 const cv::Mat &Map::baselineVector() const
 {
-    return m_baselineVector;
+    return parentWorld()->baselineVector();
 }
 
 double Map::baselineLenght() const
 {
-    return cv::norm( m_baselineVector );
+    return cv::norm( baselineVector() );
 }
 
 bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
 {
-    if ( m_parentWorld.expired() )
+    auto parentWorld = this->parentWorld();
+
+    if ( !parentWorld )
         return false;
-
-    auto parentWorld = m_parentWorld.lock();
-
-    auto scaleFactor = parentWorld->scaleFactor();
 
     auto stereoFrame = ProcessedStereoFrame::create( shared_from_this() );
 
@@ -151,26 +154,9 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
         } while( stereoPointsCount < m_goodStereoPoints && keyPointsCount < m_maxKeyPoints );
 
         m_keyPointsImage = stereoFrame->drawKeyPoints();
-        m_stereoPointsImage = stereoFrame->drawStereoPoints();
+        //m_stereoPointsImage = stereoFrame->drawStereoPoints();
 
-        auto leftFrame = stereoFrame->leftFrame();
-        auto rightFrame = stereoFrame->rightFrame();
-
-        leftFrame->setProjectionMatrix( parentWorld->calibration().leftProjectionMatrix() );
-        rightFrame->setProjectionMatrix( parentWorld->calibration().rightProjectionMatrix() );
-
-        auto cropRect = parentWorld->calibration().cropRect();
-        auto principal = cv::Vec2f( -cropRect.x, -cropRect.y );
-
-        leftFrame->movePrincipalPoint( principal );
-        rightFrame->movePrincipalPoint( principal );
-
-        if ( std::abs( scaleFactor - 1.0 ) > DOUBLE_EPS ) {
-            leftFrame->multiplicateCameraMatrix( scaleFactor );
-            rightFrame->multiplicateCameraMatrix( scaleFactor );
-        }
-
-        m_baselineVector = rightFrame->translation();
+        stereoFrame->setProjectionMatrix( parentWorld->leftProjectionMatrix(), parentWorld->rightProjectionMatrix() );
 
         stereoFrame->triangulatePoints();
 
@@ -210,7 +196,7 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
                 consecutiveLeftFrame->track();
                 consecutiveRightFrame->nextFrame()->setCameraMatrix( consecutiveRightFrame->previousFrame()->cameraMatrix() );
                 consecutiveRightFrame->nextFrame()->setRotation( consecutiveLeftFrame->nextFrame()->rotation() );
-                consecutiveRightFrame->nextFrame()->setTranslation( consecutiveLeftFrame->nextFrame()->translation() + m_baselineVector );
+                consecutiveRightFrame->nextFrame()->setTranslation( consecutiveLeftFrame->nextFrame()->translation() + baselineVector() );
 
                 trackPointsCount = consecutiveLeftFrame->trackPointsCount();
 
@@ -219,7 +205,7 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
                 consecutiveRightFrame->track();
                 consecutiveLeftFrame->nextFrame()->setCameraMatrix( consecutiveLeftFrame->previousFrame()->cameraMatrix() );
                 consecutiveLeftFrame->nextFrame()->setRotation( consecutiveRightFrame->nextFrame()->rotation() );
-                consecutiveLeftFrame->nextFrame()->setTranslation( consecutiveRightFrame->nextFrame()->translation() - m_baselineVector );
+                consecutiveLeftFrame->nextFrame()->setTranslation( consecutiveRightFrame->nextFrame()->translation() - baselineVector() );
 
                 trackPointsCount = consecutiveLeftFrame->trackPointsCount();
 
@@ -239,12 +225,12 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
         } while( trackPointsCount < m_goodTrackPoints && keyPointsCount < m_maxKeyPoints );
 
         m_keyPointsImage = stereoFrame->drawKeyPoints();
-        m_stereoPointsImage = stereoFrame->drawStereoPoints();
+        //m_stereoPointsImage = stereoFrame->drawStereoPoints();
 
         auto leftTrack = consecutiveLeftFrame->drawTrack();
         auto rightTrack = consecutiveRightFrame->drawTrack();
 
-        m_tracksImage = stackImages( leftTrack, rightTrack );
+        //m_tracksImage = stackImages( leftTrack, rightTrack );
 
         // nextLeftFrame->triangulatePoints();
         // nextRightFrame->triangulatePoints();

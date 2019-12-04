@@ -45,6 +45,8 @@ public:
 
     void addMapPoint( const MapPointPtr &point );
 
+    WorldPtr parentWorld() const;
+
     const cv::Mat &baselineVector() const;
     double baselineLenght() const;
 
@@ -57,8 +59,6 @@ protected:
 
     std::list< FramePtr > m_frames;
     std::set< MapPointPtr > m_mapPoints;
-
-    cv::Mat m_baselineVector;
 
     CvImage m_keyPointsImage;
     CvImage m_stereoPointsImage;

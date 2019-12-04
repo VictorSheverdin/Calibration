@@ -102,6 +102,11 @@ const cv::Mat &ProjectionMatrix::projectionMatrix() const
 
 }
 
+ProjectionMatrix::operator cv::Mat() const
+{
+    return projectionMatrix();
+}
+
 // MonocularCalibrationDataShort
 CalibrationDataBase::CalibrationDataBase()
 {
@@ -431,20 +436,30 @@ const cv::Mat &StereoCalibrationDataBase::rightRectifyMatrix() const
 
 void StereoCalibrationDataBase::setLeftProjectionMatrix( const cv::Mat &value )
 {
+    m_leftProjectionMatrix.setProjectionMatrix( value );
+}
+
+void StereoCalibrationDataBase::setLeftProjectionMatrix( const ProjectionMatrix &value )
+{
     m_leftProjectionMatrix = value;
 }
 
-const cv::Mat &StereoCalibrationDataBase::leftProjectionMatrix() const
+const ProjectionMatrix &StereoCalibrationDataBase::leftProjectionMatrix() const
 {
     return m_leftProjectionMatrix;
 }
 
 void StereoCalibrationDataBase::setRightProjectionMatrix( const cv::Mat &value )
 {
+    m_rightProjectionMatrix.setProjectionMatrix( value );
+}
+
+void StereoCalibrationDataBase::setRightProjectionMatrix( const ProjectionMatrix &value )
+{
     m_rightProjectionMatrix = value;
 }
 
-const cv::Mat &StereoCalibrationDataBase::rightProjectionMatrix() const
+const ProjectionMatrix &StereoCalibrationDataBase::rightProjectionMatrix() const
 {
     return m_rightProjectionMatrix;
 }
@@ -530,6 +545,9 @@ double StereoCalibrationDataBase::distance() const
 
 cv::Rect StereoCalibrationDataBase::cropRect() const
 {
+    if ( leftROI().empty() || rightROI().empty() )
+        return cv::Rect();
+
     cv::Rect ret;
 
     ret.x = std::max( m_leftROI.x, m_rightROI.x );
