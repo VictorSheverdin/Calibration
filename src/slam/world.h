@@ -26,10 +26,6 @@ public:
     std::set< MapPointPtr > &mapPoints();
     const std::set< MapPointPtr > &mapPoints() const;
 
-    CvImage keyPointsImage() const;
-    CvImage stereoPointsImage() const;
-    CvImage tracksImage() const;
-
     bool track( const CvImage &leftImage, const CvImage &rightImage );
 
     const ProjectionMatrix &leftProjectionMatrix() const;

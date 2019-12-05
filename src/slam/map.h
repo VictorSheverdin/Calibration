@@ -39,10 +39,6 @@ public:
 
     const FramePtr &backFrame() const;
 
-    CvImage keyPointsImage() const;
-    CvImage stereoPointsImage() const;
-    CvImage tracksImage() const;
-
     void addMapPoint( const MapPointPtr &point );
 
     WorldPtr parentWorld() const;
@@ -59,10 +55,6 @@ protected:
 
     std::list< FramePtr > m_frames;
     std::set< MapPointPtr > m_mapPoints;
-
-    CvImage m_keyPointsImage;
-    CvImage m_stereoPointsImage;
-    CvImage m_tracksImage;
 
     static const int m_minPnpPoints = 10;
 

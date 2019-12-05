@@ -34,6 +34,9 @@ public:
     std::vector< StereoPoint > stereoPoints() const;
     std::vector< AdjacentPoint > adjacentPoints() const;
 
+    std::vector< PointPtr > trackPoints() const;
+    int trackPointsCount() const;
+
     bool drawPoints( CvImage *target ) const;
 
     cv::Point3d point() const;
@@ -84,6 +87,7 @@ public:
     const std::vector< cv::KeyPoint > &keyPoints() const;
 
     CvImage drawKeyPoints() const;
+    CvImage drawTracks() const;
 
     static void setMaxFeatures( const int value );
     static int maxFeatures();
@@ -204,6 +208,7 @@ public:
 
     CvImage drawKeyPoints() const;
     CvImage drawStereoPoints() const;
+    CvImage drawTracks() const;
 
     std::vector< StereoPoint > stereoPoints() const;
     int stereoPointsCount() const;
@@ -248,11 +253,6 @@ public:
 
     std::vector< AdjacentPoint > adjacentPoints() const;
     int adjacentPointsCount() const;
-
-    std::vector< MonoPointPtr > trackPoints() const;
-    int trackPointsCount() const;
-
-    CvImage drawTrack() const;
 
 protected:    
     AdjacentFrame();

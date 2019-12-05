@@ -68,6 +68,32 @@ std::vector< AdjacentPoint > MonoFrame::adjacentPoints() const
     return ret;
 }
 
+std::vector< MonoFrame::PointPtr > MonoFrame::trackPoints() const
+{
+    std::vector< PointPtr > ret;
+
+    auto framePoints = this->framePoints();
+
+    ret.reserve( framePoints.size() );
+
+    for ( auto &i : framePoints ) {
+
+        if ( i && i->mapPoint() ) {
+            ret.push_back( i );
+
+        }
+
+    }
+
+    return ret;
+
+}
+
+int MonoFrame::trackPointsCount() const
+{
+    return trackPoints().size();
+}
+
 bool MonoFrame::drawPoints( CvImage *target ) const
 {
     if ( !target )
@@ -302,6 +328,35 @@ CvImage ProcessedFrame::drawKeyPoints() const
     }
 
     return CvImage();
+
+}
+
+CvImage ProcessedFrame::drawTracks() const
+{
+    CvImage ret;
+
+    m_image.copyTo( ret );
+
+    auto points = this->framePoints();
+
+#pragma omp parallel for
+    for ( size_t i = 0; i < points.size(); ++i )
+        if ( points[ i ] && ( points[ i ]->prevPoint() || points[i]->nextPoint() ) )
+            if ( points[i]->mapPoint() )
+                points[ i ]->drawTrack( &ret );
+            else
+                points[ i ]->drawTrack( &ret, cv::Scalar( 255, 0, 0, 255 ) );
+
+
+#pragma omp parallel for
+    for ( size_t i = 0; i < points.size(); ++i )
+        if ( points[ i ] && ( points[ i ]->prevPoint() || points[i]->nextPoint() ) )
+            drawFeaturePoint( &ret, points[ i ]->point(), 2 );
+
+    drawLabel( &ret, "Tracks cout: " + std::to_string( points.size() ), ret.height() / 70 );
+
+    return ret;
+
 }
 
 ProcessedFrame::ProcessedPointPtr ProcessedFrame::createFramePoint( const size_t keyPointIndex , const cv::Scalar &color )
@@ -670,6 +725,24 @@ CvImage ProcessedStereoFrame::drawStereoPoints() const
 
 }
 
+CvImage ProcessedStereoFrame::drawTracks() const
+{
+    CvImage leftImage;
+    CvImage rightImage;
+
+    auto leftFeatureFrame = this->leftFrame();
+    auto rightFeatureFrame = this->rightFrame();
+
+    if ( leftFeatureFrame )
+        leftImage = leftFeatureFrame->drawTracks();
+
+    if ( rightFeatureFrame )
+        rightImage = rightFeatureFrame->drawTracks();
+
+    return stackImages( leftImage, rightImage );
+
+}
+
 ProcessedStereoFrame::MapPtr ProcessedStereoFrame::parentMap() const
 {
     return m_parentMap.lock();
@@ -903,9 +976,9 @@ bool AdjacentFrame::track()
     auto prevFrame = this->previousFrame();
     auto nextFrame = this->nextFrame();
 
-    if ( prevFrame ) {
+    if ( prevFrame && nextFrame ) {
 
-        auto points = trackPoints();
+        auto points = nextFrame->trackPoints();
 
         for ( auto &i : points ) {
             points3d.push_back( i->mapPoint()->point() );
@@ -977,63 +1050,6 @@ std::vector< AdjacentPoint > AdjacentFrame::adjacentPoints() const
 int AdjacentFrame::adjacentPointsCount() const
 {
     return adjacentPoints().size();
-}
-
-std::vector< AdjacentFrame::MonoPointPtr > AdjacentFrame::trackPoints() const
-{
-    std::vector< AdjacentFrame::MonoPointPtr > ret;
-
-    auto nextFrame = this->nextFrame();
-
-    if ( nextFrame ) {
-
-        auto framePoints = nextFrame->framePoints();
-
-        ret.reserve( framePoints.size() );
-
-        for ( auto &i : framePoints ) {
-            if ( i && i->mapPoint() ) {
-                ret.push_back( i );
-
-            }
-
-        }
-
-    }
-
-    return ret;
-
-}
-
-int AdjacentFrame::trackPointsCount() const
-{
-    return trackPoints().size();
-}
-
-CvImage AdjacentFrame::drawTrack() const
-{
-    CvImage ret;
-
-    auto nextFrame = this->nextFrame();
-
-    nextFrame->image().copyTo( ret );
-
-    auto points = trackPoints();
-
-#pragma omp parallel for
-    for ( size_t i = 0; i < points.size(); ++i )
-        if ( points[ i ] )
-            points[ i ]->drawTrack( &ret );
-
-#pragma omp parallel for
-    for ( size_t i = 0; i < points.size(); ++i )
-        if ( points[ i ] && points[ i ]->prevPoint() )
-            drawFeaturePoint( &ret, points[ i ]->point(), 2 );
-
-    drawLabel( &ret, "Tracks cout: " + std::to_string( points.size() ), ret.height() / 70 );
-
-    return ret;
-
 }
 
 // StereoFrame

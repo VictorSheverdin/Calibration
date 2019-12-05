@@ -84,14 +84,36 @@ namespace slam {
         return m_mapPoint.lock();
     }
 
-    void MonoPoint::drawTrack( CvImage *target ) const
+    void MonoPoint::drawTrack( CvImage *target, const cv::Scalar &color ) const
     {
-        if ( prevPoint() ) {
+        drawPrevTrack( target, color );
+        drawNextTrack( target, color );
 
-            drawLine( target, prevPoint()->point(), point() );
+    }
 
-            prevPoint()->drawTrack( target );
+    void MonoPoint::drawPrevTrack( CvImage *target , const cv::Scalar &color ) const
+    {
+        auto prevPoint = this->prevPoint();
 
+        if ( prevPoint ) {
+
+            drawLine( target, prevPoint->point(), point(), color );
+
+            prevPoint->drawPrevTrack( target, color );
+
+        }
+
+    }
+
+    void MonoPoint::drawNextTrack( CvImage *target , const cv::Scalar &color ) const
+    {
+        auto nextPoint = this->nextPoint();
+
+        if ( nextPoint ) {
+
+            drawLine( target, point(), nextPoint->point(), color );
+
+            nextPoint->drawNextTrack( target, color );
 
         }
 

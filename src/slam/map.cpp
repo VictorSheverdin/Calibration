@@ -89,21 +89,6 @@ const Map::FramePtr &Map::backFrame() const
     return m_frames.back();
 }
 
-CvImage Map::keyPointsImage() const
-{
-    return m_keyPointsImage;
-}
-
-CvImage Map::stereoPointsImage() const
-{
-    return m_stereoPointsImage;
-}
-
-CvImage Map::tracksImage() const
-{
-    return m_tracksImage;
-}
-
 void Map::addMapPoint( const MapPointPtr &point )
 {
     m_mapPoints.insert( point );
@@ -153,9 +138,6 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
 
         } while( stereoPointsCount < m_goodStereoPoints && keyPointsCount < m_maxKeyPoints );
 
-        m_keyPointsImage = stereoFrame->drawKeyPoints();
-        //m_stereoPointsImage = stereoFrame->drawStereoPoints();
-
         stereoFrame->setProjectionMatrix( parentWorld->leftProjectionMatrix(), parentWorld->rightProjectionMatrix() );
 
         stereoFrame->triangulatePoints();
@@ -198,7 +180,7 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
                 consecutiveRightFrame->nextFrame()->setRotation( consecutiveLeftFrame->nextFrame()->rotation() );
                 consecutiveRightFrame->nextFrame()->setTranslation( consecutiveLeftFrame->nextFrame()->translation() + baselineVector() );
 
-                trackPointsCount = consecutiveLeftFrame->trackPointsCount();
+                trackPointsCount = nextLeftFrame->trackPointsCount();
 
             }
             else {
@@ -207,7 +189,7 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
                 consecutiveLeftFrame->nextFrame()->setRotation( consecutiveRightFrame->nextFrame()->rotation() );
                 consecutiveLeftFrame->nextFrame()->setTranslation( consecutiveRightFrame->nextFrame()->translation() - baselineVector() );
 
-                trackPointsCount = consecutiveLeftFrame->trackPointsCount();
+                trackPointsCount = nextRightFrame->trackPointsCount();
 
             }
 
@@ -223,14 +205,6 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
             }
 
         } while( trackPointsCount < m_goodTrackPoints && keyPointsCount < m_maxKeyPoints );
-
-        m_keyPointsImage = stereoFrame->drawKeyPoints();
-        //m_stereoPointsImage = stereoFrame->drawStereoPoints();
-
-        auto leftTrack = consecutiveLeftFrame->drawTrack();
-        auto rightTrack = consecutiveRightFrame->drawTrack();
-
-        //m_tracksImage = stackImages( leftTrack, rightTrack );
 
         // nextLeftFrame->triangulatePoints();
         // nextRightFrame->triangulatePoints();

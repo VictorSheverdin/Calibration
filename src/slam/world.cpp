@@ -46,21 +46,6 @@ const std::set< World::MapPointPtr > &World::mapPoints() const
     return m_map->mapPoints();
 }
 
-CvImage World::keyPointsImage() const
-{
-    return m_map->keyPointsImage();
-}
-
-CvImage World::stereoPointsImage() const
-{
-    return m_map->stereoPointsImage();
-}
-
-CvImage World::tracksImage() const
-{
-    return m_map->tracksImage();
-}
-
 bool World::track( const CvImage &leftImage, const CvImage &rightImage )
 {
     return m_map->track( leftImage, rightImage );

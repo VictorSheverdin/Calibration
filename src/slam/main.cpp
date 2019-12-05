@@ -118,20 +118,29 @@ int main( int, char** )
 
     while ( true ) {
 
-        auto keyPointsImage = system->keyPointsImage();
-        auto stereoPointsImage = system->stereoPointsImage();
-        auto tracksImage = system->tracksImage();
         auto mapPoints = system->mapPoints();
         auto frames = system->frames();
 
-        if ( !keyPointsImage.empty() )
-            cv::imshow( "KeyPoints", keyPointsImage );
+        auto processedFrame = std::dynamic_pointer_cast< slam::ProcessedStereoFrame >( frames.back() );
 
-        if ( !stereoPointsImage.empty() )
-            cv::imshow( "Stereo", stereoPointsImage );
+        if ( processedFrame ) {
 
-        if ( !tracksImage.empty() )
-            cv::imshow( "Track", tracksImage );
+            auto keyPointsImage = processedFrame->drawKeyPoints();
+
+            if ( !keyPointsImage.empty() )
+                cv::imshow( "KeyPoints", keyPointsImage );
+
+            auto stereoPointsImage = processedFrame->drawStereoPoints();
+
+            if ( !stereoPointsImage.empty() )
+                cv::imshow( "Stereo", stereoPointsImage );
+
+            auto tracksImage = processedFrame->drawTracks();
+
+            if ( !tracksImage.empty() )
+                cv::imshow( "Track", tracksImage );
+
+        }
 
         std::vector< cv::Vec3d > points;
         std::vector< cv::Vec4b > colors;
@@ -168,6 +177,7 @@ int main( int, char** )
                     rightTrajectoryPoints.push_back( cv::Affine3d( stereoFrame->rightFrame()->rotation().t(), cv::Mat( - stereoFrame->rightFrame()->rotation().t() * stereoFrame->rightFrame()->translation() ) ) );
 
                 }
+
             }
 
             cv::viz::WTrajectory leftTrajectory( leftTrajectoryPoints );
