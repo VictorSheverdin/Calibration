@@ -106,7 +106,7 @@ std::vector< MonoFrame::PointPtr > MonoFrame::matchedPoints() const
 
     for ( auto &i : framePoints ) {
 
-        if ( i && i->prevPoint() && i->prevPoint()->stereoPoint() ) {
+        if ( i && i->prevPoint() && ( i->prevPoint()->stereoPoint() || i->mapPoint() ) ) {
             ret.push_back( i );
 
         }

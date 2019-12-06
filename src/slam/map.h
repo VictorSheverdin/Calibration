@@ -58,6 +58,8 @@ protected:
 
     static const int m_minPnpPoints = 10;
 
+    static const int m_minTrackPoints = 70;
+
     static const int m_goodTrackPoints = 200;
     static const int m_overTrackPoints = 500;
 

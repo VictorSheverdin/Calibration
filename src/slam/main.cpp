@@ -72,7 +72,7 @@ int main( int, char** )
 
         StereoRectificationProcessor rectificationProcessor( path + "calibration.yaml" );
 
-        for ( auto i = /*8170*/5900; i < 30000; i++ ) {
+        for ( auto i = /*8170*/10000; i < 30000; i++ ) {
 
             std::string leftFile = leftPath + std::to_string( i ) + "_left.jpg";
             std::string rightFile = rightPath + std::to_string( i ) + "_right.jpg";
@@ -171,7 +171,7 @@ int main( int, char** )
 
         }
 
-        vizWindow.spinOnce( 150 );
+        vizWindow.spinOnce( 100 );
 
         cv::waitKey( 1 );
 

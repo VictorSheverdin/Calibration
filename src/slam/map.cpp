@@ -166,29 +166,33 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
 
             std::cout << matchedPointCount << std::endl;
 
-            if ( matchedPointCount > m_overTrackPoints )
-                m_previousKeypointsCount /= 2;
+            if ( matchedPointCount > m_minTrackPoints ) {
 
-            previousStereoFrame->triangulatePoints();
+                if ( matchedPointCount > m_overTrackPoints )
+                    m_previousKeypointsCount /= 2;
 
-            consecutiveLeftFrame->track();
-            nextRightFrame->setCameraMatrix( previousRightFrame->cameraMatrix() );
-            nextRightFrame->setRotation( nextLeftFrame->rotation() );
-            nextRightFrame->setTranslation( nextLeftFrame->translation() + baselineVector() );
+                previousStereoFrame->triangulatePoints();
 
-            // nextLeftFrame->triangulatePoints();
+                consecutiveLeftFrame->track();
+                nextRightFrame->setCameraMatrix( previousRightFrame->cameraMatrix() );
+                nextRightFrame->setRotation( nextLeftFrame->rotation() );
+                nextRightFrame->setTranslation( nextLeftFrame->translation() + baselineVector() );
 
-            previousStereoFrame->clearMapPoints();
+                nextLeftFrame->triangulatePoints();
 
-            auto replacedFrame = StereoFrame::create();
+                previousStereoFrame->clearMapPoints();
 
-            replacedFrame->replace( previousStereoFrame );
+                auto replacedFrame = StereoFrame::create();
 
-            m_frames.pop_back();
+                replacedFrame->replace( previousStereoFrame );
 
-            m_frames.push_back( replacedFrame );
+                m_frames.pop_back();
 
-            m_frames.push_back( stereoFrame );
+                m_frames.push_back( replacedFrame );
+
+                m_frames.push_back( stereoFrame );
+
+            }
 
         }
 
