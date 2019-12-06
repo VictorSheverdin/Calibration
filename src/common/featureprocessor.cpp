@@ -8,6 +8,7 @@
 void KeyPointProcessor::extractKeypoints( const CvImage &image, std::vector< cv::KeyPoint > *keypoints )
 {
     if ( keypoints ) {
+
         auto uImage = image.getUMat( cv::ACCESS_READ );
         m_processor->detect( uImage, *keypoints );
 

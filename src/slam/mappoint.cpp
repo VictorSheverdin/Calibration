@@ -56,5 +56,4 @@ const cv::Scalar &MapPoint::color() const
     return m_color;
 }
 
-
 }

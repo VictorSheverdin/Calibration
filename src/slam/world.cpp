@@ -19,6 +19,7 @@ World::World( const ProjectionMatrix &leftProjectionMatrix, const ProjectionMatr
 
 void World::initialize()
 {
+    ProcessedStereoFrame::setMaxFeatures( m_keypointsCount );
 }
 
 World::WorldPtr World::create( const ProjectionMatrix &leftProjectionMatrix, const ProjectionMatrix &rightProjectionMatrix )

@@ -44,21 +44,13 @@ int main( int, char** )
     std::string leftPath = path + "left/";
     std::string rightPath = path + "right/";
 
-    cv::namedWindow( "KeyPoints", cv::WINDOW_KEEPRATIO );
-    cv::resizeWindow( "KeyPoints", 800, 600 );
-    cv::moveWindow( "KeyPoints", 80, 10 );
-
-    cv::namedWindow( "Stereo", cv::WINDOW_KEEPRATIO );
-    cv::resizeWindow( "Stereo", 800, 600 );
-    cv::moveWindow( "Stereo", 880, 10 );
-
     cv::namedWindow( "Track", cv::WINDOW_KEEPRATIO );
     cv::resizeWindow( "Track", 800, 600 );
-    cv::moveWindow( "Track", 80, 900 );
+    cv::moveWindow( "Track", 80, 10 );
 
     cv::viz::Viz3d vizWindow( "Viz3d" );
-    vizWindow.setWindowPosition( cv::Point( 880, 900 ) );
     vizWindow.setWindowSize( cv::Size( 800, 600 ) );
+    vizWindow.setWindowPosition( cv::Point( 880, 10 ) );
 
     vizWindow.showWidget( "coordSystemWidget", cv::viz::WCoordinateSystem() );
 
@@ -82,7 +74,6 @@ int main( int, char** )
 
         for ( auto i = /*8170*/5900; i < 30000; i++ ) {
 
-            std::cout << "Processing frame " << i << std::endl;
             std::string leftFile = leftPath + std::to_string( i ) + "_left.jpg";
             std::string rightFile = rightPath + std::to_string( i ) + "_right.jpg";
 
@@ -108,8 +99,6 @@ int main( int, char** )
 
             }
 
-            // std::this_thread::sleep_for( std::chrono::seconds( 3 ) );
-
         }
 
     } );
@@ -125,17 +114,7 @@ int main( int, char** )
 
         if ( processedFrame ) {
 
-            auto keyPointsImage = processedFrame->drawKeyPoints();
-
-            if ( !keyPointsImage.empty() )
-                cv::imshow( "KeyPoints", keyPointsImage );
-
-            auto stereoPointsImage = processedFrame->drawStereoPoints();
-
-            if ( !stereoPointsImage.empty() )
-                cv::imshow( "Stereo", stereoPointsImage );
-
-            auto tracksImage = processedFrame->drawTracks();
+            auto tracksImage = processedFrame->leftFrame()->drawTracks();
 
             if ( !tracksImage.empty() )
                 cv::imshow( "Track", tracksImage );

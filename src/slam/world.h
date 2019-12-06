@@ -49,6 +49,8 @@ protected:
 
     MapPtr m_map;
 
+    static const int m_keypointsCount = 25000;
+
 private:
     void initialize();
 

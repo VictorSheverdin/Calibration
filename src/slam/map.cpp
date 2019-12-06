@@ -21,7 +21,7 @@ Map::Map(const WorldPtr &world )
 
 void Map::initialize()
 {
-    ProcessedFrame::setMaxFeatures( m_minKeyPoints );
+    m_previousKeypointsCount = m_goodTrackPoints * 2;
 }
 
 Map::MapPtr Map::create( const WorldPtr &world )
@@ -122,106 +122,75 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
 
     if ( m_frames.empty() ) {
 
-        int stereoPointsCount;
-        int keyPointsCount = ProcessedStereoFrame::maxFeatures();
-
-        do {
-            stereoFrame->extractKeyPoints();
-            stereoFrame->matchOptical();
-
-            stereoPointsCount = stereoFrame->stereoPointsCount();
-
-            if ( stereoPointsCount < m_goodStereoPoints ) {
-                keyPointsCount = std::max( m_minKeyPoints, /*m_goodStereoPoints * ProcessedStereoFrame::maxFeatures() / stereoPointsCount*/keyPointsCount * 2 );
-                ProcessedStereoFrame::setMaxFeatures( keyPointsCount );
-            }
-
-        } while( stereoPointsCount < m_goodStereoPoints && keyPointsCount < m_maxKeyPoints );
+        stereoFrame->extractKeyPoints();
 
         stereoFrame->setProjectionMatrix( parentWorld->leftProjectionMatrix(), parentWorld->rightProjectionMatrix() );
-
-        stereoFrame->triangulatePoints();
 
         m_frames.push_back( stereoFrame );
 
     }
     else {
 
-        int stereoPointsCount;
-        int trackPointsCount;
-        int keyPointsCount = ProcessedStereoFrame::maxFeatures();
-
         auto consecutiveLeftFrame = AdjacentFrame::create();
-        auto consecutiveRightFrame = AdjacentFrame::create();
 
         auto previousStereoFrame = std::dynamic_pointer_cast< ProcessedStereoFrame >( m_frames.back() );
 
-        auto previousLeftFrame = std::dynamic_pointer_cast< ProcessedFrame >( previousStereoFrame->leftFrame() );
-        auto previousRightFrame = std::dynamic_pointer_cast< ProcessedFrame >( previousStereoFrame->rightFrame() );
-        auto nextLeftFrame = std::dynamic_pointer_cast< ProcessedFrame >( stereoFrame->leftFrame() );
-        auto nextRightFrame = std::dynamic_pointer_cast< ProcessedFrame >( stereoFrame->rightFrame() );
+        if ( previousStereoFrame ) {
 
-        consecutiveLeftFrame->setFrames( previousLeftFrame, nextLeftFrame );
-        consecutiveRightFrame->setFrames( previousRightFrame, nextRightFrame );
+            auto previousLeftFrame = std::dynamic_pointer_cast< ProcessedFrame >( previousStereoFrame->leftFrame() );
+            auto previousRightFrame = std::dynamic_pointer_cast< ProcessedFrame >( previousStereoFrame->rightFrame() );
+            auto nextLeftFrame = std::dynamic_pointer_cast< ProcessedFrame >( stereoFrame->leftFrame() );
+            auto nextRightFrame = std::dynamic_pointer_cast< ProcessedFrame >( stereoFrame->rightFrame() );
 
-        do {
+            consecutiveLeftFrame->setFrames( previousLeftFrame, nextLeftFrame );
 
             stereoFrame->extractKeyPoints();
-            stereoFrame->matchOptical();
 
-            stereoPointsCount = stereoFrame->stereoPointsCount();
+            int keypointsCount = m_previousKeypointsCount;
 
-            consecutiveLeftFrame->matchOptical();
-            consecutiveRightFrame->matchOptical();
+            int matchedPointCount;
+            bool continueFlag = true;
 
-            if ( consecutiveLeftFrame->previousFrame()->adjacentPoints().size() > consecutiveRightFrame->previousFrame()->adjacentPoints().size() ) {
-                consecutiveLeftFrame->track();
-                consecutiveRightFrame->nextFrame()->setCameraMatrix( consecutiveRightFrame->previousFrame()->cameraMatrix() );
-                consecutiveRightFrame->nextFrame()->setRotation( consecutiveLeftFrame->nextFrame()->rotation() );
-                consecutiveRightFrame->nextFrame()->setTranslation( consecutiveLeftFrame->nextFrame()->translation() + baselineVector() );
+            do {
 
-                trackPointsCount = nextLeftFrame->trackPointsCount();
+                continueFlag = continueFlag && previousStereoFrame->matchOptical( keypointsCount );
+                continueFlag = continueFlag && consecutiveLeftFrame->matchOptical( keypointsCount );
 
-            }
-            else {
-                consecutiveRightFrame->track();
-                consecutiveLeftFrame->nextFrame()->setCameraMatrix( consecutiveLeftFrame->previousFrame()->cameraMatrix() );
-                consecutiveLeftFrame->nextFrame()->setRotation( consecutiveRightFrame->nextFrame()->rotation() );
-                consecutiveLeftFrame->nextFrame()->setTranslation( consecutiveRightFrame->nextFrame()->translation() - baselineVector() );
+                m_previousKeypointsCount = keypointsCount;
 
-                trackPointsCount = nextRightFrame->trackPointsCount();
+                keypointsCount *= 2;
 
-            }
+                matchedPointCount = consecutiveLeftFrame->matchedPointsCount();
 
-            if ( trackPointsCount < m_goodTrackPoints || stereoPointsCount < m_goodStereoPoints ) {
-                keyPointsCount = std::max( m_minKeyPoints, keyPointsCount * 2 );
-                ProcessedStereoFrame::setMaxFeatures( keyPointsCount );
+            } while( matchedPointCount < m_goodTrackPoints && continueFlag );
 
-            }
-            else if ( trackPointsCount > m_overageTrackPoints || stereoPointsCount > m_overageStereoPoints ) {
-                keyPointsCount = std::max( m_minKeyPoints, keyPointsCount / 2 );
-                ProcessedStereoFrame::setMaxFeatures( keyPointsCount );
+            std::cout << matchedPointCount << std::endl;
 
-            }
+            if ( matchedPointCount > m_overTrackPoints )
+                m_previousKeypointsCount /= 2;
 
-        } while( trackPointsCount < m_goodTrackPoints && keyPointsCount < m_maxKeyPoints );
+            previousStereoFrame->triangulatePoints();
 
-        // nextLeftFrame->triangulatePoints();
-        // nextRightFrame->triangulatePoints();
+            consecutiveLeftFrame->track();
+            nextRightFrame->setCameraMatrix( previousRightFrame->cameraMatrix() );
+            nextRightFrame->setRotation( nextLeftFrame->rotation() );
+            nextRightFrame->setTranslation( nextLeftFrame->translation() + baselineVector() );
 
-        stereoFrame->triangulatePoints();
+            // nextLeftFrame->triangulatePoints();
 
-        previousStereoFrame->clearMapPoints();
+            previousStereoFrame->clearMapPoints();
 
-        auto replacedFrame = StereoFrame::create();
+            auto replacedFrame = StereoFrame::create();
 
-        replacedFrame->replace( previousStereoFrame );
+            replacedFrame->replace( previousStereoFrame );
 
-        m_frames.pop_back();
+            m_frames.pop_back();
 
-        m_frames.push_back( replacedFrame );
+            m_frames.push_back( replacedFrame );
 
-        m_frames.push_back( stereoFrame );
+            m_frames.push_back( stereoFrame );
+
+        }
 
     }
 
@@ -230,3 +199,4 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
 }
 
 }
+

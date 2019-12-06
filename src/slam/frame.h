@@ -37,6 +37,9 @@ public:
     std::vector< PointPtr > trackPoints() const;
     int trackPointsCount() const;
 
+    std::vector< PointPtr > matchedPoints() const;
+    int matchedPointsCount() const;
+
     bool drawPoints( CvImage *target ) const;
 
     cv::Point3d point() const;
@@ -165,28 +168,39 @@ protected:
 
 };
 
-class ProcessedDoubleFrame : public DoubleFrame
+class ProcessedDoubleFrameBase
 {
 public:
     using ProcessedFramePtr = std::shared_ptr< ProcessedFrame >;
 
-    void setFrames( const ProcessedFramePtr &frame1, const ProcessedFramePtr &frame2 );
-
-    ProcessedFramePtr frame1() const;
-    ProcessedFramePtr frame2() const;
-
-    void extractKeyPoints();
-    void extractDescriptors();
-
 protected:
-    ProcessedDoubleFrame();
+    ProcessedDoubleFrameBase();
 
-    static FeatureMatcher m_matcher;
+    static FeatureMatcher m_featuresMatcher;
     static OpticalMatcher m_opticalMatcher;
+
+    size_t m_matchedKeypointsCount;
+
+private:
+    void initialize();
 
 };
 
-class ProcessedStereoFrame : public ProcessedDoubleFrame
+class StereoFrameBase : public DoubleFrame
+{
+public:
+    void setFrames( const MonoFramePtr &leftFrame, const MonoFramePtr &rightFrame );
+
+    MonoFramePtr leftFrame() const;
+    MonoFramePtr rightFrame() const;
+
+protected:
+    StereoFrameBase();
+
+private:
+};
+
+class ProcessedStereoFrame : public StereoFrameBase, public ProcessedDoubleFrameBase
 {
 public:
     using MapPtr = std::shared_ptr< Map >;
@@ -196,12 +210,14 @@ public:
 
     void load( const CvImage &image1, const CvImage &image2 );
 
+    void setFrames( const ProcessedFramePtr &leftFrame, const ProcessedFramePtr &rightFrame );
+
     ProcessedFramePtr leftFrame() const;
     ProcessedFramePtr rightFrame() const;
 
     void setProjectionMatrix( const ProjectionMatrix &leftMatrix, const ProjectionMatrix &rightMatrix );
 
-    cv::Mat matchOptical();
+    bool matchOptical( const size_t count, cv::Mat *f = nullptr );
     cv::Mat matchFeatures();
 
     void clearImages();
@@ -222,6 +238,9 @@ public:
     static void setMaxFeatures( const int value );
     static int maxFeatures();
 
+    void extractKeyPoints();
+    void extractDescriptors();
+
 protected:
     using MapPtrImpl = std::weak_ptr< Map >;
 
@@ -236,23 +255,31 @@ protected:
 
 };
 
-class AdjacentFrame : public ProcessedDoubleFrame
+class AdjacentFrame : public DoubleFrame, public ProcessedDoubleFrameBase
 {
 public:
     using FramePtr = std::shared_ptr< AdjacentFrame >;
 
     static FramePtr create();
 
-    cv::Mat matchOptical();
+    bool matchOptical( const size_t count , cv::Mat *f = nullptr );
     cv::Mat matchFeatures();
 
     bool track();
+
+    void setFrames( const ProcessedFramePtr &prevFrame, const ProcessedFramePtr &nextFrame );
 
     ProcessedFramePtr previousFrame() const;
     ProcessedFramePtr nextFrame() const;
 
     std::vector< AdjacentPoint > adjacentPoints() const;
     int adjacentPointsCount() const;
+
+    std::vector< MonoPointPtr > trackPoints() const;
+    int trackPointsCount() const;
+
+    std::vector< MonoPointPtr > matchedPoints() const;
+    int matchedPointsCount() const;
 
 protected:    
     AdjacentFrame();
@@ -270,6 +297,8 @@ public:
     using ProcessedStereoFramePtr = std::shared_ptr< ProcessedStereoFrame >;
 
     static StereoFramePtr create();
+
+    void setFrames( const FramePtr &leftFrame, const FramePtr &rightFrame );
 
     FramePtr leftFrame() const;
     FramePtr rightFrame() const;
