@@ -72,12 +72,6 @@ namespace slam {
     void MonoPoint::setMapPoint( const MapPointPtr &point )
     {
         m_mapPoint = point;
-
-        auto nextPoint = this->nextPoint();
-
-        if ( nextPoint )
-            nextPoint->setMapPoint( point );
-
     }
 
     void MonoPoint::clearMapPoint()

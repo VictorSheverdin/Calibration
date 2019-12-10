@@ -20,34 +20,18 @@ public:
 
     static WorldPtr create( const ProjectionMatrix &leftProjectionMatrix, const ProjectionMatrix &rightProjectionMatrix );
 
-    std::list< FramePtr > &frames();
-    const std::list< FramePtr > &frames() const;
-
-    std::set< MapPointPtr > &mapPoints();
-    const std::set< MapPointPtr > &mapPoints() const;
+    const std::list < MapPtr > &maps() const;
+    std::list < MapPtr > &maps();
 
     bool track( const CvImage &leftImage, const CvImage &rightImage );
-
-    const ProjectionMatrix &leftProjectionMatrix() const;
-    const ProjectionMatrix &rightProjectionMatrix() const;
 
     void multiplicateCameraMatrix( const double value );
     void movePrincipalPoint( const cv::Vec2f &value );
 
-    void createMap();
-
-    const cv::Mat &baselineVector() const;
-    double baselineLenght() const;
-
 protected:
     World( const ProjectionMatrix &leftProjectionMatrix, const ProjectionMatrix &rightProjectionMatrix );
 
-    ProjectionMatrix m_leftProjectionMatrix;
-    ProjectionMatrix m_rightProjectionMatrix;
-
-    cv::Mat m_baselineVector;
-
-    MapPtr m_map;
+    std::list < MapPtr > m_maps;
 
     static const int m_keypointsCount = 25000;
 

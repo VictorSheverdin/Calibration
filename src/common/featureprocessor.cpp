@@ -207,7 +207,10 @@ cv::Mat OpticalMatcher::match( const CvImage &sourceImage, std::vector< cv::KeyP
     download( m_gpuStatuses, statuses );
     download( m_gpuErr, err );
 
-    // cv::calcOpticalFlowPyrLK( sourceImage, targetImage, sourcePoints, opticalPoints, statuses, err );
+/*    auto sourceUImage = sourceImage.getUMat( cv::ACCESS_READ );
+    auto targetUImage = targetImage.getUMat( cv::ACCESS_READ );
+
+    cv::calcOpticalFlowPyrLK( sourceUImage, targetUImage, sourceUPoints, opticalPoints, statuses, err );*/
 
     if ( !err.empty() ) {
 

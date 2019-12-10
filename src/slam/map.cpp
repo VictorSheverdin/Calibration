@@ -13,10 +13,13 @@
 
 namespace slam {
 
-Map::Map(const WorldPtr &world )
-    : m_parentWorld( world )
+Map::Map( const ProjectionMatrix &leftProjectionMatrix, const ProjectionMatrix &rightProjectionMatrix )
+    :  m_leftProjectionMatrix( leftProjectionMatrix ), m_rightProjectionMatrix( rightProjectionMatrix )
 {
     initialize();
+
+    m_baselineVector = rightProjectionMatrix.translation() - leftProjectionMatrix.translation();
+
 }
 
 void Map::initialize()
@@ -24,9 +27,9 @@ void Map::initialize()
     m_previousKeypointsCount = m_goodTrackPoints * 2;
 }
 
-Map::MapPtr Map::create( const WorldPtr &world )
+Map::MapPtr Map::create( const ProjectionMatrix &leftProjectionMatrix, const ProjectionMatrix &rightProjectionMatrix )
 {
-    return MapPtr( new Map( world ) );
+    return MapPtr( new Map( leftProjectionMatrix, rightProjectionMatrix ) );
 }
 
 Map::MapPointPtr Map::createMapPoint()
@@ -94,28 +97,45 @@ void Map::addMapPoint( const MapPointPtr &point )
     m_mapPoints.insert( point );
 }
 
-Map::WorldPtr Map::parentWorld() const
+const ProjectionMatrix &Map::leftProjectionMatrix() const
 {
-    return m_parentWorld.lock();
+    return m_leftProjectionMatrix;
+}
+
+const ProjectionMatrix &Map::rightProjectionMatrix() const
+{
+    return m_rightProjectionMatrix;
 }
 
 const cv::Mat &Map::baselineVector() const
 {
-    return parentWorld()->baselineVector();
+    return m_baselineVector;
 }
 
 double Map::baselineLenght() const
 {
-    return cv::norm( baselineVector() );
+    return cv::norm( m_baselineVector );
+}
+
+void Map::multiplicateCameraMatrix( const double value )
+{
+    m_leftProjectionMatrix.multiplicateCameraMatrix( value );
+    m_rightProjectionMatrix.multiplicateCameraMatrix( value );
+}
+
+void Map::movePrincipalPoint( const cv::Vec2f &value )
+{
+    m_leftProjectionMatrix.movePrincipalPoint( value );
+    m_rightProjectionMatrix.movePrincipalPoint( value );
+}
+
+bool Map::valid() const
+{
+    return true;
 }
 
 bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
 {
-    auto parentWorld = this->parentWorld();
-
-    if ( !parentWorld )
-        return false;
-
     auto stereoFrame = ProcessedStereoFrame::create( shared_from_this() );
 
     stereoFrame->load( leftImage, rightImage );
@@ -124,7 +144,7 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
 
         stereoFrame->extractKeyPoints();
 
-        stereoFrame->setProjectionMatrix( parentWorld->leftProjectionMatrix(), parentWorld->rightProjectionMatrix() );
+        stereoFrame->setProjectionMatrix( m_leftProjectionMatrix, m_rightProjectionMatrix );
 
         m_frames.push_back( stereoFrame );
 
@@ -151,40 +171,39 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
             int matchedPointCount;
             bool continueFlag = true;
 
+            previousLeftFrame->triangulatePoints();
+
             do {
 
                 continueFlag = continueFlag && previousStereoFrame->matchOptical( keypointsCount );
+                previousStereoFrame->triangulatePoints();
+
                 continueFlag = continueFlag && consecutiveLeftFrame->matchOptical( keypointsCount );
 
+                matchedPointCount = consecutiveLeftFrame->trackPointsCount();
+
                 m_previousKeypointsCount = keypointsCount;
-
                 keypointsCount *= 2;
-
-                matchedPointCount = consecutiveLeftFrame->matchedPointsCount();
 
             } while( matchedPointCount < m_goodTrackPoints && continueFlag );
 
             std::cout << matchedPointCount << std::endl;
 
+            if ( matchedPointCount > m_overTrackPoints )
+                m_previousKeypointsCount /= 2;
+
             if ( matchedPointCount > m_minTrackPoints ) {
-
-                if ( matchedPointCount > m_overTrackPoints )
-                    m_previousKeypointsCount /= 2;
-
-                previousStereoFrame->triangulatePoints();
 
                 consecutiveLeftFrame->track();
                 nextRightFrame->setCameraMatrix( previousRightFrame->cameraMatrix() );
                 nextRightFrame->setRotation( nextLeftFrame->rotation() );
                 nextRightFrame->setTranslation( nextLeftFrame->translation() + baselineVector() );
 
-                nextLeftFrame->triangulatePoints();
-
-                previousStereoFrame->clearMapPoints();
+                // previousStereoFrame->cleanMapPoints();
 
                 auto replacedFrame = StereoFrame::create();
 
-                replacedFrame->replace( previousStereoFrame );
+                replacedFrame->replaceAndClean( previousStereoFrame );
 
                 m_frames.pop_back();
 

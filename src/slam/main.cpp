@@ -57,7 +57,6 @@ int main( int, char** )
     StereoCalibrationDataShort calibration( path + "calibration.yaml" );
 
     auto system = slam::World::create( calibration.leftProjectionMatrix(), calibration.rightProjectionMatrix() );
-    system->createMap();
 
     auto scaleFactor = 1.0;
 
@@ -72,7 +71,9 @@ int main( int, char** )
 
         StereoRectificationProcessor rectificationProcessor( path + "calibration.yaml" );
 
-        for ( auto i = /*8170*/10000; i < 30000; i++ ) {
+        for ( auto i = /*9230*/5900; i < 30000; ++i ) {
+
+            std::cout << i << std::endl;
 
             std::string leftFile = leftPath + std::to_string( i ) + "_left.jpg";
             std::string rightFile = rightPath + std::to_string( i ) + "_right.jpg";
@@ -95,7 +96,12 @@ int main( int, char** )
                 cv::resize( leftCroppedImage, leftResizedImage, cv::Size(), scaleFactor, scaleFactor, cv::INTER_CUBIC );
                 cv::resize( rightCroppedImage, rightResizedImage, cv::Size(), scaleFactor, scaleFactor, cv::INTER_CUBIC );
 
+                auto time = std::chrono::system_clock::now();
+
                 system->track( leftResizedImage, rightResizedImage );
+
+                std::cout << std::chrono::duration_cast< std::chrono::microseconds >( std::chrono::system_clock::now() - time ).count()  / 1.e6 << " sec" << std::endl;
+
 
             }
 
@@ -107,73 +113,79 @@ int main( int, char** )
 
     while ( true ) {
 
-        auto mapPoints = system->mapPoints();
-        auto frames = system->frames();
+        auto maps = system->maps();
 
-        auto processedFrame = std::dynamic_pointer_cast< slam::ProcessedStereoFrame >( frames.back() );
+        for ( auto &map : maps ) {
 
-        if ( processedFrame ) {
+            auto mapPoints = map->mapPoints();
+            auto frames = map->frames();
 
-            auto tracksImage = processedFrame->leftFrame()->drawTracks();
+            auto processedFrame = std::dynamic_pointer_cast< slam::ProcessedStereoFrame >( frames.back() );
 
-            if ( !tracksImage.empty() )
-                cv::imshow( "Track", tracksImage );
+            if ( processedFrame ) {
 
-        }
+                auto tracksImage = processedFrame->leftFrame()->drawTracks();
 
-        std::vector< cv::Vec3d > points;
-        std::vector< cv::Vec4b > colors;
-
-        for ( auto &i : mapPoints ) {
-
-            if ( i ) {
-
-                auto point = i->point();
-
-                points.push_back( point );
-                colors.push_back( i->color() );
+                if ( !tracksImage.empty() )
+                    cv::imshow( "Track", tracksImage );
 
             }
 
-        }
+            std::vector< cv::Vec3d > points;
+            std::vector< cv::Vec4b > colors;
 
-        if ( !points.empty() ) {
+            for ( auto &i : mapPoints ) {
 
-            cv::viz::WCloud cloud( points, colors );
-            cloud.setRenderingProperty( cv::viz::POINT_SIZE, 2 );
-            vizWindow.showWidget( "Point cloud", cloud );
+                if ( i ) {
 
-            std::vector< cv::Affine3d > leftTrajectoryPoints;
-            std::vector< cv::Affine3d > rightTrajectoryPoints;
+                    auto point = i->point();
 
-            for ( auto &i : frames ) {
-
-                auto stereoFrame = std::dynamic_pointer_cast< slam::StereoFrame >( i );
-
-                if ( stereoFrame ) {
-
-                    leftTrajectoryPoints.push_back( cv::Affine3d( stereoFrame->leftFrame()->rotation().t(), cv::Mat( - stereoFrame->leftFrame()->rotation().t() * stereoFrame->leftFrame()->translation() ) ) );
-                    rightTrajectoryPoints.push_back( cv::Affine3d( stereoFrame->rightFrame()->rotation().t(), cv::Mat( - stereoFrame->rightFrame()->rotation().t() * stereoFrame->rightFrame()->translation() ) ) );
+                    points.push_back( point );
+                    colors.push_back( i->color() );
 
                 }
 
             }
 
-            cv::viz::WTrajectory leftTrajectory( leftTrajectoryPoints );
-            vizWindow.showWidget( "leftTrajectory", leftTrajectory );
-            cv::viz::WTrajectoryFrustums leftTrajectoryFrustums( leftTrajectoryPoints, cv::Vec2d( 1, 1 ), 0.5 );
-            vizWindow.showWidget( "leftTrajectoryFrustums", leftTrajectoryFrustums );
+            if ( !points.empty() ) {
 
-            cv::viz::WTrajectory rightTrajectory( rightTrajectoryPoints );
-            vizWindow.showWidget( "rightTrajectory", rightTrajectory );
-            cv::viz::WTrajectoryFrustums rightTrajectoryFrustums( rightTrajectoryPoints, cv::Vec2d( 1, 1 ), 0.5 );
-            vizWindow.showWidget( "rightTrajectoryFrustums", rightTrajectoryFrustums );
+                cv::viz::WCloud cloud( points, colors );
+                cloud.setRenderingProperty( cv::viz::POINT_SIZE, 2 );
+                vizWindow.showWidget( "Point cloud", cloud );
+
+                std::vector< cv::Affine3d > leftTrajectoryPoints;
+                std::vector< cv::Affine3d > rightTrajectoryPoints;
+
+                for ( auto &i : frames ) {
+
+                    auto stereoFrame = std::dynamic_pointer_cast< slam::StereoFrame >( i );
+
+                    if ( stereoFrame ) {
+
+                        leftTrajectoryPoints.push_back( cv::Affine3d( stereoFrame->leftFrame()->rotation().t(), cv::Mat( - stereoFrame->leftFrame()->rotation().t() * stereoFrame->leftFrame()->translation() ) ) );
+                        rightTrajectoryPoints.push_back( cv::Affine3d( stereoFrame->rightFrame()->rotation().t(), cv::Mat( - stereoFrame->rightFrame()->rotation().t() * stereoFrame->rightFrame()->translation() ) ) );
+
+                    }
+
+                }
+
+                cv::viz::WTrajectory leftTrajectory( leftTrajectoryPoints );
+                vizWindow.showWidget( "leftTrajectory", leftTrajectory );
+                cv::viz::WTrajectoryFrustums leftTrajectoryFrustums( leftTrajectoryPoints, cv::Vec2d( 1, 1 ), 0.5 );
+                vizWindow.showWidget( "leftTrajectoryFrustums", leftTrajectoryFrustums );
+
+                cv::viz::WTrajectory rightTrajectory( rightTrajectoryPoints );
+                vizWindow.showWidget( "rightTrajectory", rightTrajectory );
+                cv::viz::WTrajectoryFrustums rightTrajectoryFrustums( rightTrajectoryPoints, cv::Vec2d( 1, 1 ), 0.5 );
+                vizWindow.showWidget( "rightTrajectoryFrustums", rightTrajectoryFrustums );
+
+            }
+
+            vizWindow.spinOnce( 100 );
+
+            cv::waitKey( 1 );
 
         }
-
-        vizWindow.spinOnce( 100 );
-
-        cv::waitKey( 1 );
 
     }
 

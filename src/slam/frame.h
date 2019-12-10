@@ -37,9 +37,6 @@ public:
     std::vector< PointPtr > trackPoints() const;
     int trackPointsCount() const;
 
-    std::vector< PointPtr > matchedPoints() const;
-    int matchedPointsCount() const;
-
     bool drawPoints( CvImage *target ) const;
 
     cv::Point3d point() const;
@@ -85,6 +82,8 @@ public:
 
     void clearImage();
 
+    void cleanPoints();
+
     void triangulatePoints();
 
     const std::vector< cv::KeyPoint > &keyPoints() const;
@@ -115,7 +114,7 @@ protected:
 
     ProcessedPointPtr createFramePoint( const size_t keyPointIndex, const cv::Scalar &color );
 
-    static const double m_minCameraDistanceFactor;
+    static const double m_cameraDistanceMultiplier;
     static const double m_minPointsDistance;
 
 private:
@@ -136,6 +135,7 @@ public:
     static FramePtr create();
 
     void replace( const ProcessedFramePtr &frame );
+    void replaceAndClean( const ProcessedFramePtr &frame );
 
 protected:
     Frame();
@@ -173,13 +173,15 @@ class ProcessedDoubleFrameBase
 public:
     using ProcessedFramePtr = std::shared_ptr< ProcessedFrame >;
 
+    size_t usedKeypointsCount() const;
+
 protected:
     ProcessedDoubleFrameBase();
 
     static FeatureMatcher m_featuresMatcher;
     static OpticalMatcher m_opticalMatcher;
 
-    size_t m_matchedKeypointsCount;
+    size_t m_usedKeypointsCount;
 
 private:
     void initialize();
@@ -203,8 +205,11 @@ private:
 class ProcessedStereoFrame : public StereoFrameBase, public ProcessedDoubleFrameBase
 {
 public:
+
     using MapPtr = std::shared_ptr< Map >;
     using FramePtr = std::shared_ptr< ProcessedStereoFrame >;
+
+    using MapPointPtr = std::shared_ptr< MapPoint >;
 
     static FramePtr create( const MapPtr &parentMap );
 
@@ -218,7 +223,7 @@ public:
     void setProjectionMatrix( const ProjectionMatrix &leftMatrix, const ProjectionMatrix &rightMatrix );
 
     bool matchOptical( const size_t count, cv::Mat *f = nullptr );
-    cv::Mat matchFeatures();
+    bool matchFeatures( const size_t count, cv::Mat *f = nullptr );
 
     void clearImages();
 
@@ -233,7 +238,7 @@ public:
 
     bool triangulatePoints();
 
-    void clearMapPoints();
+    void cleanMapPoints();
 
     static void setMaxFeatures( const int value );
     static int maxFeatures();
@@ -251,7 +256,7 @@ protected:
     static const int m_minLenght = 1;
     static const float m_maxYParallax;
 
-    void clearMapPoints( const std::vector< MonoPointPtr > &points );
+    void cleanMapPoints( const std::vector< MonoPointPtr > &points );
 
 };
 
@@ -263,7 +268,7 @@ public:
     static FramePtr create();
 
     bool matchOptical( const size_t count , cv::Mat *f = nullptr );
-    cv::Mat matchFeatures();
+    bool matchFeatures( const size_t count , cv::Mat *f = nullptr );
 
     bool track();
 
@@ -278,8 +283,7 @@ public:
     std::vector< MonoPointPtr > trackPoints() const;
     int trackPointsCount() const;
 
-    std::vector< MonoPointPtr > matchedPoints() const;
-    int matchedPointsCount() const;
+    void extractDescriptors();
 
 protected:    
     AdjacentFrame();
@@ -306,6 +310,7 @@ public:
     void setProjectionMatrix( const ProjectionMatrix &leftMatrix, const ProjectionMatrix &rightMatrix );
 
     void replace( const ProcessedStereoFramePtr &frame );
+    void replaceAndClean( const ProcessedStereoFramePtr &frame );
 
 protected:
     StereoFrame();

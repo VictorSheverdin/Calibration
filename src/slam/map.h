@@ -21,7 +21,7 @@ public:
 
     using WorldPtr = std::shared_ptr< World >;
 
-    static MapPtr create( const WorldPtr &world );
+    static MapPtr create( const ProjectionMatrix &leftProjectionMatrix, const ProjectionMatrix &rightProjectionMatrix );
 
     MapPointPtr createMapPoint();
     MapPointPtr createMapPoint( const cv::Vec3f &pt );
@@ -41,29 +41,38 @@ public:
 
     void addMapPoint( const MapPointPtr &point );
 
-    WorldPtr parentWorld() const;
+    const ProjectionMatrix &leftProjectionMatrix() const;
+    const ProjectionMatrix &rightProjectionMatrix() const;
 
     const cv::Mat &baselineVector() const;
     double baselineLenght() const;
 
+    void multiplicateCameraMatrix( const double value );
+    void movePrincipalPoint( const cv::Vec2f &value );
+
+    bool valid() const;
+
 protected:
     using WorldPtrImpl = std::weak_ptr< World >;
 
-    Map( const WorldPtr &world );
-
-    WorldPtrImpl m_parentWorld;
+    Map( const ProjectionMatrix &leftProjectionMatrix, const ProjectionMatrix &rightProjectionMatrix );
 
     std::list< FramePtr > m_frames;
     std::set< MapPointPtr > m_mapPoints;
 
-    static const int m_minPnpPoints = 10;
+    ProjectionMatrix m_leftProjectionMatrix;
+    ProjectionMatrix m_rightProjectionMatrix;
 
-    static const int m_minTrackPoints = 70;
-
-    static const int m_goodTrackPoints = 200;
-    static const int m_overTrackPoints = 500;
+    cv::Mat m_baselineVector;
 
     int m_previousKeypointsCount;
+
+    static const int m_minPnpPoints = 10;
+
+    static const int m_minTrackPoints = 50;
+
+    static const int m_goodTrackPoints = 100;
+    static const int m_overTrackPoints = 300;
 
 private:
     void initialize();

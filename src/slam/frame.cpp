@@ -96,32 +96,6 @@ int MonoFrame::trackPointsCount() const
     return trackPoints().size();
 }
 
-std::vector< MonoFrame::PointPtr > MonoFrame::matchedPoints() const
-{
-    std::vector< PointPtr > ret;
-
-    auto framePoints = this->framePoints();
-
-    ret.reserve( framePoints.size() );
-
-    for ( auto &i : framePoints ) {
-
-        if ( i && i->prevPoint() && ( i->prevPoint()->stereoPoint() || i->mapPoint() ) ) {
-            ret.push_back( i );
-
-        }
-
-    }
-
-    return ret;
-
-}
-
-int MonoFrame::matchedPointsCount() const
-{
-    return matchedPoints().size();
-}
-
 bool MonoFrame::drawPoints( CvImage *target ) const
 {
     if ( !target )
@@ -146,8 +120,8 @@ cv::Point3d MonoFrame::point() const
 DaisyProcessor ProcessedFrame::m_descriptorProcessor;
 GFTTProcessor ProcessedFrame::m_keypointProcessor;
 
-const double ProcessedFrame::m_minCameraDistanceFactor = 5.0;
-const double ProcessedFrame::m_minPointsDistance = 10.0;
+const double ProcessedFrame::m_cameraDistanceMultiplier = 3.0;
+const double ProcessedFrame::m_minPointsDistance = 1.0;
 
 ProcessedFrame::ProcessedFrame( const MapPtr &parentMap )
     : m_parentMap( parentMap )
@@ -228,6 +202,18 @@ void ProcessedFrame::clearImage()
     m_image = CvImage();
 }
 
+void ProcessedFrame::cleanPoints()
+{
+    for ( auto i = m_points.begin(); i != m_points.end(); ) {
+
+        if ( !i->second->mapPoint() && !i->second->nextPoint() )
+            i = m_points.erase( i );
+        else
+            ++i;
+
+    }
+}
+
 void ProcessedFrame::triangulatePoints()
 {
     std::map< MonoFramePtr, std::vector< PointPtr > > frames;
@@ -252,10 +238,11 @@ void ProcessedFrame::triangulatePoints()
                     auto parentFrame = j->parentFrame();
 
                     if ( parentFrame ) {
+
                         auto cameraDistance = cv::norm( point() - parentFrame->point() );
                         auto pointsDistance = cv::norm( j->point() - ptr->point() );
 
-                        if ( cameraDistance > m_minCameraDistanceFactor * parentMap()->baselineLenght() && pointsDistance > m_minPointsDistance ) {
+                        if ( cameraDistance > m_cameraDistanceMultiplier * parentMap()->baselineLenght() && pointsDistance > m_minPointsDistance ) {
                             frames[ parentFrame ].push_back( j );
                             points[ j ] = ptr;
 
@@ -295,37 +282,47 @@ void ProcessedFrame::triangulatePoints()
 
             for ( size_t j = 0; j < i.second.size(); ++j ) {
 
-                auto w = points3d.at< float >( 3, j );
+                auto processedPoint = points[ i.second[ j ]  ];
 
-                auto x = points3d.at< float >( 0, j ) / w;
-                auto y = points3d.at< float >( 1, j ) / w;
-                auto z = points3d.at< float >( 2, j ) / w;
+                if ( processedPoint ) {
 
-                auto pt = cv::Vec3f( x, y, z );
+                    auto w = points3d.at< float >( 3, j );
 
-                if ( std::abs( w ) > FLOAT_EPS ) {
+                    auto x = points3d.at< float >( 0, j ) / w;
+                    auto y = points3d.at< float >( 1, j ) / w;
+                    auto z = points3d.at< float >( 2, j ) / w;
 
-                    MapPointPtr mapPoint;
+                    auto pt = cv::Vec3f( x, y, z );
 
-                    for ( auto k = i.second[ j ]; k; k = k->prevPoint() ) {
+                    if ( std::abs( w ) > FLOAT_EPS ) {
 
+                        MapPointPtr mapPoint;
 
-                        if ( k ) {
-                            auto curMapPoint = k->mapPoint();
+                        for ( auto k = i.second[ j ]; k; k = k->prevPoint() ) {
 
-                            if ( curMapPoint )
-                                mapPoint = curMapPoint;
+                            if ( k ) {
+                                auto curMapPoint = k->mapPoint();
+
+                                if ( curMapPoint )
+                                    mapPoint = curMapPoint;
+
+                            }
 
                         }
 
-                    }
+                        if ( !mapPoint ) {
+                            mapPoint = parentMap()->createMapPoint( pt, i.second[ j ]->color() );
+                        }
+                        else {
+                            mapPoint->setPoint( pt );
+                            mapPoint->setColor( i.second[ j ]->color() );
+                        }
 
-                    if ( mapPoint ) {
-                        mapPoint->setPoint( pt );
-                        mapPoint->setColor( i.second[ j ]->color() );
+                        i.second[ j ]->setMapPoint( mapPoint );
+                        processedPoint->setMapPoint( mapPoint );
+
+
                     }
-                    else
-                        i.second[ j ]->setMapPoint( parentMap()->createMapPoint( pt, i.second[ j ]->color() ) );
 
                 }
 
@@ -456,6 +453,30 @@ void Frame::replace( const ProcessedFramePtr &frame )
 
 }
 
+void Frame::replaceAndClean( const ProcessedFramePtr &frame )
+{
+    if ( frame ) {
+
+        setProjectionMatrix( frame->projectionMatrix() );
+
+        auto points = frame->framePoints();
+
+        for ( auto &i : points ) {
+
+            auto processedPoint = std::dynamic_pointer_cast< ProcessedPoint >( i );
+
+            if ( processedPoint && ( processedPoint->mapPoint() || processedPoint->nextPoint() ) ) {
+                auto point = createFramePoint( processedPoint->point(), processedPoint->color() );
+                point->replace( processedPoint );
+
+            }
+
+        }
+
+    }
+
+}
+
 Frame::FramePointPtr Frame::createFramePoint( const cv::Point2f &point, const cv::Scalar &color )
 {
     auto ret = FramePoint::create( shared_from_this(), point, color );
@@ -504,7 +525,12 @@ ProcessedDoubleFrameBase::ProcessedDoubleFrameBase()
 
 void ProcessedDoubleFrameBase::initialize()
 {
-    m_matchedKeypointsCount = 0;
+    m_usedKeypointsCount = 0;
+}
+
+size_t ProcessedDoubleFrameBase::usedKeypointsCount() const
+{
+    return m_usedKeypointsCount;
 }
 
 //StereoFrameBase
@@ -581,14 +607,14 @@ bool ProcessedStereoFrame::matchOptical( const size_t count, cv::Mat *f )
 
         auto keyPointsSize = std::min( leftFrame->m_keyPoints.size(), rightFrame->m_keyPoints.size() );
 
-        if ( m_matchedKeypointsCount < keyPointsSize ) {
+        if ( m_usedKeypointsCount < keyPointsSize ) {
 
             auto procCount = std::min( keyPointsSize, count );
 
             std::vector< cv::DMatch > matches;
 
-            std::vector< cv::KeyPoint > leftKeypoints( leftFrame->m_keyPoints.begin() + m_matchedKeypointsCount, leftFrame->m_keyPoints.begin() + procCount );
-            std::vector< cv::KeyPoint > rightKeypoints( rightFrame->m_keyPoints.begin() + m_matchedKeypointsCount, rightFrame->m_keyPoints.begin() + procCount );
+            std::vector< cv::KeyPoint > leftKeypoints( leftFrame->m_keyPoints.begin() + m_usedKeypointsCount, leftFrame->m_keyPoints.begin() + procCount );
+            std::vector< cv::KeyPoint > rightKeypoints( rightFrame->m_keyPoints.begin() + m_usedKeypointsCount, rightFrame->m_keyPoints.begin() + procCount );
 
             auto fmat = m_opticalMatcher.match( leftFrame->image(), leftKeypoints, rightFrame->image(), rightKeypoints, &matches );
 
@@ -596,8 +622,9 @@ bool ProcessedStereoFrame::matchOptical( const size_t count, cv::Mat *f )
                 *f = fmat;
 
             for ( auto &i : matches ) {
-                auto leftFramePoint = leftFrame->framePoint( i.queryIdx + m_matchedKeypointsCount );
-                auto rightFramePoint = rightFrame->framePoint( i.trainIdx + m_matchedKeypointsCount );
+
+                auto leftFramePoint = leftFrame->framePoint( i.queryIdx + m_usedKeypointsCount );
+                auto rightFramePoint = rightFrame->framePoint( i.trainIdx + m_usedKeypointsCount );
 
                 if ( !leftFramePoint->stereoPoint() || !rightFramePoint->stereoPoint() ) {
 
@@ -621,7 +648,7 @@ bool ProcessedStereoFrame::matchOptical( const size_t count, cv::Mat *f )
 
             }
 
-            m_matchedKeypointsCount = procCount;
+            m_usedKeypointsCount = procCount;
 
             return true;
 
@@ -633,7 +660,7 @@ bool ProcessedStereoFrame::matchOptical( const size_t count, cv::Mat *f )
 
 }
 
-cv::Mat ProcessedStereoFrame::matchFeatures()
+bool ProcessedStereoFrame::matchFeatures( const size_t count, cv::Mat *f )
 {
     auto leftFrame = this->leftFrame();
     auto rightFrame = this->rightFrame();
@@ -642,9 +669,15 @@ cv::Mat ProcessedStereoFrame::matchFeatures()
 
         std::vector< cv::DMatch > matches;
 
+        extractDescriptors();
+
         auto fmat = m_featuresMatcher.match( leftFrame->m_keyPoints, leftFrame->m_descriptors, rightFrame->m_keyPoints, rightFrame->m_descriptors, &matches );
 
+        if ( f )
+            *f = fmat;
+
         for ( auto &i : matches ) {
+
             auto leftPoint = leftFrame->framePoint( i.queryIdx );
             auto rightPoint = rightFrame->framePoint( i.trainIdx );
 
@@ -658,11 +691,11 @@ cv::Mat ProcessedStereoFrame::matchFeatures()
 
         }
 
-        return fmat;
+        return true;
 
     }
 
-    return cv::Mat();
+    return false;
 
 }
 
@@ -800,6 +833,7 @@ bool ProcessedStereoFrame::triangulatePoints()
                            rightPoints( 2, stereoPoints.size() );
 
         for ( size_t i = 0; i < stereoPoints.size(); ++i ) {
+
             leftPoints.row(0).col(i) = stereoPoints[i].leftPoint().x;
             leftPoints.row(1).col(i) = stereoPoints[i].leftPoint().y;
             rightPoints.row(0).col(i) = stereoPoints[i].rightPoint().x;
@@ -826,9 +860,11 @@ bool ProcessedStereoFrame::triangulatePoints()
                     auto leftFramePoint = stereoPoints[i].leftFramePoint();
                     auto rightFramePoint = stereoPoints[i].rightFramePoint();
 
+                    MapPointPtr mapPoint;
+
                     if ( !leftFramePoint->mapPoint() && !rightFramePoint->mapPoint() ) {
 
-                        auto mapPoint = map->createMapPoint( pt, stereoPoints[i].leftFramePoint()->color() );
+                        mapPoint = map->createMapPoint( pt, stereoPoints[i].leftFramePoint()->color() );
 
                         leftFramePoint->setMapPoint( mapPoint );
                         rightFramePoint->setMapPoint( mapPoint );
@@ -843,9 +879,20 @@ bool ProcessedStereoFrame::triangulatePoints()
                         else if ( !rightFramePoint->mapPoint() )
                             rightFramePoint->setMapPoint( leftFramePoint->mapPoint() );
 
-                        leftFramePoint->mapPoint()->setPoint( pt );
+                        mapPoint = leftFramePoint->mapPoint();
+                        mapPoint->setPoint( pt );
 
                     }
+
+                    auto leftNextPoint = leftFramePoint->nextPoint();
+
+                    if ( leftNextPoint )
+                        leftNextPoint->setMapPoint( mapPoint );
+
+                    auto rightNextPoint = rightFramePoint->nextPoint();
+
+                    if ( rightNextPoint )
+                        leftNextPoint->setMapPoint( mapPoint );
 
                 }
 
@@ -861,50 +908,18 @@ bool ProcessedStereoFrame::triangulatePoints()
 
 }
 
-
-void ProcessedStereoFrame::clearMapPoints( const std::vector< MonoPointPtr > &points )
-{
-    auto parentMap = this->parentMap();
-
-    if ( parentMap ) {
-
-        for ( auto &i : points ) {
-
-            if ( i ) {
-
-                auto mapPoint = i->mapPoint();
-
-                if ( mapPoint ) {
-
-                    if ( !i->nextPoint() && !i->prevPoint() && ( !i->stereoPoint() || ( i->stereoPoint() &&
-                         !i->stereoPoint()->nextPoint() && !i->stereoPoint()->prevPoint() ) ) ) {
-
-                        parentMap->removeMapPoint( mapPoint );
-
-                    }
-
-                }
-
-            }
-
-        }
-
-    }
-
-}
-
-void ProcessedStereoFrame::clearMapPoints()
+void ProcessedStereoFrame::cleanMapPoints()
 {
     auto leftFeatureFrame = this->leftFrame();
     auto rightFeatureFrame = this->rightFrame();
 
     if ( leftFeatureFrame ) {
-        clearMapPoints( leftFeatureFrame->framePoints() );
+        cleanMapPoints( leftFeatureFrame->framePoints() );
 
     }
 
     if ( rightFeatureFrame ) {
-        clearMapPoints( rightFeatureFrame->framePoints() );
+        cleanMapPoints( rightFeatureFrame->framePoints() );
 
     }
 
@@ -946,6 +961,37 @@ void ProcessedStereoFrame::extractDescriptors()
 
 }
 
+void ProcessedStereoFrame::cleanMapPoints( const std::vector< MonoPointPtr > &points )
+{
+    auto parentMap = this->parentMap();
+
+    if ( parentMap ) {
+
+        for ( auto &i : points ) {
+
+            if ( i ) {
+
+                auto mapPoint = i->mapPoint();
+
+                if ( mapPoint ) {
+
+                    if ( !i->nextPoint() && !i->prevPoint() && ( !i->stereoPoint() || ( i->stereoPoint() &&
+                         !i->stereoPoint()->nextPoint() && !i->stereoPoint()->prevPoint() ) ) ) {
+
+                        parentMap->removeMapPoint( mapPoint );
+
+                    }
+
+                }
+
+            }
+
+        }
+
+    }
+
+}
+
 // AdjacentFrame
 AdjacentFrame::AdjacentFrame()
 {
@@ -965,14 +1011,14 @@ bool AdjacentFrame::matchOptical( const size_t count, cv::Mat *f )
 
         auto keyPointsSize = std::min( prevFrame->m_keyPoints.size(), nextFrame->m_keyPoints.size() );
 
-        if ( m_matchedKeypointsCount < keyPointsSize ) {
+        if ( m_usedKeypointsCount < keyPointsSize ) {
 
             auto procCount = std::min( keyPointsSize, count );
 
             std::vector< cv::DMatch > matches;
 
-            std::vector< cv::KeyPoint > prevKeypoints( prevFrame->m_keyPoints.begin() + m_matchedKeypointsCount, prevFrame->m_keyPoints.begin() + procCount );
-            std::vector< cv::KeyPoint > nextKeypoints( nextFrame->m_keyPoints.begin() + m_matchedKeypointsCount, nextFrame->m_keyPoints.begin() + procCount );
+            std::vector< cv::KeyPoint > prevKeypoints( prevFrame->m_keyPoints.begin() + m_usedKeypointsCount, prevFrame->m_keyPoints.begin() + procCount );
+            std::vector< cv::KeyPoint > nextKeypoints( nextFrame->m_keyPoints.begin() + m_usedKeypointsCount, nextFrame->m_keyPoints.begin() + procCount );
 
             auto fmat = m_opticalMatcher.match( prevFrame->image(), prevKeypoints, nextFrame->image(), nextKeypoints, &matches );
 
@@ -981,8 +1027,8 @@ bool AdjacentFrame::matchOptical( const size_t count, cv::Mat *f )
 
             for ( auto &i : matches ) {
 
-                auto prevPoint = prevFrame->framePoint( i.queryIdx + m_matchedKeypointsCount );
-                auto nextPoint = nextFrame->framePoint( i.trainIdx + m_matchedKeypointsCount );
+                auto prevPoint = prevFrame->framePoint( i.queryIdx + m_usedKeypointsCount );
+                auto nextPoint = nextFrame->framePoint( i.trainIdx + m_usedKeypointsCount );
 
                 double lenght = cv::norm( prevPoint->point() - nextPoint->point() );
 
@@ -1000,7 +1046,7 @@ bool AdjacentFrame::matchOptical( const size_t count, cv::Mat *f )
 
             }
 
-            m_matchedKeypointsCount = procCount;
+            m_usedKeypointsCount = procCount;
 
             return true;
 
@@ -1012,7 +1058,7 @@ bool AdjacentFrame::matchOptical( const size_t count, cv::Mat *f )
 
 }
 
-cv::Mat AdjacentFrame::matchFeatures()
+bool AdjacentFrame::matchFeatures( const size_t count, cv::Mat *f )
 {
     auto prevFrame = this->previousFrame();
     auto nextFrame = this->nextFrame();
@@ -1021,9 +1067,15 @@ cv::Mat AdjacentFrame::matchFeatures()
 
         std::vector< cv::DMatch > matches;
 
+        extractDescriptors();
+
         auto fmat = m_featuresMatcher.match( prevFrame->m_keyPoints, prevFrame->m_descriptors, nextFrame->m_keyPoints, nextFrame->m_descriptors, &matches );
 
+        if ( f )
+            *f = fmat;
+
         for ( auto &i : matches ) {
+
             auto point1 = prevFrame->framePoint( i.queryIdx );
             auto point2 = nextFrame->framePoint( i.trainIdx );
 
@@ -1043,11 +1095,11 @@ cv::Mat AdjacentFrame::matchFeatures()
 
         }
 
-        return fmat;
+        return true;
 
     }
 
-    return cv::Mat();
+    return false;
 
 }
 
@@ -1093,6 +1145,8 @@ bool AdjacentFrame::track()
                     prevPoint->clearNextPoint();
 
                 points[i]->clearPrevPoint();
+
+                points[i]->clearMapPoint();
 
             }
 
@@ -1150,14 +1204,17 @@ int AdjacentFrame::trackPointsCount() const
     return nextFrame()->trackPointsCount();
 }
 
-std::vector< AdjacentFrame::MonoPointPtr > AdjacentFrame::matchedPoints() const
+void AdjacentFrame::extractDescriptors()
 {
-    return nextFrame()->matchedPoints();
-}
+    auto prevFrame = this->previousFrame();
+    auto nextFrame = this->nextFrame();
 
-int AdjacentFrame::matchedPointsCount() const
-{
-    return nextFrame()->matchedPointsCount();
+    if ( prevFrame )
+        prevFrame->extractDescriptors();
+
+    if ( nextFrame )
+        nextFrame->extractDescriptors();
+
 }
 
 // StereoFrame
@@ -1211,6 +1268,25 @@ void StereoFrame::replace( const ProcessedStereoFramePtr &frame )
             rightFrame->replace( rightProcessedFrame );
 
     }
+
+}
+
+void StereoFrame::replaceAndClean( const ProcessedStereoFramePtr &frame )
+{
+    if ( frame ) {
+        auto leftFrame = this->leftFrame();
+        auto leftProcessedFrame = frame->leftFrame();
+        auto rightFrame = this->rightFrame();
+        auto rightProcessedFrame = frame->rightFrame();
+
+        if ( leftFrame && leftProcessedFrame )
+            leftFrame->replaceAndClean( leftProcessedFrame );
+
+        if ( rightFrame && rightProcessedFrame )
+            rightFrame->replaceAndClean( rightProcessedFrame );
+
+    }
+
 }
 
 }

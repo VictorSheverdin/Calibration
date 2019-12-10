@@ -8,13 +8,11 @@
 
 namespace slam {
 
-World::World( const ProjectionMatrix &leftProjectionMatrix, const ProjectionMatrix &rightProjectionMatrix )
-    : m_leftProjectionMatrix( leftProjectionMatrix ), m_rightProjectionMatrix( rightProjectionMatrix )
+World::World( const ProjectionMatrix &leftProjectionMatrix, const ProjectionMatrix &rightProjectionMatrix )    
 {
     initialize();
 
-    m_baselineVector = rightProjectionMatrix.translation() - leftProjectionMatrix.translation();
-
+    m_maps.push_back( Map::create( leftProjectionMatrix, rightProjectionMatrix ) );
 }
 
 void World::initialize()
@@ -27,68 +25,32 @@ World::WorldPtr World::create( const ProjectionMatrix &leftProjectionMatrix, con
     return WorldPtr( new World( leftProjectionMatrix, rightProjectionMatrix ) );
 }
 
-std::list< World::FramePtr > &World::frames()
+const std::list < World::MapPtr > &World::maps() const
 {
-    return m_map->frames();
+    return m_maps;
 }
 
-const std::list< World::FramePtr > &World::frames() const
+std::list < World::MapPtr > &World::maps()
 {
-    return m_map->frames();
-}
-
-std::set< World::MapPointPtr > &World::mapPoints()
-{
-    return m_map->mapPoints();
-}
-
-const std::set< World::MapPointPtr > &World::mapPoints() const
-{
-    return m_map->mapPoints();
+    return m_maps;
 }
 
 bool World::track( const CvImage &leftImage, const CvImage &rightImage )
 {
-    return m_map->track( leftImage, rightImage );
-}
+    // if ( !m_maps.back()->valid() )
 
-const ProjectionMatrix &World::leftProjectionMatrix() const
-{
-    return m_leftProjectionMatrix;
-}
+    return m_maps.back()->track( leftImage, rightImage );
 
-const ProjectionMatrix &World::rightProjectionMatrix() const
-{
-    return m_rightProjectionMatrix;
 }
 
 void World::multiplicateCameraMatrix( const double value )
 {
-    m_leftProjectionMatrix.multiplicateCameraMatrix( value );
-    m_rightProjectionMatrix.multiplicateCameraMatrix( value );
-
+    m_maps.back()->multiplicateCameraMatrix( value );
 }
 
 void World::movePrincipalPoint( const cv::Vec2f &value )
 {
-    m_leftProjectionMatrix.movePrincipalPoint( value );
-    m_rightProjectionMatrix.movePrincipalPoint( value );
-
-}
-
-void World::createMap()
-{
-    m_map = Map::create( shared_from_this() );
-}
-
-const cv::Mat &World::baselineVector() const
-{
-    return m_baselineVector;
-}
-
-double World::baselineLenght() const
-{
-    return cv::norm( m_baselineVector );
+    m_maps.back()->movePrincipalPoint( value );
 }
 
 }
