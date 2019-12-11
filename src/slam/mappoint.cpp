@@ -6,44 +6,26 @@
 namespace slam {
 
 // MapPoint
-MapPoint::MapPoint( const MapPtr &parentMap )
+MapPoint::MapPoint( const MapPtr &parentMap, const cv::Point3d &point, const cv::Scalar &color )
     : m_parentMap( parentMap )
 {
+    addPoint( point );
+    setColor( color );
 }
 
-MapPoint::MapPoint( const MapPtr &parentMap, const cv::Vec3f &point )
-    : m_parentMap( parentMap ), m_point( point )
-{
-}
-
-MapPoint::MapPoint( const MapPtr &parentMap, const cv::Vec3f &point, const cv::Scalar &color )
-    : m_parentMap( parentMap ), m_point( point ), m_color( color )
-{
-}
-
-MapPoint::PointPtr MapPoint::create( const MapPtr &parentMap )
-{
-    return PointPtr( new MapPoint( parentMap ) );
-}
-
-MapPoint::PointPtr MapPoint::create( const MapPtr &parentMap, const cv::Vec3f &point )
-{
-    return PointPtr( new MapPoint( parentMap, point ) );
-}
-
-MapPoint::PointPtr MapPoint::create( const MapPtr &parentMap, const cv::Vec3f &point, const cv::Scalar &color )
+MapPoint::PointPtr MapPoint::create( const MapPtr &parentMap, const cv::Point3d &point, const cv::Scalar &color)
 {
     return PointPtr( new MapPoint( parentMap, point, color ) );
 }
 
-void MapPoint::setPoint( const cv::Vec3f &value )
+void MapPoint::addPoint( const cv::Point3d &value )
 {
-    m_point = value;
+    m_points.push_back( value );
 }
 
-const cv::Vec3f &MapPoint::point() const
+const cv::Point3d &MapPoint::point() const
 {
-    return m_point;
+    return m_points.back();
 }
 
 void MapPoint::setColor( const cv::Scalar &value )

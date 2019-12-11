@@ -44,7 +44,9 @@ public:
     void clearMapPoint();
     MapPointPtr mapPoint() const;
 
-     void drawTrack( CvImage *target , const cv::Scalar &color = cv::Scalar( 0, 255, 0, 100 ) ) const;
+    size_t connectedPointsCount() const;
+
+    void drawTrack( CvImage *target , const cv::Scalar &color = cv::Scalar( 0, 255, 0, 100 ) ) const;
 
 protected:
      using FramePtrImpl = std::weak_ptr< MonoFrame >;

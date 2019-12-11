@@ -32,27 +32,7 @@ Map::MapPtr Map::create( const ProjectionMatrix &leftProjectionMatrix, const Pro
     return MapPtr( new Map( leftProjectionMatrix, rightProjectionMatrix ) );
 }
 
-Map::MapPointPtr Map::createMapPoint()
-{
-    auto point = MapPoint::create( shared_from_this() );
-
-    addMapPoint( point );
-
-    return point;
-
-}
-
-Map::MapPointPtr Map::createMapPoint( const cv::Vec3f &pt )
-{
-    auto point = MapPoint::create( shared_from_this(), pt );
-
-    addMapPoint( point );
-
-    return point;
-
-}
-
-Map::MapPointPtr Map::createMapPoint( const cv::Vec3f &pt, const cv::Scalar &color )
+Map::MapPointPtr Map::createMapPoint( const cv::Point3d &pt, const cv::Scalar &color )
 {
     auto point = MapPoint::create( shared_from_this(), pt, color );
 
@@ -176,16 +156,16 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
             do {
 
                 continueFlag = continueFlag && previousStereoFrame->matchOptical( keypointsCount );
-                previousStereoFrame->triangulatePoints();
-
                 continueFlag = continueFlag && consecutiveLeftFrame->matchOptical( keypointsCount );
 
-                matchedPointCount = consecutiveLeftFrame->trackPointsCount();
+                matchedPointCount = consecutiveLeftFrame->matchedPointsCount();
 
                 m_previousKeypointsCount = keypointsCount;
                 keypointsCount *= 2;
 
             } while( matchedPointCount < m_goodTrackPoints && continueFlag );
+
+            previousStereoFrame->triangulatePoints();
 
             std::cout << matchedPointCount << std::endl;
 
@@ -199,7 +179,7 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
                 nextRightFrame->setRotation( nextLeftFrame->rotation() );
                 nextRightFrame->setTranslation( nextLeftFrame->translation() + baselineVector() );
 
-                // previousStereoFrame->cleanMapPoints();
+                previousStereoFrame->cleanMapPoints();
 
                 auto replacedFrame = StereoFrame::create();
 

@@ -67,43 +67,55 @@ int main( int, char** )
 
     system->multiplicateCameraMatrix( scaleFactor );
 
+    //std::mutex threadMutex;
+
     std::thread calcThread( [ & ] {
 
         StereoRectificationProcessor rectificationProcessor( path + "calibration.yaml" );
 
-        for ( auto i = /*9230*/5900; i < 30000; ++i ) {
+        for ( auto i = /*9230*/5900; i < 30000; ) {
 
-            std::cout << i << std::endl;
+            //if ( threadMutex.try_lock() ) {
 
-            std::string leftFile = leftPath + std::to_string( i ) + "_left.jpg";
-            std::string rightFile = rightPath + std::to_string( i ) + "_right.jpg";
+                std::cout << i << std::endl;
 
-            CvImage leftImage( leftFile );
-            CvImage rightImage( rightFile );
+                std::string leftFile = leftPath + std::to_string( i ) + "_left.jpg";
+                std::string rightFile = rightPath + std::to_string( i ) + "_right.jpg";
 
-            CvImage leftRectifiedImage;
-            CvImage rightRectifiedImage;
+                CvImage leftImage( leftFile );
+                CvImage rightImage( rightFile );
 
-            CvImage leftCroppedImage;
-            CvImage rightCroppedImage;
+                CvImage leftRectifiedImage;
+                CvImage rightRectifiedImage;
 
-            if ( rectificationProcessor.rectify( leftImage, rightImage, &leftRectifiedImage, &rightRectifiedImage )
-                        && rectificationProcessor.crop( leftRectifiedImage, rightRectifiedImage, &leftCroppedImage, &rightCroppedImage ) ) {
+                CvImage leftCroppedImage;
+                CvImage rightCroppedImage;
 
-                CvImage leftResizedImage;
-                CvImage rightResizedImage;
+                if ( rectificationProcessor.rectify( leftImage, rightImage, &leftRectifiedImage, &rightRectifiedImage )
+                            && rectificationProcessor.crop( leftRectifiedImage, rightRectifiedImage, &leftCroppedImage, &rightCroppedImage ) ) {
 
-                cv::resize( leftCroppedImage, leftResizedImage, cv::Size(), scaleFactor, scaleFactor, cv::INTER_CUBIC );
-                cv::resize( rightCroppedImage, rightResizedImage, cv::Size(), scaleFactor, scaleFactor, cv::INTER_CUBIC );
+                    CvImage leftResizedImage;
+                    CvImage rightResizedImage;
 
-                auto time = std::chrono::system_clock::now();
+                    cv::resize( leftCroppedImage, leftResizedImage, cv::Size(), scaleFactor, scaleFactor, cv::INTER_CUBIC );
+                    cv::resize( rightCroppedImage, rightResizedImage, cv::Size(), scaleFactor, scaleFactor, cv::INTER_CUBIC );
 
-                system->track( leftResizedImage, rightResizedImage );
+                    auto time = std::chrono::system_clock::now();
 
-                std::cout << std::chrono::duration_cast< std::chrono::microseconds >( std::chrono::system_clock::now() - time ).count()  / 1.e6 << " sec" << std::endl;
+                    system->track( leftResizedImage, rightResizedImage );
+
+                    std::cout << std::chrono::duration_cast< std::chrono::microseconds >( std::chrono::system_clock::now() - time ).count()  / 1.e6 << " sec" << std::endl;
 
 
-            }
+                }
+
+                //threadMutex.unlock();
+
+                std::this_thread::sleep_for( std::chrono::microseconds( 1 ) );
+
+                ++i;
+
+            //}
 
         }
 
@@ -117,10 +129,14 @@ int main( int, char** )
 
         for ( auto &map : maps ) {
 
+            //threadMutex.lock();
+
             auto mapPoints = map->mapPoints();
             auto frames = map->frames();
 
             auto processedFrame = std::dynamic_pointer_cast< slam::ProcessedStereoFrame >( frames.back() );
+
+            //threadMutex.unlock();
 
             if ( processedFrame ) {
 
@@ -181,11 +197,12 @@ int main( int, char** )
 
             }
 
-            vizWindow.spinOnce( 100 );
-
-            cv::waitKey( 1 );
-
         }
+
+        vizWindow.spinOnce( 100 );
+
+        cv::waitKey( 1 );
+
 
     }
 

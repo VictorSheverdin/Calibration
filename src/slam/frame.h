@@ -37,6 +37,9 @@ public:
     std::vector< PointPtr > trackPoints() const;
     int trackPointsCount() const;
 
+    std::vector< PointPtr > matchedPoints() const;
+    int matchedPointsCount() const;
+
     bool drawPoints( CvImage *target ) const;
 
     cv::Point3d point() const;
@@ -83,6 +86,7 @@ public:
     void clearImage();
 
     void cleanPoints();
+    void cleanMapPoints();
 
     void triangulatePoints();
 
@@ -116,6 +120,8 @@ protected:
 
     static const double m_cameraDistanceMultiplier;
     static const double m_minPointsDistance;
+
+    static const int m_minConnectedPoints = 4;
 
 private:
     void initialize();
@@ -159,6 +165,8 @@ public:
     MonoFramePtr frame2() const;
 
     void setProjectionMatrix( const ProjectionMatrix &matrix1, const ProjectionMatrix &matrix2 );
+
+    cv::Point3f center() const;
 
 protected:
     DoubleFrame();
@@ -256,8 +264,6 @@ protected:
     static const int m_minLenght = 1;
     static const float m_maxYParallax;
 
-    void cleanMapPoints( const std::vector< MonoPointPtr > &points );
-
 };
 
 class AdjacentFrame : public DoubleFrame, public ProcessedDoubleFrameBase
@@ -282,6 +288,9 @@ public:
 
     std::vector< MonoPointPtr > trackPoints() const;
     int trackPointsCount() const;
+
+    std::vector< MonoPointPtr > matchedPoints() const;
+    int matchedPointsCount() const;
 
     void extractDescriptors();
 

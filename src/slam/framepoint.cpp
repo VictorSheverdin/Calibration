@@ -84,6 +84,32 @@ namespace slam {
         return m_mapPoint.lock();
     }
 
+    size_t MonoPoint::connectedPointsCount() const
+    {
+        size_t ret = 0;
+
+        if ( stereoPoint() )
+            ++ret;
+
+        for ( auto i = prevPoint(); i; i = i->prevPoint() ) {
+            ++ret;
+
+            if ( i->stereoPoint() )
+                ++ret;
+
+        }
+
+        for ( auto i = nextPoint(); i; i = i->nextPoint() ) {
+            ++ret;
+
+            if ( i->stereoPoint() )
+                ++ret;
+
+        }
+
+        return ret;
+    }
+
     void MonoPoint::drawTrack( CvImage *target, const cv::Scalar &color ) const
     {
         drawPrevTrack( target, color );

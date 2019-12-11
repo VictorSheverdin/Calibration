@@ -23,9 +23,7 @@ public:
 
     static MapPtr create( const ProjectionMatrix &leftProjectionMatrix, const ProjectionMatrix &rightProjectionMatrix );
 
-    MapPointPtr createMapPoint();
-    MapPointPtr createMapPoint( const cv::Vec3f &pt );
-    MapPointPtr createMapPoint( const cv::Vec3f &pt, const cv::Scalar &color );
+    MapPointPtr createMapPoint( const cv::Point3d &pt, const cv::Scalar &color );
 
     void removeMapPoint( const MapPointPtr &point );
 
