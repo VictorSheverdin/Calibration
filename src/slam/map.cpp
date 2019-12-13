@@ -13,13 +13,14 @@
 
 namespace slam {
 
+const double Map::m_minTrackInliersRatio = 0.9;
+
 Map::Map( const ProjectionMatrix &leftProjectionMatrix, const ProjectionMatrix &rightProjectionMatrix )
     :  m_leftProjectionMatrix( leftProjectionMatrix ), m_rightProjectionMatrix( rightProjectionMatrix )
 {
     initialize();
 
     m_baselineVector = rightProjectionMatrix.translation() - leftProjectionMatrix.translation();
-
 }
 
 void Map::initialize()
@@ -120,9 +121,9 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
 
     stereoFrame->load( leftImage, rightImage );
 
-    if ( m_frames.empty() ) {
+    stereoFrame->extractKeyPoints();
 
-        stereoFrame->extractKeyPoints();
+    if ( m_frames.empty() ) {
 
         stereoFrame->setProjectionMatrix( m_leftProjectionMatrix, m_rightProjectionMatrix );
 
@@ -144,54 +145,60 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
 
             consecutiveLeftFrame->setFrames( previousLeftFrame, nextLeftFrame );
 
-            stereoFrame->extractKeyPoints();
+            auto keypointsCount = m_previousKeypointsCount;
 
-            int keypointsCount = m_previousKeypointsCount;
+            // previousLeftFrame->triangulatePoints();
 
-            int matchedPointCount;
-            bool continueFlag = true;
+            int trackedPointCount;
 
-            previousLeftFrame->triangulatePoints();
+            double inliersRatio = 0.0;
+
+            auto keyPointsCount = previousStereoFrame->leftKeyPointsCount();
 
             do {
 
-                continueFlag = continueFlag && previousStereoFrame->matchOptical( keypointsCount );
-                continueFlag = continueFlag && consecutiveLeftFrame->matchOptical( keypointsCount );
+                do {
 
-                matchedPointCount = consecutiveLeftFrame->matchedPointsCount();
+                    previousStereoFrame->matchOptical( keypointsCount );
+                    consecutiveLeftFrame->trackOptical();
 
-                m_previousKeypointsCount = keypointsCount;
-                keypointsCount *= 2;
+                    trackedPointCount = consecutiveLeftFrame->posePointsCount();
 
-            } while( matchedPointCount < m_goodTrackPoints && continueFlag );
+                    m_previousKeypointsCount = keypointsCount;
 
-            previousStereoFrame->triangulatePoints();
+                    keypointsCount *= 2;
 
-            std::cout << matchedPointCount << std::endl;
+                } while( trackedPointCount < m_goodTrackPoints && m_previousKeypointsCount <= keyPointsCount );
 
-            if ( matchedPointCount > m_overTrackPoints )
+                previousStereoFrame->triangulatePoints();
+
+                inliersRatio = consecutiveLeftFrame->recoverPose();
+
+                std::cout << "! " << m_previousKeypointsCount << " " << trackedPointCount << " " << inliersRatio << std::endl;
+
+            } while ( inliersRatio < m_minTrackInliersRatio && m_previousKeypointsCount <= keyPointsCount );
+
+            std::cout << "Inliers: " << inliersRatio << std::endl;
+
+            if ( trackedPointCount < m_minTrackPoints )
+                return false;
+
+            if ( trackedPointCount > m_overTrackPoints )
                 m_previousKeypointsCount /= 2;
 
-            if ( matchedPointCount > m_minTrackPoints ) {
+            nextRightFrame->setCameraMatrix( previousRightFrame->cameraMatrix() );
+            nextRightFrame->setRotation( nextLeftFrame->rotation() );
+            nextRightFrame->setTranslation( nextLeftFrame->translation() + baselineVector() );
 
-                consecutiveLeftFrame->track();
-                nextRightFrame->setCameraMatrix( previousRightFrame->cameraMatrix() );
-                nextRightFrame->setRotation( nextLeftFrame->rotation() );
-                nextRightFrame->setTranslation( nextLeftFrame->translation() + baselineVector() );
+            previousStereoFrame->cleanMapPoints();
 
-                previousStereoFrame->cleanMapPoints();
+            auto replacedFrame = StereoFrame::create();
 
-                auto replacedFrame = StereoFrame::create();
+            replacedFrame->replaceAndClean( previousStereoFrame );
 
-                replacedFrame->replaceAndClean( previousStereoFrame );
+            m_frames.back() = replacedFrame;
 
-                m_frames.pop_back();
-
-                m_frames.push_back( replacedFrame );
-
-                m_frames.push_back( stereoFrame );
-
-            }
+            m_frames.push_back( stereoFrame );
 
         }
 

@@ -14,7 +14,7 @@ public:
 
     static PointPtr create( const MapPtr &parentMap, const cv::Point3d &point, const cv::Scalar &color );
 
-    void addPoint( const cv::Point3d &value );
+    void setPoint( const cv::Point3d &value );
     const cv::Point3d &point() const;
 
     void setColor( const cv::Scalar &value );
@@ -27,7 +27,7 @@ protected:
 
     cv::Scalar m_color;
 
-    std::list< cv::Point3d > m_points;
+    cv::Point3d m_point;
 
 };
 

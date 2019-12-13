@@ -17,7 +17,7 @@ World::World( const ProjectionMatrix &leftProjectionMatrix, const ProjectionMatr
 
 void World::initialize()
 {
-    ProcessedStereoFrame::setMaxFeatures( m_keypointsCount );
+    ProcessedFrame::setMaxFeatures( m_keypointsCount );
 }
 
 World::WorldPtr World::create( const ProjectionMatrix &leftProjectionMatrix, const ProjectionMatrix &rightProjectionMatrix )
@@ -37,10 +37,7 @@ std::list < World::MapPtr > &World::maps()
 
 bool World::track( const CvImage &leftImage, const CvImage &rightImage )
 {
-    // if ( !m_maps.back()->valid() )
-
     return m_maps.back()->track( leftImage, rightImage );
-
 }
 
 void World::multiplicateCameraMatrix( const double value )

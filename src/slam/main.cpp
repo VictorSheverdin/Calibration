@@ -44,9 +44,13 @@ int main( int, char** )
     std::string leftPath = path + "left/";
     std::string rightPath = path + "right/";
 
+    cv::namedWindow( "Points", cv::WINDOW_KEEPRATIO );
+    cv::resizeWindow( "Points", 800, 600 );
+    cv::moveWindow( "Points", 80, 10 );
+
     cv::namedWindow( "Track", cv::WINDOW_KEEPRATIO );
     cv::resizeWindow( "Track", 800, 600 );
-    cv::moveWindow( "Track", 80, 10 );
+    cv::moveWindow( "Track", 80, 680 );
 
     cv::viz::Viz3d vizWindow( "Viz3d" );
     vizWindow.setWindowSize( cv::Size( 800, 600 ) );
@@ -67,7 +71,7 @@ int main( int, char** )
 
     system->multiplicateCameraMatrix( scaleFactor );
 
-    //std::mutex threadMutex;
+    std::mutex threadMutex;
 
     std::thread calcThread( [ & ] {
 
@@ -75,9 +79,9 @@ int main( int, char** )
 
         for ( auto i = /*9230*/5900; i < 30000; ) {
 
-            //if ( threadMutex.try_lock() ) {
+            if ( threadMutex.try_lock() ) {
 
-                std::cout << i << std::endl;
+                std::cout << std::endl << i << std::endl;
 
                 std::string leftFile = leftPath + std::to_string( i ) + "_left.jpg";
                 std::string rightFile = rightPath + std::to_string( i ) + "_right.jpg";
@@ -106,16 +110,15 @@ int main( int, char** )
 
                     std::cout << std::chrono::duration_cast< std::chrono::microseconds >( std::chrono::system_clock::now() - time ).count()  / 1.e6 << " sec" << std::endl;
 
-
                 }
 
-                //threadMutex.unlock();
+                threadMutex.unlock();
 
                 std::this_thread::sleep_for( std::chrono::microseconds( 1 ) );
 
                 ++i;
 
-            //}
+            }
 
         }
 
@@ -129,16 +132,19 @@ int main( int, char** )
 
         for ( auto &map : maps ) {
 
-            //threadMutex.lock();
+            threadMutex.lock();
 
             auto mapPoints = map->mapPoints();
             auto frames = map->frames();
 
             auto processedFrame = std::dynamic_pointer_cast< slam::ProcessedStereoFrame >( frames.back() );
 
-            //threadMutex.unlock();
-
             if ( processedFrame ) {
+
+                auto pointsImage = processedFrame->drawKeyPoints();
+
+                if ( !pointsImage.empty() )
+                    cv::imshow( "Points", pointsImage );
 
                 auto tracksImage = processedFrame->leftFrame()->drawTracks();
 
@@ -199,7 +205,9 @@ int main( int, char** )
 
         }
 
-        vizWindow.spinOnce( 100 );
+        threadMutex.unlock();
+
+        vizWindow.spinOnce( 50 );
 
         cv::waitKey( 1 );
 

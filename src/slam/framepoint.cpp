@@ -171,6 +171,11 @@ namespace slam {
         return parentFrame()->m_colors[ m_keyPointIndex ];
     }
 
+    const cv::KeyPoint &ProcessedPoint::keyPoint() const
+    {
+        return parentFrame()->m_keyPoints[ m_keyPointIndex ];
+    }
+
     // FramePoint
     FramePoint::FramePoint( const FramePtr &parentFrame )
         : MonoPoint( parentFrame)

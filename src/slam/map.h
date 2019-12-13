@@ -63,14 +63,14 @@ protected:
 
     cv::Mat m_baselineVector;
 
-    int m_previousKeypointsCount;
+    size_t m_previousKeypointsCount;
 
-    static const int m_minPnpPoints = 10;
-
-    static const int m_minTrackPoints = 50;
+    static const int m_minTrackPoints = 30;
 
     static const int m_goodTrackPoints = 100;
-    static const int m_overTrackPoints = 300;
+    static const int m_overTrackPoints = 200;
+
+    static const double m_minTrackInliersRatio;
 
 private:
     void initialize();

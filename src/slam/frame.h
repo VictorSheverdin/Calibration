@@ -34,12 +34,6 @@ public:
     std::vector< StereoPoint > stereoPoints() const;
     std::vector< AdjacentPoint > adjacentPoints() const;
 
-    std::vector< PointPtr > trackPoints() const;
-    int trackPointsCount() const;
-
-    std::vector< PointPtr > matchedPoints() const;
-    int matchedPointsCount() const;
-
     bool drawPoints( CvImage *target ) const;
 
     cv::Point3d point() const;
@@ -98,6 +92,11 @@ public:
     static void setMaxFeatures( const int value );
     static int maxFeatures();
 
+    std::vector< ProcessedPointPtr > posePoints() const;
+    int posePointsCount() const;
+
+    std::vector< ProcessedPointPtr > trackedPoints() const;
+
 protected:
     using MapPtrImpl = std::weak_ptr< Map >;
 
@@ -116,12 +115,14 @@ protected:
     static GFTTProcessor m_keypointProcessor;
     static DaisyProcessor m_descriptorProcessor;
 
-    ProcessedPointPtr createFramePoint( const size_t keyPointIndex, const cv::Scalar &color );
-
     static const double m_cameraDistanceMultiplier;
     static const double m_minPointsDistance;
 
     static const int m_minConnectedPoints = 4;
+
+    std::vector< ProcessedPointPtr > pointsToTrack() const;
+
+    ProcessedPointPtr createFramePoint( const size_t keyPointIndex, const cv::Scalar &color );
 
 private:
     void initialize();
@@ -180,8 +181,9 @@ class ProcessedDoubleFrameBase
 {
 public:
     using ProcessedFramePtr = std::shared_ptr< ProcessedFrame >;
+    using ProcessedPointPtr = std::shared_ptr< ProcessedPoint >;
 
-    size_t usedKeypointsCount() const;
+    // size_t usedKeypointsCount() const;
 
 protected:
     ProcessedDoubleFrameBase();
@@ -189,7 +191,7 @@ protected:
     static FeatureMatcher m_featuresMatcher;
     static OpticalMatcher m_opticalMatcher;
 
-    size_t m_usedKeypointsCount;
+    // size_t m_usedKeypointsCount;
 
 private:
     void initialize();
@@ -230,8 +232,8 @@ public:
 
     void setProjectionMatrix( const ProjectionMatrix &leftMatrix, const ProjectionMatrix &rightMatrix );
 
-    bool matchOptical( const size_t count, cv::Mat *f = nullptr );
-    bool matchFeatures( const size_t count, cv::Mat *f = nullptr );
+    cv::Mat matchOptical( const size_t count );
+    cv::Mat matchFeatures( const size_t count );
 
     void clearImages();
 
@@ -248,11 +250,10 @@ public:
 
     void cleanMapPoints();
 
-    static void setMaxFeatures( const int value );
-    static int maxFeatures();
-
     void extractKeyPoints();
     void extractDescriptors();
+
+    size_t leftKeyPointsCount() const;
 
 protected:
     using MapPtrImpl = std::weak_ptr< Map >;
@@ -261,7 +262,6 @@ protected:
 
     MapPtrImpl m_parentMap;
 
-    static const int m_minLenght = 1;
     static const float m_maxYParallax;
 
 };
@@ -273,10 +273,10 @@ public:
 
     static FramePtr create();
 
-    bool matchOptical( const size_t count , cv::Mat *f = nullptr );
-    bool matchFeatures( const size_t count , cv::Mat *f = nullptr );
+    cv::Mat trackOptical();
+    cv::Mat trackFeatures(const size_t count );
 
-    bool track();
+    double recoverPose();
 
     void setFrames( const ProcessedFramePtr &prevFrame, const ProcessedFramePtr &nextFrame );
 
@@ -286,19 +286,16 @@ public:
     std::vector< AdjacentPoint > adjacentPoints() const;
     int adjacentPointsCount() const;
 
-    std::vector< MonoPointPtr > trackPoints() const;
-    int trackPointsCount() const;
+    std::vector< AdjacentFrame::ProcessedPointPtr > posePoints() const;
+    int posePointsCount() const;
 
-    std::vector< MonoPointPtr > matchedPoints() const;
-    int matchedPointsCount() const;
+    std::vector< AdjacentFrame::ProcessedPointPtr > trackedPoints() const;
+    int trackedPointsCount() const;
 
     void extractDescriptors();
 
 protected:    
     AdjacentFrame();
-
-    static const int m_minLenght = 1;
-    static const int m_minPnpPoints = 50;
 
 };
 

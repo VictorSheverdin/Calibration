@@ -34,7 +34,7 @@ GFTTProcessor::GFTTProcessor()
 
 void GFTTProcessor::initialize()
 {
-    m_processor = cv::GFTTDetector::create();
+    m_processor = cv::GFTTDetector::create( 1000, 1.e-4, 3.0, 7, true, 0.04 );
 }
 
 cv::Ptr< cv::GFTTDetector > GFTTProcessor::processor() const
@@ -50,6 +50,32 @@ void GFTTProcessor::setMaxFeatures( const int value )
 int GFTTProcessor::maxFeatures() const
 {
     return processor()->getMaxFeatures();
+}
+
+// FastProcessor
+FastProcessor::FastProcessor()
+{
+    initialize();
+}
+
+void FastProcessor::initialize()
+{
+    m_processor = cv::FastFeatureDetector::create( 50 );
+}
+
+cv::Ptr< cv::FastFeatureDetector > FastProcessor::processor() const
+{
+    return std::dynamic_pointer_cast< cv::FastFeatureDetector >( m_processor );
+}
+
+void FastProcessor::setThreshold( const int value )
+{
+    processor()->setThreshold( value );
+}
+
+int FastProcessor::threshold() const
+{
+    return processor()->getThreshold();
 }
 
 // DaisyProcessor
@@ -177,7 +203,7 @@ void download(const cv::cuda::GpuMat& d_mat, std::vector< float >& vec)
     d_mat.download( mat );
 }
 
-cv::Mat OpticalMatcher::match( const CvImage &sourceImage, std::vector< cv::KeyPoint > &sourceKeypoints,
+cv::Mat OpticalMatcher:: match( const CvImage &sourceImage, std::vector< cv::KeyPoint > &sourceKeypoints,
             const CvImage &targetImage, std::vector< cv::KeyPoint > &targetKeypoints,
             std::vector< cv::DMatch > *matches )
 {

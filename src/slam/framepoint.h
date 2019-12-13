@@ -78,6 +78,8 @@ public:
     virtual const cv::Point2f &point() const override;
     virtual const cv::Scalar &color() const override;
 
+    const cv::KeyPoint &keyPoint() const;
+
     static PointPtr create( const FramePtr &parentFrame, const size_t keyPointIndex );
 
     FramePtr parentFrame() const;

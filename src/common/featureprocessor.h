@@ -52,6 +52,21 @@ private:
 
 };
 
+class FastProcessor : public KeyPointProcessor
+{
+public:
+    FastProcessor();
+
+    cv::Ptr< cv::FastFeatureDetector > processor() const;
+
+    void setThreshold( const int value );
+    int threshold() const;
+
+private:
+    void initialize();
+
+};
+
 class DaisyProcessor : public DescriptorProcessor
 {
 public:

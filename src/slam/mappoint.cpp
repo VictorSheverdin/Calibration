@@ -9,7 +9,7 @@ namespace slam {
 MapPoint::MapPoint( const MapPtr &parentMap, const cv::Point3d &point, const cv::Scalar &color )
     : m_parentMap( parentMap )
 {
-    addPoint( point );
+    setPoint( point );
     setColor( color );
 }
 
@@ -18,14 +18,14 @@ MapPoint::PointPtr MapPoint::create( const MapPtr &parentMap, const cv::Point3d 
     return PointPtr( new MapPoint( parentMap, point, color ) );
 }
 
-void MapPoint::addPoint( const cv::Point3d &value )
+void MapPoint::setPoint( const cv::Point3d &value )
 {
-    m_points.push_back( value );
+    m_point = value;
 }
 
 const cv::Point3d &MapPoint::point() const
 {
-    return m_points.back();
+    return m_point;
 }
 
 void MapPoint::setColor( const cv::Scalar &value )
