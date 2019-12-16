@@ -1,7 +1,10 @@
 #include "src/common/precompiled.h"
 
 #include "map.h"
+
 #include "mappoint.h"
+
+#include "framepoint.h"
 
 namespace slam {
 
@@ -36,6 +39,48 @@ void MapPoint::setColor( const cv::Scalar &value )
 const cv::Scalar &MapPoint::color() const
 {
     return m_color;
+}
+
+void MapPoint::addFramePoint( const FramePointPtr &value )
+{
+    if ( !isFramePoint( value ))
+        m_framePoints.push_back( value );
+}
+
+void MapPoint::removeFramePoint( const FramePointPtr &value )
+{
+    for ( auto i = m_framePoints.begin(); i != m_framePoints.end(); ) {
+        if ( i->expired() )
+            i = m_framePoints.erase( i );
+        else {
+            if ( i->lock() == value )
+                i = m_framePoints.erase( i );
+            else
+                ++i;
+        }
+
+    }
+
+}
+
+bool MapPoint::isFramePoint( const FramePointPtr &value ) const
+{
+    for ( auto i = m_framePoints.begin(); i != m_framePoints.end(); ++i )
+        if ( !i->expired() && i->lock() == value )
+            return true;
+
+    return false;
+
+}
+
+bool MapPoint::isLastFramePoint( const FramePointPtr &value ) const
+{
+    if ( !m_framePoints.empty() )
+        if ( !m_framePoints.back().expired() && m_framePoints.back().lock() == value )
+            return true;
+
+    return false;
+
 }
 
 }

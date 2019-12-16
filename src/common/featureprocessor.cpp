@@ -34,7 +34,7 @@ GFTTProcessor::GFTTProcessor()
 
 void GFTTProcessor::initialize()
 {
-    m_processor = cv::GFTTDetector::create( 1000, 1.e-4, 3.0, 7, true, 0.04 );
+    m_processor = cv::GFTTDetector::create( 1000, 1.e-4, 3.0, 5, true, 0.04 );
 }
 
 cv::Ptr< cv::GFTTDetector > GFTTProcessor::processor() const

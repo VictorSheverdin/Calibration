@@ -71,7 +71,7 @@ int main( int, char** )
 
     system->multiplicateCameraMatrix( scaleFactor );
 
-    std::mutex threadMutex;
+    // std::mutex threadMutex;
 
     std::thread calcThread( [ & ] {
 
@@ -79,7 +79,7 @@ int main( int, char** )
 
         for ( auto i = /*9230*/5900; i < 30000; ) {
 
-            if ( threadMutex.try_lock() ) {
+            // if ( threadMutex.try_lock() ) {
 
                 std::cout << std::endl << i << std::endl;
 
@@ -112,13 +112,13 @@ int main( int, char** )
 
                 }
 
-                threadMutex.unlock();
+                // threadMutex.unlock();
 
                 std::this_thread::sleep_for( std::chrono::microseconds( 1 ) );
 
                 ++i;
 
-            }
+            // }
 
         }
 
@@ -132,7 +132,7 @@ int main( int, char** )
 
         for ( auto &map : maps ) {
 
-            threadMutex.lock();
+            // threadMutex.lock();
 
             auto mapPoints = map->mapPoints();
             auto frames = map->frames();
@@ -141,15 +141,15 @@ int main( int, char** )
 
             if ( processedFrame ) {
 
-                auto pointsImage = processedFrame->drawKeyPoints();
-
-                if ( !pointsImage.empty() )
-                    cv::imshow( "Points", pointsImage );
-
                 auto tracksImage = processedFrame->leftFrame()->drawTracks();
 
                 if ( !tracksImage.empty() )
                     cv::imshow( "Track", tracksImage );
+
+                auto pointsImage = processedFrame->drawKeyPoints();
+
+                if ( !pointsImage.empty() )
+                    cv::imshow( "Points", pointsImage );
 
             }
 
@@ -205,7 +205,7 @@ int main( int, char** )
 
         }
 
-        threadMutex.unlock();
+        // threadMutex.unlock();
 
         vizWindow.spinOnce( 50 );
 

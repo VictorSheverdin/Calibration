@@ -15,7 +15,7 @@ protected:
     PointBase();
 };
 
-class MonoPoint : public PointBase
+class MonoPoint : public PointBase, public std::enable_shared_from_this< MonoPoint >
 {
 public:
     using FramePtr = std::shared_ptr< MonoFrame >;
@@ -69,7 +69,7 @@ protected:
 
 };
 
-class ProcessedPoint : public MonoPoint, public std::enable_shared_from_this< ProcessedPoint >
+class ProcessedPoint : public MonoPoint
 {
 public:
     using FramePtr = std::shared_ptr< ProcessedFrame >;
@@ -84,6 +84,8 @@ public:
 
     FramePtr parentFrame() const;
 
+    bool lastTriangulated();
+
 protected:
     using FramePtrImpl = std::weak_ptr< ProcessedFrame >;
 
@@ -93,7 +95,7 @@ protected:
 
 };
 
-class FramePoint : public MonoPoint, public std::enable_shared_from_this< FramePoint >
+class FramePoint : public MonoPoint
 {
 public:
     using FramePtr = std::shared_ptr< Frame >;

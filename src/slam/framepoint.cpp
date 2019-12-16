@@ -72,10 +72,19 @@ namespace slam {
     void MonoPoint::setMapPoint( const MapPointPtr &point )
     {
         m_mapPoint = point;
+
+       if ( point )
+            point->addFramePoint( shared_from_this() );
+
     }
 
     void MonoPoint::clearMapPoint()
     {
+        auto mapPoint = this->mapPoint();
+
+        if ( mapPoint )
+            mapPoint->removeFramePoint( shared_from_this() );
+
         m_mapPoint.reset();
     }
 
@@ -159,6 +168,19 @@ namespace slam {
     ProcessedPoint::FramePtr ProcessedPoint::parentFrame() const
     {
         return std::dynamic_pointer_cast< ProcessedFrame >( m_parentFrame.lock() );
+    }
+
+    bool ProcessedPoint::lastTriangulated()
+    {
+        auto mapPoint = this->mapPoint();
+
+        if ( mapPoint ) {
+            if ( mapPoint->isLastFramePoint( shared_from_this() ) )
+                return true;
+        }
+
+        return false;
+
     }
 
     const cv::Point2f &ProcessedPoint::point() const

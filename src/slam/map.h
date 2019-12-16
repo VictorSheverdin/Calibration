@@ -65,7 +65,7 @@ protected:
 
     size_t m_previousKeypointsCount;
 
-    static const int m_minTrackPoints = 30;
+    static const int m_minTrackPoints = 50;
 
     static const int m_goodTrackPoints = 100;
     static const int m_overTrackPoints = 200;

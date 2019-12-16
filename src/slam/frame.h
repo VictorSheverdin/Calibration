@@ -264,6 +264,8 @@ protected:
 
     static const float m_maxYParallax;
 
+    static const double m_minXDistasnce;
+
 };
 
 class AdjacentFrame : public DoubleFrame, public ProcessedDoubleFrameBase

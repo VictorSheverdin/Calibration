@@ -147,7 +147,7 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
 
             auto keypointsCount = m_previousKeypointsCount;
 
-            // previousLeftFrame->triangulatePoints();
+            previousLeftFrame->triangulatePoints();
 
             int trackedPointCount;
 
@@ -160,6 +160,8 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
                 do {
 
                     previousStereoFrame->matchOptical( keypointsCount );
+                    previousStereoFrame->triangulatePoints();
+
                     consecutiveLeftFrame->trackOptical();
 
                     trackedPointCount = consecutiveLeftFrame->posePointsCount();
@@ -169,8 +171,6 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
                     keypointsCount *= 2;
 
                 } while( trackedPointCount < m_goodTrackPoints && m_previousKeypointsCount <= keyPointsCount );
-
-                previousStereoFrame->triangulatePoints();
 
                 inliersRatio = consecutiveLeftFrame->recoverPose();
 

@@ -95,7 +95,7 @@ DaisyProcessor ProcessedFrame::m_descriptorProcessor;
 GFTTProcessor ProcessedFrame::m_keypointProcessor;
 
 const double ProcessedFrame::m_cameraDistanceMultiplier = 2.0;
-const double ProcessedFrame::m_minPointsDistance = 1.0;
+const double ProcessedFrame::m_minPointsDistance = 2.0;
 
 ProcessedFrame::ProcessedFrame( const MapPtr &parentMap )
     : m_parentMap( parentMap )
@@ -370,9 +370,11 @@ CvImage ProcessedFrame::drawKeyPoints() const
 {
     if ( !m_image.empty() ) {
 
+        int radius = std::min( m_image.width(), m_image.height() ) / 500.0;
+
         CvImage ret;
         m_image.copyTo( ret );
-        drawFeaturePoints( &ret, m_keyPoints );
+        drawFeaturePoints( &ret, m_keyPoints, radius );
 
         drawLabel( &ret, "Keypoints cout: " + std::to_string( m_keyPoints.size() ), ret.height() / 70 );
 
@@ -388,26 +390,32 @@ CvImage ProcessedFrame::drawTracks() const
 {
     CvImage ret;
 
-    m_image.copyTo( ret );
+    if ( !m_image.empty() ) {
 
-    auto points = this->framePoints();
+        m_image.copyTo( ret );
 
-#pragma omp parallel for
-    for ( size_t i = 0; i < points.size(); ++i )
-        if ( points[ i ] && ( points[ i ]->prevPoint() || points[i]->nextPoint() ) ) {
-            if ( points[i]->mapPoint() )
-                points[ i ]->drawTrack( &ret );
-            else
-                points[ i ]->drawTrack( &ret, cv::Scalar( 255, 0, 0, 255 ) );
-
-        }
+        auto points = this->framePoints();
 
 #pragma omp parallel for
-    for ( size_t i = 0; i < points.size(); ++i )
-        if ( points[ i ] && ( points[ i ]->prevPoint() || points[i]->nextPoint() ) )
-            drawFeaturePoint( &ret, points[ i ]->point(), 2 );
+        for ( size_t i = 0; i < points.size(); ++i )
+            if ( points[ i ] && ( points[ i ]->prevPoint() || points[i]->nextPoint() ) ) {
+                if ( points[ i ]->mapPoint() )
+                    points[ i ]->drawTrack( &ret );
+                else
+                    points[ i ]->drawTrack( &ret, cv::Scalar( 255, 0, 0, 255 ) );
 
-    drawLabel( &ret, "Tracks count: " + std::to_string( points.size() ), ret.height() / 70 );
+            }
+
+        int radius = std::min( ret.width(), ret.height() ) / 500.0;
+
+#pragma omp parallel for
+        for ( size_t i = 0; i < points.size(); ++i )
+            if ( points[ i ] && ( points[ i ]->prevPoint() || points[ i ]->nextPoint() ) )
+                drawFeaturePoint( &ret, points[ i ]->point(), radius );
+
+        drawLabel( &ret, "Tracks count: " + std::to_string( points.size() ), ret.height() / 70 );
+
+    }
 
     return ret;
 
@@ -448,8 +456,7 @@ std::vector< ProcessedFrame::ProcessedPointPtr > ProcessedFrame::posePoints() co
 
         auto processedPoint = std::dynamic_pointer_cast< ProcessedPoint >( i );
 
-        if ( processedPoint && processedPoint->prevPoint() &&
-                        processedPoint->mapPoint() && processedPoint->prevPoint()->stereoPoint() )
+        if ( processedPoint && processedPoint->prevPoint() && processedPoint->mapPoint() && processedPoint->lastTriangulated() )
 
             ret.push_back( processedPoint );
 
@@ -661,6 +668,7 @@ StereoFrameBase::MonoFramePtr StereoFrameBase::rightFrame() const
 
 // ProcessedStereoFrame
 const float ProcessedStereoFrame::m_maxYParallax = 2.0;
+const double ProcessedStereoFrame::m_minXDistasnce = 2.0;
 
 ProcessedStereoFrame::ProcessedStereoFrame( const MapPtr &parentMap )
     : m_parentMap( parentMap )
@@ -729,7 +737,7 @@ cv::Mat ProcessedStereoFrame::matchOptical( const size_t count )
                 auto leftPoint = leftFramePoint->point();
                 auto rightPoint = rightFramePoint->point();
 
-                if ( leftPoint.x > rightPoint.x && fabs( leftPoint.y - rightPoint.y ) < m_maxYParallax ) {
+                if ( fabs( leftPoint.y - rightPoint.y ) < m_maxYParallax && leftPoint.x - rightPoint.x >  m_minXDistasnce ) {
 
                     leftFramePoint->setStereoPoint( rightFramePoint );
                     rightFramePoint->setStereoPoint( leftFramePoint );
@@ -866,13 +874,15 @@ CvImage ProcessedStereoFrame::drawStereoPoints() const
 
             }
 
+            int radius = std::min( ret.width(), ret.height() ) / 500.0;
+
 #pragma omp parallel for
             for ( size_t i = 0; i < stereoPoints.size(); ++i ) {
                 auto rightPoint = stereoPoints[ i ].rightPoint();
                 rightPoint.x += leftImage.width();
 
-                drawFeaturePoint( &ret, stereoPoints[ i ].leftPoint() );
-                drawFeaturePoint( &ret, rightPoint );
+                drawFeaturePoint( &ret, stereoPoints[ i ].leftPoint(), radius );
+                drawFeaturePoint( &ret, rightPoint, radius );
 
             }
 
@@ -1009,7 +1019,7 @@ bool ProcessedStereoFrame::triangulatePoints()
                             auto rightNextPoint = rightFramePoint->nextPoint();
 
                             if ( rightNextPoint )
-                                leftNextPoint->setMapPoint( mapPoint );
+                                rightNextPoint->setMapPoint( mapPoint );
 
                         }
 
