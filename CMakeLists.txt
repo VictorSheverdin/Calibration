@@ -25,6 +25,10 @@ set ( COMMON_SOURCES
     src/common/calibrationdatabase.cpp
     src/common/rectificationprocessor.h
     src/common/rectificationprocessor.cpp
+    src/common/plane.h
+    src/common/plane.cpp
+    src/common/projectionmatrix.h
+    src/common/projectionmatrix.cpp
     src/common/featureprocessor.h
     src/common/featureprocessor.cpp
     src/common/ipwidget.h
@@ -134,8 +138,8 @@ find_package( Eigen3 3.1.0 REQUIRED )
 find_package( VTK 8 REQUIRED )
 find_package( PCL 1.9 REQUIRED )
 find_package( Pangolin REQUIRED )
-find_package( SuiteSparse )
 find_package( RTABMap REQUIRED )
+find_package( SuiteSparse )
 find_package( G2O REQUIRED )
 
 set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O3 -march=native ${OpenMP_C_FLAGS}")

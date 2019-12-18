@@ -65,10 +65,12 @@ protected:
 
     size_t m_previousKeypointsCount;
 
-    static const int m_minTrackPoints = 50;
+    static const int m_minTrackPoints = 1 << 6;
 
-    static const int m_goodTrackPoints = 100;
-    static const int m_overTrackPoints = 200;
+    static const int m_goodTrackPoints = 1 << 7;
+    static const int m_overTrackPoints = 1 << 8;
+
+    static const int m_trackFramePointsCount = 1 << 7;
 
     static const double m_minTrackInliersRatio;
 

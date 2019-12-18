@@ -63,17 +63,17 @@ void MapPoint::removeFramePoint( const FramePointPtr &value )
 
 }
 
-bool MapPoint::isFramePoint( const FramePointPtr &value ) const
+bool MapPoint::isFramePoint( const FrameConstPointPtr &value ) const
 {
-    for ( auto i = m_framePoints.begin(); i != m_framePoints.end(); ++i )
-        if ( !i->expired() && i->lock() == value )
+    for ( auto &i : m_framePoints )
+        if ( !i.expired() && i.lock() == value )
             return true;
 
     return false;
 
 }
 
-bool MapPoint::isLastFramePoint( const FramePointPtr &value ) const
+bool MapPoint::isLastFramePoint( const FrameConstPointPtr &value ) const
 {
     if ( !m_framePoints.empty() )
         if ( !m_framePoints.back().expired() && m_framePoints.back().lock() == value )

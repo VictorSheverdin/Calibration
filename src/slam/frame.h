@@ -6,7 +6,7 @@
 #include "framepoint.h"
 #include "mappoint.h"
 
-#include "src/common/calibrationdatabase.h"
+#include "src/common/projectionmatrix.h"
 
 #include "src/common/featureprocessor.h"
 
@@ -64,6 +64,8 @@ public:
 
     virtual std::vector< PointPtr > framePoints() const override;
 
+    std::vector< ProcessedPointPtr > processedPoints() const;
+
     MapPtr parentMap() const;
 
     ProcessedPointPtr &framePoint( const size_t index );
@@ -95,7 +97,13 @@ public:
     std::vector< ProcessedPointPtr > posePoints() const;
     int posePointsCount() const;
 
+    std::vector< ProcessedPointPtr > trackFramePoints() const;
+    int trackFramePointsCount() const;
+
     std::vector< ProcessedPointPtr > trackedPoints() const;
+    int trackedPointsCount() const;
+
+    void createFramePoints( const size_t count );
 
 protected:
     using MapPtrImpl = std::weak_ptr< Map >;
@@ -120,9 +128,9 @@ protected:
 
     static const int m_minConnectedPoints = 4;
 
-    std::vector< ProcessedPointPtr > pointsToTrack() const;
+    ProcessedPointPtr createFramePoint( const size_t keyPointIndex );
 
-    ProcessedPointPtr createFramePoint( const size_t keyPointIndex, const cv::Scalar &color );
+    bool isFramePointExist( const size_t index ) const;
 
 private:
     void initialize();
@@ -183,15 +191,11 @@ public:
     using ProcessedFramePtr = std::shared_ptr< ProcessedFrame >;
     using ProcessedPointPtr = std::shared_ptr< ProcessedPoint >;
 
-    // size_t usedKeypointsCount() const;
-
 protected:
     ProcessedDoubleFrameBase();
 
     static FeatureMatcher m_featuresMatcher;
     static OpticalMatcher m_opticalMatcher;
-
-    // size_t m_usedKeypointsCount;
 
 private:
     void initialize();
@@ -291,12 +295,17 @@ public:
     std::vector< AdjacentFrame::ProcessedPointPtr > posePoints() const;
     int posePointsCount() const;
 
+    std::vector< AdjacentFrame::ProcessedPointPtr > trackFramePoints() const;
+    int trackFramePointsCount() const;
+
     std::vector< AdjacentFrame::ProcessedPointPtr > trackedPoints() const;
     int trackedPointsCount() const;
 
     void extractDescriptors();
 
-protected:    
+    void createFramePoints( const size_t count );
+
+protected:
     AdjacentFrame();
 
 };

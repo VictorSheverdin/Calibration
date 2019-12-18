@@ -170,7 +170,7 @@ namespace slam {
         return std::dynamic_pointer_cast< ProcessedFrame >( m_parentFrame.lock() );
     }
 
-    bool ProcessedPoint::lastTriangulated()
+    bool ProcessedPoint::lastTriangulated() const
     {
         auto mapPoint = this->mapPoint();
 

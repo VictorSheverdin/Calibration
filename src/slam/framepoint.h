@@ -84,7 +84,7 @@ public:
 
     FramePtr parentFrame() const;
 
-    bool lastTriangulated();
+    bool lastTriangulated() const;
 
 protected:
     using FramePtrImpl = std::weak_ptr< ProcessedFrame >;

@@ -14,6 +14,7 @@ public:
     using PointPtr = std::shared_ptr< MapPoint >;
 
     using FramePointPtr = std::shared_ptr< MonoPoint >;
+    using FrameConstPointPtr = std::shared_ptr< const MonoPoint >;
 
     static PointPtr create( const MapPtr &parentMap, const cv::Point3d &point, const cv::Scalar &color );
 
@@ -26,9 +27,9 @@ public:
     void addFramePoint( const FramePointPtr &value );
     void removeFramePoint( const FramePointPtr &value );
 
-    bool isFramePoint( const FramePointPtr &value ) const;
+    bool isFramePoint( const FrameConstPointPtr &value ) const;
 
-    bool isLastFramePoint( const FramePointPtr &value ) const;
+    bool isLastFramePoint( const FrameConstPointPtr &value ) const;
 
 protected:
     using FramePointPtrImpl = std::weak_ptr< MonoPoint >;

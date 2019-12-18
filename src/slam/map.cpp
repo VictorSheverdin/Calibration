@@ -153,7 +153,7 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
 
             double inliersRatio = 0.0;
 
-            auto keyPointsCount = previousStereoFrame->leftKeyPointsCount();
+            auto maxKeypointsCount = previousStereoFrame->leftKeyPointsCount();
 
             do {
 
@@ -161,6 +161,10 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
 
                     previousStereoFrame->matchOptical( keypointsCount );
                     previousStereoFrame->triangulatePoints();
+
+                    auto trackFramePointsCount = std::max( 0, m_trackFramePointsCount - consecutiveLeftFrame->trackFramePointsCount() );
+
+                    consecutiveLeftFrame->createFramePoints( trackFramePointsCount );
 
                     consecutiveLeftFrame->trackOptical();
 
@@ -170,13 +174,13 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
 
                     keypointsCount *= 2;
 
-                } while( trackedPointCount < m_goodTrackPoints && m_previousKeypointsCount <= keyPointsCount );
+                } while( trackedPointCount < m_goodTrackPoints && m_previousKeypointsCount <= maxKeypointsCount );
 
                 inliersRatio = consecutiveLeftFrame->recoverPose();
 
                 std::cout << "! " << m_previousKeypointsCount << " " << trackedPointCount << " " << inliersRatio << std::endl;
 
-            } while ( inliersRatio < m_minTrackInliersRatio && m_previousKeypointsCount <= keyPointsCount );
+            } while ( inliersRatio < m_minTrackInliersRatio && m_previousKeypointsCount <= maxKeypointsCount );
 
             std::cout << "Inliers: " << inliersRatio << std::endl;
 

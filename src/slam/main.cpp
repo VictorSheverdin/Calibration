@@ -17,7 +17,7 @@ int main( int, char** )
     cv::ocl::Context context;
     std::vector< cv::ocl::PlatformInfo > platforms;
 
-   cv::ocl::getPlatfomsInfo(platforms);
+    cv::ocl::getPlatfomsInfo(platforms);
 
     for (size_t i = 0; i < platforms.size(); i++)
     {
@@ -71,15 +71,15 @@ int main( int, char** )
 
     system->multiplicateCameraMatrix( scaleFactor );
 
-    // std::mutex threadMutex;
+    std::mutex threadMutex;
 
     std::thread calcThread( [ & ] {
 
         StereoRectificationProcessor rectificationProcessor( path + "calibration.yaml" );
 
-        for ( auto i = /*9230*/5900; i < 30000; ) {
+        for ( auto i = /*9200*/5900; i < 30000; ) {
 
-            // if ( threadMutex.try_lock() ) {
+            if ( threadMutex.try_lock() ) {
 
                 std::cout << std::endl << i << std::endl;
 
@@ -112,13 +112,13 @@ int main( int, char** )
 
                 }
 
-                // threadMutex.unlock();
+                threadMutex.unlock();
 
                 std::this_thread::sleep_for( std::chrono::microseconds( 1 ) );
 
                 ++i;
 
-            // }
+            }
 
         }
 
@@ -128,11 +128,11 @@ int main( int, char** )
 
     while ( true ) {
 
+        threadMutex.lock();
+
         auto maps = system->maps();
 
         for ( auto &map : maps ) {
-
-            // threadMutex.lock();
 
             auto mapPoints = map->mapPoints();
             auto frames = map->frames();
@@ -205,9 +205,9 @@ int main( int, char** )
 
         }
 
-        // threadMutex.unlock();
+        threadMutex.unlock();
 
-        vizWindow.spinOnce( 50 );
+        vizWindow.spinOnce( 100 );
 
         cv::waitKey( 1 );
 
