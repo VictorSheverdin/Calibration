@@ -126,6 +126,34 @@ int main( int, char** )
 
     calcThread.detach();
 
+    std::thread optimizationThread5s( [ & ] {
+        while ( true ) {
+
+            const int frames = 200;
+
+            system->adjust( frames );
+            std::this_thread::sleep_for( std::chrono::seconds( 5 ) );
+
+        }
+
+    } );
+
+    optimizationThread5s.detach();
+
+   /* std::thread optimizationThread20s( [ & ] {
+        while ( true ) {
+
+            const int frames = 500;
+
+            system->adjust( frames );
+            std::this_thread::sleep_for( std::chrono::seconds( 20 ) );
+
+        }
+
+    } );
+
+    optimizationThread20s.detach(); */
+
     while ( true ) {
 
         threadMutex.lock();

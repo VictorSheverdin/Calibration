@@ -139,7 +139,7 @@ find_package( VTK 8 REQUIRED )
 find_package( PCL 1.9 REQUIRED )
 find_package( Pangolin REQUIRED )
 find_package( RTABMap REQUIRED )
-find_package( SuiteSparse )
+find_package( SuiteSparse REQUIRED )
 find_package( G2O REQUIRED )
 
 set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O3 -march=native ${OpenMP_C_FLAGS}")
@@ -241,7 +241,7 @@ add_executable( slam ${COMMON_SOURCES} ${RES_SOURCES}
 target_include_directories( imagesorbodometry PRIVATE ${Pangolin_INCLUDE_DIRS} )
 target_include_directories( cameraorbodometry PRIVATE ${Pangolin_INCLUDE_DIRS} )
 #target_include_directories( rtabmapslam PRIVATE ${RTABMap_INCLUDE_DIRS} )
-target_include_directories( slam PRIVATE ${G2O_INCLUDE_DIR} ${SUITESPARSE_INCLUDE_DIRS} )
+target_include_directories( slam PRIVATE ${G2O_INCLUDE_DIR} ${CHOLMOD_INCLUDE_DIR} )
 
 target_link_libraries( calibration ${Qt5Widgets_LIBRARIES} ${YAML_CPP_LIBRARIES} )
 target_link_libraries( disparity ${Qt5Widgets_LIBRARIES} ${VTK_LIBRARIES} ${YAML_CPP_LIBRARIES} )
@@ -249,4 +249,12 @@ target_link_libraries( imagesorbodometry ${Qt5Widgets_LIBRARIES} ${Pangolin_LIBR
 target_link_libraries( cameraorbodometry ${Qt5Widgets_LIBRARIES} ${Pangolin_LIBRARIES} ${PROJECT_SOURCE_DIR}/src/DBoW2/lib/libDBoW2.so ${PROJECT_SOURCE_DIR}/src/g2o/lib/libg2o.so )
 target_link_libraries( visoodometry ${Qt5Widgets_LIBRARIES} png )
 #target_link_libraries( rtabmapslam ${RTABMap_LIBRARIES} )
-target_link_libraries( slam PRIVATE ${G2O_INCLUDE_DIR} )
+
+target_link_libraries( slam PRIVATE
+                            ${G2O_CORE_LIBRARY}
+                            ${G2O_STUFF_LIBRARY}
+                            ${G2O_CLI_LIBRARY}
+                            ${G2O_TYPES_SBA}
+                            ${G2O_TYPES_SLAM3D}
+                            ${G2O_SOLVER_EIGEN}
+                            ${CHOLMOD_LIBRARIES} )

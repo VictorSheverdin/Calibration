@@ -110,6 +110,11 @@ void Map::movePrincipalPoint( const cv::Vec2f &value )
     m_rightProjectionMatrix.movePrincipalPoint( value );
 }
 
+void Map::adjust( const int frames )
+{
+    m_optimizer.adjustStored( this, frames );
+}
+
 bool Map::valid() const
 {
     return true;
@@ -195,6 +200,8 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
             nextRightFrame->setTranslation( nextLeftFrame->translation() + baselineVector() );
 
             previousStereoFrame->cleanMapPoints();
+
+            m_optimizer.localAdjustment( this );
 
             auto replacedFrame = StereoFrame::create();
 

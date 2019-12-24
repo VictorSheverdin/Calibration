@@ -14,7 +14,7 @@ public:
     const cv::Mat &cameraMatrix() const;
 
     void multiplicateCameraMatrix( const double value );
-    void movePrincipalPoint( const cv::Vec2f &value );
+    void movePrincipalPoint( const cv::Vec2d &value );
 
     void setRotation( const cv::Mat &value );
     const cv::Mat &rotation() const;
@@ -24,6 +24,11 @@ public:
 
     void setProjectionMatrix( const cv::Mat &value );
     const cv::Mat &projectionMatrix() const;
+
+    double fx() const;
+    double fy() const;
+    double cx() const;
+    double cy() const;
 
     Plane plane() const;
 

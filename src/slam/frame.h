@@ -7,8 +7,9 @@
 #include "mappoint.h"
 
 #include "src/common/projectionmatrix.h"
-
 #include "src/common/featureprocessor.h"
+
+#include <g2o/types/slam3d/se3quat.h>
 
 namespace slam {
 
@@ -24,7 +25,10 @@ protected:
 
 class MonoFrame : public FrameBase, public ProjectionMatrix
 {
+    friend class DoubleFrame;
+
 public:
+    using FramePtr = std::shared_ptr< MonoFrame >;
     using PointPtr = std::shared_ptr< MonoPoint >;
 
     virtual std::vector< PointPtr > framePoints() const = 0;
@@ -37,6 +41,9 @@ public:
     bool drawPoints( CvImage *target ) const;
 
     cv::Point3d point() const;
+
+    void setSe3Pose( const g2o::SE3Quat &pose );
+    g2o::SE3Quat se3Pose() const;
 
 protected:
     MonoFrame();
@@ -164,6 +171,8 @@ private:
 
 class DoubleFrame : public FrameBase
 {
+    friend class Map;
+
 public:
     using MonoFramePtr = std::shared_ptr< MonoFrame >;
     using MonoPointPtr = std::shared_ptr< MonoPoint >;
@@ -205,10 +214,14 @@ private:
 class StereoFrameBase : public DoubleFrame
 {
 public:
+    using FramePtr = std::shared_ptr< StereoFrameBase >;
+
     void setFrames( const MonoFramePtr &leftFrame, const MonoFramePtr &rightFrame );
 
     MonoFramePtr leftFrame() const;
     MonoFramePtr rightFrame() const;
+
+    void setLeftSe3Pose( g2o::SE3Quat &pose );
 
 protected:
     StereoFrameBase();
@@ -310,7 +323,7 @@ protected:
 
 };
 
-class StereoFrame : public DoubleFrame
+class StereoFrame : public StereoFrameBase
 {
 public:
     using FramePtr = std::shared_ptr< Frame >;

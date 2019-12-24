@@ -2,6 +2,8 @@
 
 #include "src/common/image.h"
 
+#include <Eigen/Core>
+
 namespace slam {
 
 class Frame;
@@ -17,6 +19,8 @@ protected:
 
 class MonoPoint : public PointBase, public std::enable_shared_from_this< MonoPoint >
 {
+    friend class MonoFrame;
+
 public:
     using FramePtr = std::shared_ptr< MonoFrame >;
 
@@ -48,8 +52,13 @@ public:
 
     void drawTrack( CvImage *target , const cv::Scalar &color = cv::Scalar( 0, 255, 0, 100 ) ) const;
 
+    Eigen::Matrix< double, 2, 1 > eigenPoint() const;
+    Eigen::Matrix< double, 3, 1 > eigenStereoPoint() const;
+
+    double bf() const;
+
 protected:
-     using FramePtrImpl = std::weak_ptr< MonoFrame >;
+    using FramePtrImpl = std::weak_ptr< MonoFrame >;
 
     using AdjacentPtrImpl = std::weak_ptr< MonoPoint >;
     using MapPointPtrImpl = std::weak_ptr< MapPoint >;
@@ -66,6 +75,8 @@ protected:
 
     void drawPrevTrack( CvImage *target , const cv::Scalar &color = cv::Scalar( 0, 255, 0, 100 ) ) const;
     void drawNextTrack( CvImage *target , const cv::Scalar &color = cv::Scalar( 0, 255, 0, 100 ) ) const;
+
+    void initialize();
 
 };
 

@@ -40,6 +40,11 @@ bool World::track( const CvImage &leftImage, const CvImage &rightImage )
     return m_maps.back()->track( leftImage, rightImage );
 }
 
+void World::adjust( const int frames )
+{
+    return m_maps.back()->adjust( frames );
+}
+
 void World::multiplicateCameraMatrix( const double value )
 {
     m_maps.back()->multiplicateCameraMatrix( value );

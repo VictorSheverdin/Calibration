@@ -17,6 +17,11 @@ namespace slam {
     MonoPoint::MonoPoint( const FramePtr &parentFrame )
         : m_parentFrame( parentFrame )
     {
+        initialize();
+    }
+
+    void MonoPoint::initialize()
+    {
     }
 
     MonoPoint::FramePtr MonoPoint::parentFrame() const
@@ -117,6 +122,64 @@ namespace slam {
         }
 
         return ret;
+    }
+
+    Eigen::Matrix< double, 2, 1 > MonoPoint::eigenPoint() const
+    {
+        Eigen::Matrix< double, 2, 1 > ret;
+
+        auto point = this->point();
+
+        ret << point.x, point.y;
+
+        return ret;
+    }
+
+    Eigen::Matrix< double, 3, 1 > MonoPoint::eigenStereoPoint() const
+    {
+        Eigen::Matrix< double, 3, 1 > ret;
+
+        auto point = this->point();
+
+        auto stereoPoint = this->stereoPoint();
+
+        double disparity = 0;
+
+        if ( stereoPoint ) {
+
+            disparity = std::abs( stereoPoint->point().x - point.x );
+
+        }
+
+        ret << point.x, point.y, disparity;
+
+        return ret;
+    }
+
+    double MonoPoint::bf() const
+    {
+        auto parentFrame = this->parentFrame();
+
+        if ( parentFrame ) {
+
+            auto stereoPoint = this->stereoPoint();
+
+            if ( stereoPoint ) {
+
+                auto stereoParent = stereoPoint->parentFrame();
+
+                if ( stereoParent ) {
+
+                    return cv::norm( stereoParent->translation() - parentFrame->translation() ) * parentFrame->fx();
+
+                }
+
+            }
+
+        }
+
+        return 0.0;
+
     }
 
     void MonoPoint::drawTrack( CvImage *target, const cv::Scalar &color ) const

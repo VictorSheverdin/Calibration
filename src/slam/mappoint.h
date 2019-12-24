@@ -2,6 +2,8 @@
 
 #include <opencv2/opencv.hpp>
 
+#include <Eigen/Core>
+
 namespace slam {
 
 class Map;
@@ -9,6 +11,8 @@ class MonoPoint;
 
 class MapPoint : std::enable_shared_from_this< MapPoint >
 {
+    friend class Map;
+
 public:
     using MapPtr = std::weak_ptr< Map >;
     using PointPtr = std::shared_ptr< MapPoint >;
@@ -31,6 +35,9 @@ public:
 
     bool isLastFramePoint( const FrameConstPointPtr &value ) const;
 
+    void setEigenPoint( const Eigen::Matrix< double, 3, 1 > &value );
+    Eigen::Matrix< double, 3, 1 > eigenPoint() const;
+
 protected:
     using FramePointPtrImpl = std::weak_ptr< MonoPoint >;
 
@@ -43,6 +50,9 @@ protected:
     cv::Point3d m_point;
 
     std::list< FramePointPtrImpl > m_framePoints;
+
+private:
+    void initialize();
 
 };
 

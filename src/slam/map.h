@@ -5,18 +5,22 @@
 
 #include "src/common/calibrationdatabase.h"
 
+#include "optimizer.h"
+
 namespace slam {
 
-class DoubleFrame;
+class StereoFrameBase;
 class MapPoint;
 class World;
 
 class Map : public std::enable_shared_from_this< Map >
 {
+    friend class Optimizer;
+
 public:
     using MapPtr = std::shared_ptr< Map >;
 
-    using FramePtr = std::shared_ptr< DoubleFrame >;
+    using FramePtr = std::shared_ptr< StereoFrameBase >;
     using MapPointPtr = std::shared_ptr< MapPoint >;
 
     using WorldPtr = std::shared_ptr< World >;
@@ -48,6 +52,8 @@ public:
     void multiplicateCameraMatrix( const double value );
     void movePrincipalPoint( const cv::Vec2f &value );
 
+    void adjust( const int frames );
+
     bool valid() const;
 
 protected:
@@ -64,6 +70,8 @@ protected:
     cv::Mat m_baselineVector;
 
     size_t m_previousKeypointsCount;
+
+    Optimizer m_optimizer;
 
     static const int m_minTrackPoints = 1 << 6;
 

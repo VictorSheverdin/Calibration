@@ -6,6 +6,8 @@
 
 #include "framepoint.h"
 
+#include "optimizer.h"
+
 namespace slam {
 
 // MapPoint
@@ -14,6 +16,12 @@ MapPoint::MapPoint( const MapPtr &parentMap, const cv::Point3d &point, const cv:
 {
     setPoint( point );
     setColor( color );
+
+    initialize();
+}
+
+void MapPoint::initialize()
+{
 }
 
 MapPoint::PointPtr MapPoint::create( const MapPtr &parentMap, const cv::Point3d &point, const cv::Scalar &color)
@@ -29,6 +37,29 @@ void MapPoint::setPoint( const cv::Point3d &value )
 const cv::Point3d &MapPoint::point() const
 {
     return m_point;
+}
+
+void MapPoint::setEigenPoint( const Eigen::Matrix< double, 3, 1 > &value )
+{
+    cv::Point3d point;
+
+    point.x = value( 0 );
+    point.y = value( 1 );
+    point.z = value( 2 );
+
+    setPoint( point );
+
+}
+
+Eigen::Matrix< double, 3, 1 > MapPoint::eigenPoint() const
+{
+    Eigen::Matrix< double, 3, 1 > ret;
+
+    auto point = this->point();
+
+    ret << point.x, point.y, point.z;
+
+    return ret;
 }
 
 void MapPoint::setColor( const cv::Scalar &value )

@@ -48,7 +48,7 @@ void ProjectionMatrix::multiplicateCameraMatrix( const double value )
 
 }
 
-void ProjectionMatrix::movePrincipalPoint( const cv::Vec2f &value )
+void ProjectionMatrix::movePrincipalPoint(const cv::Vec2d &value )
 {
     m_projectionMatrix = cv::Mat();
 
@@ -100,6 +100,26 @@ const cv::Mat &ProjectionMatrix::projectionMatrix() const
 
     return m_projectionMatrix;
 
+}
+
+double ProjectionMatrix::fx() const
+{
+    return m_cameraMatrix.at< double >( 0, 0 );
+}
+
+double ProjectionMatrix::fy() const
+{
+    return m_cameraMatrix.at< double >( 1, 1 );
+}
+
+double ProjectionMatrix::cx() const
+{
+    return m_cameraMatrix.at< double >( 0, 2 );
+}
+
+double ProjectionMatrix::cy() const
+{
+    return m_cameraMatrix.at< double >( 1, 2 );
 }
 
 Plane ProjectionMatrix::plane() const

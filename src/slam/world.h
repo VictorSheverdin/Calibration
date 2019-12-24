@@ -25,6 +25,8 @@ public:
 
     bool track( const CvImage &leftImage, const CvImage &rightImage );
 
+    void adjust( const int frames );
+
     void multiplicateCameraMatrix( const double value );
     void movePrincipalPoint( const cv::Vec2f &value );
 

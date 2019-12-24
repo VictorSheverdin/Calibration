@@ -7,6 +7,8 @@
 
 #include "map.h"
 
+#include "optimizer.h"
+
 #include <opencv2/sfm.hpp>
 
 namespace slam {
@@ -87,15 +89,52 @@ cv::Point3d MonoFrame::point() const
 {
     auto t = translation();
 
-     return  cv::Point3d( t.at< double >( 0, 0 ), t.at< double >( 1, 0 ), t.at< double >( 2, 0 ) );
+    return  cv::Point3d( t.at< double >( 0, 0 ), t.at< double >( 1, 0 ), t.at< double >( 2, 0 ) );
 }
+
+g2o::SE3Quat MonoFrame::se3Pose() const
+{
+    auto rMat = rotation();
+    auto tMat = translation();
+
+    Eigen::Matrix< double, 3, 3 > r;
+
+    r << rMat.at< double >( 0, 0 ), rMat.at< double >( 0, 1 ), rMat.at< double >( 0, 2 ),
+         rMat.at< double >( 1, 0 ), rMat.at< double >( 1, 1 ), rMat.at< double >( 1, 2 ),
+         rMat.at< double >( 2, 0 ), rMat.at< double >( 2, 1 ), rMat.at< double >( 2, 2 );
+
+    Eigen::Matrix< double, 3, 1 > t( tMat.at< double >( 0, 0 ), tMat.at< double >( 1, 0 ), tMat.at< double >( 2, 0 ) );
+
+    return g2o::SE3Quat( r, t );
+
+}
+
+void MonoFrame::setSe3Pose( const g2o::SE3Quat &pose )
+{
+    auto homogeniousMatrix = pose.to_homogeneous_matrix();
+
+    auto rMat = rotation();
+    auto tMat = translation();
+
+    for ( auto i = 0; i < 3; ++i )
+        for ( auto j = 0; j < 3; ++j )
+            rMat.at< double >( i, j ) = homogeniousMatrix( i, j );
+
+    for ( auto i = 0; i < 3; ++i )
+            tMat.at< double >( i, 0 ) = homogeniousMatrix( i, 3 );
+
+    setRotation( rMat );
+    setTranslation( tMat );
+
+}
+
 
 // ProcessedFrame
 DaisyProcessor ProcessedFrame::m_descriptorProcessor;
 GFTTProcessor ProcessedFrame::m_keypointProcessor;
 
-const double ProcessedFrame::m_cameraDistanceMultiplier = 2.0;
-const double ProcessedFrame::m_minPointsDistance = 3.0;
+const double ProcessedFrame::m_cameraDistanceMultiplier = 3.0;
+const double ProcessedFrame::m_minPointsDistance = 2.0;
 
 ProcessedFrame::ProcessedFrame( const MapPtr &parentMap )
     : m_parentMap( parentMap )
@@ -175,10 +214,8 @@ void ProcessedFrame::extractKeyPoints()
 
     m_colors.clear();
 
-    for ( size_t i = 0; i < m_keyPoints.size(); ++i ) {
+    for ( size_t i = 0; i < m_keyPoints.size(); ++i )
         m_colors.push_back( m_image.at< cv::Vec3b >( m_keyPoints[ i ].pt ) );
-
-    }
 
 }
 
@@ -722,9 +759,26 @@ StereoFrameBase::MonoFramePtr StereoFrameBase::rightFrame() const
     return frame2();
 }
 
+void StereoFrameBase::setLeftSe3Pose( g2o::SE3Quat &pose )
+{
+    auto leftFrame = this->leftFrame();
+    auto rightFrame = this->rightFrame();
+
+    if ( leftFrame && rightFrame ) {
+
+        auto rightPose = pose;
+        rightPose.setTranslation( pose.translation() + rightFrame->se3Pose().translation() - leftFrame->se3Pose().translation() );
+
+        leftFrame->setSe3Pose( pose );
+        rightFrame->setSe3Pose( rightPose );
+
+    }
+
+}
+
 // ProcessedStereoFrame
 const float ProcessedStereoFrame::m_maxYParallax = 2.0;
-const double ProcessedStereoFrame::m_minXDistasnce = 2.0;
+const double ProcessedStereoFrame::m_minXDistasnce = 3.0;
 
 ProcessedStereoFrame::ProcessedStereoFrame( const MapPtr &parentMap )
     : m_parentMap( parentMap )
