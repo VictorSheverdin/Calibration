@@ -10,7 +10,6 @@ namespace slam {
 class World : public std::enable_shared_from_this< World >
 {
 public:
-
     using WorldPtr = std::shared_ptr< World >;
 
     using FramePtr = Map::FramePtr;
@@ -18,7 +17,7 @@ public:
     using MapPtr = Map::MapPtr;
     using MapPointPtr = Map::MapPointPtr;
 
-    static WorldPtr create( const ProjectionMatrix &leftProjectionMatrix, const ProjectionMatrix &rightProjectionMatrix );
+    static WorldPtr create( const StereoCameraMatrix &cameraMatrix );
 
     const std::list < MapPtr > &maps() const;
     std::list < MapPtr > &maps();
@@ -31,7 +30,7 @@ public:
     void movePrincipalPoint( const cv::Vec2f &value );
 
 protected:
-    World( const ProjectionMatrix &leftProjectionMatrix, const ProjectionMatrix &rightProjectionMatrix );
+    World( const StereoCameraMatrix &cameraMatrix );
 
     std::list < MapPtr > m_maps;
 

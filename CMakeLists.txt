@@ -223,12 +223,22 @@ add_executable( visoodometry ${COMMON_SOURCES} ${VISO_SOURCES}
 #)
 
 add_executable( slam ${COMMON_SOURCES} ${RES_SOURCES}
+    src/slam/application.h
+    src/slam/slamwidget.h
+    src/slam/slamgeometry.h
+    src/slam/slamthread.h
+    src/slam/mainwindow.h
     src/slam/map.h
     src/slam/mappoint.h
     src/slam/frame.h
     src/slam/framepoint.h
     src/slam/optimizer.h
     src/slam/world.h
+    src/slam/application.cpp
+    src/slam/slamwidget.cpp
+    src/slam/slamgeometry.cpp
+    src/slam/slamthread.cpp
+    src/slam/mainwindow.cpp
     src/slam/map.cpp
     src/slam/mappoint.cpp
     src/slam/frame.cpp
@@ -251,6 +261,8 @@ target_link_libraries( visoodometry ${Qt5Widgets_LIBRARIES} png )
 #target_link_libraries( rtabmapslam ${RTABMap_LIBRARIES} )
 
 target_link_libraries( slam PRIVATE
+                            ${Qt5Widgets_LIBRARIES}
+                            ${VTK_LIBRARIES}
                             ${G2O_CORE_LIBRARY}
                             ${G2O_STUFF_LIBRARY}
                             ${G2O_CLI_LIBRARY}

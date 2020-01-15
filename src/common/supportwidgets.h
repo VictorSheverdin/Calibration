@@ -110,10 +110,25 @@ private:
 
 class MainWindowBase : public QMainWindow
 {
+public:
+    explicit MainWindowBase( QWidget *parent = nullptr );
+
+protected:
+    QPointer< QStatusBar > m_statusBar;
+
+    void setupStatusBar();
+
+private:
+    void initialize();
+
+};
+
+class DocumentMainWindow : public MainWindowBase
+{
     Q_OBJECT
 
 public:
-    explicit MainWindowBase( QWidget *parent = nullptr );
+    explicit DocumentMainWindow( QWidget *parent = nullptr );
 
     void addDocument( DocumentBase *document );
 
@@ -121,12 +136,10 @@ public:
 
 protected:
     QPointer< DocumentArea > m_documentArea;
-    QPointer< QStatusBar > m_statusBar;
 
     template <class T> T* getCurrentDocument() const;
 
     void setupDocuments();
-    void setupStatusBar();
 
 private:
     void initialize();

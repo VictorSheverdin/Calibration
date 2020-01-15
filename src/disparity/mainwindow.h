@@ -12,7 +12,7 @@ class DisparityDocumentBase;
 class CameraDisparityDocument;
 class ImageDisparityDocument;
 
-class MainWindow : public MainWindowBase
+class MainWindow : public DocumentMainWindow
 {
     Q_OBJECT
 

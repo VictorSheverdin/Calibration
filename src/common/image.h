@@ -43,6 +43,8 @@ public:
 
 };
 
+Q_DECLARE_METATYPE( CvImage )
+
 class StereoImage
 {
 public:

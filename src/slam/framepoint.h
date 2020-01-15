@@ -55,8 +55,6 @@ public:
     Eigen::Matrix< double, 2, 1 > eigenPoint() const;
     Eigen::Matrix< double, 3, 1 > eigenStereoPoint() const;
 
-    double bf() const;
-
 protected:
     using FramePtrImpl = std::weak_ptr< MonoFrame >;
 

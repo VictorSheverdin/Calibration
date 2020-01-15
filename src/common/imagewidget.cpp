@@ -22,7 +22,7 @@ void ImageWidget::initialize()
     setSizePolicy( QSizePolicy::Expanding, QSizePolicy::Expanding );
 }
 
-void ImageWidget::setImage(const CvImage image)
+void ImageWidget::setImage( const CvImage &image )
 {
     m_image = image;
 

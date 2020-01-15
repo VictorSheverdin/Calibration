@@ -1,7 +1,5 @@
 #pragma once
 
-#include <QMainWindow>
-
 #include <QPointer>
 
 #include "src/common/defs.h"
@@ -20,7 +18,7 @@ class StereoCameraCalibrationDocument;
 class TrippleCalibrationDocument;
 class ReportDocument;
 
-class MainWindow : public MainWindowBase
+class MainWindow : public DocumentMainWindow
 {
     Q_OBJECT
 

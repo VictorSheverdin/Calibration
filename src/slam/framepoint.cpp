@@ -143,42 +143,17 @@ namespace slam {
 
         auto stereoPoint = this->stereoPoint();
 
-        double disparity = 0;
+        double stereoX = point.x;
 
         if ( stereoPoint ) {
 
-            disparity = std::abs( stereoPoint->point().x - point.x );
+            stereoX = stereoPoint->point().x;
 
         }
 
-        ret << point.x, point.y, disparity;
+        ret << point.x, point.y, stereoX;
 
         return ret;
-    }
-
-    double MonoPoint::bf() const
-    {
-        auto parentFrame = this->parentFrame();
-
-        if ( parentFrame ) {
-
-            auto stereoPoint = this->stereoPoint();
-
-            if ( stereoPoint ) {
-
-                auto stereoParent = stereoPoint->parentFrame();
-
-                if ( stereoParent ) {
-
-                    return cv::norm( stereoParent->translation() - parentFrame->translation() ) * parentFrame->fx();
-
-                }
-
-            }
-
-        }
-
-        return 0.0;
 
     }
 

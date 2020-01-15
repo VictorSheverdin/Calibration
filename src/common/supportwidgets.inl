@@ -1,5 +1,5 @@
 template <class T>
-T* MainWindowBase::getCurrentDocument() const
+T* DocumentMainWindow::getCurrentDocument() const
 {
     auto currentDocument = m_documentArea->currentDocument();
 

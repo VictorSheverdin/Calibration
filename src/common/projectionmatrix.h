@@ -9,6 +9,7 @@ class ProjectionMatrix
 public:
     ProjectionMatrix();
     ProjectionMatrix( const cv::Mat &projectionMatrix );
+    ProjectionMatrix( const std::string &fileName );
 
     void setCameraMatrix( const cv::Mat &value );
     const cv::Mat &cameraMatrix() const;
@@ -32,6 +33,9 @@ public:
 
     Plane plane() const;
 
+    bool saveYaml( const std::string &fileName ) const;
+    bool loadYaml( const std::string &fileName );
+
     operator cv::Mat() const;
 
 private:
@@ -43,5 +47,36 @@ private:
     mutable cv::Mat m_projectionMatrix;
 
     void initialize();
+
+};
+
+class StereoCameraMatrix
+{
+public:
+    StereoCameraMatrix();
+    StereoCameraMatrix( const ProjectionMatrix &leftProjectionMatrix, const ProjectionMatrix &rightProjectionMatrix );
+    StereoCameraMatrix( const cv::Mat &leftProjectionMatrix, const cv::Mat &rightProjectionMatrix );
+    StereoCameraMatrix( const std::string &fileName );
+
+    void setLeftProjectionMatrix( const cv::Mat &value );
+    void setLeftProjectionMatrix( const ProjectionMatrix &value );
+
+    void setRightProjectionMatrix( const cv::Mat &value );
+    void setRightProjectionMatrix( const ProjectionMatrix &value );
+
+    void multiplicateCameraMatrix( const double value );
+    void movePrincipalPoint( const cv::Vec2f &value );
+
+    const ProjectionMatrix &leftProjectionMatrix() const;
+    const ProjectionMatrix &rightProjectionMatrix() const;
+
+    const cv::Mat baselineVector() const;
+
+    bool saveYaml( const std::string &fileName ) const;
+    bool loadYaml( const std::string &fileName );
+
+protected:
+    ProjectionMatrix m_leftProjectionMatrix;
+    ProjectionMatrix m_rightProjectionMatrix;
 
 };

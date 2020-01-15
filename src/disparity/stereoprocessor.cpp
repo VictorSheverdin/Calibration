@@ -810,8 +810,6 @@ StereoResult StereoProcessor::process( const StereoFrame &frame )
 
                 pcl::PointCloud< pcl::PointXYZRGB >::Ptr pointCloud = pcl::PointCloud< pcl::PointXYZRGB >::Ptr( new pcl::PointCloud< pcl::PointXYZRGB > );
 
-                pointCloud->clear();
-
                 CvImage rgbLeftImage;
 
                 cv::cvtColor( leftCroppedFrame, rgbLeftImage, cv::COLOR_BGR2RGB );

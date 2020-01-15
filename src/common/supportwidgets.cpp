@@ -156,26 +156,7 @@ void MainWindowBase::initialize()
 {
     setAttribute( Qt::WA_DeleteOnClose );
 
-    setupDocuments();
     setupStatusBar();
-
-}
-
-void MainWindowBase::addDocument( DocumentBase *document )
-{
-    m_documentArea->addDocument( document );
-}
-
-DocumentBase *MainWindowBase::currentDocument() const
-{
-    return m_documentArea->currentDocument();
-}
-
-void MainWindowBase::setupDocuments()
-{
-    m_documentArea = new DocumentArea( this );
-
-    setCentralWidget( m_documentArea );
 }
 
 void MainWindowBase::setupStatusBar()
@@ -183,6 +164,36 @@ void MainWindowBase::setupStatusBar()
     m_statusBar = new QStatusBar( this );
     setStatusBar( m_statusBar );
 
+}
+
+// DocumentMainWindow
+DocumentMainWindow::DocumentMainWindow( QWidget *parent )
+    : MainWindowBase( parent )
+{
+    initialize();
+}
+
+void DocumentMainWindow::initialize()
+{
+    setupDocuments();
+
+}
+
+void DocumentMainWindow::addDocument( DocumentBase *document )
+{
+    m_documentArea->addDocument( document );
+}
+
+DocumentBase *DocumentMainWindow::currentDocument() const
+{
+    return m_documentArea->currentDocument();
+}
+
+void DocumentMainWindow::setupDocuments()
+{
+    m_documentArea = new DocumentArea( this );
+
+    setCentralWidget( m_documentArea );    
 }
 
 // FolderLine

@@ -88,7 +88,7 @@ int main( int argc, char **argv )
 
             double tframe = 0;
 
-            for( int i = 5800; i < 13000; ++i )
+            for( int i = 9000; i < 13000; ++i )
             {
 
                 std::cout << i << std::endl;

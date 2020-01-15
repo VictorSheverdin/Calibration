@@ -17,6 +17,14 @@ ProjectionMatrix::ProjectionMatrix( const cv::Mat &projectionMatrix )
     setProjectionMatrix( projectionMatrix );
 }
 
+ProjectionMatrix::ProjectionMatrix( const std::string &fileName )
+{
+    initialize();
+
+    loadYaml( fileName );
+
+}
+
 void ProjectionMatrix::initialize()
 {
     setCameraMatrix( cv::Mat::eye( 3, 3, CV_64F ) );
@@ -132,7 +140,207 @@ Plane ProjectionMatrix::plane() const
 
 }
 
+bool ProjectionMatrix::saveYaml( const std::string &fileName ) const
+{
+    cv::FileStorage fs( fileName, cv::FileStorage::WRITE );
+    if ( !fs.isOpened() )
+        return false;
+
+    time_t rawtime; time( &rawtime );
+    fs << "savingDate" << asctime( localtime( &rawtime ) );
+
+    fs << "cameraMatrix" << cameraMatrix();
+    fs << "rotationMatrix" << rotation();
+    fs << "translationVector" << translation();
+
+    fs << "projectionMatrix" << projectionMatrix();
+
+    fs.release();
+
+    return true;
+}
+
+bool ProjectionMatrix::loadYaml( const std::string &fileName )
+{
+    cv::FileStorage fs ( fileName, cv::FileStorage::READ );
+
+    if ( !fs.isOpened() )
+        return false;
+
+    cv::Mat projectionMatrix;
+    fs["projectionMatrix"] >> projectionMatrix;
+
+    if ( !projectionMatrix.empty() ) {
+        setProjectionMatrix( projectionMatrix );
+        return true;
+    }
+
+    cv::Mat cameraMatrix;
+    cv::Mat rotationMatrix;
+    cv::Mat translationVector;
+
+    fs["cameraMatrix"] >> cameraMatrix;
+    fs["rotationMatrix"] >> rotationMatrix;
+    fs["translationVector"] >> translationVector;
+
+    if ( !cameraMatrix.empty() && !rotationMatrix.empty() && !translationVector.empty() ) {
+        setCameraMatrix( cameraMatrix );
+        setRotation( rotationMatrix );
+        setTranslation( translationVector );
+
+        return true;
+    }
+
+    return false;
+
+}
+
 ProjectionMatrix::operator cv::Mat() const
 {
     return projectionMatrix();
+}
+
+// StereoCameraMatrix
+StereoCameraMatrix::StereoCameraMatrix()
+{
+}
+
+StereoCameraMatrix::StereoCameraMatrix( const ProjectionMatrix &leftProjectionMatrix, const ProjectionMatrix &rightProjectionMatrix )
+    : m_leftProjectionMatrix( leftProjectionMatrix ), m_rightProjectionMatrix( rightProjectionMatrix )
+{
+}
+
+StereoCameraMatrix::StereoCameraMatrix( const cv::Mat &leftProjectionMatrix, const cv::Mat &rightProjectionMatrix )
+    : m_leftProjectionMatrix( leftProjectionMatrix ), m_rightProjectionMatrix( rightProjectionMatrix )
+{
+}
+
+StereoCameraMatrix::StereoCameraMatrix( const std::string &fileName )
+{
+    loadYaml( fileName );
+}
+
+void StereoCameraMatrix::setLeftProjectionMatrix( const cv::Mat &value )
+{
+    m_leftProjectionMatrix.setProjectionMatrix( value );
+}
+
+void StereoCameraMatrix::setLeftProjectionMatrix( const ProjectionMatrix &value )
+{
+    m_leftProjectionMatrix = value;
+}
+
+void StereoCameraMatrix::setRightProjectionMatrix( const cv::Mat &value )
+{
+    m_rightProjectionMatrix.setProjectionMatrix( value );
+}
+
+void StereoCameraMatrix::setRightProjectionMatrix( const ProjectionMatrix &value )
+{
+    m_rightProjectionMatrix = value;
+}
+
+void StereoCameraMatrix::multiplicateCameraMatrix( const double value )
+{
+    m_leftProjectionMatrix.multiplicateCameraMatrix( value );
+    m_rightProjectionMatrix.multiplicateCameraMatrix( value );
+}
+
+void StereoCameraMatrix::movePrincipalPoint( const cv::Vec2f &value )
+{
+    m_leftProjectionMatrix.movePrincipalPoint( value );
+    m_rightProjectionMatrix.movePrincipalPoint( value );
+}
+
+const ProjectionMatrix &StereoCameraMatrix::leftProjectionMatrix() const
+{
+    return m_leftProjectionMatrix;
+}
+
+const ProjectionMatrix &StereoCameraMatrix::rightProjectionMatrix() const
+{
+    return m_rightProjectionMatrix;
+}
+
+const cv::Mat StereoCameraMatrix::baselineVector() const
+{
+    return m_rightProjectionMatrix.translation() - m_leftProjectionMatrix.translation();
+}
+
+bool StereoCameraMatrix::saveYaml( const std::string &fileName ) const
+{
+    cv::FileStorage fs( fileName, cv::FileStorage::WRITE );
+    if ( !fs.isOpened() )
+        return false;
+
+    time_t rawtime; time( &rawtime );
+    fs << "savingDate" << asctime( localtime( &rawtime ) );
+
+    fs << "leftCameraMatrix" << m_leftProjectionMatrix.cameraMatrix();
+    fs << "leftRotationMatrix" << m_leftProjectionMatrix.rotation();
+    fs << "leftTranslationVector" << m_leftProjectionMatrix.translation();
+    fs << "leftProjectionMatrix" << m_leftProjectionMatrix.projectionMatrix();
+
+    fs << "rightCameraMatrix" << m_rightProjectionMatrix.cameraMatrix();
+    fs << "rightRotationMatrix" << m_rightProjectionMatrix.rotation();
+    fs << "rightTranslationVector" << m_rightProjectionMatrix.translation();
+    fs << "rightProjectionMatrix" << m_rightProjectionMatrix.projectionMatrix();
+
+    fs.release();
+
+    return true;
+}
+
+bool StereoCameraMatrix::loadYaml( const std::string &fileName )
+{
+    cv::FileStorage fs ( fileName, cv::FileStorage::READ );
+
+    if ( !fs.isOpened() )
+        return false;
+
+    cv::Mat leftProjectionMatrix;
+    cv::Mat rightProjectionMatrix;
+    fs["leftProjectionMatrix"] >> leftProjectionMatrix;
+    fs["rightProjectionMatrix"] >> rightProjectionMatrix;
+
+    if ( !leftProjectionMatrix.empty() && !rightProjectionMatrix.empty() ) {
+        m_leftProjectionMatrix.setProjectionMatrix( leftProjectionMatrix );
+        m_rightProjectionMatrix.setProjectionMatrix( rightProjectionMatrix );
+
+        return true;
+
+    }
+
+    cv::Mat leftCameraMatrix;
+    cv::Mat leftRotationMatrix;
+    cv::Mat leftTranslationVector;
+
+    cv::Mat rightCameraMatrix;
+    cv::Mat rightRotationMatrix;
+    cv::Mat rightTranslationVector;
+
+    fs["leftCameraMatrix"] >> leftCameraMatrix;
+    fs["leftRotationMatrix"] >> leftRotationMatrix;
+    fs["leftTranslationVector"] >> leftTranslationVector;
+
+    fs["rightCameraMatrix"] >> rightCameraMatrix;
+    fs["rightRotationMatrix"] >> rightRotationMatrix;
+    fs["rightTranslationVector"] >> rightTranslationVector;
+
+    if ( !leftCameraMatrix.empty() && !leftRotationMatrix.empty() && !leftTranslationVector.empty() &&
+            !rightCameraMatrix.empty() && !rightRotationMatrix.empty() && !rightTranslationVector.empty() ) {
+
+        m_leftProjectionMatrix.setCameraMatrix( leftCameraMatrix );
+        m_leftProjectionMatrix.setRotation( leftRotationMatrix );
+        m_leftProjectionMatrix.setTranslation( leftTranslationVector );
+
+        m_rightProjectionMatrix.setCameraMatrix( rightCameraMatrix );
+        m_rightProjectionMatrix.setRotation( rightRotationMatrix );
+        m_rightProjectionMatrix.setTranslation( rightTranslationVector );
+
+        return true;
+
+    }
+
+    return false;
 }

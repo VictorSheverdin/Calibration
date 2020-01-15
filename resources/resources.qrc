@@ -36,5 +36,6 @@
         <file>images/VerticalToolBarHandle.png</file>
         <file>qss/style.css</file>
         <file>images/folder.ico</file>
+        <file>images/slam.ico</file>
     </qresource>
 </RCC>

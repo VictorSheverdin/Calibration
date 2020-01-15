@@ -8,11 +8,12 @@
 
 namespace slam {
 
-World::World( const ProjectionMatrix &leftProjectionMatrix, const ProjectionMatrix &rightProjectionMatrix )    
+World::World( const StereoCameraMatrix &cameraMatrix )
 {
     initialize();
 
-    m_maps.push_back( Map::create( leftProjectionMatrix, rightProjectionMatrix ) );
+    m_maps.push_back( Map::create( cameraMatrix ) );
+
 }
 
 void World::initialize()
@@ -20,9 +21,9 @@ void World::initialize()
     ProcessedFrame::setMaxFeatures( m_keypointsCount );
 }
 
-World::WorldPtr World::create( const ProjectionMatrix &leftProjectionMatrix, const ProjectionMatrix &rightProjectionMatrix )
+World::WorldPtr World::create( const StereoCameraMatrix &cameraMatrix )
 {
-    return WorldPtr( new World( leftProjectionMatrix, rightProjectionMatrix ) );
+    return WorldPtr( new World( cameraMatrix ) );
 }
 
 const std::list < World::MapPtr > &World::maps() const

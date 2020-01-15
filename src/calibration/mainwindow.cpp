@@ -10,19 +10,19 @@
 #include "calibrationchoicedialog.h"
 
 MainWindow::MainWindow( QWidget *parent )
-    : MainWindowBase( parent )
+    : DocumentMainWindow( parent )
 {
     initialize();
 }
 
 MainWindow::MainWindow( const QString &cameraIp, QWidget *parent )
-    : MainWindowBase( parent )
+    : DocumentMainWindow( parent )
 {
     initialize( cameraIp );
 }
 
 MainWindow::MainWindow( const QString &leftCameraIp, const QString &rightCameraIp, QWidget *parent )
-    : MainWindowBase( parent )
+    : DocumentMainWindow( parent )
 {
     initialize( leftCameraIp, rightCameraIp );
 }

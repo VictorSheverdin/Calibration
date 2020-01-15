@@ -9,13 +9,13 @@
 #include "disparitychoicedialog.h"
 
 MainWindow::MainWindow( QWidget *parent )
-    : MainWindowBase( parent )
+    : DocumentMainWindow( parent )
 {
     initialize();
 }
 
 MainWindow::MainWindow( const QString &leftCameraIp, const QString &rightCameraIp, QWidget *parent )
-    : MainWindowBase( parent )
+    : DocumentMainWindow( parent )
 {
     initialize();
 

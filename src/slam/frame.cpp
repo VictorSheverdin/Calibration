@@ -404,8 +404,13 @@ void ProcessedFrame::triangulatePoints()
 
                                     }
 
-                                    sourcePoint->setMapPoint( mapPoint );
-                                    processedPoint->setMapPoint( mapPoint );
+                                    for ( PointPtr k = processedPoint; k; k = k->prevPoint() ) {
+                                        k->setMapPoint( mapPoint );
+                                        auto stereoPoint = k->stereoPoint();
+                                        if ( stereoPoint )
+                                            stereoPoint->setMapPoint( mapPoint );
+
+                                    }
 
                                 }
 
@@ -749,6 +754,22 @@ void StereoFrameBase::setFrames( const MonoFramePtr &leftFrame, const MonoFrameP
     DoubleFrame::setFrames( leftFrame, rightFrame );
 }
 
+void StereoFrameBase::setProjectionMatrix( const StereoCameraMatrix &matrix )
+{
+    leftFrame()->setProjectionMatrix( matrix.leftProjectionMatrix() );
+    rightFrame()->setProjectionMatrix( matrix.rightProjectionMatrix() );
+}
+
+StereoCameraMatrix StereoFrameBase::projectionMatrix() const
+{
+    return StereoCameraMatrix( leftFrame()->projectionMatrix(), rightFrame()->projectionMatrix() );
+}
+
+double StereoFrameBase::bf() const
+{
+    return leftFrame()->fx() * cv::norm( leftFrame()->translation() - rightFrame()->translation() );
+}
+
 StereoFrameBase::MonoFramePtr StereoFrameBase::leftFrame() const
 {
     return frame1();
@@ -815,11 +836,6 @@ ProcessedStereoFrame::ProcessedFramePtr ProcessedStereoFrame::leftFrame() const
 ProcessedStereoFrame::ProcessedFramePtr ProcessedStereoFrame::rightFrame() const
 {
     return std::dynamic_pointer_cast< ProcessedFrame >( frame2() );
-}
-
-void ProcessedStereoFrame::setProjectionMatrix( const ProjectionMatrix &leftMatrix, const ProjectionMatrix &rightMatrix )
-{
-    StereoFrameBase::setProjectionMatrix( leftMatrix, rightMatrix );
 }
 
 cv::Mat ProcessedStereoFrame::matchOptical( const size_t count )
@@ -1456,11 +1472,6 @@ StereoFrame::FramePtr StereoFrame::leftFrame() const
 StereoFrame::FramePtr StereoFrame::rightFrame() const
 {
     return std::dynamic_pointer_cast< Frame >( DoubleFrame::frame2() );
-}
-
-void StereoFrame::setProjectionMatrix( const ProjectionMatrix &leftMatrix, const ProjectionMatrix &rightMatrix )
-{
-    DoubleFrame::setProjectionMatrix( leftMatrix, rightMatrix );
 }
 
 void StereoFrame::replace( const ProcessedStereoFramePtr &frame )

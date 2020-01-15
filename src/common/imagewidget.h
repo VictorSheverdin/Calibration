@@ -13,7 +13,7 @@ class ImageWidget : public QWidget
 
 public:
     ImageWidget( QWidget* parent = nullptr );
-    ImageWidget(const CvImage frame, QWidget* parent = nullptr );
+    ImageWidget( const CvImage frame, QWidget* parent = nullptr );
 
     const CvImage image() const;
 
@@ -26,13 +26,13 @@ signals:
     void resizeSignal();
 
 public slots:
-    void setImage(const CvImage image);
+    void setImage( const CvImage &image );
 
 protected:
     CvImage m_image;
 
     virtual void paintEvent( QPaintEvent *event ) override;
-    virtual void resizeEvent(QResizeEvent *event) override;
+    virtual void resizeEvent( QResizeEvent *event ) override;
 
 private:
     void initialize();

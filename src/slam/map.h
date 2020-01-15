@@ -25,7 +25,7 @@ public:
 
     using WorldPtr = std::shared_ptr< World >;
 
-    static MapPtr create( const ProjectionMatrix &leftProjectionMatrix, const ProjectionMatrix &rightProjectionMatrix );
+    static MapPtr create( const StereoCameraMatrix &cameraMatrix );
 
     MapPointPtr createMapPoint( const cv::Point3d &pt, const cv::Scalar &color );
 
@@ -43,9 +43,6 @@ public:
 
     void addMapPoint( const MapPointPtr &point );
 
-    const ProjectionMatrix &leftProjectionMatrix() const;
-    const ProjectionMatrix &rightProjectionMatrix() const;
-
     const cv::Mat &baselineVector() const;
     double baselineLenght() const;
 
@@ -59,13 +56,12 @@ public:
 protected:
     using WorldPtrImpl = std::weak_ptr< World >;
 
-    Map( const ProjectionMatrix &leftProjectionMatrix, const ProjectionMatrix &rightProjectionMatrix );
+    Map( const StereoCameraMatrix &projectionMatrix );
 
     std::list< FramePtr > m_frames;
     std::set< MapPointPtr > m_mapPoints;
 
-    ProjectionMatrix m_leftProjectionMatrix;
-    ProjectionMatrix m_rightProjectionMatrix;
+    StereoCameraMatrix m_projectionMatrix;
 
     cv::Mat m_baselineVector;
 

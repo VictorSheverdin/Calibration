@@ -331,32 +331,37 @@ const cv::Mat &StereoCalibrationDataBase::rightRectifyMatrix() const
 
 void StereoCalibrationDataBase::setLeftProjectionMatrix( const cv::Mat &value )
 {
-    m_leftProjectionMatrix.setProjectionMatrix( value );
+    m_projectionMatrix.setLeftProjectionMatrix( value );
 }
 
 void StereoCalibrationDataBase::setLeftProjectionMatrix( const ProjectionMatrix &value )
 {
-    m_leftProjectionMatrix = value;
+    m_projectionMatrix.setLeftProjectionMatrix( value );
 }
 
 const ProjectionMatrix &StereoCalibrationDataBase::leftProjectionMatrix() const
 {
-    return m_leftProjectionMatrix;
+    return m_projectionMatrix.leftProjectionMatrix();
 }
 
 void StereoCalibrationDataBase::setRightProjectionMatrix( const cv::Mat &value )
 {
-    m_rightProjectionMatrix.setProjectionMatrix( value );
+    m_projectionMatrix.setRightProjectionMatrix( value );
 }
 
 void StereoCalibrationDataBase::setRightProjectionMatrix( const ProjectionMatrix &value )
 {
-    m_rightProjectionMatrix = value;
+    m_projectionMatrix.setRightProjectionMatrix( value );
 }
 
 const ProjectionMatrix &StereoCalibrationDataBase::rightProjectionMatrix() const
 {
-    return m_rightProjectionMatrix;
+    return m_projectionMatrix.rightProjectionMatrix();
+}
+
+const StereoCameraMatrix &StereoCalibrationDataBase::projectionMatrix() const
+{
+    return m_projectionMatrix;
 }
 
 void StereoCalibrationDataBase::setDisparityToDepthMatrix( const cv::Mat &value )

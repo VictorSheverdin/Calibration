@@ -15,22 +15,22 @@ namespace slam {
 
 const double Map::m_minTrackInliersRatio = 0.9;
 
-Map::Map( const ProjectionMatrix &leftProjectionMatrix, const ProjectionMatrix &rightProjectionMatrix )
-    :  m_leftProjectionMatrix( leftProjectionMatrix ), m_rightProjectionMatrix( rightProjectionMatrix )
+Map::Map( const StereoCameraMatrix &projectionMatrix )
+    :  m_projectionMatrix( projectionMatrix )
 {
     initialize();
-
-    m_baselineVector = rightProjectionMatrix.translation() - leftProjectionMatrix.translation();
 }
 
 void Map::initialize()
 {
     m_previousKeypointsCount = m_goodTrackPoints * 2;
+
+    m_baselineVector = m_projectionMatrix.baselineVector();
 }
 
-Map::MapPtr Map::create( const ProjectionMatrix &leftProjectionMatrix, const ProjectionMatrix &rightProjectionMatrix )
+Map::MapPtr Map::create( const StereoCameraMatrix &cameraMatrix )
 {
-    return MapPtr( new Map( leftProjectionMatrix, rightProjectionMatrix ) );
+    return MapPtr( new Map( cameraMatrix ) );
 }
 
 Map::MapPointPtr Map::createMapPoint( const cv::Point3d &pt, const cv::Scalar &color )
@@ -78,16 +78,6 @@ void Map::addMapPoint( const MapPointPtr &point )
     m_mapPoints.insert( point );
 }
 
-const ProjectionMatrix &Map::leftProjectionMatrix() const
-{
-    return m_leftProjectionMatrix;
-}
-
-const ProjectionMatrix &Map::rightProjectionMatrix() const
-{
-    return m_rightProjectionMatrix;
-}
-
 const cv::Mat &Map::baselineVector() const
 {
     return m_baselineVector;
@@ -100,14 +90,12 @@ double Map::baselineLenght() const
 
 void Map::multiplicateCameraMatrix( const double value )
 {
-    m_leftProjectionMatrix.multiplicateCameraMatrix( value );
-    m_rightProjectionMatrix.multiplicateCameraMatrix( value );
+    m_projectionMatrix.multiplicateCameraMatrix( value );
 }
 
 void Map::movePrincipalPoint( const cv::Vec2f &value )
 {
-    m_leftProjectionMatrix.movePrincipalPoint( value );
-    m_rightProjectionMatrix.movePrincipalPoint( value );
+    m_projectionMatrix.movePrincipalPoint( value );
 }
 
 void Map::adjust( const int frames )
@@ -130,14 +118,12 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
 
     if ( m_frames.empty() ) {
 
-        stereoFrame->setProjectionMatrix( m_leftProjectionMatrix, m_rightProjectionMatrix );
+        stereoFrame->setProjectionMatrix( m_projectionMatrix );
 
         m_frames.push_back( stereoFrame );
 
     }
     else {
-
-        auto consecutiveLeftFrame = AdjacentFrame::create();
 
         auto previousStereoFrame = std::dynamic_pointer_cast< ProcessedStereoFrame >( m_frames.back() );
 
@@ -145,10 +131,12 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
 
             auto previousLeftFrame = std::dynamic_pointer_cast< ProcessedFrame >( previousStereoFrame->leftFrame() );
             auto previousRightFrame = std::dynamic_pointer_cast< ProcessedFrame >( previousStereoFrame->rightFrame() );
-            auto nextLeftFrame = std::dynamic_pointer_cast< ProcessedFrame >( stereoFrame->leftFrame() );
-            auto nextRightFrame = std::dynamic_pointer_cast< ProcessedFrame >( stereoFrame->rightFrame() );
+            auto leftFrame = std::dynamic_pointer_cast< ProcessedFrame >( stereoFrame->leftFrame() );
+            auto rightFrame = std::dynamic_pointer_cast< ProcessedFrame >( stereoFrame->rightFrame() );
 
-            consecutiveLeftFrame->setFrames( previousLeftFrame, nextLeftFrame );
+            auto adjacentLeftFrame = AdjacentFrame::create();
+
+            adjacentLeftFrame->setFrames( previousLeftFrame, leftFrame );
 
             auto keypointsCount = m_previousKeypointsCount;
 
@@ -167,13 +155,13 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
                     previousStereoFrame->matchOptical( keypointsCount );
                     previousStereoFrame->triangulatePoints();
 
-                    auto trackFramePointsCount = std::max( 0, m_trackFramePointsCount - consecutiveLeftFrame->trackFramePointsCount() );
+                    auto trackFramePointsCount = std::max( 0, m_trackFramePointsCount - adjacentLeftFrame->trackFramePointsCount() );
 
-                    consecutiveLeftFrame->createFramePoints( trackFramePointsCount );
+                    adjacentLeftFrame->createFramePoints( trackFramePointsCount );
 
-                    consecutiveLeftFrame->trackOptical();
+                    adjacentLeftFrame->trackOptical();
 
-                    trackedPointCount = consecutiveLeftFrame->posePointsCount();
+                    trackedPointCount = adjacentLeftFrame->posePointsCount();
 
                     m_previousKeypointsCount = keypointsCount;
 
@@ -181,9 +169,7 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
 
                 } while( trackedPointCount < m_goodTrackPoints && m_previousKeypointsCount <= maxKeypointsCount );
 
-                inliersRatio = consecutiveLeftFrame->recoverPose();
-
-                std::cout << "! " << m_previousKeypointsCount << " " << trackedPointCount << " " << inliersRatio << std::endl;
+                inliersRatio = adjacentLeftFrame->recoverPose();
 
             } while ( inliersRatio < m_minTrackInliersRatio && m_previousKeypointsCount <= maxKeypointsCount );
 
@@ -195,9 +181,9 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
             if ( trackedPointCount > m_overTrackPoints )
                 m_previousKeypointsCount /= 2;
 
-            nextRightFrame->setCameraMatrix( previousRightFrame->cameraMatrix() );
-            nextRightFrame->setRotation( nextLeftFrame->rotation() );
-            nextRightFrame->setTranslation( nextLeftFrame->translation() + baselineVector() );
+            rightFrame->setCameraMatrix( previousRightFrame->cameraMatrix() );
+            rightFrame->setRotation( leftFrame->rotation() );
+            rightFrame->setTranslation( leftFrame->translation() + baselineVector() );
 
             previousStereoFrame->cleanMapPoints();
 
@@ -209,9 +195,9 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
 
             m_frames.back() = replacedFrame;
 
-            m_frames.push_back( stereoFrame );
-
         }
+
+        m_frames.push_back( stereoFrame );
 
     }
 

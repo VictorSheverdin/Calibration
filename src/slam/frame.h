@@ -133,7 +133,7 @@ protected:
     static const double m_cameraDistanceMultiplier;
     static const double m_minPointsDistance;
 
-    static const int m_minConnectedPoints = 4;
+    static const int m_minConnectedPoints = 7;
 
     ProcessedPointPtr createFramePoint( const size_t keyPointIndex );
 
@@ -218,6 +218,11 @@ public:
 
     void setFrames( const MonoFramePtr &leftFrame, const MonoFramePtr &rightFrame );
 
+    void setProjectionMatrix( const StereoCameraMatrix &matrix );
+    StereoCameraMatrix projectionMatrix() const;
+
+    double bf() const;
+
     MonoFramePtr leftFrame() const;
     MonoFramePtr rightFrame() const;
 
@@ -246,8 +251,6 @@ public:
 
     ProcessedFramePtr leftFrame() const;
     ProcessedFramePtr rightFrame() const;
-
-    void setProjectionMatrix( const ProjectionMatrix &leftMatrix, const ProjectionMatrix &rightMatrix );
 
     cv::Mat matchOptical( const size_t count );
     cv::Mat matchFeatures( const size_t count );
@@ -336,8 +339,6 @@ public:
 
     FramePtr leftFrame() const;
     FramePtr rightFrame() const;
-
-    void setProjectionMatrix( const ProjectionMatrix &leftMatrix, const ProjectionMatrix &rightMatrix );
 
     void replace( const ProcessedStereoFramePtr &frame );
     void replaceAndClean( const ProcessedStereoFramePtr &frame );

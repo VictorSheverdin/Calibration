@@ -110,6 +110,8 @@ public:
     void setRightProjectionMatrix( const ProjectionMatrix &value );
     const ProjectionMatrix &rightProjectionMatrix() const;
 
+    const StereoCameraMatrix &projectionMatrix() const;
+
     void setDisparityToDepthMatrix( const cv::Mat &value );
     const cv::Mat &disparityToDepthMatrix() const;
 
@@ -146,8 +148,7 @@ protected:
     cv::Mat m_leftRectifyMatrix;
     cv::Mat m_rightRectifyMatrix;
 
-    ProjectionMatrix m_leftProjectionMatrix;
-    ProjectionMatrix m_rightProjectionMatrix;
+    StereoCameraMatrix m_projectionMatrix;
 
     cv::Mat m_disparityToDepthMatrix;
 
