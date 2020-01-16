@@ -1,6 +1,7 @@
 #pragma once
 
 #include "src/common/image.h"
+#include "colorpoint.h"
 
 #include <Eigen/Core>
 
@@ -104,7 +105,7 @@ protected:
 
 };
 
-class FramePoint : public MonoPoint
+class FramePoint : public MonoPoint, public ColorPoint2d
 {
 public:
     using FramePtr = std::shared_ptr< Frame >;
@@ -122,17 +123,9 @@ public:
 
     void replace( const ProcessedPointPtr &point );
 
-    void setPoint( const cv::Point2f &point );
-    void setColor( const cv::Scalar &color );
-
-    void set( const cv::Point2f &point, const cv::Scalar &color );
-
 protected:
     FramePoint( const FramePtr &parentFrame );
     FramePoint( const FramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color );
-
-    cv::Point2f m_point;
-    cv::Scalar m_color;
 
 };
 

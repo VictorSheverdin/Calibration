@@ -133,7 +133,7 @@ void MonoFrame::setSe3Pose( const g2o::SE3Quat &pose )
 DaisyProcessor ProcessedFrame::m_descriptorProcessor;
 GFTTProcessor ProcessedFrame::m_keypointProcessor;
 
-const double ProcessedFrame::m_cameraDistanceMultiplier = 3.0;
+const double ProcessedFrame::m_cameraDistanceMultiplier = 2.0;
 const double ProcessedFrame::m_minPointsDistance = 2.0;
 
 ProcessedFrame::ProcessedFrame( const MapPtr &parentMap )
@@ -433,6 +433,11 @@ void ProcessedFrame::triangulatePoints()
 const std::vector< cv::KeyPoint > &ProcessedFrame::keyPoints() const
 {
     return m_keyPoints;
+}
+
+size_t ProcessedFrame::keyPointsCount() const
+{
+    return m_keyPoints.size();
 }
 
 CvImage ProcessedFrame::drawKeyPoints() const
@@ -1211,7 +1216,7 @@ void ProcessedStereoFrame::extractDescriptors()
 
 size_t ProcessedStereoFrame::leftKeyPointsCount() const
 {
-    return leftFrame()->keyPoints().size();
+    return leftFrame()->keyPointsCount();
 }
 
 // AdjacentFrame

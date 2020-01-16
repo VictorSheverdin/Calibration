@@ -6,18 +6,22 @@ SlamGeometry::SlamGeometry()
 {
 }
 
-void SlamGeometry::setPoints( pcl::PointCloud< pcl::PointXYZRGB >::Ptr &ptr )
-{
-    m_points = ptr;
-}
-
-const pcl::PointCloud< pcl::PointXYZRGB >::Ptr &SlamGeometry::points() const
-{
-    return m_points;
-}
-
 void SlamGeometry::addPath( const StereoCameraMatrix &matrix )
 {
     m_path.push_back( matrix );
 }
 
+void SlamGeometry::addPoint( const ColorPoint3d &point )
+{
+    m_points.push_back( point );
+}
+
+const std::list< StereoCameraMatrix > &SlamGeometry::path() const
+{
+    return m_path;
+}
+
+const std::list< ColorPoint3d > &SlamGeometry::points() const
+{
+    return m_points;
+}

@@ -28,6 +28,9 @@ public:
 
     void adjust( std::list< FramePtr > &frames );
 
+protected:
+    static const int m_optimizationsCount = 10;
+
 private:
     void initialize();
 

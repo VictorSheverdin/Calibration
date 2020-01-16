@@ -119,7 +119,6 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
     if ( m_frames.empty() ) {
 
         stereoFrame->setProjectionMatrix( m_projectionMatrix );
-
         m_frames.push_back( stereoFrame );
 
     }
@@ -146,7 +145,7 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
 
             double inliersRatio = 0.0;
 
-            auto maxKeypointsCount = previousStereoFrame->leftKeyPointsCount();
+            auto maxKeypointsCount = previousLeftFrame->keyPointsCount();
 
             do {
 

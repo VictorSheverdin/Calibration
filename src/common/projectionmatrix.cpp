@@ -88,6 +88,11 @@ const cv::Mat &ProjectionMatrix::translation() const
     return m_t;
 }
 
+cv::Vec3d ProjectionMatrix::translationVector() const
+{
+    return cv::Vec3d( x(), y(), z() );
+}
+
 void ProjectionMatrix::setProjectionMatrix( const cv::Mat &value )
 {
     m_projectionMatrix = value;
@@ -108,6 +113,21 @@ const cv::Mat &ProjectionMatrix::projectionMatrix() const
 
     return m_projectionMatrix;
 
+}
+
+double ProjectionMatrix::x() const
+{
+    return m_t.at< double >( 0, 0 );
+}
+
+double ProjectionMatrix::y() const
+{
+    return m_t.at< double >( 1, 0 );
+}
+
+double ProjectionMatrix::z() const
+{
+    return m_t.at< double >( 2, 0 );
 }
 
 double ProjectionMatrix::fx() const
@@ -136,7 +156,7 @@ Plane ProjectionMatrix::plane() const
     auto b = m_r.at< double >( 1, 2 );
     auto c = m_r.at< double >( 2, 2 );
 
-    return Plane( a, b, c, -a * m_t.at< double >( 0, 0 ) - b * m_t.at< double >( 1, 0 ) - c * m_t.at< double >( 2, 0 ) );
+    return Plane( a, b, c, -a * x() - b * y() - c * z() );
 
 }
 

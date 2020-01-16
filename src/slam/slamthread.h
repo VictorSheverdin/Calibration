@@ -19,12 +19,13 @@ class SlamThread : public QThread
 public:
     explicit SlamThread( QObject *parent = nullptr );
 
+    SlamGeometry geometry() const;
+
+    CvImage pointsImage() const;
+    CvImage tracksImage() const;
+    CvImage stereoImage() const;
+
 signals:
-    void pointsImageSignal( const CvImage &image );
-    void tracksImageSignal( const CvImage &image );
-
-    void geometrySignal( const SlamGeometry &geomtery );
-
     void updateSignal();
 
 protected:

@@ -7,19 +7,21 @@
 
 #include "src/common/projectionmatrix.h"
 
+#include "colorpoint.h"
+
 class SlamGeometry
 {
 public:
     SlamGeometry();
 
-    void setPoints( pcl::PointCloud< pcl::PointXYZRGB >::Ptr &ptr );
-    const pcl::PointCloud< pcl::PointXYZRGB >::Ptr &points() const;
-
     void addPath( const StereoCameraMatrix &matrix );
+    void addPoint( const ColorPoint3d &point );
+
+    const std::list< StereoCameraMatrix > &path() const;
+    const std::list< ColorPoint3d > &points() const;
 
 protected:
-    pcl::PointCloud< pcl::PointXYZRGB >::Ptr m_points;
-
+    std::list< ColorPoint3d > m_points;
     std::list< StereoCameraMatrix > m_path;
 
 };

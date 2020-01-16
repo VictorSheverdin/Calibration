@@ -69,7 +69,6 @@ void SlamThread::run()
 
         CvImage leftRectifiedImage;
         CvImage rightRectifiedImage;
-
         CvImage leftCroppedImage;
         CvImage rightCroppedImage;
 
@@ -88,78 +87,100 @@ void SlamThread::run()
 
             std::cout << std::chrono::duration_cast< std::chrono::microseconds >( std::chrono::system_clock::now() - time ).count()  / 1.e6 << " sec" << std::endl;
 
-        }
-
-        SlamGeometry geometry;
-
-        pcl::PointCloud< pcl::PointXYZRGB >::Ptr pointCloud = pcl::PointCloud< pcl::PointXYZRGB >::Ptr( new pcl::PointCloud< pcl::PointXYZRGB > );
-
-        auto maps = m_system->maps();
-
-        for ( auto &map : maps ) {
-
-            auto mapPoints = map->mapPoints();
-            auto frames = map->frames();
-
-            auto processedFrame = std::dynamic_pointer_cast< slam::ProcessedStereoFrame >( frames.back() );
-
-            if ( processedFrame ) {
-
-                auto pointsImage = processedFrame->drawKeyPoints();
-                auto tracksImage = processedFrame->leftFrame()->drawTracks();
-
-                if ( !pointsImage.empty() )
-                   emit pointsImageSignal( pointsImage );
-
-                if ( !tracksImage.empty() )
-                    emit tracksImageSignal( tracksImage );
-
-            }
-
-            for ( auto &i : mapPoints ) {
-
-                if ( i ) {
-
-                    auto point = i->point();
-
-                    pcl::PointXYZRGB pclPoint;
-                    pclPoint.x = point.x;
-                    pclPoint.y = point.y;
-                    pclPoint.z = point.z;
-
-                    auto color = i->color();
-
-                    pclPoint.r = std::max( 0.0, std::min( color[ 2 ], 255.0 ) );
-                    pclPoint.g = std::max( 0.0, std::min( color[ 1 ], 255.0 ) );
-                    pclPoint.b = std::max( 0.0, std::min( color[ 0 ], 255.0 ) );
-                    pclPoint.a = 255;
-
-                    pointCloud->push_back( pclPoint );
-
-                }
-
-            }
-
-            for ( auto &i : frames ) {
-
-                auto stereoFrame = std::dynamic_pointer_cast< slam::StereoFrame >( i );
-
-                if ( stereoFrame ) {
-
-                    geometry.addPath( stereoFrame->projectionMatrix() );
-
-                }
-
-            }
+            emit updateSignal();
 
         }
-
-        geometry.setPoints( pointCloud );
-
-        emit geometrySignal( geometry );
-
-        emit updateSignal();
 
     }
+
+}
+
+SlamGeometry SlamThread::geometry() const
+{
+    SlamGeometry geometry;
+
+    auto maps = m_system->maps();
+
+    for ( auto &map : maps ) {
+
+        auto mapPoints = map->mapPoints();
+        auto frames = map->frames();
+
+        for ( auto &i : mapPoints ) {
+
+            if ( i )
+                geometry.addPoint( ColorPoint3d( i->point(), i->color() ) );
+
+        }
+
+        for ( auto &i : frames ) {
+
+            auto stereoFrame = std::dynamic_pointer_cast< slam::StereoFrame >( i );
+
+            if ( stereoFrame )
+                geometry.addPath( stereoFrame->projectionMatrix() );
+
+        }
+
+    }
+
+    return geometry;
+
+}
+
+CvImage SlamThread::pointsImage() const
+{
+    if ( !m_system->maps().empty() ) {
+
+        if ( !m_system->maps().back()->frames().empty() ) {
+
+            auto processedFrame = std::dynamic_pointer_cast< slam::ProcessedStereoFrame >( m_system->maps().back()->frames().back() );
+
+            if ( processedFrame )
+                return processedFrame->drawKeyPoints();
+
+        }
+
+    }
+
+    return CvImage();
+
+}
+
+CvImage SlamThread::tracksImage() const
+{
+    if ( !m_system->maps().empty() ) {
+
+        if ( !m_system->maps().back()->frames().empty() ) {
+
+            auto processedFrame = std::dynamic_pointer_cast< slam::ProcessedStereoFrame >( m_system->maps().back()->frames().back() );
+
+            if ( processedFrame )
+                return processedFrame->leftFrame()->drawTracks();
+
+        }
+
+    }
+
+    return CvImage();
+
+}
+
+CvImage SlamThread::stereoImage() const
+{
+    if ( !m_system->maps().empty() ) {
+
+        if ( m_system->maps().back()->frames().size() > 1 ) {
+
+            auto processedFrame = std::dynamic_pointer_cast< slam::ProcessedStereoFrame >( *(++m_system->maps().back()->frames().rbegin()) );
+
+            if ( processedFrame )
+                return processedFrame->drawStereoPoints();
+
+        }
+
+    }
+
+    return CvImage();
 
 }

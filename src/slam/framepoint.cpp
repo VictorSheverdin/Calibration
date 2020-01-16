@@ -243,19 +243,18 @@ namespace slam {
     }
 
     FramePoint::FramePoint( const FramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color )
-        : MonoPoint( parentFrame)
+        : MonoPoint( parentFrame), ColorPoint2d( point, color )
     {
-        set( point, color );
     }
 
     const cv::Point2f &FramePoint::point() const
     {
-        return m_point;
+        return ColorPoint2d::point();
     }
 
     const cv::Scalar &FramePoint::color() const
     {
-        return m_color;
+        return ColorPoint2d::color();
     }
 
     FramePoint::PointPtr FramePoint::create( const FramePtr &parentFrame )
@@ -307,22 +306,6 @@ namespace slam {
 
         }
 
-    }
-
-    void FramePoint::setPoint( const cv::Point2f &point )
-    {
-        m_point = point;
-    }
-
-    void FramePoint::setColor( const cv::Scalar &color )
-    {
-        m_color = color;
-    }
-
-    void FramePoint::set( const cv::Point2f &point, const cv::Scalar &color )
-    {
-        setPoint( point );
-        setColor( color );
     }
 
     // DoublePoint

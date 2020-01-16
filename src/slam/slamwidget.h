@@ -20,10 +20,12 @@ public:
 public slots:
     void setPointsImage( const CvImage &image );
     void setTracksImage( const CvImage &image );
+    void setStereoImage( const CvImage &image );
 
 protected:
     QPointer< ImageWidget > m_pointsWidget;
     QPointer< ImageWidget > m_tracksWidget;
+    QPointer< ImageWidget > m_stereoWidget;
 
 private:
     void initialize();
@@ -38,17 +40,19 @@ public:
     PCLWidget( QWidget* parent = nullptr );
 
     void setPointCloud( const pcl::PointCloud< pcl::PointXYZRGB >::Ptr cloud );
+    void setLeftPath( const pcl::PointCloud< pcl::PointXYZ >::Ptr path );
+    void setRightPath( const pcl::PointCloud< pcl::PointXYZ >::Ptr path );
 
 public slots:
     void update();
 
 protected:
+    vtkSmartPointer<vtkRenderer> m_renderer;
+
     pcl::visualization::PCLVisualizer::Ptr m_pclViewer;
 
 private:
     void initialize();
-
-    static void pickingEventHandler( const pcl::visualization::PointPickingEvent& event, void* viewer_void );
 
 };
 
@@ -63,7 +67,6 @@ public:
     ~SlamWidget();
 
 public slots:
-    void setGeometry( const SlamGeometry &geo );
     void updateViews();
 
 protected:
@@ -71,6 +74,8 @@ protected:
     QPointer< PCLWidget > m_pclWidget;
 
     QPointer< SlamThread > m_slamThread;
+
+    void setGeometry( const SlamGeometry &geo );
 
 private:
     void initialize();

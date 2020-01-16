@@ -22,9 +22,14 @@ public:
 
     void setTranslation( const cv::Mat &value );
     const cv::Mat &translation() const;
+    cv::Vec3d translationVector() const;
 
     void setProjectionMatrix( const cv::Mat &value );
     const cv::Mat &projectionMatrix() const;
+
+    double x() const;
+    double y() const;
+    double z() const;
 
     double fx() const;
     double fy() const;

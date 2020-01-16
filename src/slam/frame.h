@@ -94,6 +94,7 @@ public:
     void triangulatePoints();
 
     const std::vector< cv::KeyPoint > &keyPoints() const;
+    size_t keyPointsCount() const;
 
     CvImage drawKeyPoints() const;
     CvImage drawTracks() const;

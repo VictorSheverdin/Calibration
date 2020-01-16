@@ -22,6 +22,15 @@ void ImagesWidget::initialize()
     m_tracksWidget = new ImageWidget( this );
     addWidget( m_tracksWidget );
 
+    m_stereoWidget = new ImageWidget( this );
+    addWidget( m_stereoWidget );
+
+    m_stereoWidget->hide();
+
+    int widthDiv3 = width() / 3;
+
+    setSizes( QList< int >() << widthDiv3 << widthDiv3 << widthDiv3 );
+
 }
 
 void ImagesWidget::setPointsImage( const CvImage &image )
@@ -34,6 +43,11 @@ void ImagesWidget::setTracksImage( const CvImage &image )
     m_tracksWidget->setImage( image );
 }
 
+void ImagesWidget::setStereoImage( const CvImage &image )
+{
+    m_stereoWidget->setImage( image );
+}
+
 // PCLViewer
 PCLWidget::PCLWidget( QWidget* parent )
     : QVTKOpenGLWidget( parent )
@@ -41,47 +55,23 @@ PCLWidget::PCLWidget( QWidget* parent )
     initialize();
 }
 
-void PCLWidget::pickingEventHandler( const pcl::visualization::PointPickingEvent& event, void* viewer_void )
-{
-    float x, y, z;
-
-    if (event.getPointIndex () == -1) {
-        return;
-    }
-
-    event.getPoint( x, y, z );
-
-    auto distance = sqrt( x * x + y * y + z * z ) * 15.7;
-
-    std::stringstream ss;
-    ss << distance;
-
-    auto widget = reinterpret_cast< pcl::visualization::PCLVisualizer * >( viewer_void );
-
-    widget->removeText3D( "Text" );
-    widget->addText3D( ss.str(), pcl::PointXYZ( x, y, z - 0.1 ), 0.2, 1.0, 0, 0, "Text" );
-
-}
-
 void PCLWidget::initialize()
 {
-    vtkNew< vtkRenderer > renderer;
+    m_renderer = vtkSmartPointer<vtkRenderer>::New();
 
-    renderer->SetBackground( 127, 127, 127 );
-    renderer->SetBackground2( 1, 1, 1 );
-    renderer->SetGradientBackground( true );
+    m_renderer->SetBackground( 127, 127, 127 );
+    m_renderer->SetBackground2( 1, 1, 1 );
+    m_renderer->SetGradientBackground( true );
 
     vtkNew< vtkGenericOpenGLRenderWindow > renderWindow;
-    renderWindow->AddRenderer( renderer.Get() );
+    renderWindow->AddRenderer( m_renderer.Get() );
 
-    m_pclViewer = pcl::visualization::PCLVisualizer::Ptr( new pcl::visualization::PCLVisualizer( renderer.Get(), renderWindow.Get(), "PCLVisualizer", false ) );
+    m_pclViewer = pcl::visualization::PCLVisualizer::Ptr( new pcl::visualization::PCLVisualizer( m_renderer.Get(), renderWindow.Get(), "PCLVisualizer", false ) );
     SetRenderWindow( m_pclViewer->getRenderWindow() );
 
     m_pclViewer->initCameraParameters();
 
     m_pclViewer->setPointCloudRenderingProperties( pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2 );
-
-    m_pclViewer->registerPointPickingCallback( PCLWidget::pickingEventHandler, m_pclViewer.get() );
 
     m_pclViewer->setCameraPosition( 0, 0, -10, 0, -1, 0 );
 
@@ -93,10 +83,35 @@ void PCLWidget::initialize()
 
 void PCLWidget::setPointCloud(const pcl::PointCloud< pcl::PointXYZRGB >::Ptr cloud )
 {
-
     if( !m_pclViewer->updatePointCloud( cloud ) ) {
         m_pclViewer->addPointCloud( cloud );
-        m_pclViewer->setPointCloudRenderingProperties( pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2 );
+        m_pclViewer->setPointCloudRenderingProperties( pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2 );        
+    }
+
+    update();
+
+}
+
+void PCLWidget::setLeftPath( const pcl::PointCloud< pcl::PointXYZ >::Ptr path )
+{
+    std::string id = "leftPath";
+
+    if( !m_pclViewer->updatePointCloud( path, id ) ) {
+        m_pclViewer->addPointCloud( path, id );
+        m_pclViewer->setPointCloudRenderingProperties( pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, id );
+    }
+
+    update();
+
+}
+
+void PCLWidget::setRightPath( const pcl::PointCloud< pcl::PointXYZ >::Ptr path )
+{
+    std::string id = "rightPath";
+
+    if( !m_pclViewer->updatePointCloud( path, id ) ) {
+        m_pclViewer->addPointCloud( path, id );
+        m_pclViewer->setPointCloudRenderingProperties( pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, id );
     }
 
     update();
@@ -131,12 +146,11 @@ void SlamWidget::initialize()
     m_pclWidget = new PCLWidget( this );
     addWidget( m_pclWidget );
 
+    int widthDiv2 = width() / 2;
+
+    setSizes( QList< int >() << widthDiv2  << widthDiv2 );
+
     m_slamThread = new SlamThread( this );
-
-    connect( m_slamThread, &SlamThread::pointsImageSignal, m_imagesWidget, &ImagesWidget::setPointsImage );
-    connect( m_slamThread, &SlamThread::tracksImageSignal, m_imagesWidget, &ImagesWidget::setTracksImage );
-
-    connect( m_slamThread, &SlamThread::geometrySignal, this, &SlamWidget::setGeometry );
 
     connect( m_slamThread, &SlamThread::updateSignal, this, &SlamWidget::updateViews );
 
@@ -146,10 +160,54 @@ void SlamWidget::initialize()
 
 void SlamWidget::setGeometry( const SlamGeometry &geo )
 {
-    m_pclWidget->setPointCloud( geo.points() );
+    pcl::PointCloud< pcl::PointXYZRGB >::Ptr pointCloud( new pcl::PointCloud< pcl::PointXYZRGB > );
+
+    for ( auto &i : geo.points() ) {
+
+        auto point = i.point();
+
+        pcl::PointXYZRGB pclPoint;
+        pclPoint.x = point.x;
+        pclPoint.y = point.y;
+        pclPoint.z = point.z;
+
+        auto color = i.color();
+
+        pclPoint.r = std::max( 0.0, std::min( color[ 2 ], 255.0 ) );
+        pclPoint.g = std::max( 0.0, std::min( color[ 1 ], 255.0 ) );
+        pclPoint.b = std::max( 0.0, std::min( color[ 0 ], 255.0 ) );
+        pclPoint.a = 255;
+
+        pointCloud->push_back( pclPoint );
+
+    }
+
+    m_pclWidget->setPointCloud( pointCloud );
+
+    pcl::PointCloud<pcl::PointXYZ>::Ptr leftTrajectory( new pcl::PointCloud< pcl::PointXYZ > );
+    pcl::PointCloud<pcl::PointXYZ>::Ptr rightTrajectory( new pcl::PointCloud< pcl::PointXYZ > );
+
+    for ( auto &i : geo.path() ) {
+        auto leftProjectionMatrix = i.leftProjectionMatrix();
+        auto rightProjectionMatrix = i.rightProjectionMatrix();
+
+        cv::Mat leftTranslation = -leftProjectionMatrix.rotation().t() * leftProjectionMatrix.translation();
+        cv::Mat rightTranslation = -rightProjectionMatrix.rotation().t() * rightProjectionMatrix.translation();
+
+        leftTrajectory->push_back( pcl::PointXYZ( leftTranslation.at< double >( 0, 0 ), leftTranslation.at< double >( 1, 0 ), leftTranslation.at< double >( 2, 0 ) ) );
+        rightTrajectory->push_back( pcl::PointXYZ( rightTranslation.at< double >( 0, 0 ), rightTranslation.at< double >( 1, 0 ), rightTranslation.at< double >( 2, 0 ) ) );
+    }
+
+    m_pclWidget->setLeftPath( leftTrajectory );
+    // m_pclWidget->setRightPath( rightTrajectory );
+
 }
 
 void SlamWidget::updateViews()
 {
+    m_imagesWidget->setPointsImage( m_slamThread->pointsImage() );
+    m_imagesWidget->setTracksImage( m_slamThread->tracksImage() );
+    m_imagesWidget->setStereoImage( m_slamThread->stereoImage() );
 
+    setGeometry( m_slamThread->geometry() );
 }

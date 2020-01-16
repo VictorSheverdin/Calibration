@@ -65,7 +65,7 @@ void Optimizer::adjustStored( slam::Map *map, const int count )
 
 void Optimizer::adjust( std::list< FramePtr > &frames )
 {
-    g2o::SparseOptimizer optimizer;
+    /*g2o::SparseOptimizer optimizer;
     auto linearSolver = g2o::make_unique< g2o::LinearSolverEigen< g2o::BlockSolver_6_3::PoseMatrixType > >();
     auto solver = g2o::make_unique< g2o::OptimizationAlgorithmLevenberg >( g2o::make_unique< g2o::BlockSolver_6_3 >( std::move( linearSolver ) ) );
     optimizer.setAlgorithm( solver.get() );
@@ -176,7 +176,7 @@ void Optimizer::adjust( std::list< FramePtr > &frames )
     }
 
     optimizer.initializeOptimization();
-    optimizer.optimize( 5 );
+    optimizer.optimize( m_optimizationsCount );
 
     for ( auto &i : pointsMap ) {
 
@@ -196,7 +196,7 @@ void Optimizer::adjust( std::list< FramePtr > &frames )
 
         }
 
-    }
+    }*/
 
 }
 
