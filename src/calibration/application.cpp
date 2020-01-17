@@ -7,7 +7,7 @@
 #include "src/common/functions.h"
 
 Application::Application( int &argc, char **argv )
-    : QApplication(argc, argv), m_vimbaSystem( AVT::VmbAPI::VimbaSystem::GetInstance() )
+    : QApplication( argc, argv ), m_vimbaSystem( AVT::VmbAPI::VimbaSystem::GetInstance() )
 {
     initialize( argc, argv );
 }

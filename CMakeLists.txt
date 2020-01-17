@@ -226,6 +226,7 @@ add_executable( slam ${COMMON_SOURCES} ${RES_SOURCES}
     src/slam/application.h
     src/slam/slamwidget.h
     src/slam/slamdocument.h
+    src/slam/slamdialog.h
     src/slam/slamgeometry.h
     src/slam/slamthread.h
     src/slam/mainwindow.h
@@ -239,6 +240,7 @@ add_executable( slam ${COMMON_SOURCES} ${RES_SOURCES}
     src/slam/application.cpp
     src/slam/slamwidget.cpp
     src/slam/slamdocument.cpp
+    src/slam/slamdialog.cpp
     src/slam/slamgeometry.cpp
     src/slam/slamthread.cpp
     src/slam/mainwindow.cpp

@@ -196,14 +196,22 @@ void DocumentMainWindow::setupDocuments()
     setCentralWidget( m_documentArea );    
 }
 
-// FolderLine
-FolderLine::FolderLine( const QString &label, QWidget *parent )
+// FileLineBase
+FileLineBase::FileLineBase( QWidget *parent )
     : QWidget( parent )
 {
     initialize();
 }
 
-void FolderLine::initialize()
+FileLineBase::FileLineBase( const QString &label, QWidget *parent )
+    : QWidget( parent )
+{
+    initialize();
+
+    setLabel( label );
+}
+
+void FileLineBase::initialize()
 {
     setContentsMargins( QMargins() );
 
@@ -219,29 +227,71 @@ void FolderLine::initialize()
 
     m_button = new QPushButton( QIcon( ":/resources/images/folder.ico" ), QString(), this );
     layout->addWidget( m_button );
-
-    connect( m_button, &QPushButton::clicked, this, &FolderLine::choiceDirectoryDialog );
-
 }
 
-void FolderLine::setLabel( const QString label )
+void FileLineBase::setLabel( const QString label )
 {
     m_label->setText( label );
 }
 
-QString FolderLine::label() const
+QString FileLineBase::label() const
 {
     return m_label->text();
 }
 
-void FolderLine::setPath( const QString &value )
+void FileLineBase::setPath( const QString &value )
 {
     m_path->setText( value );
 }
 
-QString FolderLine::path() const
+QString FileLineBase::path() const
 {
     return m_path->text();
+}
+
+// FolderLine
+FileLine::FileLine( QWidget *parent )
+    : FileLineBase( parent )
+{
+    initialize();
+}
+
+FileLine::FileLine( const QString &label, QWidget *parent )
+    : FileLineBase( label, parent )
+{
+    initialize();
+}
+
+void FileLine::initialize()
+{
+    connect( m_button, &QPushButton::clicked, this, &FileLine::choiceFileDialog );
+}
+
+void FileLine::choiceFileDialog()
+{
+    auto dir = QFileDialog::getExistingDirectory( this, tr( "Open Directory" ), QString(), QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks );
+
+    if ( !dir.isEmpty() )
+        setPath( dir );
+
+}
+
+// FolderLine
+FolderLine::FolderLine( QWidget *parent )
+    : FileLineBase( parent )
+{
+    initialize();
+}
+
+FolderLine::FolderLine( const QString &label, QWidget *parent )
+    : FileLineBase( label, parent )
+{
+    initialize();
+}
+
+void FolderLine::initialize()
+{
+    connect( m_button, &QPushButton::clicked, this, &FolderLine::choiceDirectoryDialog );
 }
 
 void FolderLine::choiceDirectoryDialog()

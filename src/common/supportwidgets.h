@@ -146,21 +146,19 @@ private:
 
 };
 
-class FolderLine : public QWidget
+class FileLineBase : public QWidget
 {
     Q_OBJECT
 
 public:
-    explicit FolderLine( const QString &label, QWidget *parent = nullptr );
+    explicit FileLineBase( QWidget *parent = nullptr );
+    explicit FileLineBase( const QString &label, QWidget *parent = nullptr );
 
     void setLabel( const QString label );
     QString label() const;
 
     void setPath( const QString &value );
     QString path() const;
-
-public slots:
-    void choiceDirectoryDialog();
 
 protected:
     QPointer< QLabel > m_label;
@@ -169,6 +167,39 @@ protected:
 
 private:
     void initialize();
+
+};
+
+class FileLine : public FileLineBase
+{
+    Q_OBJECT
+
+public:
+    explicit FileLine( QWidget *parent = nullptr );
+    explicit FileLine( const QString &label, QWidget *parent = nullptr );
+
+public slots:
+    void choiceFileDialog();
+
+private:
+    void initialize();
+
+};
+
+class FolderLine : public FileLineBase
+{
+    Q_OBJECT
+
+public:
+    explicit FolderLine( QWidget *parent = nullptr );
+    explicit FolderLine( const QString &label, QWidget *parent = nullptr );
+
+public slots:
+    void choiceDirectoryDialog();
+
+private:
+    void initialize();
+
 };
 
 #include "supportwidgets.inl"

@@ -6,9 +6,8 @@
 
 class QVBoxLayout;
 
-/*
-class CameraSlamWidget;
-class ImageSlamWidget;
+// class CameraSlamWidget;
+class SlamWidget;
 
 class SlamDocumentBase : public DocumentBase
 {
@@ -17,16 +16,13 @@ class SlamDocumentBase : public DocumentBase
 public:
     explicit SlamDocumentBase( QWidget* parent = nullptr );
 
-public slots:
-    virtual void loadCalibrationDialog() = 0;
-
 private:
     void initialize();
 
 };
 
-
-class CameraDisparityDocument : public SlamDocumentBase
+/*
+class CameraSlamDocument : public SlamDocumentBase
 {
     Q_OBJECT
 
@@ -45,7 +41,7 @@ private:
 
 };
 
-
+*/
 class ImageSlamDocument : public SlamDocumentBase
 {
     Q_OBJECT
@@ -53,17 +49,10 @@ class ImageSlamDocument : public SlamDocumentBase
 public:
     explicit ImageSlamDocument( QWidget* parent = nullptr );
 
-    ImageSlamWidget *widget() const;
-
-    void loadCalibrationFile( const QString &fileName );
-
-public slots:
-    virtual void loadCalibrationDialog() override;
-
-    void importDialog();
+    SlamWidget *widget() const;
 
 private:
     void initialize();
 
 };
-*/
+

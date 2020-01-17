@@ -3,7 +3,7 @@
 #include "slamdocument.h"
 
 #include "slamwidget.h"
-/*
+
 // DisparityDocumentBase
 SlamDocumentBase::SlamDocumentBase( QWidget* parent )
     : DocumentBase( parent )
@@ -14,7 +14,7 @@ SlamDocumentBase::SlamDocumentBase( QWidget* parent )
 void SlamDocumentBase::initialize()
 {
 }
-
+/*
 // CalibrationDocumentBase
 CameraDisparityDocument::CameraDisparityDocument( const QString &leftCameraIp, const QString &rightCameraIp, QWidget* parent )
     : DisparityDocumentBase( parent )
@@ -41,41 +41,22 @@ void CameraDisparityDocument::loadCalibrationDialog()
 {
     widget()->loadCalibrationDialog();
 }
-
-// ImageDisparityDocument
-ImageDisparityDocument::ImageDisparityDocument( QWidget* parent )
-    : DisparityDocumentBase( parent )
+*/
+// ImageSlamDocument
+ImageSlamDocument::ImageSlamDocument( QWidget* parent )
+    : SlamDocumentBase( parent )
 {
     initialize();
 }
 
-void ImageDisparityDocument::initialize()
+void ImageSlamDocument::initialize()
 {
-    setWidget( new ImageDisparityWidget( this ) );
+    setWidget( new SlamWidget( this ) );
 }
 
-ImageDisparityWidget *ImageDisparityDocument::widget() const
+SlamWidget *ImageSlamDocument::widget() const
 {
-    return dynamic_cast< ImageDisparityWidget * >( m_widget );
+    return dynamic_cast< SlamWidget * >( m_widget );
 }
 
-void ImageDisparityDocument::loadCalibrationFile( const QString &fileName )
-{
-    widget()->loadCalibrationFile( fileName );
-}
 
-void ImageDisparityDocument::loadCalibrationDialog()
-{
-    widget()->loadCalibrationDialog();
-}
-
-void ImageDisparityDocument::importDialog()
-{
-    widget()->importDialog();
-}
-
-void ImageDisparityDocument::clearIcons()
-{
-    widget()->clearIcons();
-}
-*/

@@ -108,7 +108,7 @@ StereoFilesListDialog::StereoFilesListDialog( QWidget *parent )
 
 void StereoFilesListDialog::initialize()
 {
-    setWidget( new StereoFilesListWidget( this) );
+    setWidget( new StereoFilesListWidget( this ) );
 
     resize( 600, 700 );
 

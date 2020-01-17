@@ -40,16 +40,28 @@ public:
     PCLWidget( QWidget* parent = nullptr );
 
     void setPointCloud( const pcl::PointCloud< pcl::PointXYZRGB >::Ptr cloud );
-    void setLeftPath( const pcl::PointCloud< pcl::PointXYZ >::Ptr path );
-    void setRightPath( const pcl::PointCloud< pcl::PointXYZ >::Ptr path );
+    void setPath( const std::list< StereoCameraMatrix > &path );
 
 public slots:
     void update();
 
 protected:
-    vtkSmartPointer<vtkRenderer> m_renderer;
+    vtkSmartPointer< vtkRenderer > m_renderer;
+
+    vtkSmartPointer< vtkActor > m_leftTrajectoryActor;
+    vtkSmartPointer< vtkActor > m_rightTrajectoryActor;
+
+    vtkSmartPointer< vtkActor > m_leftCameraActor;
+    vtkSmartPointer< vtkActor > m_rightCameraActor;
 
     pcl::visualization::PCLVisualizer::Ptr m_pclViewer;
+
+    void setLeftPath( std::list< cv::Vec3d > &points );
+    void setRightPath( std::list< cv::Vec3d > &points );
+
+    void setFrustum( const StereoCameraMatrix &cameraMatrix );
+    void setLeftFrustum( const ProjectionMatrix &cameraMatrix );
+    void setRightFrustum( const ProjectionMatrix &cameraMatrix );
 
 private:
     void initialize();
