@@ -196,6 +196,38 @@ void DocumentMainWindow::setupDocuments()
     setCentralWidget( m_documentArea );    
 }
 
+// FileLineCollection
+FileLineCollection::FileLineCollection()
+{
+}
+
+void FileLineCollection::initialize( QWidget *parent )
+{
+    m_label = new QLabel( parent );
+    m_path = new QLineEdit( parent );
+    m_button = new QPushButton( QIcon( ":/resources/images/folder.ico" ), QString(), parent );
+}
+
+void FileLineCollection::setLabel( const QString &label )
+{
+    m_label->setText( label );
+}
+
+QString FileLineCollection::label() const
+{
+    return m_label->text();
+}
+
+void FileLineCollection::setPath( const QString &value )
+{
+    m_path->setText( value );
+}
+
+QString FileLineCollection::path() const
+{
+    return m_path->text();
+}
+
 // FileLineBase
 FileLineBase::FileLineBase( QWidget *parent )
     : QWidget( parent )
@@ -219,37 +251,14 @@ void FileLineBase::initialize()
 
     layout->setContentsMargins( QMargins() );
 
-    m_label = new QLabel( this );
+    FileLineCollection::initialize( this );
+
     layout->addWidget( m_label );
-
-    m_path = new QLineEdit( this );
     layout->addWidget( m_path );
-
-    m_button = new QPushButton( QIcon( ":/resources/images/folder.ico" ), QString(), this );
     layout->addWidget( m_button );
 }
 
-void FileLineBase::setLabel( const QString label )
-{
-    m_label->setText( label );
-}
-
-QString FileLineBase::label() const
-{
-    return m_label->text();
-}
-
-void FileLineBase::setPath( const QString &value )
-{
-    m_path->setText( value );
-}
-
-QString FileLineBase::path() const
-{
-    return m_path->text();
-}
-
-// FolderLine
+// FileLine
 FileLine::FileLine( QWidget *parent )
     : FileLineBase( parent )
 {
@@ -302,4 +311,5 @@ void FolderLine::choiceDirectoryDialog()
         setPath( dir );
 
 }
+
 

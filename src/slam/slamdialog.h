@@ -2,6 +2,7 @@
 
 #include "src/common/fileslistwidget.h"
 #include "src/common/supportwidgets.h"
+#include "src/common/ipwidget.h"
 
 class ImagesChoiceWidget : public QWidget
 {
@@ -32,22 +33,30 @@ class ImagesDialog : public DialogBase
 public:
     explicit ImagesDialog( QWidget *parent = nullptr );
 
-    ImagesChoiceWidget *widget() const;
+    StereoDirWidget *widget() const;
 
-    int leftCount() const;
-    int rightCount() const;
-
-    QStringList leftFileNames() const;
-    QStringList rightFileNames() const;
-
-protected slots:
-    void onAccept();
+    QString leftDir() const;
+    QString rightDir() const;
 
 private:
     void initialize();
 
 };
 
-class CamerasDialog
+class CamerasDialog : public DialogBase
 {
+    Q_OBJECT
+
+public:
+    explicit CamerasDialog( QWidget* parent = nullptr );
+
+    StereoIPWidget *widget() const;
+
+    QString leftIp() const;
+    QString rightIp() const;
+
+private:
+    void initialize();
+
 };
+

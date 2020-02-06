@@ -1,7 +1,9 @@
 #pragma once
 
-#include "src/common/image.h"
-#include "src/common/calibrationdatabase.h"
+#include "calibrationdatabase.h"
+
+#include "image.h"
+#include "colorpoint.h"
 
 #include <QThread>
 #include <QMutex>
@@ -211,112 +213,41 @@ private:
 
 };
 
-
-class StereoEfficientLargeScale;
-
-class ElasDisparityProcessor : public DisparityProcessorBase
-{
-public:
-    ElasDisparityProcessor();
-
-    virtual cv::Mat processDisparity( const CvImage &left, const CvImage &right ) override;
-
-protected:
-    cv::Ptr< StereoEfficientLargeScale > m_matcher;
-
-private:
-    void initialize();
-
-};
-
-class StereoResult
-{
-public:
-    StereoResult();
-
-    void setPreviewImage( const CvImage &value );
-    void setDisparity( const cv::Mat &value );
-    void setPoints( const cv::Mat &value );
-    void setPointCloud( const pcl::PointCloud< pcl::PointXYZRGB >::Ptr &value );
-
-    const CvImage &previewImage() const;
-    const cv::Mat &disparity() const;
-    const CvImage &colorizedDisparity() const;
-    const cv::Mat &points() const;
-    pcl::PointCloud< pcl::PointXYZRGB >::Ptr pointCloud() const;
-
-    const std::chrono::time_point< std::chrono::system_clock > &time() const;
-
-    void setFrame( const StereoFrame &frame );
-    const StereoFrame &frame() const;
-
-protected:
-    CvImage m_previewImage;
-    cv::Mat m_disparity;
-    CvImage m_colorizedDisparity;
-    cv::Mat m_points;
-    pcl::PointCloud< pcl::PointXYZRGB >::Ptr m_pointCloud;
-
-    StereoFrame m_frame;
-
-private:
-    void initialize();
-
-};
-
 class StereoProcessor
 {
 public:
     StereoProcessor();
+    StereoProcessor( const std::shared_ptr< DisparityProcessorBase > &proc );
 
     void setCalibration( const StereoCalibrationDataShort &data );
     const StereoCalibrationDataShort &calibration() const;
 
     bool loadYaml( const std::string &fileName );
 
-    std::shared_ptr< DisparityProcessorBase > disparityProcessor() const;
-    void setDisparityProcessor( const std::shared_ptr< DisparityProcessorBase > proc );
+    const std::shared_ptr< DisparityProcessorBase > &disparityProcessor() const;
+    void setDisparityProcessor( const std::shared_ptr< DisparityProcessorBase > &proc );
 
-    StereoResult process( const StereoFrame &frame );
+    cv::Mat processDisparity( const CvImage &left, const CvImage &right );
 
 protected:
-    std::shared_ptr< DisparityProcessorBase > m_disparityProcessor;
-
     StereoCalibrationDataShort m_calibration;
 
-private:
-    void initialize();
+    std::shared_ptr< DisparityProcessorBase > m_disparityProcessor;
+
+    cv::Mat reprojectPoints( const cv::Mat &disparity );
+    pcl::PointCloud< pcl::PointXYZRGB >::Ptr producePointCloud( const cv::Mat &points, const CvImage &leftImage );
+    std::vector< ColorPoint3d > producePointVector( const cv::Mat &points, const CvImage &leftImage );
 
 };
 
-class ProcessorThread : public QThread
+class BMStereoProcessor : public StereoProcessor
 {
-    Q_OBJECT
-
 public:
-    explicit ProcessorThread( QObject *parent = nullptr );
-
-    bool process( const StereoFrame &frame );
-
-    void setProcessor( const std::shared_ptr< StereoProcessor > processor );
-
-    StereoResult result();
-
-signals:
-    void frameProcessed();
-
-protected:
-    StereoFrame m_frame;
-    QMutex m_processMutex;
-
-    StereoResult m_result;
-    QMutex m_resultMutex;
-
-    std::shared_ptr< StereoProcessor > m_processor;
-
-    virtual void run() override;
+    BMStereoProcessor();
 
 private:
     void initialize();
 
 };
+
+

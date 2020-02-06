@@ -4,11 +4,6 @@
 
 #include "mainwindow.h"
 
-#include "slamgeometry.h"
-#include "src/common/image.h"
-
-#include "src/common/functions.h"
-
 Application::Application( int &argc, char **argv )
     : QApplication( argc, argv )
 {
@@ -21,9 +16,6 @@ Application::~Application()
 
 void Application::initialize( int &, char ** )
 {
-    qRegisterMetaType< CvImage >();
-    qRegisterMetaType< SlamGeometry >();
-
     QFile cssFile(":/resources/qss/style.css");
 
     if ( cssFile.open( QIODevice::ReadOnly ) ) {

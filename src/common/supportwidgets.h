@@ -146,15 +146,13 @@ private:
 
 };
 
-class FileLineBase : public QWidget
+class FileLineCollection
 {
-    Q_OBJECT
-
+    friend class StereoDirWidget;
 public:
-    explicit FileLineBase( QWidget *parent = nullptr );
-    explicit FileLineBase( const QString &label, QWidget *parent = nullptr );
+    explicit FileLineCollection();
 
-    void setLabel( const QString label );
+    void setLabel( const QString &label );
     QString label() const;
 
     void setPath( const QString &value );
@@ -164,6 +162,18 @@ protected:
     QPointer< QLabel > m_label;
     QPointer< QLineEdit > m_path;
     QPointer< QPushButton > m_button;
+
+    void initialize( QWidget *parent = nullptr );
+
+};
+
+class FileLineBase : public QWidget, public FileLineCollection
+{
+    Q_OBJECT
+
+public:
+    explicit FileLineBase( QWidget *parent = nullptr );
+    explicit FileLineBase( const QString &label, QWidget *parent = nullptr );
 
 private:
     void initialize();

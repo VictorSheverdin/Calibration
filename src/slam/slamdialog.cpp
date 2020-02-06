@@ -50,46 +50,51 @@ ImagesDialog::ImagesDialog( QWidget *parent )
 
 void ImagesDialog::initialize()
 {
-    setWidget( new ImagesChoiceWidget( this ) );
+    setWidget( new StereoDirWidget( tr("Left images directory"), tr("Right images directory"), this ) );
 
-    resize( 600, 700 );
-
-    connect( m_buttons, &QDialogButtonBox::accepted, this, &ImagesDialog::onAccept );
+    connect( m_buttons, &QDialogButtonBox::accepted, this, &StereoDirDialog::accept );
 }
 
-ImagesChoiceWidget *ImagesDialog::widget() const
+StereoDirWidget *ImagesDialog::widget() const
 {
-    return dynamic_cast< ImagesChoiceWidget * >( m_widget.data() );
+    return dynamic_cast< StereoDirWidget * >( m_widget.data() );
 }
 
-int ImagesDialog::leftCount() const
+QString ImagesDialog::leftDir() const
 {
-    return widget()->leftCount();
+    return widget()->leftDir();
 }
 
-int ImagesDialog::rightCount() const
+QString ImagesDialog::rightDir() const
 {
-    return widget()->rightCount();
+    return widget()->rightDir();
 }
 
-QStringList ImagesDialog::leftFileNames() const
+// StereoIPDialog
+CamerasDialog::CamerasDialog( QWidget* parent )
+    : DialogBase( QDialogButtonBox::Ok | QDialogButtonBox::Cancel, parent )
 {
-    return widget()->leftFileNames();
+    initialize();
 }
 
-QStringList ImagesDialog::rightFileNames() const
+void CamerasDialog::initialize()
 {
-    return widget()->rightFileNames();
+    setWidget( new StereoIPWidget( this ) );
+
+    connect( m_buttons, &QDialogButtonBox::accepted, this, &DialogBase::accept );
 }
 
-void ImagesDialog::onAccept()
+StereoIPWidget *CamerasDialog::widget() const
 {
-    auto widget = this->widget();
+    return dynamic_cast< StereoIPWidget * >( m_widget.data() );
+}
 
-    if ( widget->leftCount() != widget->rightCount() ) {
-        QMessageBox::information( this, tr( "Error" ), tr( "Left image count must be equal to right image count!" ) );
-    }
-    else
-        accept();
+QString CamerasDialog::leftIp() const
+{
+    return widget()->leftIp();
+}
 
+QString CamerasDialog::rightIp() const
+{
+    return widget()->rightIp();
 }

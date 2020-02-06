@@ -4,7 +4,9 @@
 #include <QSplitter>
 
 #include "src/common/defs.h"
-#include "stereoprocessor.h"
+
+#include "stereoresultprocessor.h"
+#include "elasprocessor.h"
 
 #include "src/common/vimbacamera.h"
 
@@ -78,7 +80,7 @@ protected:
     std::shared_ptr< CSBPDisparityProcessor > m_csbpProcessor;
     std::shared_ptr< ElasDisparityProcessor > m_elasProcessor;
 
-    std::shared_ptr< StereoProcessor > m_processor;
+    std::shared_ptr< StereoResultProcessor > m_processor;
 
     ProcessorThread m_processorThread;
 

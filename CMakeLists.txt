@@ -10,6 +10,8 @@ set ( COMMON_SOURCES
     src/common/precompiled.h
     src/common/image.h
     src/common/image.cpp
+    src/common/colorpoint.h
+    src/common/colorpoint.cpp
     src/common/imagewidget.h
     src/common/imagewidget.cpp
     src/common/vimbacamera.h
@@ -25,6 +27,8 @@ set ( COMMON_SOURCES
     src/common/calibrationdatabase.cpp
     src/common/rectificationprocessor.h
     src/common/rectificationprocessor.cpp
+    src/common/stereoprocessor.h
+    src/common/stereoprocessor.cpp
     src/common/plane.h
     src/common/plane.cpp
     src/common/projectionmatrix.h
@@ -197,8 +201,10 @@ add_executable( disparity ${COMMON_SOURCES} ${LIBELAS_SOURCES} ${RES_SOURCES}
     src/disparity/disparitypreviewwidget.cpp
     src/disparity/disparityiconswidget.h
     src/disparity/disparityiconswidget.cpp
-    src/disparity/stereoprocessor.h
-    src/disparity/stereoprocessor.cpp
+    src/disparity/elasprocessor.h
+    src/disparity/elasprocessor.cpp
+    src/disparity/stereoresultprocessor.h
+    src/disparity/stereoresultprocessor.cpp
     src/disparity/pclwidget.h
     src/disparity/pclwidget.cpp
     src/disparity/documentwidget.h
@@ -224,6 +230,7 @@ add_executable( visoodometry ${COMMON_SOURCES} ${VISO_SOURCES}
 
 add_executable( slam ${COMMON_SOURCES} ${RES_SOURCES}
     src/slam/application.h
+    src/slam/choicedialog.h
     src/slam/slamwidget.h
     src/slam/slamdocument.h
     src/slam/slamdialog.h
@@ -233,11 +240,11 @@ add_executable( slam ${COMMON_SOURCES} ${RES_SOURCES}
     src/slam/map.h
     src/slam/mappoint.h
     src/slam/frame.h
-    src/slam/colorpoint.h
     src/slam/framepoint.h
     src/slam/optimizer.h
     src/slam/world.h
     src/slam/application.cpp
+    src/slam/choicedialog.cpp
     src/slam/slamwidget.cpp
     src/slam/slamdocument.cpp
     src/slam/slamdialog.cpp
@@ -247,11 +254,26 @@ add_executable( slam ${COMMON_SOURCES} ${RES_SOURCES}
     src/slam/map.cpp
     src/slam/mappoint.cpp
     src/slam/frame.cpp
-    src/slam/colorpoint.cpp
     src/slam/framepoint.cpp
     src/slam/optimizer.cpp
     src/slam/world.cpp
     src/slam/main.cpp
+)
+
+add_executable( exposure ${COMMON_SOURCES} ${RES_SOURCES}
+    src/exposure/application.h
+    src/exposure/mainwindow.h
+    src/exposure/application.cpp
+    src/exposure/mainwindow.cpp
+    src/exposure/main.cpp
+)
+
+add_executable( lidar ${COMMON_SOURCES} ${RES_SOURCES}
+    src/lidar/application.h
+    src/lidar/mainwindow.h
+    src/lidar/application.cpp
+    src/lidar/mainwindow.cpp
+    src/lidar/main.cpp
 )
 
 target_include_directories( imagesorbodometry PRIVATE ${Pangolin_INCLUDE_DIRS} )
@@ -275,4 +297,9 @@ target_link_libraries( slam PRIVATE
                             ${G2O_TYPES_SBA}
                             ${G2O_TYPES_SLAM3D}
                             ${G2O_SOLVER_EIGEN}
-                            ${CHOLMOD_LIBRARIES} )
+                            ${CHOLMOD_LIBRARIES}
+)
+
+target_link_libraries( exposure PRIVATE ${Qt5Widgets_LIBRARIES} ${VTK_LIBRARIES} )
+
+target_link_libraries( lidar PRIVATE ${Qt5Widgets_LIBRARIES} ${VTK_LIBRARIES} )

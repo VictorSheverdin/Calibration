@@ -100,7 +100,16 @@ void Map::movePrincipalPoint( const cv::Vec2f &value )
 
 void Map::adjust( const int frames )
 {
+    const std::lock_guard< std::mutex > lock( m_mutex );
+
     m_optimizer.adjustStored( this, frames );
+}
+
+void Map::localAdjustment()
+{
+    const std::lock_guard< std::mutex > lock( m_mutex );
+
+    m_optimizer.localAdjustment( this );
 }
 
 bool Map::valid() const
@@ -110,11 +119,24 @@ bool Map::valid() const
 
 bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
 {
-    auto stereoFrame = ProcessedStereoFrame::create( shared_from_this() );
+    ProcessedStereoFrame::FramePtr stereoFrame;
+
+    if ( m_frames.size() % 10 == 0 )
+        stereoFrame = ProcessedDenseFrame::create( shared_from_this() );
+    else
+        stereoFrame = ProcessedStereoFrame::create( shared_from_this() );
 
     stereoFrame->load( leftImage, rightImage );
 
     stereoFrame->extractKeyPoints();
+    stereoFrame->extractGradientPoints();
+
+    auto denseFrame = std::dynamic_pointer_cast< ProcessedDenseFrame >( stereoFrame );
+
+    if ( denseFrame )
+        denseFrame->processDisparity();
+
+    const std::lock_guard< std::mutex > lock( m_mutex );
 
     if ( m_frames.empty() ) {
 
@@ -139,7 +161,7 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
 
             auto keypointsCount = m_previousKeypointsCount;
 
-            previousLeftFrame->triangulatePoints();
+            // previousLeftFrame->triangulatePoints();
 
             int trackedPointCount;
 
@@ -186,9 +208,7 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
 
             previousStereoFrame->cleanMapPoints();
 
-            m_optimizer.localAdjustment( this );
-
-            auto replacedFrame = StereoFrame::create();
+            auto replacedFrame = StereoFrame::create( shared_from_this() );
 
             replacedFrame->replaceAndClean( previousStereoFrame );
 

@@ -39,7 +39,6 @@ CvImage MonoUndistortionProcessor::undistort( const CvImage &image )
     cv::undistort( image, ret, m_calibrationData.cameraMatrix(), m_calibrationData.distortionCoefficients() );
 
     return ret;
-
 }
 
 const MonocularCalibrationDataShort &MonoUndistortionProcessor::calibration() const
@@ -59,7 +58,7 @@ StereoRectificationProcessor::StereoRectificationProcessor( const StereoCalibrat
 
 StereoRectificationProcessor::StereoRectificationProcessor( const std::string &fileName )
 {
-    loadFile( fileName );
+    loadYaml( fileName );
 }
 
 void StereoRectificationProcessor::setCalibrationData( const StereoCalibrationDataShort &calibrationData )
@@ -67,9 +66,14 @@ void StereoRectificationProcessor::setCalibrationData( const StereoCalibrationDa
     m_calibrationData = calibrationData;
 }
 
-void StereoRectificationProcessor::loadFile( const std::string &fileName )
+const StereoCalibrationDataShort &StereoRectificationProcessor::calibration() const
 {
-    m_calibrationData.loadYaml( fileName );
+    return m_calibrationData;
+}
+
+bool StereoRectificationProcessor::loadYaml( const std::string &fileName )
+{
+    return m_calibrationData.loadYaml( fileName );
 }
 
 bool StereoRectificationProcessor::rectifyLeft( const CvImage &image , CvImage *result )
@@ -143,7 +147,3 @@ bool StereoRectificationProcessor::isValid() const
     return m_calibrationData.isOk();
 }
 
-const StereoCalibrationDataShort &StereoRectificationProcessor::calibration() const
-{
-    return m_calibrationData;
-}

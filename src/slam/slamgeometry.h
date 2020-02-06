@@ -7,7 +7,7 @@
 
 #include "src/common/projectionmatrix.h"
 
-#include "colorpoint.h"
+#include "src/common/colorpoint.h"
 
 class SlamGeometry
 {

@@ -78,7 +78,7 @@ void DisparityWidgetBase::initialize()
     m_csbpProcessor = std::shared_ptr< CSBPDisparityProcessor >( new CSBPDisparityProcessor );
     m_elasProcessor = std::shared_ptr< ElasDisparityProcessor >( new ElasDisparityProcessor );
 
-    m_processor = std::shared_ptr<StereoProcessor>( new StereoProcessor );
+    m_processor = std::shared_ptr<StereoResultProcessor>( new StereoResultProcessor );
 
     m_processorThread.setProcessor( m_processor );
 

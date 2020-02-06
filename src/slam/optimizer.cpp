@@ -22,23 +22,53 @@ void Optimizer::initialize()
 
 void Optimizer::localAdjustment( slam::Map *map )
 {
-    adjustProcessed( map, 20 );
+    adjustProcessed( map );
 }
 
-void Optimizer::adjustProcessed( slam::Map *map, const int count )
+size_t calcTrackLenght( const std::vector< std::shared_ptr< MonoPoint > > &points )
+{
+    size_t ret = 0;
+
+    for ( auto &i : points )
+        if ( i )
+            ret = std::max( ret, i->prevTrackLenght() );
+
+    return ret;
+}
+
+void Optimizer::adjustProcessed( slam::Map *map )
 {
     if ( map ) {
 
         auto frames = map->frames();
 
-        std::list< FramePtr > list;
+        if ( !frames.empty() ) {
 
-        int counter = 0;
+            std::list< FramePtr > list;
 
-        for ( auto i = frames.rbegin(); i != frames.rend() && counter < count; ++i, ++counter )
-            list.push_front( *i );
+            auto backFrame = frames.back();
 
-        adjust( list );
+            if ( backFrame ) {
+
+                auto leftFrame = backFrame->leftFrame();
+                auto rightFrame = backFrame->rightFrame();
+
+                if ( leftFrame && rightFrame ) {
+
+                    auto count = std::max( calcTrackLenght( leftFrame->framePoints() ), calcTrackLenght( rightFrame->framePoints() ) );
+
+                    size_t counter = 0;
+
+                    for ( auto i = frames.rbegin(); i != frames.rend() && counter < count; ++i, ++counter )
+                        list.push_front( *i );
+
+                    adjust( list );
+
+                }
+
+            }
+
+        }
 
     }
 
@@ -64,102 +94,112 @@ void Optimizer::adjustStored( slam::Map *map, const int count )
 }
 
 void Optimizer::adjust( std::list< FramePtr > &frames )
-{
-    /*g2o::SparseOptimizer optimizer;
-    auto linearSolver = g2o::make_unique< g2o::LinearSolverEigen< g2o::BlockSolver_6_3::PoseMatrixType > >();
-    auto solver = g2o::make_unique< g2o::OptimizationAlgorithmLevenberg >( g2o::make_unique< g2o::BlockSolver_6_3 >( std::move( linearSolver ) ) );
-    optimizer.setAlgorithm( solver.get() );
+{    
+    if ( frames.size() > 1 ) {
 
-    optimizer.setVerbose( false );
+        g2o::SparseOptimizer optimizer;
+        auto linearSolver = g2o::make_unique< g2o::LinearSolverEigen< g2o::BlockSolver_6_3::PoseMatrixType > >();
+        auto solver = g2o::make_unique< g2o::OptimizationAlgorithmLevenberg >( g2o::make_unique< g2o::BlockSolver_6_3 >( std::move( linearSolver ) ) );
+        optimizer.setAlgorithm( solver.get() );
 
-    std::map< MapPoint::PointPtr, std::shared_ptr< g2o::VertexSBAPointXYZ > > pointsMap;
-    std::map< StereoFrameBase::FramePtr, std::shared_ptr< g2o::VertexSE3Expmap > > framesMap;
+        optimizer.setVerbose( false );
 
-    std::list< std::shared_ptr< g2o::EdgeSE3ProjectXYZ > > projectEdges;
-    std::list< std::shared_ptr< g2o::EdgeStereoSE3ProjectXYZ > > stereoEdges;
+        std::map< MapPoint::PointPtr, std::shared_ptr< g2o::VertexSBAPointXYZ > > pointsMap;
+        std::map< StereoFrameBase::FramePtr, std::shared_ptr< g2o::VertexSE3Expmap > > framesMap;
 
-    int index = 0;
+        std::list< std::shared_ptr< g2o::EdgeSE3ProjectXYZ > > projectEdges;
+        std::list< std::shared_ptr< g2o::EdgeStereoSE3ProjectXYZ > > stereoEdges;
 
-    for ( auto &i : frames ) {
+        int index = 0;
 
-        auto stereoFrame = std::dynamic_pointer_cast< StereoFrameBase >( i );
+        bool fixed = true;
 
-        if ( stereoFrame ) {
+        for ( auto &i : frames ) {
 
-            auto leftFrame = stereoFrame->leftFrame();
+            auto stereoFrame = std::dynamic_pointer_cast< StereoFrameBase >( i );
 
-            if ( leftFrame ) {
+            if ( stereoFrame ) {
 
-                auto frameVertex = std::shared_ptr< g2o::VertexSE3Expmap >( new g2o::VertexSE3Expmap() );
-                frameVertex->setId( index++ );
-                frameVertex->setFixed( false );
-                frameVertex->setEstimate( leftFrame->se3Pose() );
+                auto leftFrame = stereoFrame->leftFrame();
 
-                framesMap[ stereoFrame ] = frameVertex;
+                if ( leftFrame ) {
 
-                optimizer.addVertex( frameVertex.get() );
+                    auto frameVertex = std::shared_ptr< g2o::VertexSE3Expmap >( new g2o::VertexSE3Expmap() );
+                    frameVertex->setId( index++ );
+                    frameVertex->setFixed( fixed );
 
-                auto framePoints = leftFrame->framePoints();
+                    if ( fixed )
+                        fixed = false;
 
-                for ( auto &j : framePoints ) {
+                    frameVertex->setEstimate( leftFrame->se3Pose() );
 
-                    if ( j ) {
+                    framesMap[ stereoFrame ] = frameVertex;
 
-                        auto mapPoint = j->mapPoint();
+                    optimizer.addVertex( frameVertex.get() );
 
-                        if ( mapPoint ) {
+                    auto framePoints = leftFrame->framePoints();
 
-                            std::shared_ptr< g2o::VertexSBAPointXYZ > pointVertex;
+                    for ( auto &j : framePoints ) {
 
-                            auto it = pointsMap.find( mapPoint );
+                        if ( j ) {
 
-                            if ( it == pointsMap.end() ) {
+                            auto mapPoint = j->mapPoint();
 
-                                pointVertex = std::shared_ptr< g2o::VertexSBAPointXYZ >( new g2o::VertexSBAPointXYZ() );
-                                pointVertex->setId( index++ );
-                                pointVertex->setMarginalized( true );
-                                pointVertex->setEstimate( mapPoint->eigenPoint() );
+                            if ( mapPoint ) {
 
-                                pointsMap[ mapPoint ] = pointVertex;
+                                std::shared_ptr< g2o::VertexSBAPointXYZ > pointVertex;
 
-                                optimizer.addVertex( pointVertex.get() );
+                                auto it = pointsMap.find( mapPoint );
 
-                            }
-                            else
-                                pointVertex = it->second;
+                                if ( it == pointsMap.end() ) {
 
-                            auto projectEdge = std::shared_ptr< g2o::EdgeSE3ProjectXYZ >( new g2o::EdgeSE3ProjectXYZ() );
-                            projectEdges.push_back( projectEdge );
+                                    pointVertex = std::shared_ptr< g2o::VertexSBAPointXYZ >( new g2o::VertexSBAPointXYZ() );
+                                    pointVertex->setId( index++ );
+                                    pointVertex->setMarginalized( true );
+                                    pointVertex->setEstimate( mapPoint->eigenPoint() );
 
-                            projectEdge->setVertex( 0, pointVertex.get() );
-                            projectEdge->setVertex( 1, frameVertex.get() );
-                            projectEdge->setMeasurement( j->eigenPoint() );
-                            projectEdge->setInformation( Eigen::Matrix2d::Identity() );
+                                    pointsMap[ mapPoint ] = pointVertex;
 
-                            projectEdge->fx = leftFrame->fx();
-                            projectEdge->fy = leftFrame->fy();
-                            projectEdge->cx = leftFrame->cx();
-                            projectEdge->cy = leftFrame->cy();
+                                    optimizer.addVertex( pointVertex.get() );
 
-                            optimizer.addEdge( projectEdge.get() );
+                                }
+                                else
+                                    pointVertex = it->second;
 
-                            if ( j->stereoPoint() ) {
+                                auto projectEdge = std::shared_ptr< g2o::EdgeSE3ProjectXYZ >( new g2o::EdgeSE3ProjectXYZ() );
+                                projectEdges.push_back( projectEdge );
 
-                                auto stereoEdge = std::shared_ptr< g2o::EdgeStereoSE3ProjectXYZ >( new g2o::EdgeStereoSE3ProjectXYZ() );
-                                stereoEdges.push_back( stereoEdge );
+                                projectEdge->setVertex( 0, pointVertex.get() );
+                                projectEdge->setVertex( 1, frameVertex.get() );
+                                projectEdge->setMeasurement( j->eigenPoint() );
+                                projectEdge->setInformation( Eigen::Matrix2d::Identity() );
 
-                                stereoEdge->setVertex( 0, pointVertex.get() );
-                                stereoEdge->setVertex( 1, frameVertex.get() );
-                                stereoEdge->setMeasurement( j->eigenStereoPoint() );
-                                stereoEdge->setInformation( Eigen::Matrix3d::Identity() );
+                                projectEdge->fx = leftFrame->fx();
+                                projectEdge->fy = leftFrame->fy();
+                                projectEdge->cx = leftFrame->cx();
+                                projectEdge->cy = leftFrame->cy();
 
-                                stereoEdge->fx = leftFrame->fx();
-                                stereoEdge->fy = leftFrame->fy();
-                                stereoEdge->cx = leftFrame->cx();
-                                stereoEdge->cy = leftFrame->cy();
-                                stereoEdge->bf = i->bf();
+                                optimizer.addEdge( projectEdge.get() );
 
-                                optimizer.addEdge( stereoEdge.get() );
+                                if ( j->stereoPoint() ) {
+
+                                    auto stereoEdge = std::shared_ptr< g2o::EdgeStereoSE3ProjectXYZ >( new g2o::EdgeStereoSE3ProjectXYZ() );
+                                    stereoEdges.push_back( stereoEdge );
+
+                                    stereoEdge->setVertex( 0, pointVertex.get() );
+                                    stereoEdge->setVertex( 1, frameVertex.get() );
+                                    stereoEdge->setMeasurement( j->eigenStereoPoint() );
+                                    stereoEdge->setInformation( Eigen::Matrix3d::Identity() );
+
+                                    stereoEdge->fx = leftFrame->fx();
+                                    stereoEdge->fy = leftFrame->fy();
+                                    stereoEdge->cx = leftFrame->cx();
+                                    stereoEdge->cy = leftFrame->cy();
+                                    stereoEdge->bf = i->bf();
+
+                                    optimizer.addEdge( stereoEdge.get() );
+
+                                }
 
                             }
 
@@ -173,30 +213,30 @@ void Optimizer::adjust( std::list< FramePtr > &frames )
 
         }
 
-    }
+        optimizer.initializeOptimization();
+        optimizer.optimize( m_optimizationsCount );
 
-    optimizer.initializeOptimization();
-    optimizer.optimize( m_optimizationsCount );
+        for ( auto &i : pointsMap ) {
 
-    for ( auto &i : pointsMap ) {
+            if ( i.first && i.second ) {
+                auto estimate = i.second->estimate();
+                i.first->setEigenPoint( estimate );
 
-        if ( i.first && i.second ) {
-            auto estimate = i.second->estimate();
-            i.first->setEigenPoint( estimate );
+            }
+
+        }
+
+        for ( auto &i : framesMap ) {
+
+            if ( i.first && i.second ) {
+                auto estimate = i.second->estimate();
+                i.first->setLeftSe3Pose( estimate );
+
+            }
 
         }
 
     }
-
-    for ( auto &i : framesMap ) {
-
-        if ( i.first && i.second ) {
-            auto estimate = i.second->estimate();
-            i.first->setLeftSe3Pose( estimate );
-
-        }
-
-    }*/
 
 }
 

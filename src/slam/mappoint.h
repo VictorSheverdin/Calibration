@@ -4,7 +4,7 @@
 
 #include <Eigen/Core>
 
-#include "colorpoint.h"
+#include "src/common/colorpoint.h"
 
 namespace slam {
 

@@ -2,11 +2,6 @@
 
 #include "mainwindow.h"
 
-#include "slamdocument.h"
-
-#include "slamdialog.h"
-#include "choicedialog.h"
-
 MainWindow::MainWindow( QWidget *parent )
     : DocumentMainWindow( parent )
 {
@@ -19,56 +14,19 @@ void MainWindow::initialize()
     setupMenus();
     setupToolBars();
 
-    addImagesDocument();
+    addSlamDialog();
 }
 
 
-void MainWindow::choiceDialog()
+void MainWindow::addSlamDialog()
 {
-     ChoiceDialog dlg( this );
-
-     if ( dlg.exec() == DialogBase::Accepted ) {
-         switch ( dlg.selectedType() ) {
-
-         case ChoiceDialog::IMAGES:
-             addImageSlamDialog();
-             break;
-
-         case ChoiceDialog::CAMERA:
-             addCameraSlamDialog();
-             break;
-
-         default:
-             break;
-
-         }
-
-     }
-
-}
-
-void MainWindow::addImageSlamDialog()
-{
-    ImagesDialog dialog( this );
+/*    CamerasDialog dialog( this );
 
     if ( dialog.exec() == DialogBase::Accepted )
-        addImagesDocument();
+        addCamerasDocument();*/
 }
 
-void MainWindow::addCameraSlamDialog()
-{
-    CamerasDialog dialog( this );
-
-    if ( dialog.exec() == DialogBase::Accepted )
-        addCamerasDocument();
-}
-
-void MainWindow::addImagesDocument()
-{
-    addDocument( new ImageSlamDocument( this ) );
-}
-
-void MainWindow::addCamerasDocument()
+void MainWindow::addSlamDocument()
 {
 }
 
@@ -79,7 +37,7 @@ void MainWindow::setupActions()
     m_exitAction = new QAction( QIcon( ":/resources/images/power.ico" ), tr( "Exit" ), this );
     m_aboutAction = new QAction( QIcon( ":/resources/images/help.ico" ), tr( "About" ), this );
 
-    connect( m_newSlamDocumentAction, &QAction::triggered, this, &MainWindow::choiceDialog );
+    connect( m_newSlamDocumentAction, &QAction::triggered, this, &MainWindow::addSlamDialog );
     connect( m_exitAction, &QAction::triggered, this, &MainWindow::close );
 }
 

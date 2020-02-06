@@ -132,8 +132,9 @@ void MonoFrame::setSe3Pose( const g2o::SE3Quat &pose )
 // ProcessedFrame
 DaisyProcessor ProcessedFrame::m_descriptorProcessor;
 GFTTProcessor ProcessedFrame::m_keypointProcessor;
+GradientProcessor ProcessedFrame::m_gradientProcessor;
 
-const double ProcessedFrame::m_cameraDistanceMultiplier = 2.0;
+const double ProcessedFrame::m_cameraDistanceMultiplier = 3.0;
 const double ProcessedFrame::m_minPointsDistance = 2.0;
 
 ProcessedFrame::ProcessedFrame( const MapPtr &parentMap )
@@ -217,6 +218,11 @@ void ProcessedFrame::extractKeyPoints()
     for ( size_t i = 0; i < m_keyPoints.size(); ++i )
         m_colors.push_back( m_image.at< cv::Vec3b >( m_keyPoints[ i ].pt ) );
 
+}
+
+void ProcessedFrame::extractGradientPoints()
+{
+    m_gradientProcessor.extractPoints( m_image, &m_gradientPoints );
 }
 
 void ProcessedFrame::extractDescriptors()
@@ -440,14 +446,16 @@ size_t ProcessedFrame::keyPointsCount() const
     return m_keyPoints.size();
 }
 
-CvImage ProcessedFrame::drawKeyPoints() const
+CvImage ProcessedFrame::drawPoints() const
 {
     if ( !m_image.empty() ) {
 
-        int radius = std::min( m_image.width(), m_image.height() ) / 500.0;
+        int radius = std::max( std::min( m_image.width(), m_image.height() ) / 500.0, 1.0 );
+        int smallerRadius = std::max( std::min( m_image.width(), m_image.height() ) / 1000.0, 1.0 );
 
         CvImage ret;
         m_image.copyTo( ret );
+        drawFeaturePoints( &ret, m_gradientPoints, smallerRadius, cv::Scalar( 0, 255, 0, 255 ) );
         drawFeaturePoints( &ret, m_keyPoints, radius );
 
         drawLabel( &ret, "Keypoints cout: " + std::to_string( m_keyPoints.size() ), ret.height() / 70 );
@@ -750,7 +758,8 @@ void ProcessedDoubleFrameBase::initialize()
 }
 
 //StereoFrameBase
-StereoFrameBase::StereoFrameBase()
+StereoFrameBase::StereoFrameBase( const MapPtr &parentMap )
+    : m_parentMap( parentMap )
 {
 }
 
@@ -804,10 +813,10 @@ void StereoFrameBase::setLeftSe3Pose( g2o::SE3Quat &pose )
 
 // ProcessedStereoFrame
 const float ProcessedStereoFrame::m_maxYParallax = 2.0;
-const double ProcessedStereoFrame::m_minXDistasnce = 3.0;
+const double ProcessedStereoFrame::m_minXDistasnce = 1.0;
 
 ProcessedStereoFrame::ProcessedStereoFrame( const MapPtr &parentMap )
-    : m_parentMap( parentMap )
+    : StereoFrameBase( parentMap )
 {
 }
 
@@ -958,7 +967,7 @@ int ProcessedStereoFrame::stereoPointsCount() const
     return stereoPoints().size();
 }
 
-CvImage ProcessedStereoFrame::drawKeyPoints() const
+CvImage ProcessedStereoFrame::drawPoints() const
 {
     CvImage leftImage;
     CvImage rightImage;
@@ -967,15 +976,15 @@ CvImage ProcessedStereoFrame::drawKeyPoints() const
     auto rightFeatureFrame = this->rightFrame();
 
     if ( leftFeatureFrame )
-        leftImage = leftFeatureFrame->drawKeyPoints();
+        leftImage = leftFeatureFrame->drawPoints();
 
     if ( rightFeatureFrame )
-        rightImage = rightFeatureFrame->drawKeyPoints();
+        rightImage = rightFeatureFrame->drawPoints();
 
     return stackImages( leftImage, rightImage );
 }
 
-CvImage ProcessedStereoFrame::drawStereoPoints() const
+CvImage ProcessedStereoFrame::drawStereoCorrespondences() const
 {
     CvImage ret;
 
@@ -1201,6 +1210,19 @@ void ProcessedStereoFrame::extractKeyPoints()
 
 }
 
+void ProcessedStereoFrame::extractGradientPoints()
+{
+    auto leftFrame = this->leftFrame();
+    auto rightFrame = this->rightFrame();
+
+    if ( leftFrame )
+        leftFrame->extractGradientPoints();
+
+    if ( rightFrame )
+        rightFrame->extractGradientPoints();
+
+}
+
 void ProcessedStereoFrame::extractDescriptors()
 {
     auto leftFrame = this->leftFrame();
@@ -1217,6 +1239,56 @@ void ProcessedStereoFrame::extractDescriptors()
 size_t ProcessedStereoFrame::leftKeyPointsCount() const
 {
     return leftFrame()->keyPointsCount();
+}
+
+// DenseFrameBase
+BMStereoProcessor DenseFrameBase::m_stereoProcessor;
+
+DenseFrameBase::DenseFrameBase()
+{
+    initialize();
+}
+
+DenseFrameBase::DenseFrameBase( const cv::Mat &disparity )
+{
+    initialize();
+
+    setDisparity( disparity );
+}
+
+void DenseFrameBase::initialize()
+{
+}
+
+void DenseFrameBase::setDisparity( const cv::Mat &disparity )
+{
+    m_disparity = disparity;
+}
+
+const cv::Mat &DenseFrameBase::disparity() const
+{
+    return m_disparity;
+}
+
+// ProcessedDenseFrame
+ProcessedDenseFrame::ProcessedDenseFrame( const MapPtr &parentMap )
+    : ProcessedStereoFrame( parentMap )
+{
+}
+
+ProcessedDenseFrame::FramePtr ProcessedDenseFrame::create( const MapPtr &parentMap )
+{
+    return FramePtr( new ProcessedDenseFrame( parentMap ) );
+}
+
+void ProcessedDenseFrame::processDisparity()
+{
+    auto leftFrame = this->leftFrame();
+    auto rightFrame = this->rightFrame();
+
+    if ( leftFrame && rightFrame )
+        setDisparity( m_stereoProcessor.processDisparity( leftFrame->image(), rightFrame->image() ) );
+
 }
 
 // AdjacentFrame
@@ -1449,7 +1521,8 @@ void AdjacentFrame::createFramePoints( const size_t count )
 }
 
 // StereoFrame
-StereoFrame::StereoFrame()
+StereoFrame::StereoFrame( const MapPtr &parentMap )
+    : StereoFrameBase( parentMap )
 {
     initialize();
 }
@@ -1459,9 +1532,9 @@ void StereoFrame::initialize()
     setFrames( Frame::create(), Frame::create() );
 }
 
-StereoFrame::StereoFramePtr StereoFrame::create()
+StereoFrame::StereoFramePtr StereoFrame::create( const MapPtr &parentMap )
 {
-    return StereoFramePtr( new StereoFrame() );
+    return StereoFramePtr( new StereoFrame( parentMap ) );
 }
 
 void StereoFrame::setFrames( const FramePtr &leftFrame, const FramePtr &rightFrame )
@@ -1513,6 +1586,17 @@ void StereoFrame::replaceAndClean( const ProcessedStereoFramePtr &frame )
 
     }
 
+}
+
+// DenseFrame
+DenseFrame::DenseFrame( const MapPtr &parentMap )
+    : StereoFrame( parentMap )
+{
+}
+
+DenseFrame::FramePtr DenseFrame::create( const MapPtr &parentMap )
+{
+    return FramePtr( new DenseFrame( parentMap ) );
 }
 
 }

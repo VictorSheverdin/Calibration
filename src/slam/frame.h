@@ -8,6 +8,7 @@
 
 #include "src/common/projectionmatrix.h"
 #include "src/common/featureprocessor.h"
+#include "src/common/stereoprocessor.h"
 
 #include <g2o/types/slam3d/se3quat.h>
 
@@ -82,6 +83,7 @@ public:
 
     void load( const CvImage &image );
     void extractKeyPoints();
+    void extractGradientPoints();
     void extractDescriptors();
 
     const CvImage image() const;
@@ -96,7 +98,7 @@ public:
     const std::vector< cv::KeyPoint > &keyPoints() const;
     size_t keyPointsCount() const;
 
-    CvImage drawKeyPoints() const;
+    CvImage drawPoints() const;
     CvImage drawTracks() const;
 
     static void setMaxFeatures( const int value );
@@ -126,10 +128,13 @@ protected:
     std::vector< cv::Scalar > m_colors;
     cv::Mat m_descriptors;
 
+    std::vector< cv::Point2f > m_gradientPoints;
+
     std::map< size_t, ProcessedPointPtr > m_points;
 
     static GFTTProcessor m_keypointProcessor;
     static DaisyProcessor m_descriptorProcessor;
+    static GradientProcessor m_gradientProcessor;
 
     static const double m_cameraDistanceMultiplier;
     static const double m_minPointsDistance;
@@ -215,6 +220,8 @@ private:
 class StereoFrameBase : public DoubleFrame
 {
 public:
+    using MapPtr = std::shared_ptr< Map >;
+
     using FramePtr = std::shared_ptr< StereoFrameBase >;
 
     void setFrames( const MonoFramePtr &leftFrame, const MonoFramePtr &rightFrame );
@@ -230,7 +237,11 @@ public:
     void setLeftSe3Pose( g2o::SE3Quat &pose );
 
 protected:
-    StereoFrameBase();
+    using MapPtrImpl = std::weak_ptr< Map >;
+
+    StereoFrameBase( const MapPtr &parentMap );
+
+    MapPtrImpl m_parentMap;
 
 private:
 };
@@ -238,8 +249,6 @@ private:
 class ProcessedStereoFrame : public StereoFrameBase, public ProcessedDoubleFrameBase
 {
 public:
-
-    using MapPtr = std::shared_ptr< Map >;
     using FramePtr = std::shared_ptr< ProcessedStereoFrame >;
 
     using MapPointPtr = std::shared_ptr< MapPoint >;
@@ -258,8 +267,8 @@ public:
 
     void clearImages();
 
-    CvImage drawKeyPoints() const;
-    CvImage drawStereoPoints() const;
+    CvImage drawPoints() const;
+    CvImage drawStereoCorrespondences() const;
     CvImage drawTracks() const;
 
     std::vector< StereoPoint > stereoPoints() const;
@@ -272,21 +281,50 @@ public:
     void cleanMapPoints();
 
     void extractKeyPoints();
+    void extractGradientPoints();
     void extractDescriptors();
 
     size_t leftKeyPointsCount() const;
 
 protected:
-    using MapPtrImpl = std::weak_ptr< Map >;
-
     ProcessedStereoFrame( const MapPtr &parentMap );
-
-    MapPtrImpl m_parentMap;
 
     static const float m_maxYParallax;
 
     static const double m_minXDistasnce;
 
+};
+
+class DenseFrameBase
+{
+public:
+    DenseFrameBase();
+    DenseFrameBase( const cv::Mat &disparity );
+
+    void setDisparity( const cv::Mat &disparity );
+    const cv::Mat &disparity() const;
+
+protected:
+    cv::Mat m_disparity;
+
+    static BMStereoProcessor m_stereoProcessor;
+
+private:
+    void initialize();
+
+};
+
+class ProcessedDenseFrame : public ProcessedStereoFrame, public DenseFrameBase
+{
+public:
+    using FramePtr = std::shared_ptr< ProcessedDenseFrame >;
+
+    static FramePtr create( const MapPtr &parentMap );
+
+    void processDisparity();
+
+protected:
+    ProcessedDenseFrame( const MapPtr &parentMap );
 };
 
 class AdjacentFrame : public DoubleFrame, public ProcessedDoubleFrameBase
@@ -334,7 +372,7 @@ public:
     using StereoFramePtr = std::shared_ptr< StereoFrame >;
     using ProcessedStereoFramePtr = std::shared_ptr< ProcessedStereoFrame >;
 
-    static StereoFramePtr create();
+    static StereoFramePtr create( const MapPtr &parentMap );
 
     void setFrames( const FramePtr &leftFrame, const FramePtr &rightFrame );
 
@@ -345,11 +383,22 @@ public:
     void replaceAndClean( const ProcessedStereoFramePtr &frame );
 
 protected:
-    StereoFrame();
+    StereoFrame( const MapPtr &parentMap );
 
 private:
     void initialize();
 
+};
+
+class DenseFrame : public StereoFrame, public DenseFrameBase
+{
+public:
+    using FramePtr = std::shared_ptr< DenseFrame >;
+
+    static FramePtr create( const MapPtr &parentMap );
+
+protected:
+    DenseFrame( const MapPtr &parentMap );
 };
 
 }

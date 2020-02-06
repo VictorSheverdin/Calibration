@@ -23,7 +23,7 @@ public:
 
     void localAdjustment( slam::Map *map );
 
-    void adjustProcessed( slam::Map *map, const int count );
+    void adjustProcessed( slam::Map *map );
     void adjustStored( slam::Map *map, const int count );
 
     void adjust( std::list< FramePtr > &frames );

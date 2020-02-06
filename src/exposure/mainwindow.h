@@ -12,10 +12,7 @@ public:
     explicit MainWindow( QWidget *parent = nullptr );
 
 public slots:
-    void choiceDialog();
-
-    void addImageSlamDialog();
-    void addCameraSlamDialog();
+    void addSlamDialog();
 
 protected:
     QPointer< QAction > m_newSlamDocumentAction;
@@ -26,8 +23,7 @@ protected:
 
     QPointer< QToolBar > m_toolBar;
 
-    void addImagesDocument();
-    void addCamerasDocument();
+    void addSlamDocument();
 
     void setupActions();
     void setupMenus();

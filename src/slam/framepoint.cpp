@@ -124,6 +124,28 @@ namespace slam {
         return ret;
     }
 
+    size_t MonoPoint::prevTrackLenght() const
+    {
+        size_t ret = 1;
+
+        for ( auto i = prevPoint(); i; i = i->prevPoint() )
+            ++ret;
+
+        return ret;
+
+    }
+
+    size_t MonoPoint::nextTrackLenght() const
+    {
+        size_t ret = 1;
+
+        for ( auto i = nextPoint(); i; i = i->nextPoint() )
+            ++ret;
+
+        return ret;
+
+    }
+
     Eigen::Matrix< double, 2, 1 > MonoPoint::eigenPoint() const
     {
         Eigen::Matrix< double, 2, 1 > ret;

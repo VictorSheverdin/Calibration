@@ -2,6 +2,7 @@
 
 #include <list>
 #include <memory>
+#include <thread>
 
 #include "src/common/calibrationdatabase.h"
 
@@ -50,6 +51,7 @@ public:
     void movePrincipalPoint( const cv::Vec2f &value );
 
     void adjust( const int frames );
+    void localAdjustment();
 
     bool valid() const;
 
@@ -77,6 +79,8 @@ protected:
     static const int m_trackFramePointsCount = 1 << 7;
 
     static const double m_minTrackInliersRatio;
+
+    std::mutex m_mutex;
 
 private:
     void initialize();

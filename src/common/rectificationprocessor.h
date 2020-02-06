@@ -37,7 +37,9 @@ public:
     StereoRectificationProcessor( const std::string &fileName );
 
     void setCalibrationData( const StereoCalibrationDataShort &calibrationData );
-    void loadFile( const std::string &fileName );
+    const StereoCalibrationDataShort &calibration() const;
+
+    bool loadYaml( const std::string &fileName );
 
     bool rectifyLeft( const CvImage &image, CvImage *result );
     bool rectifyRight( const CvImage &image , CvImage *result );
@@ -49,8 +51,6 @@ public:
     bool crop( const CvImage &leftImage, const CvImage &rightImage, CvImage *leftResult, CvImage *rightResult );
 
     bool isValid() const;
-
-    const StereoCalibrationDataShort &calibration() const;
 
 protected:
     StereoCalibrationDataShort m_calibrationData;

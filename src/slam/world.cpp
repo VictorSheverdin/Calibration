@@ -46,6 +46,11 @@ void World::adjust( const int frames )
     return m_maps.back()->adjust( frames );
 }
 
+void World::localAdjustment()
+{
+    return m_maps.back()->localAdjustment();
+}
+
 void World::multiplicateCameraMatrix( const double value )
 {
     m_maps.back()->multiplicateCameraMatrix( value );

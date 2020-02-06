@@ -1,7 +1,7 @@
 #pragma once
 
 #include "src/common/image.h"
-#include "colorpoint.h"
+#include "src/common/colorpoint.h"
 
 #include <Eigen/Core>
 
@@ -50,6 +50,9 @@ public:
     MapPointPtr mapPoint() const;
 
     size_t connectedPointsCount() const;
+
+    size_t prevTrackLenght() const;
+    size_t nextTrackLenght() const;
 
     void drawTrack( CvImage *target , const cv::Scalar &color = cv::Scalar( 0, 255, 0, 100 ) ) const;
 

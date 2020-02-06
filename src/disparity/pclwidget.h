@@ -1,10 +1,10 @@
 #pragma once
 
-#include <QVTKWidget.h>
+#include <QVTKOpenGLWidget.h>
 #include <vtkRenderWindow.h>
 #include <pcl/visualization/pcl_visualizer.h>
 
-class PCLViewer : public QVTKWidget
+class PCLViewer : public QVTKOpenGLWidget
 {
     Q_OBJECT
 
@@ -17,11 +17,11 @@ public slots:
     void update();
 
 protected:
-    std::unique_ptr< pcl::visualization::PCLVisualizer > m_pclViewer;
+    vtkSmartPointer< vtkRenderer > m_renderer;
+
+    pcl::visualization::PCLVisualizer::Ptr m_pclViewer;
 
 private:
     void initialize();
-
-    static void pickingEventHandler( const pcl::visualization::PointPickingEvent& event, void* viewer_void );
 
 };

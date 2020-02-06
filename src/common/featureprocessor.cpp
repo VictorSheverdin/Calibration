@@ -26,6 +26,42 @@ void DescriptorProcessor::extractDescriptors( const CvImage &image, std::vector<
 
 }
 
+// GradientProcessor
+GradientProcessor::GradientProcessor()
+{
+}
+
+void GradientProcessor::extractPoints( const CvImage &image, std::vector< cv::Point2f > *points )
+{
+    if ( !image.empty() ) {
+
+        cv::Mat gradX, gradY;
+
+        cv::Mat gray;
+
+        cv::cvtColor( image, gray, cv::COLOR_BGR2GRAY );
+
+        cv::Sobel( gray, gradX, CV_16S, 1, 0 );
+        cv::Sobel( gray, gradY, CV_16S, 0, 1 );
+
+        cv::convertScaleAbs( gradX, gradX );
+        cv::convertScaleAbs( gradY, gradY );
+
+        cv::Mat grad;
+
+        cv::addWeighted( gradX, 0.5, gradY, 0.5, 0, grad );
+
+        points->clear();
+
+        for ( auto u = 0; u < grad.rows; ++u )
+            for ( auto v = 0; v < grad.cols; ++v )
+                if ( grad.at< int8_t >( u, v ) > m_threshold )
+                    points->push_back( cv::Point2f( v, u ) );
+
+    }
+
+}
+
 // GFTTProcessor
 GFTTProcessor::GFTTProcessor()
 {

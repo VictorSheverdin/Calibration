@@ -87,14 +87,28 @@ class StereoDirWidget : public QWidget
     Q_OBJECT
 
 public:
-    explicit StereoDirWidget( QWidget* parent = nullptr );
+    explicit StereoDirWidget( QWidget *parent = nullptr );
+    explicit StereoDirWidget( const QString &leftLabel, const QString &rightLabel, QWidget *parent = nullptr );
 
+    void setLeftLabel( const QString &value );
+    void setRightLabel( const QString &value );
+    void setLabel( const QString &leftLabel, const QString &rightLabel );
+    QString leftLabel() const;
+    QString rightLabel() const;
+
+    void setLeftDir( const QString &value );
+    void setRightDir( const QString &value );
+    void setDir( const QString &leftPath, const QString &rightPath );
     QString leftDir() const;
     QString rightDir() const;
 
+public slots:
+    void choiceLeftDirDialog();
+    void choiceRightDirDialog();
+
 protected:
-    QPointer< FolderLine > m_leftFolderWidget;
-    QPointer< FolderLine > m_rightFolderWidget;
+    FileLineCollection m_leftCollection;
+    FileLineCollection m_rightCollection;
 
 private:
     void initialize();

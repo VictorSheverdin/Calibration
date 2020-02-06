@@ -152,33 +152,113 @@ void StereoFilesListDialog::onAccept()
 
 }
 
-// StereoDirsWidget
-StereoDirWidget::StereoDirWidget( QWidget* parent )
+// StereoDirWidget
+StereoDirWidget::StereoDirWidget( QWidget *parent )
     : QWidget( parent )
 {
     initialize();
 }
 
+StereoDirWidget::StereoDirWidget( const QString &leftLabel, const QString &rightLabel, QWidget *parent )
+    : QWidget( parent )
+{
+    initialize();
+
+    setLabel( leftLabel, rightLabel );
+}
+
 void StereoDirWidget::initialize()
 {
-    auto layout = new QVBoxLayout( this );
+    setContentsMargins( QMargins() );
 
-    m_leftFolderWidget = new FolderLine( tr( "Left folder:" ), this );
-    layout->addWidget( m_leftFolderWidget );
+    auto layout = new QGridLayout( this );
 
-    m_rightFolderWidget = new FolderLine( tr( "Right folder:" ), this );
-    layout->addWidget( m_rightFolderWidget );
+    layout->setContentsMargins( QMargins() );
 
+    m_leftCollection.initialize( this );
+    m_rightCollection.initialize( this );
+
+    layout->addWidget( m_leftCollection.m_label, 0, 0 );
+    layout->addWidget( m_leftCollection.m_path, 0, 1 );
+    layout->addWidget( m_leftCollection.m_button, 0, 2 );
+
+    layout->addWidget( m_rightCollection.m_label, 1, 0 );
+    layout->addWidget( m_rightCollection.m_path, 1, 1 );
+    layout->addWidget( m_rightCollection.m_button, 1, 2 );
+
+    connect( m_leftCollection.m_button, &QPushButton::clicked, this, &StereoDirWidget::choiceLeftDirDialog );
+    connect( m_rightCollection.m_button, &QPushButton::clicked, this, &StereoDirWidget::choiceRightDirDialog );
+
+}
+
+void StereoDirWidget::setLeftLabel( const QString &value )
+{
+    m_leftCollection.setLabel( value );
+}
+
+void StereoDirWidget::setRightLabel( const QString &value )
+{
+    m_rightCollection.setLabel( value );
+}
+
+void StereoDirWidget::setLabel( const QString &leftLabel, const QString &rightLabel )
+{
+    setLeftLabel( leftLabel );
+    setRightLabel( rightLabel );
+}
+
+QString StereoDirWidget::leftLabel() const
+{
+    return m_leftCollection.label();
+}
+
+QString StereoDirWidget::rightLabel() const
+{
+    return m_rightCollection.label();
+}
+
+void StereoDirWidget::setLeftDir( const QString &value )
+{
+    m_leftCollection.setPath( value );
+}
+
+void StereoDirWidget::setRightDir( const QString &value )
+{
+    m_rightCollection.setPath( value );
+}
+
+void StereoDirWidget::setDir( const QString &leftPath, const QString &rightPath )
+{
+    setLeftDir( leftPath );
+    setRightDir( rightPath );
 }
 
 QString StereoDirWidget::leftDir() const
 {
-    return m_leftFolderWidget->path();
+    return m_leftCollection.path();
 }
 
 QString StereoDirWidget::rightDir() const
 {
-    return m_rightFolderWidget->path();
+    return m_rightCollection.path();
+}
+
+void StereoDirWidget::choiceLeftDirDialog()
+{
+    auto dir = QFileDialog::getExistingDirectory( this, tr( "Open Directory" ), QString(), QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks );
+
+    if ( !dir.isEmpty() )
+        setLeftDir( dir );
+
+}
+
+void StereoDirWidget::choiceRightDirDialog()
+{
+    auto dir = QFileDialog::getExistingDirectory( this, tr( "Open Directory" ), QString(), QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks );
+
+    if ( !dir.isEmpty() )
+        setRightDir( dir );
+
 }
 
 // StereoDirDialog

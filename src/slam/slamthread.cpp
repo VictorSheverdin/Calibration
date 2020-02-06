@@ -37,11 +37,24 @@ void SlamThread::initialize()
 
 void SlamThread::run()
 {
-    auto m_optimizationThread5s = std::thread( [ & ] {
+    auto localOptimizationThread = std::thread( [ & ] {
 
         while ( true ) {
 
-            const int frames = 200;
+            m_system->localAdjustment();
+            std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
+
+        }
+
+    } );
+
+    localOptimizationThread.detach();
+
+    auto optimizationThread5s = std::thread( [ & ] {
+
+        while ( true ) {
+
+            const int frames = 100;
 
             m_system->adjust( frames );
             std::this_thread::sleep_for( std::chrono::seconds( 5 ) );
@@ -50,7 +63,7 @@ void SlamThread::run()
 
     } );
 
-    m_optimizationThread5s.detach();
+    optimizationThread5s.detach();
 
     auto leftPath = m_path + "left/";
     auto rightPath = m_path + "right/";
@@ -137,7 +150,7 @@ CvImage SlamThread::pointsImage() const
             auto processedFrame = std::dynamic_pointer_cast< slam::ProcessedStereoFrame >( m_system->maps().back()->frames().back() );
 
             if ( processedFrame )
-                return processedFrame->drawKeyPoints();
+                return processedFrame->drawPoints();
 
         }
 
@@ -175,7 +188,7 @@ CvImage SlamThread::stereoImage() const
             auto processedFrame = std::dynamic_pointer_cast< slam::ProcessedStereoFrame >( *(++m_system->maps().back()->frames().rbegin()) );
 
             if ( processedFrame )
-                return processedFrame->drawStereoPoints();
+                return processedFrame->drawStereoCorrespondences();
 
         }
 

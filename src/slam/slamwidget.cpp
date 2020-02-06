@@ -287,6 +287,7 @@ SlamWidget::SlamWidget( QWidget* parent )
 SlamWidget::~SlamWidget()
 {
     m_slamThread->terminate();
+    m_slamThread->wait();
 }
 
 void SlamWidget::initialize()

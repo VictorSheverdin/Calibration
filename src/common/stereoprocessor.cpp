@@ -4,8 +4,6 @@
 
 #include "src/common/functions.h"
 
-#include "src/libelas/StereoEfficientLargeScale.h"
-
 const double MISSING_Z = 10000.;
 
 // DisparityProcessorBase
@@ -608,107 +606,14 @@ cv::Mat CSBPDisparityProcessor::processDisparity( const CvImage &left, const CvI
 
 }
 
-// ElasDisparityProcessor
-ElasDisparityProcessor::ElasDisparityProcessor()
-    : DisparityProcessorBase()
-{
-    initialize();
-}
-
-void ElasDisparityProcessor::initialize()
-{
-    m_matcher = cv::Ptr< StereoEfficientLargeScale >( new StereoEfficientLargeScale() );
-}
-
-cv::Mat ElasDisparityProcessor::processDisparity( const CvImage &left, const CvImage &right )
-{
-    cv::Mat dest;
-
-    m_matcher->operator()( left, right, dest, 200 );
-
-    return dest;
-
-}
-
-// StereoResult
-StereoResult::StereoResult()
-{
-    initialize();
-}
-
-void StereoResult::initialize()
-{
-}
-
-void StereoResult::setPreviewImage( const CvImage &value )
-{
-    m_previewImage = value;
-}
-
-void StereoResult::setDisparity( const cv::Mat &value )
-{
-    m_disparity = value;
-    m_colorizedDisparity = colorizeDisparity( m_disparity );
-}
-
-void StereoResult::setPoints( const cv::Mat &value )
-{
-    m_points = value;
-}
-
-void StereoResult::setPointCloud( const pcl::PointCloud< pcl::PointXYZRGB >::Ptr &value )
-{
-    m_pointCloud = value;
-}
-
-const CvImage &StereoResult::previewImage() const
-{
-    return m_previewImage;
-}
-
-const cv::Mat &StereoResult::disparity() const
-{
-    return m_disparity;
-}
-
-const CvImage &StereoResult::colorizedDisparity() const
-{
-    return m_colorizedDisparity;
-}
-
-const cv::Mat &StereoResult::points() const
-{
-    return m_points;
-}
-
-pcl::PointCloud< pcl::PointXYZRGB >::Ptr StereoResult::pointCloud() const
-{
-    return m_pointCloud;
-}
-
-const std::chrono::time_point< std::chrono::system_clock > &StereoResult::time() const
-{
-    return m_frame.time();
-}
-
-void StereoResult::setFrame( const StereoFrame &frame )
-{
-    m_frame = frame;
-}
-
-const StereoFrame &StereoResult::frame() const
-{
-    return m_frame;
-}
-
 // StereoProcessor
 StereoProcessor::StereoProcessor()
 {
-    initialize();
 }
 
-void StereoProcessor::initialize()
+StereoProcessor::StereoProcessor( const std::shared_ptr< DisparityProcessorBase > &proc )
 {
+    setDisparityProcessor( proc );
 }
 
 void StereoProcessor::setCalibration( const StereoCalibrationDataShort &data )
@@ -726,14 +631,31 @@ bool StereoProcessor::loadYaml( const std::string &fileName )
     return m_calibration.loadYaml( fileName );
 }
 
-std::shared_ptr< DisparityProcessorBase > StereoProcessor::disparityProcessor() const
+const std::shared_ptr< DisparityProcessorBase > &StereoProcessor::disparityProcessor() const
 {
     return m_disparityProcessor;
 }
 
-void StereoProcessor::setDisparityProcessor(const std::shared_ptr< DisparityProcessorBase > proc )
+void StereoProcessor::setDisparityProcessor( const std::shared_ptr< DisparityProcessorBase > &proc )
 {
     m_disparityProcessor = proc;
+}
+
+cv::Mat StereoProcessor::processDisparity( const CvImage &left, const CvImage &right )
+{
+    if ( !m_disparityProcessor )
+        return cv::Mat();
+
+    return m_disparityProcessor->processDisparity( left, right );
+}
+
+cv::Mat StereoProcessor::reprojectPoints( const cv::Mat &disparity )
+{
+    cv::Mat points;
+
+    cv::reprojectImageTo3D( disparity, points, m_calibration.disparityToDepthMatrix(), true, CV_32F );
+
+    return points;
 }
 
 bool isValidPoint( const cv::Vec3f& pt )
@@ -741,103 +663,64 @@ bool isValidPoint( const cv::Vec3f& pt )
     return pt[2] != MISSING_Z && !std::isinf( pt[2] );
 }
 
-StereoResult StereoProcessor::process( const StereoFrame &frame )
+pcl::PointCloud< pcl::PointXYZRGB >::Ptr StereoProcessor::producePointCloud( const cv::Mat &points, const CvImage &leftImage )
 {
-    StereoResult ret;
+    pcl::PointCloud< pcl::PointXYZRGB >::Ptr pointCloud = pcl::PointCloud< pcl::PointXYZRGB >::Ptr( new pcl::PointCloud< pcl::PointXYZRGB > );
 
-    ret.setFrame( frame );
+    CvImage rgbLeftImage;
 
-    if ( !frame.empty() ) {
+    cv::cvtColor( leftImage, rgbLeftImage, cv::COLOR_BGR2RGB );
 
-        auto leftFrame = frame.leftFrame();
-        auto rightFrame = frame.rightFrame();
+    for (int rows = 0; rows < points.rows; ++rows) {
 
-        if ( m_calibration.isOk() ) {
+        for (int cols = 0; cols < points.cols; ++cols) {
 
-            CvImage leftRectifiedImage;
-            CvImage rightRectifiedImage;
+            cv::Point3f point = points.at< cv::Point3f >(rows, cols);
 
-            cv::remap( leftFrame, leftRectifiedImage, m_calibration.leftRMap(), m_calibration.leftDMap(), cv::INTER_LANCZOS4 );
-            cv::remap( rightFrame, rightRectifiedImage, m_calibration.rightRMap(), m_calibration.rightDMap(), cv::INTER_LANCZOS4 );
+            if ( isValidPoint( point ) ) {
 
-            CvImage leftCroppedFrame;
-            CvImage rightCroppedFrame;
+                pcl::PointXYZRGB pclPoint;
+                pclPoint.x = point.x;
+                pclPoint.y = point.y;
+                pclPoint.z = point.z;
 
-            if ( !m_calibration.leftROI().empty() && !m_calibration.rightROI().empty() ) {
-
-                auto leftCropRect = m_calibration.leftROI();
-                auto rightCropRect = m_calibration.rightROI();
-
-                auto rectWidth = std::min( leftCropRect.width, rightCropRect.width );
-                auto rectHeight = std::min( leftCropRect.height, rightCropRect.height );
-
-                leftCropRect.width = rectWidth;
-                rightCropRect.width = rectWidth;
-
-                leftCropRect.height = rectHeight;
-                rightCropRect.height = rectHeight;
-
-                cv::Rect cropRect;
-
-                cropRect.x = std::max( m_calibration.leftROI().x, m_calibration.rightROI().x );
-                cropRect.y = std::max( m_calibration.leftROI().y, m_calibration.rightROI().y );
-                cropRect.width = std::min( m_calibration.leftROI().x + m_calibration.leftROI().width, m_calibration.rightROI().x + m_calibration.rightROI().width ) - cropRect.x;
-                cropRect.height = std::min( m_calibration.leftROI().y + m_calibration.leftROI().height, m_calibration.rightROI().y + m_calibration.rightROI().height ) - cropRect.y;
-                //cropRect.width = std::min( m_calibration.leftROI().width, m_calibration.rightROI().width );
-                //cropRect.height = std::min( m_calibration.leftROI().height, m_calibration.rightROI().height );
-
-                leftCroppedFrame = leftRectifiedImage( cropRect );
-                rightCroppedFrame = rightRectifiedImage( cropRect );
+                cv::Vec3b intensity = rgbLeftImage.at< cv::Vec3b >( rows, cols );
+                pclPoint.r = intensity[0];
+                pclPoint.g = intensity[1];
+                pclPoint.b = intensity[2];
+                pointCloud->push_back( pclPoint );
 
             }
 
-            auto previewImage = stackImages( leftCroppedFrame, rightCroppedFrame );
-            drawTraceLines( previewImage, 20 );
+        }
 
-            ret.setPreviewImage( previewImage );
+    }
 
-            if ( m_disparityProcessor ) {
+    return pointCloud;
 
-                auto disparity = m_disparityProcessor->processDisparity( leftCroppedFrame, rightCroppedFrame );
+}
 
-                ret.setDisparity( disparity );
+std::vector< ColorPoint3d > StereoProcessor::producePointVector( const cv::Mat &points, const CvImage &leftImage )
+{
+    std::vector< ColorPoint3d > ret;
 
-                cv::Mat points;
+    CvImage rgbLeftImage;
 
-                cv::reprojectImageTo3D( disparity, points, m_calibration.disparityToDepthMatrix(), true, CV_32F );
+    cv::cvtColor( leftImage, rgbLeftImage, cv::COLOR_BGR2RGB );
 
-                ret.setPoints( points );
+    for (int rows = 0; rows < points.rows; ++rows) {
 
-                pcl::PointCloud< pcl::PointXYZRGB >::Ptr pointCloud = pcl::PointCloud< pcl::PointXYZRGB >::Ptr( new pcl::PointCloud< pcl::PointXYZRGB > );
+        for (int cols = 0; cols < points.cols; ++cols) {
 
-                CvImage rgbLeftImage;
+            cv::Point3f point = points.at< cv::Point3f >(rows, cols);
 
-                cv::cvtColor( leftCroppedFrame, rgbLeftImage, cv::COLOR_BGR2RGB );
+            if ( isValidPoint( point ) ) {
 
-                for (int rows = 0; rows < points.rows; ++rows) {                    
-                    for (int cols = 0; cols < points.cols; ++cols) {
+                cv::Vec3b intensity = rgbLeftImage.at< cv::Vec3b >( rows, cols );
+                cv::Scalar color( intensity[0], intensity[1], intensity[2], 255 );
+                ColorPoint3d colorPoint( point, color ) ;
 
-                        cv::Point3f point = points.at< cv::Point3f >(rows, cols);
-
-                        if ( isValidPoint( point ) ) {
-
-                            pcl::PointXYZRGB pclPoint;
-                            pclPoint.x = -point.x;
-                            pclPoint.y = -point.y;
-                            pclPoint.z = point.z;
-
-                            cv::Vec3b intensity = rgbLeftImage.at< cv::Vec3b >( rows, cols );
-                            uint32_t rgb = (static_cast<uint32_t>(intensity[0]) << 16 | static_cast<uint32_t>(intensity[1]) << 8 | static_cast<uint32_t>(intensity[2]));
-                            pclPoint.rgb = *reinterpret_cast< float* >( &rgb );
-                            pointCloud->push_back( pclPoint );
-
-                        }
-
-                    }
-
-                }
-
-                ret.setPointCloud( pointCloud );
+                ret.push_back( colorPoint );
 
             }
 
@@ -848,62 +731,16 @@ StereoResult StereoProcessor::process( const StereoFrame &frame )
     return ret;
 }
 
-// ProcessorThread
-ProcessorThread::ProcessorThread( QObject *parent )
-    : QThread( parent )
+// BMStereoProcessor
+BMStereoProcessor::BMStereoProcessor()
 {
     initialize();
 }
 
-void ProcessorThread::initialize()
+void BMStereoProcessor::initialize()
 {
+    setDisparityProcessor( std::make_shared< BMDisparityProcessor >() );
 }
 
-bool ProcessorThread::process(const StereoFrame &frame )
-{
-    bool res = false;
 
-    if ( m_processMutex.tryLock() ) {
-        if ( !isRunning() ) {
-            m_frame = frame;
-            start();
-            res = true;
-        }
-
-        m_processMutex.unlock();
-    }
-
-    return res;
-
-}
-
-void ProcessorThread::setProcessor( const std::shared_ptr< StereoProcessor > processor )
-{
-    m_processor = processor;
-}
-
-StereoResult ProcessorThread::result()
-{
-    StereoResult ret;
-
-    m_resultMutex.lock();
-    ret = m_result;
-    m_resultMutex.unlock();
-
-    return ret;
-}
-
-void ProcessorThread::run()
-{
-    if ( !m_frame.empty() ) {
-        auto result = m_processor->process( m_frame );
-        m_resultMutex.lock();
-        m_result = result;
-        m_resultMutex.unlock();
-
-        emit frameProcessed();
-
-    }
-
-}
 

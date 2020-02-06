@@ -1,9 +1,8 @@
 #pragma once
 
-#include <opencv2/opencv.hpp>
-#include <opencv2/xfeatures2d.hpp>
-
 #include "src/common/image.h"
+
+#include <opencv2/xfeatures2d.hpp>
 
 class FeatureProcessorBase
 {
@@ -35,6 +34,19 @@ public:
 protected:
     DescriptorProcessor() = default;
 
+};
+
+class GradientProcessor
+{
+public:
+    GradientProcessor();
+
+    void extractPoints( const CvImage &image, std::vector< cv::Point2f > *points );
+
+protected:
+    static const int8_t m_threshold = 50;
+
+private:
 };
 
 class GFTTProcessor : public KeyPointProcessor
@@ -92,8 +104,8 @@ class FeatureMatcher : public FeatureMatcherBase
 public:
     FeatureMatcher();
 
-    cv::Mat match( std::vector<cv::KeyPoint> &queryKeypoints, const cv::Mat &queryDescriptors,
-                std::vector<cv::KeyPoint> &trainKeypoints, const cv::Mat &trainDescriptors,
+    cv::Mat match( std::vector< cv::KeyPoint > &queryKeypoints, const cv::Mat &queryDescriptors,
+                std::vector< cv::KeyPoint > &trainKeypoints, const cv::Mat &trainDescriptors,
                 std::vector< cv::DMatch > *matches );
 
 protected:
@@ -111,8 +123,8 @@ class OpticalMatcher : public FeatureMatcherBase
 public:
     OpticalMatcher();
 
-    cv::Mat match( const CvImage &sourceImage, std::vector<cv::KeyPoint> &sourceKeypoints,
-                const CvImage &targetImage, std::vector<cv::KeyPoint> &targetKeypoints,
+    cv::Mat match( const CvImage &sourceImage, std::vector< cv::KeyPoint > &sourceKeypoints,
+                const CvImage &targetImage, std::vector< cv::KeyPoint > &targetKeypoints,
                 std::vector< cv::DMatch > *matches );
 
 protected:

@@ -327,7 +327,7 @@ void BMControlWidget::initialize()
     setSadWindowSize( 12 );
     setPrefilterSize( 15 );
     setPrefilterCap( 63 );
-    setMinDisparity( -128 );
+    setMinDisparity( 0 );
     setNumDisparities( 256 );
     setTextureThreshold( 0 );
     setUniquessRatio( 27 );
@@ -584,7 +584,7 @@ void GMControlWidget::initialize()
 
     setSadWindowSize( 12 );
     setPrefilterCap( 50 );
-    setMinDisparity( -128 );
+    setMinDisparity( 0 );
     setNumDisparities( 256 );
     setUniquessRatio( 30 );
     setSpeckleWindowSize( 20 );
