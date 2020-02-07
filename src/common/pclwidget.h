@@ -4,12 +4,12 @@
 #include <vtkRenderWindow.h>
 #include <pcl/visualization/pcl_visualizer.h>
 
-class PCLViewer : public QVTKOpenGLWidget
+class PCLWidget : public QVTKOpenGLWidget
 {
     Q_OBJECT
 
 public:
-    PCLViewer( QWidget* parent = nullptr );
+    PCLWidget( QWidget* parent = nullptr );
 
     void setPointCloud( const pcl::PointCloud< pcl::PointXYZRGB >::Ptr cloud );
 

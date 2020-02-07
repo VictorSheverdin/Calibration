@@ -213,16 +213,11 @@ private:
 
 };
 
-class StereoProcessor
+class StereoProcessorBase
 {
 public:
-    StereoProcessor();
-    StereoProcessor( const std::shared_ptr< DisparityProcessorBase > &proc );
-
-    void setCalibration( const StereoCalibrationDataShort &data );
-    const StereoCalibrationDataShort &calibration() const;
-
-    bool loadYaml( const std::string &fileName );
+    StereoProcessorBase();
+    StereoProcessorBase( const std::shared_ptr< DisparityProcessorBase > &proc );
 
     const std::shared_ptr< DisparityProcessorBase > &disparityProcessor() const;
     void setDisparityProcessor( const std::shared_ptr< DisparityProcessorBase > &proc );
@@ -230,13 +225,33 @@ public:
     cv::Mat processDisparity( const CvImage &left, const CvImage &right );
 
 protected:
-    StereoCalibrationDataShort m_calibration;
-
     std::shared_ptr< DisparityProcessorBase > m_disparityProcessor;
+
+};
+
+class StereoProcessor : public StereoProcessorBase
+{
+public:
+    StereoProcessor();
+    StereoProcessor( const std::shared_ptr< DisparityProcessorBase > &proc );
+
+    void setDisparityToDepthMatrix( const cv::Mat & mat );
+    const cv::Mat &disparityToDepthMatrix() const;
+
+    pcl::PointCloud< pcl::PointXYZRGB >::Ptr processPointCloud( const CvImage &left, const CvImage &right );
+    std::list< ColorPoint3d > processPointList( const CvImage &left, const CvImage &right );
+
+protected:
+    cv::Mat m_disparityToDepthMatrix;
 
     cv::Mat reprojectPoints( const cv::Mat &disparity );
     pcl::PointCloud< pcl::PointXYZRGB >::Ptr producePointCloud( const cv::Mat &points, const CvImage &leftImage );
-    std::vector< ColorPoint3d > producePointVector( const cv::Mat &points, const CvImage &leftImage );
+    std::list< ColorPoint3d > producePointList( const cv::Mat &points, const CvImage &leftImage );
+
+};
+
+class TriangulationProcessor
+{
 
 };
 

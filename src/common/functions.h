@@ -68,3 +68,16 @@ FeatureT getVimbaFeature( AVT::VmbAPI::CameraPtr camera, const std::string &key 
 void vimbaRunCommand( AVT::VmbAPI::VimbaSystem &system, const std::string &key );
 
 void vimbaRunCommand(AVT::VmbAPI::CameraPtr camera, const std::string &key );
+
+template < class T >
+cv::Mat point3fToMat( const cv::Point3f &point )
+{
+    return cv::Mat_< T >( 3, 1 ) << point.x, point.y, point.z;
+}
+
+template < class T >
+cv::Point3f matToPoint3f( const cv::Mat &mat )
+{
+    return cv::Point3f( mat.at< T >( 0, 0 ), mat.at< T >( 1, 0 ), mat.at< T >( 2, 0 ) );
+}
+

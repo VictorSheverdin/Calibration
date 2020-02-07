@@ -75,7 +75,10 @@ public:
     const ProjectionMatrix &leftProjectionMatrix() const;
     const ProjectionMatrix &rightProjectionMatrix() const;
 
-    const cv::Mat baselineVector() const;
+    cv::Mat baselineVector() const;
+    double baselineVectorLenght() const;
+
+    cv::Mat disparityToDepthMatrix() const;
 
     bool saveYaml( const std::string &fileName ) const;
     bool loadYaml( const std::string &fileName );

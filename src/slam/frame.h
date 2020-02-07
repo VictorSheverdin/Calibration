@@ -299,13 +299,14 @@ class DenseFrameBase
 {
 public:
     DenseFrameBase();
-    DenseFrameBase( const cv::Mat &disparity );
 
-    void setDisparity( const cv::Mat &disparity );
-    const cv::Mat &disparity() const;
+    void setPoints( const std::list< ColorPoint3d > &list );
+    const std::list< ColorPoint3d > &points() const;
+
+    static void setDisparityToDepthMatrix( const cv::Mat & mat );
 
 protected:
-    cv::Mat m_disparity;
+    std::list< ColorPoint3d > m_points;
 
     static BMStereoProcessor m_stereoProcessor;
 
@@ -321,7 +322,7 @@ public:
 
     static FramePtr create( const MapPtr &parentMap );
 
-    void processDisparity();
+    void processDenseCloud();
 
 protected:
     ProcessedDenseFrame( const MapPtr &parentMap );
@@ -394,8 +395,14 @@ class DenseFrame : public StereoFrame, public DenseFrameBase
 {
 public:
     using FramePtr = std::shared_ptr< DenseFrame >;
+    using ProcessedDenseFramePtr = std::shared_ptr< ProcessedDenseFrame >;
 
     static FramePtr create( const MapPtr &parentMap );
+
+    void replace( const ProcessedDenseFramePtr &frame );
+    void replaceAndClean( const ProcessedDenseFramePtr &frame );
+
+    std::list< ColorPoint3d > translatedPoints() const;
 
 protected:
     DenseFrame( const MapPtr &parentMap );

@@ -16,6 +16,12 @@ void SlamGeometry::addPoint( const ColorPoint3d &point )
     m_points.push_back( point );
 }
 
+void SlamGeometry::addPoints( const std::list< ColorPoint3d > &points )
+{
+    for ( auto &i : points )
+        addPoint( i );
+}
+
 const std::list< StereoCameraMatrix > &SlamGeometry::path() const
 {
     return m_path;

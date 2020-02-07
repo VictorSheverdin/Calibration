@@ -14,7 +14,7 @@
 
 class ImageWidget;
 class DisparityControlWidget;
-class PCLViewer;
+class PCLWidget;
 class BMControlWidget;
 class BMGPUControlWidget;
 class GMControlWidget;
@@ -69,7 +69,7 @@ private slots:
 protected:
     QPointer< DisparityPreviewWidget > m_view;
     QPointer< DisparityControlWidget > m_controlWidget;
-    QPointer< PCLViewer > m_3dWidget;
+    QPointer< PCLWidget > m_3dWidget;
 
     QMutex m_updateMutex;
 

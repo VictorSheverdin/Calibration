@@ -9,6 +9,7 @@
 #include "slamgeometry.h"
 
 #include "src/common/imagewidget.h"
+#include "src/common/pclwidget.h"
 
 class ImagesWidget : public QSplitter
 {
@@ -32,29 +33,21 @@ private:
 
 };
 
-class PCLWidget : public QVTKOpenGLWidget
+class View3dWidget : public PCLWidget
 {
     Q_OBJECT
 
 public:
-    PCLWidget( QWidget* parent = nullptr );
+    View3dWidget( QWidget* parent = nullptr );
 
-    void setPointCloud( const pcl::PointCloud< pcl::PointXYZRGB >::Ptr cloud );
     void setPath( const std::list< StereoCameraMatrix > &path );
 
-public slots:
-    void update();
-
 protected:
-    vtkSmartPointer< vtkRenderer > m_renderer;
-
     vtkSmartPointer< vtkActor > m_leftTrajectoryActor;
     vtkSmartPointer< vtkActor > m_rightTrajectoryActor;
 
     vtkSmartPointer< vtkActor > m_leftCameraActor;
     vtkSmartPointer< vtkActor > m_rightCameraActor;
-
-    pcl::visualization::PCLVisualizer::Ptr m_pclViewer;
 
     void setLeftPath( std::list< cv::Vec3d > &points );
     void setRightPath( std::list< cv::Vec3d > &points );
@@ -83,7 +76,7 @@ public slots:
 
 protected:
     QPointer< ImagesWidget > m_imagesWidget;
-    QPointer< PCLWidget > m_pclWidget;
+    QPointer< View3dWidget > m_pclWidget;
 
     QPointer< SlamThread > m_slamThread;
 

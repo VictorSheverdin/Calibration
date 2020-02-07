@@ -10,6 +10,8 @@ namespace slam {
 
 World::World( const StereoCameraMatrix &cameraMatrix )
 {
+    slam::DenseFrameBase::setDisparityToDepthMatrix( cameraMatrix.disparityToDepthMatrix() );
+
     initialize();
 
     m_maps.push_back( Map::create( cameraMatrix ) );

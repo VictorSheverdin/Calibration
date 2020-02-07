@@ -34,6 +34,18 @@ BMDisparityProcessor::BMDisparityProcessor()
 void BMDisparityProcessor::initialize()
 {
     m_leftMatcher = cv::StereoBM::create();
+
+    setPreFilterSize( 15 );
+    setPreFilterCap( 63 );
+    setBlockSize( 11 );
+    setMinDisparity( 0 );
+    setNumDisparities( 256 );
+    setTextureThreshold( 0 );
+    setUniquenessRatio( 27 );
+    setSpeckleWindowSize( 45 );
+    setSpeckleRange( 10 );
+    setDisp12MaxDiff( 0 );
+
 }
 
 int BMDisparityProcessor::getMinDisparity() const
@@ -606,42 +618,27 @@ cv::Mat CSBPDisparityProcessor::processDisparity( const CvImage &left, const CvI
 
 }
 
-// StereoProcessor
-StereoProcessor::StereoProcessor()
+// StereoProcessorBase
+StereoProcessorBase::StereoProcessorBase()
 {
 }
 
-StereoProcessor::StereoProcessor( const std::shared_ptr< DisparityProcessorBase > &proc )
+StereoProcessorBase::StereoProcessorBase( const std::shared_ptr< DisparityProcessorBase > &proc )
 {
     setDisparityProcessor( proc );
 }
 
-void StereoProcessor::setCalibration( const StereoCalibrationDataShort &data )
-{
-    m_calibration = data;
-}
-
-const StereoCalibrationDataShort &StereoProcessor::calibration() const
-{
-    return m_calibration;
-}
-
-bool StereoProcessor::loadYaml( const std::string &fileName )
-{
-    return m_calibration.loadYaml( fileName );
-}
-
-const std::shared_ptr< DisparityProcessorBase > &StereoProcessor::disparityProcessor() const
+const std::shared_ptr< DisparityProcessorBase > &StereoProcessorBase::disparityProcessor() const
 {
     return m_disparityProcessor;
 }
 
-void StereoProcessor::setDisparityProcessor( const std::shared_ptr< DisparityProcessorBase > &proc )
+void StereoProcessorBase::setDisparityProcessor( const std::shared_ptr< DisparityProcessorBase > &proc )
 {
     m_disparityProcessor = proc;
 }
 
-cv::Mat StereoProcessor::processDisparity( const CvImage &left, const CvImage &right )
+cv::Mat StereoProcessorBase::processDisparity( const CvImage &left, const CvImage &right )
 {
     if ( !m_disparityProcessor )
         return cv::Mat();
@@ -649,11 +646,63 @@ cv::Mat StereoProcessor::processDisparity( const CvImage &left, const CvImage &r
     return m_disparityProcessor->processDisparity( left, right );
 }
 
+// StereoProcessor
+StereoProcessor::StereoProcessor()
+{
+}
+
+StereoProcessor::StereoProcessor( const std::shared_ptr< DisparityProcessorBase > &proc )
+    : StereoProcessorBase( proc )
+{
+}
+
+void StereoProcessor::setDisparityToDepthMatrix( const cv::Mat &mat )
+{
+    m_disparityToDepthMatrix = mat;
+}
+
+const cv::Mat &StereoProcessor::disparityToDepthMatrix() const
+{
+    return m_disparityToDepthMatrix;
+}
+
+pcl::PointCloud< pcl::PointXYZRGB >::Ptr StereoProcessor::processPointCloud( const CvImage &left, const CvImage &right )
+{
+    auto disparity = processDisparity( left, right );
+
+    if ( !disparity.empty() ) {
+        auto points = reprojectPoints( disparity );
+
+        if ( !points.empty() )
+            return producePointCloud( points, left );
+
+    }
+
+    return pcl::PointCloud< pcl::PointXYZRGB >::Ptr();
+
+}
+
+std::list< ColorPoint3d > StereoProcessor::processPointList( const CvImage &left, const CvImage &right )
+{
+    auto disparity = processDisparity( left, right );
+
+    if ( !disparity.empty() ) {
+        auto points = reprojectPoints( disparity );
+
+        if ( !points.empty() )
+            return producePointList( points, left );
+
+    }
+
+    return std::list< ColorPoint3d >();
+
+}
+
 cv::Mat StereoProcessor::reprojectPoints( const cv::Mat &disparity )
 {
     cv::Mat points;
 
-    cv::reprojectImageTo3D( disparity, points, m_calibration.disparityToDepthMatrix(), true, CV_32F );
+    cv::reprojectImageTo3D( disparity, points, m_disparityToDepthMatrix, true, CV_32F );
 
     return points;
 }
@@ -700,9 +749,9 @@ pcl::PointCloud< pcl::PointXYZRGB >::Ptr StereoProcessor::producePointCloud( con
 
 }
 
-std::vector< ColorPoint3d > StereoProcessor::producePointVector( const cv::Mat &points, const CvImage &leftImage )
+std::list< ColorPoint3d > StereoProcessor::producePointList( const cv::Mat &points, const CvImage &leftImage )
 {
-    std::vector< ColorPoint3d > ret;
+    std::list< ColorPoint3d > ret;
 
     CvImage rgbLeftImage;
 
@@ -717,7 +766,7 @@ std::vector< ColorPoint3d > StereoProcessor::producePointVector( const cv::Mat &
             if ( isValidPoint( point ) ) {
 
                 cv::Vec3b intensity = rgbLeftImage.at< cv::Vec3b >( rows, cols );
-                cv::Scalar color( intensity[0], intensity[1], intensity[2], 255 );
+                cv::Scalar color( intensity[2], intensity[1], intensity[0], 255 );
                 ColorPoint3d colorPoint( point, color ) ;
 
                 ret.push_back( colorPoint );

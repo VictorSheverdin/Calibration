@@ -8,7 +8,7 @@
 
 #include <opencv2/ximgproc.hpp>
 
-#include "pclwidget.h"
+#include "src/common/pclwidget.h"
 
 #include "application.h"
 
@@ -59,7 +59,7 @@ void DisparityWidgetBase::initialize()
 
     m_view = new DisparityPreviewWidget( this );
     tabWidget->resize(1200, 800);
-    m_3dWidget = new PCLViewer( this );
+    m_3dWidget = new PCLWidget( this );
 
     tabWidget->addTab( m_view, tr( "Disparity" ) );
     tabWidget->addTab( m_3dWidget, tr( "3D priview" ) );

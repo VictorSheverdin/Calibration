@@ -44,7 +44,7 @@ public:
 
     void addMapPoint( const MapPointPtr &point );
 
-    const cv::Mat &baselineVector() const;
+    const cv::Mat baselineVector() const;
     double baselineLenght() const;
 
     void multiplicateCameraMatrix( const double value );
@@ -64,8 +64,6 @@ protected:
     std::set< MapPointPtr > m_mapPoints;
 
     StereoCameraMatrix m_projectionMatrix;
-
-    cv::Mat m_baselineVector;
 
     size_t m_previousKeypointsCount;
 

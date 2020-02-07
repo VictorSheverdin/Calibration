@@ -68,7 +68,8 @@ void SlamThread::run()
     auto leftPath = m_path + "left/";
     auto rightPath = m_path + "right/";
 
-    StereoRectificationProcessor rectificationProcessor( m_path + "calibration.yaml" );
+    StereoCalibrationDataShort calibration( m_path + "calibration.yaml" );
+    StereoRectificationProcessor rectificationProcessor( calibration );
 
     for ( auto i = 5900; i < 30000; ++i ) {
 
@@ -126,6 +127,8 @@ SlamGeometry SlamThread::geometry() const
 
         }
 
+        std::shared_ptr< slam::DenseFrame > denseFrame;
+
         for ( auto &i : frames ) {
 
             auto stereoFrame = std::dynamic_pointer_cast< slam::StereoFrame >( i );
@@ -133,7 +136,14 @@ SlamGeometry SlamThread::geometry() const
             if ( stereoFrame )
                 geometry.addPath( stereoFrame->projectionMatrix() );
 
+            if ( std::dynamic_pointer_cast< slam::DenseFrame >( i ) )
+                denseFrame = std::dynamic_pointer_cast< slam::DenseFrame >( i );
+
         }
+
+        if ( denseFrame )
+            geometry.addPoints( denseFrame->translatedPoints() );
+
 
     }
 

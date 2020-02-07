@@ -16,6 +16,7 @@ public:
 
     void addPath( const StereoCameraMatrix &matrix );
     void addPoint( const ColorPoint3d &point );
+    void addPoints( const std::list< ColorPoint3d > &points );
 
     const std::list< StereoCameraMatrix > &path() const;
     const std::list< ColorPoint3d > &points() const;

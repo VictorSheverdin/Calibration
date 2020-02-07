@@ -1249,25 +1249,23 @@ DenseFrameBase::DenseFrameBase()
     initialize();
 }
 
-DenseFrameBase::DenseFrameBase( const cv::Mat &disparity )
-{
-    initialize();
-
-    setDisparity( disparity );
-}
-
 void DenseFrameBase::initialize()
 {
 }
 
-void DenseFrameBase::setDisparity( const cv::Mat &disparity )
+void DenseFrameBase::setPoints( const std::list< ColorPoint3d > &list )
 {
-    m_disparity = disparity;
+    m_points = list;
 }
 
-const cv::Mat &DenseFrameBase::disparity() const
+const std::list< ColorPoint3d > &DenseFrameBase::points() const
 {
-    return m_disparity;
+    return m_points;
+}
+
+void DenseFrameBase::setDisparityToDepthMatrix( const cv::Mat &mat )
+{
+    m_stereoProcessor.setDisparityToDepthMatrix( mat );
 }
 
 // ProcessedDenseFrame
@@ -1281,13 +1279,26 @@ ProcessedDenseFrame::FramePtr ProcessedDenseFrame::create( const MapPtr &parentM
     return FramePtr( new ProcessedDenseFrame( parentMap ) );
 }
 
-void ProcessedDenseFrame::processDisparity()
+void ProcessedDenseFrame::processDenseCloud()
 {
     auto leftFrame = this->leftFrame();
     auto rightFrame = this->rightFrame();
 
-    if ( leftFrame && rightFrame )
-        setDisparity( m_stereoProcessor.processDisparity( leftFrame->image(), rightFrame->image() ) );
+    if ( leftFrame && rightFrame ) {
+        std::list< ColorPoint3d > successPoints;
+
+        auto points = m_stereoProcessor.processPointList( leftFrame->image(), rightFrame->image() );
+
+        int counter = 0;
+
+        for ( auto &i : points ) {
+            if ( counter % 10 == 0 /*&& cv::norm( i.point() ) < 3.0*/ )
+                successPoints.push_back( i );
+            ++counter;
+        }
+
+        setPoints( successPoints );
+    }
 
 }
 
@@ -1597,6 +1608,46 @@ DenseFrame::DenseFrame( const MapPtr &parentMap )
 DenseFrame::FramePtr DenseFrame::create( const MapPtr &parentMap )
 {
     return FramePtr( new DenseFrame( parentMap ) );
+}
+
+void DenseFrame::replace( const ProcessedDenseFramePtr &frame )
+{
+    StereoFrame::replace( frame );
+
+    if ( frame )
+        setPoints( frame->points() );
+
+}
+
+void DenseFrame::replaceAndClean( const ProcessedDenseFramePtr &frame )
+{
+    StereoFrame::replaceAndClean( frame );
+
+    if ( frame )
+        setPoints( frame->points() );
+
+}
+
+std::list< ColorPoint3d > DenseFrame::translatedPoints() const
+{
+    std::list< ColorPoint3d > ret;
+
+    auto leftFrame = this->leftFrame();
+
+    if ( leftFrame ) {
+        cv::Mat rotation = leftFrame->rotation().t();
+        cv::Mat translation = leftFrame->translation();
+
+        for ( auto &i : m_points ) {
+            auto point = i;
+            // point.setPoint( matToPoint3f< double >( rotation * ( point3fToMat< double >( i.point() ) - translation ) ) );
+            ret.push_back( point );
+
+        }
+
+    }
+
+    return ret;
 }
 
 }

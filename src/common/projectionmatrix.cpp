@@ -4,6 +4,8 @@
 
 #include <opencv2/sfm.hpp>
 
+#include "src/common/defs.h"
+
 // ProjectionMatrix
 ProjectionMatrix::ProjectionMatrix()
 {
@@ -282,9 +284,37 @@ const ProjectionMatrix &StereoCameraMatrix::rightProjectionMatrix() const
     return m_rightProjectionMatrix;
 }
 
-const cv::Mat StereoCameraMatrix::baselineVector() const
+cv::Mat StereoCameraMatrix::baselineVector() const
 {
     return m_rightProjectionMatrix.translation() - m_leftProjectionMatrix.translation();
+}
+
+double StereoCameraMatrix::baselineVectorLenght() const
+{
+    return cv::norm( baselineVector() );
+}
+
+cv::Mat StereoCameraMatrix::disparityToDepthMatrix() const
+{
+    auto tx = baselineVectorLenght();
+
+    if ( tx > DOUBLE_EPS ) {
+
+        auto cx = leftProjectionMatrix().cx();
+        auto cx0 = rightProjectionMatrix().cx();
+        auto cy = leftProjectionMatrix().cy();
+        auto f = leftProjectionMatrix().fx();
+
+        return cv::Mat_< double >( 4, 4 ) <<
+                                            1, 0, 0, -cx,
+                                            0, 1, 0, -cy,
+                                            0, 0, 0, f,
+                                            0, 0, 1.0 / tx, ( cx - cx0 ) / tx ;
+
+    }
+
+    return cv::Mat();
+
 }
 
 bool StereoCameraMatrix::saveYaml( const std::string &fileName ) const

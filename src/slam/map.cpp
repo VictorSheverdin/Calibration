@@ -24,8 +24,6 @@ Map::Map( const StereoCameraMatrix &projectionMatrix )
 void Map::initialize()
 {
     m_previousKeypointsCount = m_goodTrackPoints * 2;
-
-    m_baselineVector = m_projectionMatrix.baselineVector();
 }
 
 Map::MapPtr Map::create( const StereoCameraMatrix &cameraMatrix )
@@ -78,14 +76,14 @@ void Map::addMapPoint( const MapPointPtr &point )
     m_mapPoints.insert( point );
 }
 
-const cv::Mat &Map::baselineVector() const
+const cv::Mat Map::baselineVector() const
 {
-    return m_baselineVector;
+    return m_projectionMatrix.baselineVector();
 }
 
 double Map::baselineLenght() const
 {
-    return cv::norm( m_baselineVector );
+    return cv::norm( baselineVector() );
 }
 
 void Map::multiplicateCameraMatrix( const double value )
@@ -120,9 +118,12 @@ bool Map::valid() const
 bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
 {
     ProcessedStereoFrame::FramePtr stereoFrame;
+    ProcessedDenseFrame::FramePtr denseFrame;
 
-    if ( m_frames.size() % 10 == 0 )
-        stereoFrame = ProcessedDenseFrame::create( shared_from_this() );
+    if ( m_frames.size() % 20 == 0 ) {
+        denseFrame = ProcessedDenseFrame::create( shared_from_this() );
+        stereoFrame = denseFrame;
+    }
     else
         stereoFrame = ProcessedStereoFrame::create( shared_from_this() );
 
@@ -131,10 +132,8 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
     stereoFrame->extractKeyPoints();
     stereoFrame->extractGradientPoints();
 
-    auto denseFrame = std::dynamic_pointer_cast< ProcessedDenseFrame >( stereoFrame );
-
     if ( denseFrame )
-        denseFrame->processDisparity();
+        denseFrame->processDenseCloud();
 
     const std::lock_guard< std::mutex > lock( m_mutex );
 
@@ -147,6 +146,7 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
     else {
 
         auto previousStereoFrame = std::dynamic_pointer_cast< ProcessedStereoFrame >( m_frames.back() );
+        auto previousDenseFrame = std::dynamic_pointer_cast< ProcessedDenseFrame >( m_frames.back() );
 
         if ( previousStereoFrame ) {
 
@@ -208,11 +208,19 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
 
             previousStereoFrame->cleanMapPoints();
 
-            auto replacedFrame = StereoFrame::create( shared_from_this() );
+            if ( previousDenseFrame ) {
+                auto replacedFrame = DenseFrame::create( shared_from_this() );
+                replacedFrame->replaceAndClean( previousDenseFrame );
 
-            replacedFrame->replaceAndClean( previousStereoFrame );
+                m_frames.back() = replacedFrame;
 
-            m_frames.back() = replacedFrame;
+            }
+            else if ( previousStereoFrame ){
+                auto replacedFrame = StereoFrame::create( shared_from_this() );
+                replacedFrame->replaceAndClean( previousStereoFrame );
+
+                m_frames.back() = replacedFrame;
+            }
 
         }
 

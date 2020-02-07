@@ -184,3 +184,4 @@ void vimbaRunCommand( AVT::VmbAPI::CameraPtr camera, const std::string &key )
 
 }
 
+

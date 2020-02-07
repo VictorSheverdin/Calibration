@@ -87,14 +87,21 @@ StereoResultProcessor::StereoResultProcessor( const std::shared_ptr< DisparityPr
 
 void StereoResultProcessor::setCalibration( const StereoCalibrationDataShort &data )
 {
-    StereoProcessor::setCalibration( data );
     m_rectificationProcessor.setCalibrationData( data );
+    setDisparityToDepthMatrix( data.disparityToDepthMatrix() );
 }
 
 bool StereoResultProcessor::loadYaml( const std::string &fileName )
 {
-    bool ret = StereoProcessor::loadYaml( fileName );
-    m_rectificationProcessor.setCalibrationData( StereoProcessor::calibration() );
+    StereoCalibrationDataShort calibration;
+
+    bool ret = calibration.loadYaml( fileName );
+
+    if ( ret ) {
+        m_rectificationProcessor.setCalibrationData( calibration );
+        setDisparityToDepthMatrix( calibration.disparityToDepthMatrix() );
+
+    }
 
     return ret;
 }

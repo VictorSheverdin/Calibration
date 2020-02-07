@@ -43,6 +43,8 @@ set ( COMMON_SOURCES
     src/common/iconswidget.cpp
     src/common/fileslistwidget.h
     src/common/fileslistwidget.cpp
+    src/common/pclwidget.h
+    src/common/pclwidget.cpp
 )
 
 set ( LIBELAS_SOURCES
@@ -205,8 +207,6 @@ add_executable( disparity ${COMMON_SOURCES} ${LIBELAS_SOURCES} ${RES_SOURCES}
     src/disparity/elasprocessor.cpp
     src/disparity/stereoresultprocessor.h
     src/disparity/stereoresultprocessor.cpp
-    src/disparity/pclwidget.h
-    src/disparity/pclwidget.cpp
     src/disparity/documentwidget.h
     src/disparity/documentwidget.cpp
     src/disparity/main.cpp

@@ -1,19 +1,17 @@
-#include "src/common/precompiled.h"
+#include "precompiled.h"
 
 #include "pclwidget.h"
 
 #include <vtkGenericOpenGLRenderWindow.h>
 #include <vtkPointPicker.h>
 
-#include "application.h"
-
-PCLViewer::PCLViewer( QWidget* parent )
+PCLWidget::PCLWidget( QWidget* parent )
     : QVTKOpenGLWidget( parent )
 {
     initialize();
 }
 
-void PCLViewer::initialize()
+void PCLWidget::initialize()
 {
     m_renderer = vtkSmartPointer<vtkRenderer>::New();
 
@@ -33,20 +31,24 @@ void PCLViewer::initialize()
 
     m_pclViewer->setCameraPosition( 0, 0, -10, 0, -1, 0 );
 
+    m_pclViewer->addCoordinateSystem( 0.5 );
+
     m_pclViewer->setShowFPS( true );
 
 }
 
-void PCLViewer::setPointCloud(const pcl::PointCloud< pcl::PointXYZRGB >::Ptr cloud )
+void PCLWidget::setPointCloud(const pcl::PointCloud< pcl::PointXYZRGB >::Ptr cloud )
 {
-    m_pclViewer->removePointCloud();
-    m_pclViewer->addPointCloud( cloud );
+    if( !m_pclViewer->updatePointCloud( cloud ) ) {
+        m_pclViewer->addPointCloud( cloud );
+        m_pclViewer->setPointCloudRenderingProperties( pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2 );
+    }
 
-    m_pclViewer->setPointCloudRenderingProperties( pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2 );
+    update();
 
 }
 
-void PCLViewer::update()
+void PCLWidget::update()
 {
     m_pclViewer->getRenderWindow()->Render();
 

@@ -58,48 +58,15 @@ void ImagesWidget::setStereoImage( const CvImage &image )
     m_stereoWidget->setImage( image );
 }
 
-// PCLViewer
-PCLWidget::PCLWidget( QWidget* parent )
-    : QVTKOpenGLWidget( parent )
+// PCLWidget
+View3dWidget::View3dWidget( QWidget* parent )
+    : PCLWidget( parent )
 {
     initialize();
 }
 
-void PCLWidget::initialize()
+void View3dWidget::initialize()
 {
-    m_renderer = vtkSmartPointer<vtkRenderer>::New();
-
-    m_renderer->SetBackground( 127, 127, 127 );
-    m_renderer->SetBackground2( 1, 1, 1 );
-    m_renderer->SetGradientBackground( true );
-
-    vtkNew< vtkGenericOpenGLRenderWindow > renderWindow;
-    renderWindow->AddRenderer( m_renderer.Get() );
-
-    m_pclViewer = pcl::visualization::PCLVisualizer::Ptr( new pcl::visualization::PCLVisualizer( m_renderer.Get(), renderWindow.Get(), "PCLVisualizer", false ) );
-    SetRenderWindow( m_pclViewer->getRenderWindow() );
-
-    m_pclViewer->initCameraParameters();
-
-    m_pclViewer->setPointCloudRenderingProperties( pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2 );
-
-    m_pclViewer->setCameraPosition( 0, 0, -10, 0, -1, 0 );
-
-    m_pclViewer->addCoordinateSystem( 0.5 );
-
-    m_pclViewer->setShowFPS( true );
-
-}
-
-void PCLWidget::setPointCloud(const pcl::PointCloud< pcl::PointXYZRGB >::Ptr cloud )
-{
-    if( !m_pclViewer->updatePointCloud( cloud ) ) {
-        m_pclViewer->addPointCloud( cloud );
-        m_pclViewer->setPointCloudRenderingProperties( pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2 );        
-    }
-
-    update();
-
 }
 
 vtkSmartPointer< vtkPolyDataMapper > polyLineMapper( std::list< cv::Vec3d > &points )
@@ -127,7 +94,7 @@ vtkSmartPointer< vtkPolyDataMapper > polyLineMapper( std::list< cv::Vec3d > &poi
      return mapper;
 }
 
-void PCLWidget::setLeftPath( std::list< cv::Vec3d > &points )
+void View3dWidget::setLeftPath( std::list< cv::Vec3d > &points )
 {
     auto mapper = polyLineMapper( points );
 
@@ -141,7 +108,7 @@ void PCLWidget::setLeftPath( std::list< cv::Vec3d > &points )
 
 }
 
-void PCLWidget::setRightPath( std::list< cv::Vec3d > &points )
+void View3dWidget::setRightPath( std::list< cv::Vec3d > &points )
 {
     auto mapper = polyLineMapper( points );
 
@@ -155,7 +122,7 @@ void PCLWidget::setRightPath( std::list< cv::Vec3d > &points )
 
 }
 
-void PCLWidget::setPath( const std::list< StereoCameraMatrix > &path )
+void View3dWidget::setPath( const std::list< StereoCameraMatrix > &path )
 {
     std::list< cv::Vec3d > leftPoints;
     std::list< cv::Vec3d > rightPoints;
@@ -181,7 +148,7 @@ void PCLWidget::setPath( const std::list< StereoCameraMatrix > &path )
 
 }
 
-void PCLWidget::setFrustum( const StereoCameraMatrix &cameraMatrix )
+void View3dWidget::setFrustum( const StereoCameraMatrix &cameraMatrix )
 {
     setLeftFrustum( cameraMatrix.leftProjectionMatrix() );
     setRightFrustum( cameraMatrix.rightProjectionMatrix() );
@@ -237,7 +204,7 @@ vtkSmartPointer< vtkPolyDataMapper > cameraMapper( const ProjectionMatrix &camer
     return mapper;
 }
 
-void PCLWidget::setLeftFrustum( const ProjectionMatrix &cameraMatrix )
+void View3dWidget::setLeftFrustum( const ProjectionMatrix &cameraMatrix )
 {
     auto mapper = cameraMapper( cameraMatrix );
 
@@ -253,7 +220,7 @@ void PCLWidget::setLeftFrustum( const ProjectionMatrix &cameraMatrix )
 
 }
 
-void PCLWidget::setRightFrustum( const ProjectionMatrix &cameraMatrix )
+void View3dWidget::setRightFrustum( const ProjectionMatrix &cameraMatrix )
 {
     auto mapper = cameraMapper( cameraMatrix );
 
@@ -266,14 +233,6 @@ void PCLWidget::setRightFrustum( const ProjectionMatrix &cameraMatrix )
     }
 
     m_rightCameraActor->SetMapper( mapper ) ;
-
-}
-
-void PCLWidget::update()
-{
-    m_pclViewer->getRenderWindow()->Render();
-
-    QVTKOpenGLWidget::update();
 
 }
 
@@ -295,7 +254,7 @@ void SlamWidget::initialize()
     m_imagesWidget = new ImagesWidget( this );
     addWidget( m_imagesWidget );
 
-    m_pclWidget = new PCLWidget( this );
+    m_pclWidget = new View3dWidget( this );
     addWidget( m_pclWidget );
 
     int widthDiv2 = width() / 2;
