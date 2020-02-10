@@ -86,16 +86,6 @@ double Map::baselineLenght() const
     return cv::norm( baselineVector() );
 }
 
-void Map::multiplicateCameraMatrix( const double value )
-{
-    m_projectionMatrix.multiplicateCameraMatrix( value );
-}
-
-void Map::movePrincipalPoint( const cv::Vec2f &value )
-{
-    m_projectionMatrix.movePrincipalPoint( value );
-}
-
 void Map::adjust( const int frames )
 {
     const std::lock_guard< std::mutex > lock( m_mutex );
@@ -120,7 +110,7 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
     ProcessedStereoFrame::FramePtr stereoFrame;
     ProcessedDenseFrame::FramePtr denseFrame;
 
-    if ( m_frames.size() % 20 == 0 ) {
+    if ( m_frames.size() % 1 == 0 ) {
         denseFrame = ProcessedDenseFrame::create( shared_from_this() );
         stereoFrame = denseFrame;
     }

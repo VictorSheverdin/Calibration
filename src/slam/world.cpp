@@ -10,11 +10,11 @@ namespace slam {
 
 World::World( const StereoCameraMatrix &cameraMatrix )
 {
-    slam::DenseFrameBase::setDisparityToDepthMatrix( cameraMatrix.disparityToDepthMatrix() );
-
     initialize();
 
     m_maps.push_back( Map::create( cameraMatrix ) );
+
+    slam::DenseFrameBase::setDisparityToDepthMatrix( cameraMatrix.disparityToDepthMatrix() );
 
 }
 
@@ -51,16 +51,6 @@ void World::adjust( const int frames )
 void World::localAdjustment()
 {
     return m_maps.back()->localAdjustment();
-}
-
-void World::multiplicateCameraMatrix( const double value )
-{
-    m_maps.back()->multiplicateCameraMatrix( value );
-}
-
-void World::movePrincipalPoint( const cv::Vec2f &value )
-{
-    m_maps.back()->movePrincipalPoint( value );
 }
 
 }

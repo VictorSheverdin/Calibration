@@ -73,6 +73,8 @@ public:
 
 public slots:
     void updateViews();
+    void updateImages();
+    void update3dView();
 
 protected:
     QPointer< ImagesWidget > m_imagesWidget;
@@ -81,6 +83,8 @@ protected:
     QPointer< SlamThread > m_slamThread;
 
     void setGeometry( const SlamGeometry &geo );
+
+    virtual void timerEvent( QTimerEvent * ) override;
 
 private:
     void initialize();

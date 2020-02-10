@@ -221,7 +221,7 @@ void OpticalMatcher::initialize()
 void download( const cv::cuda::GpuMat& d_mat, std::vector< cv::Point2f >& vec )
 {
     vec.resize(d_mat.cols);
-    cv::Mat mat( 1, d_mat.cols, CV_32FC2, (void*)&vec[0] );
+    cv::Mat mat( 1, d_mat.cols, CV_32FC2, ( void* )&vec[ 0 ] );
     d_mat.download(mat);
 }
 

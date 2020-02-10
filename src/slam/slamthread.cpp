@@ -25,13 +25,17 @@ void SlamThread::initialize()
 
     StereoCalibrationDataShort calibration( m_path + "calibration.yaml" );
 
-    m_system = slam::World::create( calibration.projectionMatrix() );
-
     auto cropRect = calibration.cropRect();
     auto principal = cv::Vec2f( -cropRect.x, -cropRect.y );
 
-    m_system->movePrincipalPoint( principal );
-    m_system->multiplicateCameraMatrix( m_scaleFactor );
+    auto projectionMatrix = calibration.projectionMatrix();
+
+    projectionMatrix.movePrincipalPoint( principal );
+    projectionMatrix.multiplicateCameraMatrix( m_scaleFactor );
+
+    m_system = slam::World::create( projectionMatrix );
+
+
 
 }
 
@@ -117,17 +121,15 @@ SlamGeometry SlamThread::geometry() const
 
     for ( auto &map : maps ) {
 
-        auto mapPoints = map->mapPoints();
+        // auto mapPoints = map->mapPoints();
         auto frames = map->frames();
 
-        for ( auto &i : mapPoints ) {
+        /*for ( auto &i : mapPoints ) {
 
             if ( i )
                 geometry.addPoint( ColorPoint3d( i->point(), i->color() ) );
 
-        }
-
-        std::shared_ptr< slam::DenseFrame > denseFrame;
+        }*/
 
         for ( auto &i : frames ) {
 
@@ -136,13 +138,13 @@ SlamGeometry SlamThread::geometry() const
             if ( stereoFrame )
                 geometry.addPath( stereoFrame->projectionMatrix() );
 
-            if ( std::dynamic_pointer_cast< slam::DenseFrame >( i ) )
-                denseFrame = std::dynamic_pointer_cast< slam::DenseFrame >( i );
+            auto denseFrame = std::dynamic_pointer_cast< slam::DenseFrame >( i );
+
+            if ( denseFrame )
+                geometry.addPoints( denseFrame->translatedPoints() );
 
         }
 
-        if ( denseFrame )
-            geometry.addPoints( denseFrame->translatedPoints() );
 
 
     }

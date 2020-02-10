@@ -1292,7 +1292,7 @@ void ProcessedDenseFrame::processDenseCloud()
         int counter = 0;
 
         for ( auto &i : points ) {
-            if ( counter % 10 == 0 /*&& cv::norm( i.point() ) < 3.0*/ )
+            if ( counter % 100 == 0 && cv::norm( i.point() ) < 30.0 )
                 successPoints.push_back( i );
             ++counter;
         }
@@ -1640,7 +1640,7 @@ std::list< ColorPoint3d > DenseFrame::translatedPoints() const
 
         for ( auto &i : m_points ) {
             auto point = i;
-            // point.setPoint( matToPoint3f< double >( rotation * ( point3fToMat< double >( i.point() ) - translation ) ) );
+            point.setPoint( matToPoint3f< double >( rotation * ( point3fToMat< double >( i.point() ) - translation ) ) );
             ret.push_back( point );
 
         }

@@ -146,6 +146,8 @@ void View3dWidget::setPath( const std::list< StereoCameraMatrix > &path )
     if ( !path.empty() )
         setFrustum( path.back() );
 
+    update();
+
 }
 
 void View3dWidget::setFrustum( const StereoCameraMatrix &cameraMatrix )
@@ -263,10 +265,11 @@ void SlamWidget::initialize()
 
     m_slamThread = new SlamThread( this );
 
-    connect( m_slamThread, &SlamThread::updateSignal, this, &SlamWidget::updateViews );
+    connect( m_slamThread, &SlamThread::updateSignal, this, &SlamWidget::updateImages );
 
     m_slamThread->start();
 
+    startTimer( 5000 );
 }
 
 void SlamWidget::setGeometry( const SlamGeometry &geo )
@@ -299,11 +302,26 @@ void SlamWidget::setGeometry( const SlamGeometry &geo )
 
 }
 
+void SlamWidget::timerEvent( QTimerEvent * )
+{
+    update3dView();
+}
+
 void SlamWidget::updateViews()
+{
+    updateImages();
+    update3dView();
+
+}
+
+void SlamWidget::updateImages()
 {
     m_imagesWidget->setPointsImage( m_slamThread->pointsImage() );
     m_imagesWidget->setTracksImage( m_slamThread->tracksImage() );
     m_imagesWidget->setStereoImage( m_slamThread->stereoImage() );
+}
 
+void SlamWidget::update3dView()
+{
     setGeometry( m_slamThread->geometry() );
 }

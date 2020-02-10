@@ -34,18 +34,6 @@ BMDisparityProcessor::BMDisparityProcessor()
 void BMDisparityProcessor::initialize()
 {
     m_leftMatcher = cv::StereoBM::create();
-
-    setPreFilterSize( 15 );
-    setPreFilterCap( 63 );
-    setBlockSize( 11 );
-    setMinDisparity( 0 );
-    setNumDisparities( 256 );
-    setTextureThreshold( 0 );
-    setUniquenessRatio( 27 );
-    setSpeckleWindowSize( 45 );
-    setSpeckleRange( 10 );
-    setDisp12MaxDiff( 0 );
-
 }
 
 int BMDisparityProcessor::getMinDisparity() const
@@ -761,13 +749,13 @@ std::list< ColorPoint3d > StereoProcessor::producePointList( const cv::Mat &poin
 
         for (int cols = 0; cols < points.cols; ++cols) {
 
-            cv::Point3f point = points.at< cv::Point3f >(rows, cols);
+            cv::Point3f point = points.at< cv::Point3f >( rows, cols );
 
             if ( isValidPoint( point ) ) {
 
                 cv::Vec3b intensity = rgbLeftImage.at< cv::Vec3b >( rows, cols );
-                cv::Scalar color( intensity[2], intensity[1], intensity[0], 255 );
-                ColorPoint3d colorPoint( point, color ) ;
+                cv::Scalar color( intensity[ 2 ], intensity[ 1 ], intensity[ 0 ], 255 );
+                ColorPoint3d colorPoint( point * 15, color ) ;
 
                 ret.push_back( colorPoint );
 
@@ -789,7 +777,122 @@ BMStereoProcessor::BMStereoProcessor()
 void BMStereoProcessor::initialize()
 {
     setDisparityProcessor( std::make_shared< BMDisparityProcessor >() );
+
+    setPreFilterSize( 15 );
+    setPreFilterCap( 12 );
+    setBlockSize( 17 );
+    setMinDisparity( 0 );
+    setNumDisparities( 256 );
+    setTextureThreshold( 350 );
+    setUniquenessRatio( 45 );
+    setSpeckleWindowSize( 35 );
+    setSpeckleRange( 6 );
+    setDisp12MaxDiff( 0 );
+
+}
+
+const std::shared_ptr< BMDisparityProcessor > BMStereoProcessor::disparityProcessor() const
+{
+    return std::dynamic_pointer_cast< BMDisparityProcessor >( m_disparityProcessor );
 }
 
 
+int BMStereoProcessor::getMinDisparity() const
+{
+    return disparityProcessor()->getMinDisparity();
+}
 
+void BMStereoProcessor::setMinDisparity( const int minDisparity )
+{
+    disparityProcessor()->setMinDisparity( minDisparity );
+}
+
+int BMStereoProcessor::getNumDisparities() const
+{
+    return disparityProcessor()->getNumDisparities();
+}
+
+void BMStereoProcessor::setNumDisparities( const int numDisparities )
+{
+    disparityProcessor()->setNumDisparities( numDisparities );
+}
+
+int BMStereoProcessor::getBlockSize() const
+{
+    return disparityProcessor()->getBlockSize();
+}
+
+void BMStereoProcessor::setBlockSize( const int blockSize )
+{
+    disparityProcessor()->setBlockSize( blockSize );
+}
+
+int BMStereoProcessor::getTextureThreshold() const
+{
+    return disparityProcessor()->getTextureThreshold();
+}
+
+void BMStereoProcessor::setTextureThreshold( const int textureThreshold )
+{
+    disparityProcessor()->setTextureThreshold( textureThreshold );
+}
+
+int BMStereoProcessor::getSpeckleWindowSize() const
+{
+    return disparityProcessor()->getSpeckleWindowSize();
+}
+
+void BMStereoProcessor::setSpeckleWindowSize( const int speckleWindowSize )
+{
+    disparityProcessor()->setSpeckleWindowSize( speckleWindowSize );
+}
+
+int BMStereoProcessor::getSpeckleRange() const
+{
+    return disparityProcessor()->getSpeckleRange();
+}
+
+void BMStereoProcessor::setSpeckleRange( const int speckleRange )
+{
+    disparityProcessor()->setSpeckleRange( speckleRange );
+}
+
+int BMStereoProcessor::getDisp12MaxDiff() const
+{
+    return disparityProcessor()->getDisp12MaxDiff();
+}
+
+void BMStereoProcessor::setDisp12MaxDiff( const int disp12MaxDiff )
+{
+    disparityProcessor()->setDisp12MaxDiff( disp12MaxDiff );
+}
+
+int BMStereoProcessor::getPreFilterSize() const
+{
+    return disparityProcessor()->getPreFilterSize();
+}
+
+void BMStereoProcessor::setPreFilterSize( const int preFilterSize )
+{
+    disparityProcessor()->setPreFilterSize( preFilterSize );
+}
+
+int BMStereoProcessor::getPreFilterCap() const
+{
+    return disparityProcessor()->getPreFilterCap();
+}
+
+void BMStereoProcessor::setPreFilterCap( const int preFilterCap )
+{
+    disparityProcessor()->setPreFilterCap( preFilterCap );
+}
+
+int BMStereoProcessor::getUniquenessRatio() const
+{
+    return disparityProcessor()->getUniquenessRatio();
+}
+
+void BMStereoProcessor::setUniquenessRatio( const int uniquenessRatio )
+{
+    disparityProcessor()->setUniquenessRatio( uniquenessRatio );
+}

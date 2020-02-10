@@ -117,7 +117,7 @@ public:
     GMDisparityProcessor();
 
     int getMode() const;
-    void setMode(int mode);
+    void setMode( int mode );
 
     int getMinDisparity() const;
     void setMinDisparity( const int minDisparity );
@@ -259,6 +259,38 @@ class BMStereoProcessor : public StereoProcessor
 {
 public:
     BMStereoProcessor();
+
+    const std::shared_ptr< BMDisparityProcessor > disparityProcessor() const;
+
+    int getMinDisparity() const;
+    void setMinDisparity( const int minDisparity );
+
+    int getNumDisparities() const;
+    void setNumDisparities( const int numDisparities );
+
+    int getBlockSize() const;
+    void setBlockSize( const int blockSize );
+
+    int getTextureThreshold() const;
+    void setTextureThreshold( const int textureThreshold );
+
+    int getSpeckleWindowSize() const;
+    void setSpeckleWindowSize( const int speckleWindowSize );
+
+    int getSpeckleRange() const;
+    void setSpeckleRange( const int speckleRange );
+
+    int getDisp12MaxDiff() const;
+    void setDisp12MaxDiff( const int disp12MaxDiff );
+
+    int getPreFilterSize() const;
+    void setPreFilterSize( const int preFilterSize );
+
+    int getPreFilterCap() const;
+    void setPreFilterCap( const int preFilterCap );
+
+    int getUniquenessRatio() const;
+    void setUniquenessRatio( const int uniquenessRatio );
 
 private:
     void initialize();

@@ -47,9 +47,6 @@ public:
     const cv::Mat baselineVector() const;
     double baselineLenght() const;
 
-    void multiplicateCameraMatrix( const double value );
-    void movePrincipalPoint( const cv::Vec2f &value );
-
     void adjust( const int frames );
     void localAdjustment();
 

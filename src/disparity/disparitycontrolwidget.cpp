@@ -324,15 +324,15 @@ void BMControlWidget::initialize()
 
     layout->addStretch();
 
-    setSadWindowSize( 12 );
+    setSadWindowSize( 7 );
     setPrefilterSize( 15 );
-    setPrefilterCap( 63 );
+    setPrefilterCap( 7 );
     setMinDisparity( 0 );
     setNumDisparities( 256 );
-    setTextureThreshold( 0 );
-    setUniquessRatio( 27 );
-    setSpeckleWindowSize( 45 );
-    setSpeckleRange( 10 );
+    setTextureThreshold( 320 );
+    setUniquessRatio( 35 );
+    setSpeckleWindowSize( 35 );
+    setSpeckleRange( 6 );
     setDisp12MaxDiff( 0 );
 
     connect( m_preFilterSizeLayout, &IntSliderLayout::valueChanged, this, &BMControlWidget::valueChanged );
