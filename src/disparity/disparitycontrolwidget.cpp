@@ -326,13 +326,13 @@ void BMControlWidget::initialize()
 
     setSadWindowSize( 7 );
     setPrefilterSize( 15 );
-    setPrefilterCap( 7 );
+    setPrefilterCap( 12 );
     setMinDisparity( 0 );
     setNumDisparities( 256 );
-    setTextureThreshold( 320 );
-    setUniquessRatio( 35 );
-    setSpeckleWindowSize( 35 );
-    setSpeckleRange( 6 );
+    setTextureThreshold( 450 );
+    setUniquessRatio( 55 );
+    setSpeckleWindowSize( 55 );
+    setSpeckleRange( 5 );
     setDisp12MaxDiff( 0 );
 
     connect( m_preFilterSizeLayout, &IntSliderLayout::valueChanged, this, &BMControlWidget::valueChanged );

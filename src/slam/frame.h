@@ -305,6 +305,36 @@ public:
 
     static void setDisparityToDepthMatrix( const cv::Mat & mat );
 
+    static int getMinDisparity();
+    static void setMinDisparity( const int minDisparity );
+
+    static int getNumDisparities();
+    static void setNumDisparities( const int numDisparities );
+
+    static int getBlockSize();
+    static void setBlockSize( const int blockSize );
+
+    static int getTextureThreshold();
+    static void setTextureThreshold( const int textureThreshold );
+
+    static int getSpeckleWindowSize();
+    static void setSpeckleWindowSize( const int speckleWindowSize );
+
+    static int getSpeckleRange();
+    static void setSpeckleRange( const int speckleRange );
+
+    static int getDisp12MaxDiff();
+    static void setDisp12MaxDiff( const int disp12MaxDiff );
+
+    static int getPreFilterSize();
+    static void setPreFilterSize( const int preFilterSize );
+
+    static int getPreFilterCap();
+    static void setPreFilterCap( const int preFilterCap );
+
+    static int getUniquenessRatio();
+    static void setUniquenessRatio( const int uniquenessRatio );
+
 protected:
     std::list< ColorPoint3d > m_points;
 

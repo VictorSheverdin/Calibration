@@ -3,6 +3,9 @@
 #include "slamwidget.h"
 
 #include "slamthread.h"
+#include "map.h"
+#include "frame.h"
+
 #include <vtkPointPicker.h>
 
 #include <vtkGenericOpenGLRenderWindow.h>
@@ -265,53 +268,82 @@ void SlamWidget::initialize()
 
     m_slamThread = new SlamThread( this );
 
-    connect( m_slamThread, &SlamThread::updateSignal, this, &SlamWidget::updateImages );
+    connect( m_slamThread, &SlamThread::updateSignal, this, &SlamWidget::updateViews );
 
     m_slamThread->start();
 
-    startTimer( 5000 );
+    startTimer( 1000 );
 }
 
-void SlamWidget::setGeometry( const SlamGeometry &geo )
+void SlamWidget::setPath( const std::list< StereoCameraMatrix > &path )
 {
-    pcl::PointCloud< pcl::PointXYZRGB >::Ptr pointCloud( new pcl::PointCloud< pcl::PointXYZRGB > );
+    m_pclWidget->setPath( path );
+}
 
-    for ( auto &i : geo.points() ) {
+void SlamWidget::setSparseCloud( const std::list< ColorPoint3d > &points )
+{
+    setPointCloud( points, "sparse_cloud" );
+}
 
-        auto point = i.point();
-
-        pcl::PointXYZRGB pclPoint;
-        pclPoint.x = point.x;
-        pclPoint.y = point.y;
-        pclPoint.z = point.z;
-
-        auto color = i.color();
-
-        pclPoint.r = std::max( 0.0, std::min( color[ 2 ], 255.0 ) );
-        pclPoint.g = std::max( 0.0, std::min( color[ 1 ], 255.0 ) );
-        pclPoint.b = std::max( 0.0, std::min( color[ 0 ], 255.0 ) );
-        pclPoint.a = 255;
-
-        pointCloud->push_back( pclPoint );
-
-    }
-
-    m_pclWidget->setPointCloud( pointCloud );
-
-    m_pclWidget->setPath( geo.path() );
-
+void SlamWidget::setPointCloud( const std::list< ColorPoint3d > &points, const std::string &id )
+{
+    m_pclWidget->setPointCloud( points, id );
 }
 
 void SlamWidget::timerEvent( QTimerEvent * )
 {
-    update3dView();
+}
+
+std::list< StereoCameraMatrix > SlamWidget::path() const
+{
+    std::list< StereoCameraMatrix > ret;
+
+    auto maps = m_slamThread->maps();
+
+    for ( auto &map : maps ) {
+
+        auto frames = map->frames();
+
+        for ( auto &i : frames ) {
+
+            auto stereoFrame = std::dynamic_pointer_cast< slam::StereoFrame >( i );
+
+            if ( stereoFrame )
+                ret.push_back( stereoFrame->projectionMatrix() );
+
+        }
+
+    }
+
+    return ret;
+}
+
+std::list< ColorPoint3d > SlamWidget::sparseCloud() const
+{
+    std::list< ColorPoint3d > ret;
+
+    auto maps = m_slamThread->maps();
+
+    for ( auto &map : maps ) {
+
+        auto mapPoints = map->mapPoints();
+
+        for ( auto &i : mapPoints ) {
+
+            if ( i )
+                ret.push_back( ColorPoint3d( i->point(), i->color() ) );
+
+        }
+
+    }
+
+    return ret;
 }
 
 void SlamWidget::updateViews()
 {
     updateImages();
     update3dView();
-
 }
 
 void SlamWidget::updateImages()
@@ -321,7 +353,50 @@ void SlamWidget::updateImages()
     m_imagesWidget->setStereoImage( m_slamThread->stereoImage() );
 }
 
+void SlamWidget::updatePath()
+{
+    setPath( path() );
+}
+
+void SlamWidget::updateSparseCloud()
+{
+    setSparseCloud( sparseCloud() );
+}
+
+void SlamWidget::updateDensePointCloud()
+{
+    auto maps = m_slamThread->maps();
+
+    int counter = 0;
+
+    for ( auto &map : maps ) {
+
+        auto frames = map->frames();
+
+        for ( auto i = frames.begin(); i != frames.end(); ++i ) {
+
+            auto denseFrame = std::dynamic_pointer_cast< slam::DenseFrame >( *i );
+
+            if ( denseFrame && counter % 1 == 0 ) {
+
+                auto id = std::to_string( counter );
+
+                if ( !m_pclWidget->contains( id ) )
+                    setPointCloud( denseFrame->translatedPoints(), id );
+
+            }
+
+            ++counter;
+
+        }
+
+    }
+
+}
+
 void SlamWidget::update3dView()
 {
-    setGeometry( m_slamThread->geometry() );
+    updatePath();
+    // updateSparseCloud();
+    updateDensePointCloud();
 }

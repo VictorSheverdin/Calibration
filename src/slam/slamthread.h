@@ -10,6 +10,7 @@
 
 namespace slam {
     class World;
+    class Map;
 }
 
 class SlamThread : public QThread
@@ -17,9 +18,11 @@ class SlamThread : public QThread
     Q_OBJECT
 
 public:
+    using MapPtr = std::shared_ptr< slam::Map >;
+
     explicit SlamThread( QObject *parent = nullptr );
 
-    SlamGeometry geometry() const;
+    const std::list < MapPtr > &maps() const;
 
     CvImage pointsImage() const;
     CvImage tracksImage() const;

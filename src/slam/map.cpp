@@ -107,43 +107,33 @@ bool Map::valid() const
 
 bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
 {
-    ProcessedStereoFrame::FramePtr stereoFrame;
-    ProcessedDenseFrame::FramePtr denseFrame;
+    auto denseFrame = ProcessedDenseFrame::create( shared_from_this() );
 
-    if ( m_frames.size() % 1 == 0 ) {
-        denseFrame = ProcessedDenseFrame::create( shared_from_this() );
-        stereoFrame = denseFrame;
-    }
-    else
-        stereoFrame = ProcessedStereoFrame::create( shared_from_this() );
+    denseFrame->load( leftImage, rightImage );
 
-    stereoFrame->load( leftImage, rightImage );
+    denseFrame->extractKeyPoints();
+    denseFrame->extractGradientPoints();
 
-    stereoFrame->extractKeyPoints();
-    stereoFrame->extractGradientPoints();
-
-    if ( denseFrame )
-        denseFrame->processDenseCloud();
+    denseFrame->processDenseCloud();
 
     const std::lock_guard< std::mutex > lock( m_mutex );
 
     if ( m_frames.empty() ) {
 
-        stereoFrame->setProjectionMatrix( m_projectionMatrix );
-        m_frames.push_back( stereoFrame );
+        denseFrame->setProjectionMatrix( m_projectionMatrix );
+        m_frames.push_back( denseFrame );
 
     }
     else {
 
-        auto previousStereoFrame = std::dynamic_pointer_cast< ProcessedStereoFrame >( m_frames.back() );
         auto previousDenseFrame = std::dynamic_pointer_cast< ProcessedDenseFrame >( m_frames.back() );
 
-        if ( previousStereoFrame ) {
+        if ( previousDenseFrame ) {
 
-            auto previousLeftFrame = std::dynamic_pointer_cast< ProcessedFrame >( previousStereoFrame->leftFrame() );
-            auto previousRightFrame = std::dynamic_pointer_cast< ProcessedFrame >( previousStereoFrame->rightFrame() );
-            auto leftFrame = std::dynamic_pointer_cast< ProcessedFrame >( stereoFrame->leftFrame() );
-            auto rightFrame = std::dynamic_pointer_cast< ProcessedFrame >( stereoFrame->rightFrame() );
+            auto previousLeftFrame = std::dynamic_pointer_cast< ProcessedFrame >( previousDenseFrame->leftFrame() );
+            auto previousRightFrame = std::dynamic_pointer_cast< ProcessedFrame >( previousDenseFrame->rightFrame() );
+            auto leftFrame = std::dynamic_pointer_cast< ProcessedFrame >( denseFrame->leftFrame() );
+            auto rightFrame = std::dynamic_pointer_cast< ProcessedFrame >( denseFrame->rightFrame() );
 
             auto adjacentLeftFrame = AdjacentFrame::create();
 
@@ -163,8 +153,8 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
 
                 do {
 
-                    previousStereoFrame->matchOptical( keypointsCount );
-                    previousStereoFrame->triangulatePoints();
+                    previousDenseFrame->matchOptical( keypointsCount );
+                    previousDenseFrame->triangulatePoints();
 
                     auto trackFramePointsCount = std::max( 0, m_trackFramePointsCount - adjacentLeftFrame->trackFramePointsCount() );
 
@@ -196,25 +186,16 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
             rightFrame->setRotation( leftFrame->rotation() );
             rightFrame->setTranslation( leftFrame->translation() + baselineVector() );
 
-            previousStereoFrame->cleanMapPoints();
+            previousDenseFrame->cleanMapPoints();
 
-            if ( previousDenseFrame ) {
-                auto replacedFrame = DenseFrame::create( shared_from_this() );
-                replacedFrame->replaceAndClean( previousDenseFrame );
+            auto replacedFrame = DenseFrame::create( shared_from_this() );
+            replacedFrame->replaceAndClean( previousDenseFrame );
 
-                m_frames.back() = replacedFrame;
-
-            }
-            else if ( previousStereoFrame ){
-                auto replacedFrame = StereoFrame::create( shared_from_this() );
-                replacedFrame->replaceAndClean( previousStereoFrame );
-
-                m_frames.back() = replacedFrame;
-            }
+            m_frames.back() = replacedFrame;
 
         }
 
-        m_frames.push_back( stereoFrame );
+        m_frames.push_back( denseFrame );
 
     }
 

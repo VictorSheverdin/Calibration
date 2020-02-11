@@ -71,10 +71,19 @@ public:
     explicit SlamWidget( QWidget* parent = nullptr );
     ~SlamWidget();
 
+    void setPath( const std::list< StereoCameraMatrix > &path );
+    void setSparseCloud( const std::list< ColorPoint3d > &points );
+    void setPointCloud( const std::list< ColorPoint3d > &points, const std::string &id );
+
 public slots:
     void updateViews();
     void updateImages();
     void update3dView();
+
+protected slots:
+    void updatePath();
+    void updateSparseCloud();
+    void updateDensePointCloud();
 
 protected:
     QPointer< ImagesWidget > m_imagesWidget;
@@ -82,7 +91,8 @@ protected:
 
     QPointer< SlamThread > m_slamThread;
 
-    void setGeometry( const SlamGeometry &geo );
+    std::list< StereoCameraMatrix > path() const;
+    std::list< ColorPoint3d > sparseCloud() const;
 
     virtual void timerEvent( QTimerEvent * ) override;
 

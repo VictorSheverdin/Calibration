@@ -1268,6 +1268,106 @@ void DenseFrameBase::setDisparityToDepthMatrix( const cv::Mat &mat )
     m_stereoProcessor.setDisparityToDepthMatrix( mat );
 }
 
+int DenseFrameBase::getMinDisparity()
+{
+    return m_stereoProcessor.getMinDisparity();
+}
+
+void DenseFrameBase::setMinDisparity( const int minDisparity )
+{
+    m_stereoProcessor.setMinDisparity( minDisparity );
+}
+
+int DenseFrameBase::getNumDisparities()
+{
+    return m_stereoProcessor.getNumDisparities();
+}
+
+void DenseFrameBase::setNumDisparities( const int numDisparities )
+{
+    m_stereoProcessor.setNumDisparities( numDisparities );
+}
+
+int DenseFrameBase::getBlockSize()
+{
+    return m_stereoProcessor.getBlockSize();
+}
+
+void DenseFrameBase::setBlockSize( const int blockSize )
+{
+    m_stereoProcessor.setBlockSize( blockSize );
+}
+
+int DenseFrameBase::getTextureThreshold()
+{
+    return m_stereoProcessor.getTextureThreshold();
+}
+
+void DenseFrameBase::setTextureThreshold( const int textureThreshold )
+{
+    m_stereoProcessor.setTextureThreshold( textureThreshold );
+}
+
+int DenseFrameBase::getSpeckleWindowSize()
+{
+    return m_stereoProcessor.getSpeckleWindowSize();
+}
+
+void DenseFrameBase::setSpeckleWindowSize( const int speckleWindowSize )
+{
+    m_stereoProcessor.setSpeckleWindowSize( speckleWindowSize );
+}
+
+int DenseFrameBase::getSpeckleRange()
+{
+    return m_stereoProcessor.getSpeckleRange();
+}
+
+void DenseFrameBase::setSpeckleRange( const int speckleRange )
+{
+    m_stereoProcessor.setSpeckleRange( speckleRange );
+}
+
+int DenseFrameBase::getDisp12MaxDiff()
+{
+    return m_stereoProcessor.getDisp12MaxDiff();
+}
+
+void DenseFrameBase::setDisp12MaxDiff( const int disp12MaxDiff )
+{
+    m_stereoProcessor.setDisp12MaxDiff( disp12MaxDiff );
+}
+
+int DenseFrameBase::getPreFilterSize()
+{
+    return m_stereoProcessor.getPreFilterSize();
+}
+
+void DenseFrameBase::setPreFilterSize( const int preFilterSize )
+{
+    m_stereoProcessor.setPreFilterSize( preFilterSize );
+}
+
+int DenseFrameBase::getPreFilterCap()
+{
+    return m_stereoProcessor.getPreFilterCap();
+}
+
+void DenseFrameBase::setPreFilterCap( const int preFilterCap )
+{
+    m_stereoProcessor.setPreFilterCap( preFilterCap );
+}
+
+int DenseFrameBase::getUniquenessRatio()
+{
+    return m_stereoProcessor.getUniquenessRatio();
+}
+
+void DenseFrameBase::setUniquenessRatio( const int uniquenessRatio )
+{
+    m_stereoProcessor.setUniquenessRatio( uniquenessRatio );
+}
+
 // ProcessedDenseFrame
 ProcessedDenseFrame::ProcessedDenseFrame( const MapPtr &parentMap )
     : ProcessedStereoFrame( parentMap )
@@ -1292,7 +1392,7 @@ void ProcessedDenseFrame::processDenseCloud()
         int counter = 0;
 
         for ( auto &i : points ) {
-            if ( counter % 100 == 0 && cv::norm( i.point() ) < 30.0 )
+            if ( counter % 1 == 0 && cv::norm( i.point() ) < 40 )
                 successPoints.push_back( i );
             ++counter;
         }

@@ -113,44 +113,9 @@ void SlamThread::run()
 
 }
 
-SlamGeometry SlamThread::geometry() const
+const std::list < SlamThread::MapPtr > &SlamThread::maps() const
 {
-    SlamGeometry geometry;
-
-    auto maps = m_system->maps();
-
-    for ( auto &map : maps ) {
-
-        // auto mapPoints = map->mapPoints();
-        auto frames = map->frames();
-
-        /*for ( auto &i : mapPoints ) {
-
-            if ( i )
-                geometry.addPoint( ColorPoint3d( i->point(), i->color() ) );
-
-        }*/
-
-        for ( auto &i : frames ) {
-
-            auto stereoFrame = std::dynamic_pointer_cast< slam::StereoFrame >( i );
-
-            if ( stereoFrame )
-                geometry.addPath( stereoFrame->projectionMatrix() );
-
-            auto denseFrame = std::dynamic_pointer_cast< slam::DenseFrame >( i );
-
-            if ( denseFrame )
-                geometry.addPoints( denseFrame->translatedPoints() );
-
-        }
-
-
-
-    }
-
-    return geometry;
-
+    return m_system->maps();
 }
 
 CvImage SlamThread::pointsImage() const

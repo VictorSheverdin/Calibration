@@ -777,25 +777,12 @@ BMStereoProcessor::BMStereoProcessor()
 void BMStereoProcessor::initialize()
 {
     setDisparityProcessor( std::make_shared< BMDisparityProcessor >() );
-
-    setPreFilterSize( 15 );
-    setPreFilterCap( 12 );
-    setBlockSize( 17 );
-    setMinDisparity( 0 );
-    setNumDisparities( 256 );
-    setTextureThreshold( 350 );
-    setUniquenessRatio( 45 );
-    setSpeckleWindowSize( 35 );
-    setSpeckleRange( 6 );
-    setDisp12MaxDiff( 0 );
-
 }
 
 const std::shared_ptr< BMDisparityProcessor > BMStereoProcessor::disparityProcessor() const
 {
     return std::dynamic_pointer_cast< BMDisparityProcessor >( m_disparityProcessor );
 }
-
 
 int BMStereoProcessor::getMinDisparity() const
 {
