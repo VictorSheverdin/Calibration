@@ -13,8 +13,14 @@ class PCLWidget : public QVTKOpenGLWidget
 public:
     PCLWidget( QWidget* parent = nullptr );
 
-    void setPointCloud( const pcl::PointCloud< pcl::PointXYZRGB >::Ptr cloud, const std::string &id = "cloud" );
-    void setPointCloud( const std::list< ColorPoint3d > &points, const std::string &id = "cloud" );
+    void setPointCloud(const pcl::PointCloud< pcl::PointXYZRGB >::Ptr cloud, const std::string &id = "cloud" );
+
+    void setPointCloud( const std::list< ColorPoint3d > &points,
+                        const std::string &id = "cloud",
+                        const Eigen::Vector4f &origin = Eigen::Vector4f::Zero(),
+                        const Eigen::Quaternionf &orientation = Eigen::Quaternionf::Identity() );
+
+    void setPointCloudPose( const std::string &id, const Eigen::Vector4f &origin, const Eigen::Quaternionf &orientation );
 
     bool contains( const std::string &id ) const;
 

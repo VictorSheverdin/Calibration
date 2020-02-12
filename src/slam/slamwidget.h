@@ -73,7 +73,10 @@ public:
 
     void setPath( const std::list< StereoCameraMatrix > &path );
     void setSparseCloud( const std::list< ColorPoint3d > &points );
-    void setPointCloud( const std::list< ColorPoint3d > &points, const std::string &id );
+    void setPointCloud( const std::list< ColorPoint3d > &points, const std::string &id,
+                        const Eigen::Vector4f &origin = Eigen::Vector4f::Zero(),
+                        const Eigen::Quaternionf &orientation = Eigen::Quaternionf::Identity() );
+    void setPointCloudPose( const std::string &id, const Eigen::Vector4f &origin, const Eigen::Quaternionf &orientation );
 
 public slots:
     void updateViews();

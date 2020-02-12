@@ -48,7 +48,7 @@ void PCLWidget::setPointCloud( const pcl::PointCloud< pcl::PointXYZRGB >::Ptr cl
 
 }
 
-void PCLWidget::setPointCloud( const std::list< ColorPoint3d > &points, const std::string &id )
+void PCLWidget::setPointCloud( const std::list< ColorPoint3d > &points, const std::string &id, const Eigen::Vector4f &origin, const Eigen::Quaternionf &orientation )
 {
     pcl::PointCloud< pcl::PointXYZRGB >::Ptr pointCloud( new pcl::PointCloud< pcl::PointXYZRGB > );
 
@@ -72,8 +72,25 @@ void PCLWidget::setPointCloud( const std::list< ColorPoint3d > &points, const st
 
     }
 
+    pointCloud->sensor_origin_ = origin;
+    pointCloud->sensor_orientation_ = orientation;
+
     setPointCloud( pointCloud, id );
 
+}
+
+void PCLWidget::setPointCloudPose( const std::string &id, const Eigen::Vector4f &origin, const Eigen::Quaternionf &orientation )
+{
+    Eigen::Affine3f pose;
+
+    pose.setIdentity();
+
+    Eigen::Vector3f translation( origin[ 0 ], origin[ 1 ], origin[ 2 ] );
+    pose.translate( translation );
+
+    pose.rotate( orientation );
+
+    m_pclViewer->updatePointCloudPose( id, pose );
 }
 
 bool PCLWidget::contains( const std::string &id ) const

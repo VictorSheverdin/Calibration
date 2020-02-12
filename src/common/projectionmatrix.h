@@ -43,6 +43,8 @@ public:
 
     operator cv::Mat() const;
 
+    bool operator==( const ProjectionMatrix &other ) const;
+
 private:
     cv::Mat m_cameraMatrix;
 
@@ -82,6 +84,9 @@ public:
 
     bool saveYaml( const std::string &fileName ) const;
     bool loadYaml( const std::string &fileName );
+
+    bool operator==( const StereoCameraMatrix &other ) const;
+    bool operator!=( const StereoCameraMatrix &other ) const;
 
 protected:
     ProjectionMatrix m_leftProjectionMatrix;

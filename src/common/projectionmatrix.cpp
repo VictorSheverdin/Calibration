@@ -222,6 +222,11 @@ ProjectionMatrix::operator cv::Mat() const
     return projectionMatrix();
 }
 
+bool ProjectionMatrix::operator==( const ProjectionMatrix &other ) const
+{
+    return std::abs( cv::norm( projectionMatrix() - other.projectionMatrix() ) ) <= DOUBLE_EPS ;
+}
+
 // StereoCameraMatrix
 StereoCameraMatrix::StereoCameraMatrix()
 {
@@ -393,4 +398,15 @@ bool StereoCameraMatrix::loadYaml( const std::string &fileName )
     }
 
     return false;
+
+}
+
+bool StereoCameraMatrix::operator==( const StereoCameraMatrix &other ) const
+{
+    return m_leftProjectionMatrix == other.m_leftProjectionMatrix && m_rightProjectionMatrix == other.m_rightProjectionMatrix ;
+}
+
+bool StereoCameraMatrix::operator!=( const StereoCameraMatrix &other ) const
+{
+    return !operator==( other ) ;
 }

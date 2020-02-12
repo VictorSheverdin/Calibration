@@ -285,9 +285,14 @@ void SlamWidget::setSparseCloud( const std::list< ColorPoint3d > &points )
     setPointCloud( points, "sparse_cloud" );
 }
 
-void SlamWidget::setPointCloud( const std::list< ColorPoint3d > &points, const std::string &id )
+void SlamWidget::setPointCloud( const std::list< ColorPoint3d > &points, const std::string &id, const Eigen::Vector4f &origin, const Eigen::Quaternionf &orientation )
 {
-    m_pclWidget->setPointCloud( points, id );
+    m_pclWidget->setPointCloud( points, id, origin, orientation );
+}
+
+void SlamWidget::setPointCloudPose( const std::string &id, const Eigen::Vector4f &origin, const Eigen::Quaternionf &orientation )
+{
+    m_pclWidget->setPointCloudPose( id, origin, orientation );
 }
 
 void SlamWidget::timerEvent( QTimerEvent * )
@@ -377,12 +382,35 @@ void SlamWidget::updateDensePointCloud()
 
             auto denseFrame = std::dynamic_pointer_cast< slam::DenseFrame >( *i );
 
-            if ( denseFrame && counter % 1 == 0 ) {
+            if ( denseFrame ) {
 
-                auto id = std::to_string( counter );
+                auto id = "frame" + std::to_string( counter ) + "_cloud";
+
+                auto projectionMatrix = denseFrame->projectionMatrix();
+
+                cv::Mat rotation = projectionMatrix.leftProjectionMatrix().rotation().t();
+                cv::Mat translation = -rotation * projectionMatrix.leftProjectionMatrix().translation();
+
+                Eigen::Vector4f origin( translation.at< double >( 0, 0 ), translation.at< double >( 0, 1 ), translation.at< double >( 0, 2 ), 1 );
+
+                Eigen::Quaternionf::RotationMatrixType rotMatrix;
+
+                rotMatrix( 0, 0 ) = rotation.at< double >( 0, 0 );
+                rotMatrix( 0, 1 ) = rotation.at< double >( 0, 1 );
+                rotMatrix( 0, 2 ) = rotation.at< double >( 0, 2 );
+                rotMatrix( 1, 0 ) = rotation.at< double >( 1, 0 );
+                rotMatrix( 1, 1 ) = rotation.at< double >( 1, 1 );
+                rotMatrix( 1, 2 ) = rotation.at< double >( 1, 2 );
+                rotMatrix( 2, 0 ) = rotation.at< double >( 2, 0 );
+                rotMatrix( 2, 1 ) = rotation.at< double >( 2, 1 );
+                rotMatrix( 2, 2 ) = rotation.at< double >( 2, 2 );
+
+                Eigen::Quaternionf orientation( rotMatrix );
 
                 if ( !m_pclWidget->contains( id ) )
-                    setPointCloud( denseFrame->translatedPoints(), id );
+                    setPointCloud( denseFrame->points(), id, origin, orientation );
+
+                setPointCloudPose( id, origin, orientation );
 
             }
 

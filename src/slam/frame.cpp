@@ -1392,7 +1392,7 @@ void ProcessedDenseFrame::processDenseCloud()
         int counter = 0;
 
         for ( auto &i : points ) {
-            if ( counter % 1 == 0 && cv::norm( i.point() ) < 40 )
+            if ( counter % 1 == 0 && cv::norm( i.point() ) < 30 )
                 successPoints.push_back( i );
             ++counter;
         }
