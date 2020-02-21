@@ -73,14 +73,14 @@ public:
     unsigned int rescaleSize() const;
 
 protected:
-    QPointer<QCheckBox> m_adaptiveThresholdCheckBox;
-    QPointer<QCheckBox> m_normalizeImageCheckBox;
-    QPointer<QCheckBox> m_filterQuadsCheckBox;
-    QPointer<QCheckBox> m_fastCheckCheckBox;
+    QPointer< QCheckBox > m_adaptiveThresholdCheckBox;
+    QPointer< QCheckBox > m_normalizeImageCheckBox;
+    QPointer< QCheckBox > m_filterQuadsCheckBox;
+    QPointer< QCheckBox > m_fastCheckCheckBox;
 
 
-    QPointer<QCheckBox> m_rescaleCheckBox;
-    QPointer<RescaleSpinBox> m_rescaleSizeSpinBox;
+    QPointer< QCheckBox > m_rescaleCheckBox;
+    QPointer< RescaleSpinBox > m_rescaleSizeSpinBox;
 
 private:
     void initialize();

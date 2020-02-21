@@ -1249,6 +1249,10 @@ DenseFrameBase::DenseFrameBase()
     initialize();
 }
 
+DenseFrameBase::~DenseFrameBase()
+{
+}
+
 void DenseFrameBase::initialize()
 {
 }
@@ -1368,6 +1372,23 @@ void DenseFrameBase::setUniquenessRatio( const int uniquenessRatio )
     m_stereoProcessor.setUniquenessRatio( uniquenessRatio );
 }
 
+void DenseFrameBase::createOptimizationGrid()
+{
+    m_optimizationGrid.clear();
+
+    for ( auto j : m_points ) {
+        auto point = j.point();
+        m_optimizationGrid[ point.x * 10 ][ point.y * 10 ][ point.z * 10 ].push_back( j );
+
+    }
+
+}
+
+void DenseFrameBase::setOptimizationGrid( const OptimizationGrid &grid )
+{
+    m_optimizationGrid = grid;
+}
+
 // ProcessedDenseFrame
 ProcessedDenseFrame::ProcessedDenseFrame( const MapPtr &parentMap )
     : ProcessedStereoFrame( parentMap )
@@ -1385,19 +1406,10 @@ void ProcessedDenseFrame::processDenseCloud()
     auto rightFrame = this->rightFrame();
 
     if ( leftFrame && rightFrame ) {
-        std::list< ColorPoint3d > successPoints;
+        setPoints( m_stereoProcessor.processPointList( leftFrame->image(), rightFrame->image() ) );
 
-        auto points = m_stereoProcessor.processPointList( leftFrame->image(), rightFrame->image() );
+        // createOptimizationGrid();
 
-        int counter = 0;
-
-        for ( auto &i : points ) {
-            if ( counter % 1 == 0 && cv::norm( i.point() ) < 30 )
-                successPoints.push_back( i );
-            ++counter;
-        }
-
-        setPoints( successPoints );
     }
 
 }
@@ -1714,8 +1726,7 @@ void DenseFrame::replace( const ProcessedDenseFramePtr &frame )
 {
     StereoFrame::replace( frame );
 
-    if ( frame )
-        setPoints( frame->points() );
+    replaceProcedure( frame );
 
 }
 
@@ -1723,8 +1734,20 @@ void DenseFrame::replaceAndClean( const ProcessedDenseFramePtr &frame )
 {
     StereoFrame::replaceAndClean( frame );
 
-    if ( frame )
-        setPoints( frame->points() );
+    replaceProcedure( frame );
+
+}
+
+void DenseFrame::replaceProcedure( const ProcessedDenseFramePtr &frame )
+{
+    if ( frame ) {
+        // TODO: Smarter selection
+        for ( auto &i : frame->m_points )
+            if ( cv::norm( i.point() ) < 30 )
+                m_points.push_back( i );
+
+        setOptimizationGrid( frame->m_optimizationGrid );
+    }
 
 }
 

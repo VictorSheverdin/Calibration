@@ -297,8 +297,11 @@ protected:
 
 class DenseFrameBase
 {
+    friend class DenseFrame;
+
 public:
     DenseFrameBase();
+    virtual ~DenseFrameBase();
 
     void setPoints( const std::list< ColorPoint3d > &list );
     const std::list< ColorPoint3d > &points() const;
@@ -336,9 +339,16 @@ public:
     static void setUniquenessRatio( const int uniquenessRatio );
 
 protected:
+    using OptimizationGrid = std::map< int, std::map< int, std::map< int, std::list< ColorPoint3d > > > >;
+
     std::list< ColorPoint3d > m_points;
 
+    OptimizationGrid m_optimizationGrid;
+
     static BMStereoProcessor m_stereoProcessor;
+
+    void createOptimizationGrid();
+    void setOptimizationGrid( const OptimizationGrid &grid );
 
 private:
     void initialize();
@@ -347,6 +357,8 @@ private:
 
 class ProcessedDenseFrame : public ProcessedStereoFrame, public DenseFrameBase
 {
+    friend class DenseFrame;
+
 public:
     using FramePtr = std::shared_ptr< ProcessedDenseFrame >;
 
@@ -436,6 +448,9 @@ public:
 
 protected:
     DenseFrame( const MapPtr &parentMap );
+
+    void replaceProcedure( const ProcessedDenseFramePtr &frame );
+
 };
 
 }

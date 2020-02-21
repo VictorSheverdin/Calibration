@@ -5,9 +5,6 @@
 #include "image.h"
 #include "colorpoint.h"
 
-#include <QThread>
-#include <QMutex>
-
 #include <opencv2/opencv.hpp>
 #include <opencv2/ximgproc.hpp>
 

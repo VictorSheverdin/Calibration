@@ -33,6 +33,8 @@ set ( COMMON_SOURCES
     src/common/plane.cpp
     src/common/projectionmatrix.h
     src/common/projectionmatrix.cpp
+    src/common/markerprocessor.h
+    src/common/markerprocessor.cpp
     src/common/featureprocessor.h
     src/common/featureprocessor.cpp
     src/common/ipwidget.h

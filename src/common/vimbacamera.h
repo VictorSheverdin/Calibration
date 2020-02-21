@@ -6,10 +6,18 @@
 
 #include "limitedqueue.h"
 
-#include "VimbaCPP/Include/VimbaCPP.h"
+#include <VimbaCPP/Include/VimbaCPP.h>
 
 #include "defs.h"
 #include "image.h"
+
+static const int VIMBA_ORIGINAL_FRAME_SIZE = 2048;
+
+enum class VimbaDecimationType { WHOLE = 1, HALF = 2, QUARTER = 4, EIGHTH = 8 };
+
+static const VmbInt64_t ACTION_DEVICE_KEY = 1;
+static const VmbInt64_t ACTION_GROUP_KEY = 1;
+static const VmbInt64_t ACTION_GROUP_MASK = 1;
 
 class FrameObserver : public QObject, public AVT::VmbAPI::IFrameObserver
 {
@@ -141,3 +149,49 @@ private:
     void initialize();
 
 };
+
+void checkVimbaStatus( VmbErrorType status, std::string message );
+
+template <typename FeatureT>
+void setVimbaFeature( AVT::VmbAPI::CameraPtr camera, const std::string &key, FeatureT value )
+{
+    AVT::VmbAPI::FeaturePtr feature;
+
+    checkVimbaStatus( camera->GetFeatureByName( key.data(), feature ),
+        "Could not access " + key);
+
+    checkVimbaStatus( feature->SetValue(value), "Could not set " + key );
+
+}
+
+template <typename FeatureT>
+void setVimbaFeature( AVT::VmbAPI::VimbaSystem &system, const std::string &key, FeatureT value )
+{
+    AVT::VmbAPI::FeaturePtr feature;
+
+    checkVimbaStatus( system.GetFeatureByName( key.data(), feature ),
+        "Could not access " + key);
+
+    checkVimbaStatus( feature->SetValue(value), "Could not set " + key );
+
+}
+
+template <typename FeatureT>
+FeatureT getVimbaFeature( AVT::VmbAPI::CameraPtr camera, const std::string &key )
+{
+    FeatureT ret;
+
+    AVT::VmbAPI::FeaturePtr feature;
+
+    checkVimbaStatus( camera->GetFeatureByName( key.data(), feature ),
+        "Could not access " + key);
+
+    checkVimbaStatus( feature->GetValue( ret ), "Could not get " + key );
+
+    return ret;
+
+}
+
+void vimbaRunCommand( AVT::VmbAPI::VimbaSystem &system, const std::string &key );
+
+void vimbaRunCommand(AVT::VmbAPI::CameraPtr camera, const std::string &key );

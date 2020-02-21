@@ -4,7 +4,7 @@
 
 #include <opencv2/sfm.hpp>
 
-#include "src/common/defs.h"
+#include "defs.h"
 
 // ProjectionMatrix
 ProjectionMatrix::ProjectionMatrix()

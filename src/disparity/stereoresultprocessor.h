@@ -3,6 +3,9 @@
 #include "src/common/stereoprocessor.h"
 #include "src/common/rectificationprocessor.h"
 
+#include <QThread>
+#include <QMutex>
+
 class StereoResult
 {
 public:

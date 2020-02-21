@@ -8,6 +8,8 @@
 
 #include "optimizer.h"
 
+#include "src/common/colorpoint.h"
+
 namespace slam {
 
 class StereoFrameBase;

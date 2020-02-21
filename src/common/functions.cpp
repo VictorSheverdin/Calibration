@@ -79,15 +79,6 @@ CvImage colorizeDisparity( const cv::Mat &disparity )
 
 }
 
-void checkVimbaStatus( VmbErrorType status, std::string message )
-{
-    if (status != VmbErrorSuccess)
-    {
-        throw std::runtime_error(
-            message + "; status = " + std::to_string(status) );
-    }
-}
-
 bool drawFeaturePoint( CvImage *target, const cv::Point2f &pt, const int radius, const cv::Scalar &color )
 {
     if ( !target )
@@ -141,46 +132,6 @@ void drawLabel( CvImage *target, const std::string text, int height, int fontFac
                      fontFace, fontScale, color, thickness, cv::LINE_AA );
 
     }
-
-}
-
-void vimbaRunCommand( AVT::VmbAPI::VimbaSystem &system, const std::string &key )
-{
-    AVT::VmbAPI::FeaturePtr feature;
-    checkVimbaStatus( system.GetFeatureByName( key.data(), feature ),
-        "Could not access " + key );
-
-    checkVimbaStatus( feature->RunCommand(), "Could run command " + key );
-
-    bool bIsCommandDone = false;
-
-    do
-    {
-        if( VmbErrorSuccess != SP_ACCESS( feature )->IsCommandDone( bIsCommandDone ) )
-        {
-            break;
-        }
-    } while( false == bIsCommandDone );
-
-}
-
-void vimbaRunCommand( AVT::VmbAPI::CameraPtr camera, const std::string &key )
-{
-    AVT::VmbAPI::FeaturePtr feature;
-    checkVimbaStatus( camera->GetFeatureByName( key.data(), feature ),
-        "Could not access " + key );
-
-    checkVimbaStatus( feature->RunCommand(), "Could run command " + key );
-
-    bool bIsCommandDone = false;
-
-    do
-    {
-        if( VmbErrorSuccess != SP_ACCESS( feature )->IsCommandDone( bIsCommandDone ) )
-        {
-            break;
-        }
-    } while( false == bIsCommandDone );
 
 }
 

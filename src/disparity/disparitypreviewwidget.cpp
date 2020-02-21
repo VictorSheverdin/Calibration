@@ -43,6 +43,42 @@ ImageWidget *DisparityPreviewWidget::disparityView() const
     return m_disparityView;
 }
 
+// View3DWidget
+View3DWidget::View3DWidget( QWidget* parent )
+    : PCLWidget( parent )
+{
+    initialize();
+}
+
+void View3DWidget::initialize()
+{
+    m_pclViewer->registerPointPickingCallback( View3DWidget::pickingEventHandler, m_pclViewer.get() );
+}
+
+void View3DWidget::pickingEventHandler( const pcl::visualization::PointPickingEvent &event, void *viewer_void )
+{
+    float x, y, z;
+
+    if (event.getPointIndex () == -1) {
+        return;
+    }
+
+    event.getPoint( x, y, z );
+
+    auto distance = sqrt( x * x + y * y + z * z );
+
+    std::stringstream ss;
+    ss << distance;
+
+    application()->setStatusBarText( tr( "Distance = %1" )
+                                     .arg( QString::number( distance ) ) );
+
+    auto widget = reinterpret_cast< pcl::visualization::PCLVisualizer *>( viewer_void );
+
+    widget->removeText3D( "Text" );
+    widget->addText3D( ss.str(), pcl::PointXYZ( x, y, z - 0.1 ), 0.2, 1.0, 0, 0, "Text" );
+
+}
 
 // DisparityWidgetBase
 DisparityWidgetBase::DisparityWidgetBase( QWidget* parent )
@@ -59,7 +95,7 @@ void DisparityWidgetBase::initialize()
 
     m_view = new DisparityPreviewWidget( this );
     tabWidget->resize(1200, 800);
-    m_3dWidget = new PCLWidget( this );
+    m_3dWidget = new View3DWidget( this );
 
     tabWidget->addTab( m_view, tr( "Disparity" ) );
     tabWidget->addTab( m_3dWidget, tr( "3D priview" ) );

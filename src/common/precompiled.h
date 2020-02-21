@@ -10,6 +10,7 @@
 #include <QGridLayout>
 #include <QDialog>
 #include <QPixmap>
+#include <QCheckBox>
 #include <QDialogButtonBox>
 #include <QtXml/QDomDocument>
 #include <QtXml/QDomElement>

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "src/common/image.h"
+#include "image.h"
 #include "projectionmatrix.h"
 
 class CalibrationDataBase

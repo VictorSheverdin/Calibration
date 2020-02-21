@@ -22,7 +22,9 @@ public:
 
     void setPointCloudPose( const std::string &id, const Eigen::Vector4f &origin, const Eigen::Quaternionf &orientation );
 
-    bool contains( const std::string &id ) const;
+    bool contains( const std::string &id ) const ;
+
+    void showPointCloud( const std::string &id, const bool flag ) ;
 
 public slots:
     void update();

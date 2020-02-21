@@ -3,6 +3,8 @@
 #include "pclwidget.h"
 
 #include <vtkGenericOpenGLRenderWindow.h>
+#include <vtkRenderWindowInteractor.h>
+#include <vtkInteractorStyleTrackballCamera.h>
 #include <vtkPointPicker.h>
 
 PCLWidget::PCLWidget( QWidget* parent )
@@ -24,16 +26,24 @@ void PCLWidget::initialize()
 
     m_pclViewer = pcl::visualization::PCLVisualizer::Ptr( new pcl::visualization::PCLVisualizer( m_renderer.Get(), renderWindow.Get(), "PCLVisualizer", false ) );
     SetRenderWindow( m_pclViewer->getRenderWindow() );
+    m_pclViewer->setupInteractor( GetInteractor(), GetRenderWindow() );
 
     m_pclViewer->initCameraParameters();
 
     m_pclViewer->setPointCloudRenderingProperties( pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2 );
 
     m_pclViewer->setCameraPosition( 0, 0, -10, 0, -1, 0 );
-
-    m_pclViewer->addCoordinateSystem( 0.5 );
+    m_pclViewer->setCameraClipDistances( 0.1, 1000 );
 
     m_pclViewer->setShowFPS( true );
+
+    m_pclViewer->getInteractorStyle()->SetAutoAdjustCameraClippingRange( false );
+
+    /*vtkSmartPointer< vtkInteractorStyleTrackballCamera > style = vtkSmartPointer< vtkInteractorStyleTrackballCamera >::New();
+
+    style->SetAutoAdjustCameraClippingRange( false );
+
+    renderWindow->GetInteractor()->SetInteractorStyle( style );*/
 
 }
 
@@ -98,9 +108,15 @@ bool PCLWidget::contains( const std::string &id ) const
     return m_pclViewer->contains( id );
 }
 
+void PCLWidget::showPointCloud( const std::string &id, const bool flag )
+{
+    m_pclViewer->setPointCloudRenderingProperties( pcl::visualization::PCL_VISUALIZER_OPACITY, flag ? 1.0 : 0.0, id );
+}
+
 void PCLWidget::update()
 {
     m_pclViewer->getRenderWindow()->Render();
 
     QVTKOpenGLWidget::update();
 }
+

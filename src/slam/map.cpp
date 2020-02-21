@@ -114,7 +114,8 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
     denseFrame->extractKeyPoints();
     denseFrame->extractGradientPoints();
 
-    denseFrame->processDenseCloud();
+    //if ( m_frames.size() % 5 == 0 )
+        denseFrame->processDenseCloud();
 
     const std::lock_guard< std::mutex > lock( m_mutex );
 
@@ -141,7 +142,7 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
 
             auto keypointsCount = m_previousKeypointsCount;
 
-            // previousLeftFrame->triangulatePoints();
+            previousLeftFrame->triangulatePoints();
 
             int trackedPointCount;
 

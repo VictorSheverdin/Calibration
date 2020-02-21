@@ -10,11 +10,11 @@
 
 #include "src/common/vimbacamera.h"
 
+#include "src/common/pclwidget.h"
 #include "src/common/calibrationdatabase.h"
 
 class ImageWidget;
 class DisparityControlWidget;
-class PCLWidget;
 class BMControlWidget;
 class BMGPUControlWidget;
 class GMControlWidget;
@@ -38,6 +38,19 @@ protected:
 
 private:
     void initialize();
+
+};
+
+class View3DWidget : public PCLWidget
+{
+
+public:
+    View3DWidget( QWidget* parent = nullptr );
+
+private:
+    void initialize();
+
+    static void pickingEventHandler( const pcl::visualization::PointPickingEvent &event, void *viewer_void );
 
 };
 
@@ -69,7 +82,7 @@ private slots:
 protected:
     QPointer< DisparityPreviewWidget > m_view;
     QPointer< DisparityControlWidget > m_controlWidget;
-    QPointer< PCLWidget > m_3dWidget;
+    QPointer< View3DWidget > m_3dWidget;
 
     QMutex m_updateMutex;
 

@@ -62,14 +62,15 @@ void ImagesWidget::setStereoImage( const CvImage &image )
 }
 
 // PCLWidget
-View3dWidget::View3dWidget( QWidget* parent )
+View3DWidget::View3DWidget( QWidget* parent )
     : PCLWidget( parent )
 {
     initialize();
 }
 
-void View3dWidget::initialize()
+void View3DWidget::initialize()
 {
+    m_pclViewer->addCoordinateSystem( 0.5 );
 }
 
 vtkSmartPointer< vtkPolyDataMapper > polyLineMapper( std::list< cv::Vec3d > &points )
@@ -97,7 +98,7 @@ vtkSmartPointer< vtkPolyDataMapper > polyLineMapper( std::list< cv::Vec3d > &poi
      return mapper;
 }
 
-void View3dWidget::setLeftPath( std::list< cv::Vec3d > &points )
+void View3DWidget::setLeftPath( std::list< cv::Vec3d > &points )
 {
     auto mapper = polyLineMapper( points );
 
@@ -111,7 +112,7 @@ void View3dWidget::setLeftPath( std::list< cv::Vec3d > &points )
 
 }
 
-void View3dWidget::setRightPath( std::list< cv::Vec3d > &points )
+void View3DWidget::setRightPath( std::list< cv::Vec3d > &points )
 {
     auto mapper = polyLineMapper( points );
 
@@ -125,7 +126,7 @@ void View3dWidget::setRightPath( std::list< cv::Vec3d > &points )
 
 }
 
-void View3dWidget::setPath( const std::list< StereoCameraMatrix > &path )
+void View3DWidget::setPath( const std::list< StereoCameraMatrix > &path )
 {
     std::list< cv::Vec3d > leftPoints;
     std::list< cv::Vec3d > rightPoints;
@@ -153,7 +154,23 @@ void View3dWidget::setPath( const std::list< StereoCameraMatrix > &path )
 
 }
 
-void View3dWidget::setFrustum( const StereoCameraMatrix &cameraMatrix )
+void View3DWidget::showPath( const bool value )
+{
+    if ( m_leftTrajectoryActor )
+        m_leftTrajectoryActor->SetVisibility( value );
+
+    if ( m_rightTrajectoryActor )
+        m_rightTrajectoryActor->SetVisibility( value );
+
+    if ( m_leftCameraActor )
+        m_leftCameraActor->SetVisibility( value );
+
+    if ( m_rightCameraActor )
+        m_rightCameraActor->SetVisibility( value );
+
+}
+
+void View3DWidget::setFrustum( const StereoCameraMatrix &cameraMatrix )
 {
     setLeftFrustum( cameraMatrix.leftProjectionMatrix() );
     setRightFrustum( cameraMatrix.rightProjectionMatrix() );
@@ -209,7 +226,7 @@ vtkSmartPointer< vtkPolyDataMapper > cameraMapper( const ProjectionMatrix &camer
     return mapper;
 }
 
-void View3dWidget::setLeftFrustum( const ProjectionMatrix &cameraMatrix )
+void View3DWidget::setLeftFrustum( const ProjectionMatrix &cameraMatrix )
 {
     auto mapper = cameraMapper( cameraMatrix );
 
@@ -225,7 +242,7 @@ void View3dWidget::setLeftFrustum( const ProjectionMatrix &cameraMatrix )
 
 }
 
-void View3dWidget::setRightFrustum( const ProjectionMatrix &cameraMatrix )
+void View3DWidget::setRightFrustum( const ProjectionMatrix &cameraMatrix )
 {
     auto mapper = cameraMapper( cameraMatrix );
 
@@ -241,25 +258,27 @@ void View3dWidget::setRightFrustum( const ProjectionMatrix &cameraMatrix )
 
 }
 
-// SlamWidget
-SlamWidget::SlamWidget( QWidget* parent )
+// SlamViewWidget
+SlamViewWidget::SlamViewWidget( QWidget* parent )
     : QSplitter( Qt::Horizontal, parent )
 {
     initialize();
 }
 
-SlamWidget::~SlamWidget()
+SlamViewWidget::~SlamViewWidget()
 {
     m_slamThread->terminate();
     m_slamThread->wait();
 }
 
-void SlamWidget::initialize()
+void SlamViewWidget::initialize()
 {
+    setSizePolicy( QSizePolicy::Expanding, QSizePolicy::Expanding );
+
     m_imagesWidget = new ImagesWidget( this );
     addWidget( m_imagesWidget );
 
-    m_pclWidget = new View3dWidget( this );
+    m_pclWidget = new View3DWidget( this );
     addWidget( m_pclWidget );
 
     int widthDiv2 = width() / 2;
@@ -268,38 +287,43 @@ void SlamWidget::initialize()
 
     m_slamThread = new SlamThread( this );
 
-    connect( m_slamThread, &SlamThread::updateSignal, this, &SlamWidget::updateViews );
+    connect( m_slamThread, &SlamThread::updateSignal, this, &SlamViewWidget::updateViews );
 
     m_slamThread->start();
 
     startTimer( 1000 );
 }
 
-void SlamWidget::setPath( const std::list< StereoCameraMatrix > &path )
+void SlamViewWidget::setPath( const std::list< StereoCameraMatrix > &path )
 {
     m_pclWidget->setPath( path );
 }
 
-void SlamWidget::setSparseCloud( const std::list< ColorPoint3d > &points )
+void SlamViewWidget::setSparseCloud( const std::list< ColorPoint3d > &points )
 {
     setPointCloud( points, "sparse_cloud" );
 }
 
-void SlamWidget::setPointCloud( const std::list< ColorPoint3d > &points, const std::string &id, const Eigen::Vector4f &origin, const Eigen::Quaternionf &orientation )
+void SlamViewWidget::setPointCloud( const std::list< ColorPoint3d > &points, const std::string &id, const Eigen::Vector4f &origin, const Eigen::Quaternionf &orientation )
 {
     m_pclWidget->setPointCloud( points, id, origin, orientation );
 }
 
-void SlamWidget::setPointCloudPose( const std::string &id, const Eigen::Vector4f &origin, const Eigen::Quaternionf &orientation )
+void SlamViewWidget::setPointCloudPose( const std::string &id, const Eigen::Vector4f &origin, const Eigen::Quaternionf &orientation )
 {
     m_pclWidget->setPointCloudPose( id, origin, orientation );
 }
 
-void SlamWidget::timerEvent( QTimerEvent * )
+void SlamViewWidget::showPath( const bool flag )
+{
+    m_pclWidget->showPath( flag );
+}
+
+void SlamViewWidget::timerEvent( QTimerEvent * )
 {
 }
 
-std::list< StereoCameraMatrix > SlamWidget::path() const
+std::list< StereoCameraMatrix > SlamViewWidget::path() const
 {
     std::list< StereoCameraMatrix > ret;
 
@@ -323,7 +347,7 @@ std::list< StereoCameraMatrix > SlamWidget::path() const
     return ret;
 }
 
-std::list< ColorPoint3d > SlamWidget::sparseCloud() const
+std::list< ColorPoint3d > SlamViewWidget::sparseCloud() const
 {
     std::list< ColorPoint3d > ret;
 
@@ -345,30 +369,30 @@ std::list< ColorPoint3d > SlamWidget::sparseCloud() const
     return ret;
 }
 
-void SlamWidget::updateViews()
+void SlamViewWidget::updateViews()
 {
     updateImages();
     update3dView();
 }
 
-void SlamWidget::updateImages()
+void SlamViewWidget::updateImages()
 {
     m_imagesWidget->setPointsImage( m_slamThread->pointsImage() );
     m_imagesWidget->setTracksImage( m_slamThread->tracksImage() );
     m_imagesWidget->setStereoImage( m_slamThread->stereoImage() );
 }
 
-void SlamWidget::updatePath()
+void SlamViewWidget::updatePath()
 {
     setPath( path() );
 }
 
-void SlamWidget::updateSparseCloud()
+void SlamViewWidget::updateSparseCloud()
 {
     setSparseCloud( sparseCloud() );
 }
 
-void SlamWidget::updateDensePointCloud()
+void SlamViewWidget::updateDensePointCloud()
 {
     auto maps = m_slamThread->maps();
 
@@ -416,15 +440,143 @@ void SlamWidget::updateDensePointCloud()
 
             ++counter;
 
+/*
+            auto stereoFrame = std::dynamic_pointer_cast< slam::StereoFrameBase >( *i );
+            auto processedDenseFrame = std::dynamic_pointer_cast< slam::ProcessedDenseFrame >( *i );
+            auto denseFrame = std::dynamic_pointer_cast< slam::DenseFrameBase >( *i );
+
+            if ( denseFrame ) {
+
+                std::string id;
+
+                if ( processedDenseFrame )
+                    id = "processed_cloud";
+                else
+                    id = "frame" + std::to_string( counter ) + "_cloud";
+
+                auto projectionMatrix = stereoFrame->projectionMatrix();
+
+                cv::Mat rotation = projectionMatrix.leftProjectionMatrix().rotation().t();
+                cv::Mat translation = -rotation * projectionMatrix.leftProjectionMatrix().translation();
+
+                Eigen::Vector4f origin( translation.at< double >( 0, 0 ), translation.at< double >( 0, 1 ), translation.at< double >( 0, 2 ), 1 );
+
+                Eigen::Quaternionf::RotationMatrixType rotMatrix;
+
+                rotMatrix( 0, 0 ) = rotation.at< double >( 0, 0 );
+                rotMatrix( 0, 1 ) = rotation.at< double >( 0, 1 );
+                rotMatrix( 0, 2 ) = rotation.at< double >( 0, 2 );
+                rotMatrix( 1, 0 ) = rotation.at< double >( 1, 0 );
+                rotMatrix( 1, 1 ) = rotation.at< double >( 1, 1 );
+                rotMatrix( 1, 2 ) = rotation.at< double >( 1, 2 );
+                rotMatrix( 2, 0 ) = rotation.at< double >( 2, 0 );
+                rotMatrix( 2, 1 ) = rotation.at< double >( 2, 1 );
+                rotMatrix( 2, 2 ) = rotation.at< double >( 2, 2 );
+
+                Eigen::Quaternionf orientation( rotMatrix );
+
+                if ( processedDenseFrame || !m_pclWidget->contains( id ) )
+                    setPointCloud( denseFrame->points(), id, origin, orientation );
+
+                setPointCloudPose( id, origin, orientation );
+
+            }
+
+            ++counter;*/
+
         }
 
     }
 
 }
 
-void SlamWidget::update3dView()
+void SlamViewWidget::update3dView()
 {
     updatePath();
     // updateSparseCloud();
     updateDensePointCloud();
+}
+
+// SlamControlWidget
+SlamControlWidget::SlamControlWidget( QWidget* parent )
+    : QWidget( parent )
+{
+    initialize();
+}
+
+void SlamControlWidget::initialize()
+{
+    setSizePolicy( QSizePolicy::Expanding, QSizePolicy::Minimum );
+
+    auto layout = new QHBoxLayout( this );
+
+    m_viewOdometryCheck = new QCheckBox( tr( "Show odometry" ), this );
+    m_viewOdometryCheck->setChecked( true );
+
+    m_viewSparseCheck = new QCheckBox( tr( "Show sparse reconstruction" ), this );
+    m_viewSparseCheck->setChecked( false );
+
+    m_viewDenseCheck = new QCheckBox( tr( "Show dense reconstruction" ), this );
+    m_viewDenseCheck->setChecked( true );
+
+    layout->addWidget( m_viewOdometryCheck );
+    layout->addWidget( m_viewSparseCheck );
+    layout->addWidget( m_viewDenseCheck );
+
+}
+
+const QPointer< QCheckBox > &SlamControlWidget::odometryCheck() const
+{
+    return m_viewOdometryCheck;
+}
+
+const QPointer< QCheckBox > &SlamControlWidget::sparseCheck() const
+{
+    return m_viewSparseCheck;
+}
+
+const QPointer< QCheckBox > &SlamControlWidget::denseCheck() const
+{
+    return m_viewDenseCheck;
+}
+
+bool SlamControlWidget::isOdometryChecked() const
+{
+    return m_viewOdometryCheck->isChecked();
+}
+
+bool SlamControlWidget::isSparseChecked() const
+{
+    return m_viewSparseCheck->isChecked();
+}
+
+bool SlamControlWidget::isDenseChecked() const
+{
+    return m_viewDenseCheck->isChecked();
+}
+
+// SlamWidget
+SlamWidget::SlamWidget( QWidget* parent )
+    : QWidget( parent )
+{
+    initialize();
+}
+
+void SlamWidget::initialize()
+{
+    auto layout = new QVBoxLayout( this );
+
+    m_controlWidget = new SlamControlWidget( this );
+    m_viewWidget = new SlamViewWidget( this );
+
+    layout->addWidget( m_controlWidget );
+    layout->addWidget( m_viewWidget );
+
+    updateVisibility();
+
+}
+
+void SlamWidget::updateVisibility()
+{
+    m_viewWidget->showPath( m_controlWidget->isOdometryChecked() );
 }

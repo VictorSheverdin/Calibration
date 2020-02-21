@@ -35,8 +35,6 @@ void SlamThread::initialize()
 
     m_system = slam::World::create( projectionMatrix );
 
-
-
 }
 
 void SlamThread::run()
@@ -113,7 +111,7 @@ void SlamThread::run()
 
 }
 
-const std::list < SlamThread::MapPtr > &SlamThread::maps() const
+const std::list< SlamThread::MapPtr > &SlamThread::maps() const
 {
     return m_system->maps();
 }

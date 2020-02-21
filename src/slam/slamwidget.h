@@ -11,6 +11,8 @@
 #include "src/common/imagewidget.h"
 #include "src/common/pclwidget.h"
 
+class QCheckBox;
+
 class ImagesWidget : public QSplitter
 {
     Q_OBJECT
@@ -33,14 +35,16 @@ private:
 
 };
 
-class View3dWidget : public PCLWidget
+class View3DWidget : public PCLWidget
 {
     Q_OBJECT
 
 public:
-    View3dWidget( QWidget* parent = nullptr );
+    View3DWidget( QWidget* parent = nullptr );
 
     void setPath( const std::list< StereoCameraMatrix > &path );
+
+    void showPath( const bool value );
 
 protected:
     vtkSmartPointer< vtkActor > m_leftTrajectoryActor;
@@ -63,13 +67,13 @@ private:
 
 class SlamThread;
 
-class SlamWidget : public QSplitter
+class SlamViewWidget : public QSplitter
 {
     Q_OBJECT
 
 public:
-    explicit SlamWidget( QWidget* parent = nullptr );
-    ~SlamWidget();
+    explicit SlamViewWidget( QWidget* parent = nullptr );
+    ~SlamViewWidget();
 
     void setPath( const std::list< StereoCameraMatrix > &path );
     void setSparseCloud( const std::list< ColorPoint3d > &points );
@@ -77,6 +81,8 @@ public:
                         const Eigen::Vector4f &origin = Eigen::Vector4f::Zero(),
                         const Eigen::Quaternionf &orientation = Eigen::Quaternionf::Identity() );
     void setPointCloudPose( const std::string &id, const Eigen::Vector4f &origin, const Eigen::Quaternionf &orientation );
+
+    void showPath( const bool flag );
 
 public slots:
     void updateViews();
@@ -90,7 +96,7 @@ protected slots:
 
 protected:
     QPointer< ImagesWidget > m_imagesWidget;
-    QPointer< View3dWidget > m_pclWidget;
+    QPointer< View3DWidget > m_pclWidget;
 
     QPointer< SlamThread > m_slamThread;
 
@@ -102,4 +108,47 @@ protected:
 private:
     void initialize();
 
+};
+
+class SlamControlWidget : public QWidget
+{
+    Q_OBJECT
+
+public:
+    explicit SlamControlWidget( QWidget* parent = nullptr );
+
+    const QPointer< QCheckBox > &odometryCheck() const;
+    const QPointer< QCheckBox > &sparseCheck() const;
+    const QPointer< QCheckBox > &denseCheck() const;
+
+    bool isOdometryChecked() const;
+    bool isSparseChecked() const;
+    bool isDenseChecked() const;
+
+protected:
+    QPointer< QCheckBox > m_viewOdometryCheck;
+    QPointer< QCheckBox > m_viewSparseCheck;
+    QPointer< QCheckBox > m_viewDenseCheck;
+
+private:
+    void initialize();
+
+};
+
+class SlamWidget : public QWidget
+{
+    Q_OBJECT
+
+public:
+    explicit SlamWidget( QWidget* parent = nullptr );
+
+protected slots:
+    void updateVisibility();
+
+protected:
+    QPointer< SlamControlWidget > m_controlWidget;
+    QPointer< SlamViewWidget > m_viewWidget;
+
+private:
+    void initialize();
 };

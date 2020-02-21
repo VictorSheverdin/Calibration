@@ -4,7 +4,7 @@
 
 #include "mainwindow.h"
 
-#include "src/common/functions.h"
+#include "src/common/vimbacamera.h"
 
 Application::Application( int &argc, char **argv )
     : QApplication( argc, argv ), m_vimbaSystem( AVT::VmbAPI::VimbaSystem::GetInstance() )
