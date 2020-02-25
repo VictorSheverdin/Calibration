@@ -185,7 +185,7 @@ void MasterCamera::initialize( const std::string &ip )
 
     setVimbaFeature( m_camera, "ExposureTimeAbs", 10000.0 );
 
-    setVimbaFeature( m_camera, "Gain", 13.0 );
+    setVimbaFeature( m_camera, "Gain", 3.0 );
 
     setVimbaFeature( m_camera, "TriggerMode", "Off" );
 
@@ -227,7 +227,7 @@ void SlaveCamera::initialize( const std::string &ip )
 
     setVimbaFeature( m_camera, "ExposureTimeAbs", 10000.0 );
 
-    setVimbaFeature( m_camera, "Gain", 13.0 );
+    setVimbaFeature( m_camera, "Gain", 3.0 );
 
     setVimbaFeature( m_camera, "TriggerSelector", "FrameStart" );
     setVimbaFeature( m_camera, "TriggerSource", "Line1" );

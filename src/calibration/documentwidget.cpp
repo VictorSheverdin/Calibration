@@ -3,6 +3,7 @@
 #include "documentwidget.h"
 
 #include "calibrationwidget.h"
+#include "reportwidget.h"
 
 // CalibrationDocumentBase
 CalibrationDocumentBase::CalibrationDocumentBase( QWidget* parent )
@@ -60,14 +61,14 @@ bool CalibrationDocumentBase::isTrippleCalibrationDocument() const
     return toTrippleCalibrationDocument();
 }
 
-ReportDocument *CalibrationDocumentBase::toReportDocument()
+ReportDocumentBase *CalibrationDocumentBase::toReportDocument()
 {
-    return dynamic_cast< ReportDocument * >( this );
+    return dynamic_cast< ReportDocumentBase * >( this );
 }
 
-const ReportDocument *CalibrationDocumentBase::toReportDocument() const
+const ReportDocumentBase *CalibrationDocumentBase::toReportDocument() const
 {
-    return dynamic_cast< const ReportDocument * >( this );
+    return dynamic_cast< const ReportDocumentBase * >( this );
 }
 
 bool CalibrationDocumentBase::isReportDocument() const
@@ -249,13 +250,67 @@ void TrippleCalibrationDocument::initialize()
 {
 }
 
-// ReportDocument
-ReportDocument::ReportDocument( QWidget* parent )
+// ReportDocumentBase
+ReportDocumentBase::ReportDocumentBase( QWidget* parent )
     : DocumentBase( parent )
 {
     initialize();
 }
 
-void ReportDocument::initialize()
+void ReportDocumentBase::initialize()
 {
+}
+
+// MonocularReportDocument
+MonocularReportDocument::MonocularReportDocument( QWidget* parent )
+    : ReportDocumentBase( parent )
+{
+    initialize();
+}
+
+void MonocularReportDocument::initialize()
+{
+    setWidget( new MonocularReportWidget( this ) );
+}
+
+MonocularReportWidget *MonocularReportDocument::widget() const
+{
+    return dynamic_cast< MonocularReportWidget * >( m_widget );
+}
+
+void MonocularReportDocument::report( const MonocularCalibrationData &calibration )
+{
+    widget()->report( calibration );
+}
+
+void MonocularReportDocument::exportYaml() const
+{
+    widget()->saveYAMLDialog();
+}
+
+// StereoReportDocument
+StereoReportDocument::StereoReportDocument( QWidget* parent )
+    : ReportDocumentBase( parent )
+{
+    initialize();
+}
+
+void StereoReportDocument::initialize()
+{
+    setWidget( new StereoReportWidget( this ) );
+}
+
+StereoReportWidget *StereoReportDocument::widget() const
+{
+    return dynamic_cast< StereoReportWidget * >( m_widget );
+}
+
+void StereoReportDocument::report( const StereoCalibrationData &calibration )
+{
+    widget()->report( calibration );
+}
+
+void StereoReportDocument::exportYaml() const
+{
+    widget()->saveYAMLDialog();
 }

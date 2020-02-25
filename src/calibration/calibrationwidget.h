@@ -3,7 +3,8 @@
 #include <QSplitter>
 #include <QPointer>
 
-#include "templateprocessor.h"
+#include "templatethread.h"
+#include "src/common/markerprocessor.h"
 
 #include "reportwidget.h"
 #include "src/common/defs.h"
@@ -41,7 +42,8 @@ protected:
     QPointer< CalibrationIconsWidget > m_iconsList;
     QPointer< ImageDialog > m_iconViewDialog;
 
-    TemplateProcessor m_processor;
+    TemplateProcessor m_templateProcessor;
+    ArucoProcessor m_arucoProcessor;
 
     static const int m_minimumCalibrationFrames = 5;
 
@@ -72,8 +74,6 @@ protected slots:
 protected:
     MonocularCalibrationWidgetBase( QWidget *parent = nullptr );
 
-    QPointer< MonocularReportDialog > m_reportDialog;
-
 private:
     void initialize();
 
@@ -88,8 +88,6 @@ protected slots:
 
 protected:
     StereoCalibrationWidgetBase( QWidget *parent = nullptr );
-
-    QPointer< StereoReportDialog > m_reportDialog;
 
 private:
     void initialize();

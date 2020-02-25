@@ -6,6 +6,9 @@
 
 class QVBoxLayout;
 
+class MonocularCalibrationData;
+class StereoCalibrationData;
+
 class CalibrationWidgetBase;
 class MonocularCameraCalibrationWidget;
 class StereoCameraCalibrationWidget;
@@ -19,8 +22,10 @@ class StereoImageCalibrationWidget;
 class MonocularCameraCalibrationDocument;
 class StereoCameraCalibrationDocument;
 class TrippleCalibrationDocument;
-class ReportDocument;
+class MonocularReportWidget;
+class StereoReportWidget;
 
+class ReportDocumentBase;
 
 class CalibrationDocumentBase : public DocumentBase
 {
@@ -43,8 +48,8 @@ public:
     const TrippleCalibrationDocument *toTrippleCalibrationDocument() const;
     bool isTrippleCalibrationDocument() const;
 
-    ReportDocument *toReportDocument();
-    const ReportDocument *toReportDocument() const;
+    ReportDocumentBase *toReportDocument();
+    const ReportDocumentBase *toReportDocument() const;
     bool isReportDocument() const;
 
 public slots:
@@ -151,12 +156,50 @@ private:
 
 };
 
-class ReportDocument : public DocumentBase
+class ReportDocumentBase : public DocumentBase
 {
     Q_OBJECT
 
 public:
-    explicit ReportDocument( QWidget* parent = nullptr );
+    explicit ReportDocumentBase( QWidget* parent = nullptr );
+
+    virtual void exportYaml() const = 0;
+
+private:
+    void initialize();
+
+};
+
+class MonocularReportDocument : public ReportDocumentBase
+{
+    Q_OBJECT
+
+public:
+    explicit MonocularReportDocument( QWidget* parent = nullptr );
+
+    MonocularReportWidget *widget() const;
+
+    void report( const MonocularCalibrationData &calibration );
+
+    virtual void exportYaml() const override;
+
+private:
+    void initialize();
+
+};
+
+class StereoReportDocument : public ReportDocumentBase
+{
+    Q_OBJECT
+
+public:
+    explicit StereoReportDocument( QWidget* parent = nullptr );
+
+    StereoReportWidget *widget() const;
+
+    void report( const StereoCalibrationData &calibration );
+
+    virtual void exportYaml() const override;
 
 private:
     void initialize();

@@ -15,8 +15,12 @@ class CalibrationDocumentBase;
 class CameraCalibrationDocumentBase;
 class MonocularCameraCalibrationDocument;
 class StereoCameraCalibrationDocument;
+class MonocularImageCalibrationDocument;
+class StereoImageCalibrationDocument;
 class TrippleCalibrationDocument;
-class ReportDocument;
+class ReportDocumentBase;
+class MonocularReportDocument;
+class StereoReportDocument;
 
 class MainWindow : public DocumentMainWindow
 {
@@ -27,24 +31,30 @@ public:
     explicit MainWindow( const QString &cameraIp, QWidget *parent = nullptr );
     explicit MainWindow( const QString &leftCameraIp, const QString &rightCameraIp, QWidget *parent = nullptr );
 
-    void addMonocularCameraCalibrationDocument( const QString &cameraIp );
-    void addStereoCameraCalibrationDocument( const QString &leftCameraIp, const QString &rightCameraIp );
+    QPointer< MonocularCameraCalibrationDocument > addMonocularCameraCalibrationDocument( const QString &cameraIp );
+    QPointer< StereoCameraCalibrationDocument > addStereoCameraCalibrationDocument( const QString &leftCameraIp, const QString &rightCameraIp );
 
-    void addMonocularCalibrationDocument();
-    void addStereoCalibrationDocument();
+    QPointer< MonocularImageCalibrationDocument > addMonocularCalibrationDocument();
+    QPointer< StereoImageCalibrationDocument > addStereoCalibrationDocument();
+
+    QPointer< MonocularReportDocument > addMonocularReportDocument();
+    QPointer< StereoReportDocument > addStereoReportDocument();
 
     CalibrationDocumentBase *currentCalibrationDocument() const;
     CameraCalibrationDocumentBase *currentCameraCalibrationDocument() const;
     MonocularCameraCalibrationDocument *currentMonocularCalibrationDocument() const;
     StereoCameraCalibrationDocument *currentStereoCalibrationDocument() const;
     TrippleCalibrationDocument *currentTrippleCalibrationDocument() const;
-    ReportDocument *currentReportDocument() const;
+    ReportDocumentBase *currentReportDocument() const;
 
 public slots:
     void importDialog();
     void exportDialog();
 
     void grabFrame();
+
+    void exportYamlResults();
+
     void calculate();
 
     void settingsDialog();
@@ -71,6 +81,7 @@ protected:
 
     QPointer< QAction > m_grabAction;
     QPointer< QAction > m_autoGrabAction;
+    QPointer< QAction > m_exportYamlAction;
     QPointer< QAction > m_calculateAction;
     QPointer< QAction > m_clearIconsAction;
 

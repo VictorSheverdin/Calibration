@@ -26,7 +26,7 @@ void GrabWidgetBase::initialize()
 
 }
 
-TemplateProcessor::Type GrabWidgetBase::templateType() const
+TypeComboBox::Type GrabWidgetBase::templateType() const
 {
     return m_cameraWidget->templateType();
 }

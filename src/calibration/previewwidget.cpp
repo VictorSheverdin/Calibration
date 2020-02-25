@@ -2,7 +2,7 @@
 
 #include "previewwidget.h"
 
-CameraPreviewWidget::CameraPreviewWidget( QWidget* parent )
+CameraPreviewWidget::CameraPreviewWidget( QWidget *parent )
     : ImageWidget(parent)
 {
     initialize();
@@ -22,27 +22,22 @@ const CvImage CameraPreviewWidget::previewImage() const
     return ImageWidget::image();
 }
 
-const std::vector<cv::Point2f> &CameraPreviewWidget::previewPoints() const
+void CameraPreviewWidget::setTemplateExist( const bool value )
 {
-    return m_previewPoints;
+    m_templateExist = value;
 }
 
 bool CameraPreviewWidget::isTemplateExist() const
 {
-    return !previewPoints().empty();
+    return m_templateExist;
 }
 
-void CameraPreviewWidget::setSourceImage(const CvImage image)
+void CameraPreviewWidget::setSourceImage( const CvImage image )
 {
     m_sourceImage = image;
 }
 
-void CameraPreviewWidget::setPreviewImage(const CvImage image)
+void CameraPreviewWidget::setPreviewImage( const CvImage image )
 {
     ImageWidget::setImage( image );
-}
-
-void CameraPreviewWidget::setPreviewPoints( const std::vector<cv::Point2f> &points )
-{
-    m_previewPoints = points;
 }

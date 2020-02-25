@@ -3,9 +3,7 @@
 #include <QWidget>
 #include <QPointer>
 
-#include "src/common/image.h"
-
-#include "templateprocessor.h"
+#include "templatethread.h"
 
 #include "camerawidget.h"
 
@@ -20,7 +18,7 @@ class GrabWidgetBase : public QWidget
 public:
     explicit GrabWidgetBase( QWidget* parent = nullptr );
 
-    TemplateProcessor::Type templateType() const;
+    TypeComboBox::Type templateType() const;
     const cv::Size &templateCount() const;
     double templateSize() const;
     bool resizeFlag() const;

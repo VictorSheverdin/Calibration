@@ -13,6 +13,8 @@
 #include "application.h"
 #include "mainwindow.h"
 
+#include "documentwidget.h"
+
 // CalibrationWidgetBase
 CalibrationWidgetBase::CalibrationWidgetBase( QWidget *parent )
     : QWidget( parent )
@@ -30,10 +32,10 @@ void CalibrationWidgetBase::initialize()
 
     connect( m_iconsList, SIGNAL( iconActivated( CalibrationIconBase* ) ), this, SLOT( showIcon( CalibrationIconBase* ) ) );
 
-    m_processor.setAdaptiveThreshold( true );
-    m_processor.setFastCheck( false );
-    m_processor.setFilterQuads( true );
-    m_processor.setNormalizeImage( true );
+    m_templateProcessor.setAdaptiveThreshold( true );
+    m_templateProcessor.setFastCheck( false );
+    m_templateProcessor.setFilterQuads( true );
+    m_templateProcessor.setNormalizeImage( true );
 
     m_iconViewDialog = new ImageDialog( application()->mainWindow() );
     m_iconViewDialog->resize( 800, 600 );
@@ -71,11 +73,11 @@ MonocularCalibrationData CalibrationWidgetBase::calcMonocularCalibration( const 
 
     if ( !icons.empty() ) {
 
-        m_processor.setCount( count );
-        m_processor.setSize( size );
+        m_templateProcessor.setCount( count );
+        m_templateProcessor.setSize( size );
 
         std::vector< cv::Point3f > objectPoints;
-        m_processor.calcChessboardCorners( &objectPoints );
+        m_templateProcessor.calcCorners( &objectPoints );
 
         if ( !objectPoints.empty() ) {
 
@@ -162,8 +164,8 @@ MonocularCalibrationData CalibrationWidgetBase::calcMonocularCalibration( const 
 {
     MonocularCalibrationData ret;
 
-    m_processor.setCount( count );
-    m_processor.setSize( size );
+    m_templateProcessor.setCount( count );
+    m_templateProcessor.setSize( size );
 
     ret.setFrameSize( frameSize );
 
@@ -176,7 +178,7 @@ MonocularCalibrationData CalibrationWidgetBase::calcMonocularCalibration( const 
         if ( !i->empty() ) {
 
             std::vector< cv::Point3f > objectPoints;
-            m_processor.calcChessboardCorners( &objectPoints );
+            m_templateProcessor.calcCorners( &objectPoints );
 
             if ( !objectPoints.empty() ) {
 
@@ -233,11 +235,11 @@ StereoCalibrationData CalibrationWidgetBase::calcStereoCalibration(const QList< 
 {
     StereoCalibrationData ret;
 
-    m_processor.setCount( count );
-    m_processor.setSize( size );
+    m_templateProcessor.setCount( count );
+    m_templateProcessor.setSize( size );
 
     std::vector< cv::Point3f > objectPoints;
-    m_processor.calcChessboardCorners( &objectPoints );
+    m_templateProcessor.calcCorners( &objectPoints );
 
     if ( !objectPoints.empty() ) {
 
@@ -347,9 +349,6 @@ MonocularCalibrationWidgetBase::MonocularCalibrationWidgetBase( QWidget *parent 
 
 void MonocularCalibrationWidgetBase::initialize()
 {
-    m_reportDialog = new MonocularReportDialog( application()->mainWindow() );
-    m_reportDialog->resize( 800, 600 );
-
 }
 
 void MonocularCalibrationWidgetBase::showIcon( CalibrationIconBase *icon )
@@ -369,9 +368,6 @@ StereoCalibrationWidgetBase::StereoCalibrationWidgetBase( QWidget *parent )
 
 void StereoCalibrationWidgetBase::initialize()
 {
-    m_reportDialog = new StereoReportDialog( application()->mainWindow() );
-    m_reportDialog->resize( 800, 600 );
-
 }
 
 void StereoCalibrationWidgetBase::showIcon( CalibrationIconBase *icon )
@@ -419,22 +415,21 @@ void MonocularImageCalibrationWidget::calculate()
 {
     auto calibrationResult = calcMonocularCalibration( m_iconsList->icons(), m_parametersWidget->templateCount(), m_parametersWidget->templateSize() );
 
-    m_reportDialog->showMaximized();
-    m_reportDialog->activateWindow();
+    auto doc = application()->mainWindow()->addMonocularReportDocument();
 
-    m_reportDialog->report( calibrationResult );
+    doc->report( calibrationResult );
 
 }
 
 MonocularIcon *MonocularImageCalibrationWidget::createIcon( const CvImage &image )
 {
-    m_processor.setCount( m_parametersWidget->templateCount() );
-    m_processor.setSize( m_parametersWidget->templateSize() );
+    m_templateProcessor.setCount( m_parametersWidget->templateCount() );
+    m_templateProcessor.setSize( m_parametersWidget->templateSize() );
 
     std::vector< cv::Point2f > points;
     CvImage preview;
 
-    m_processor.processFrame( image, &preview, &points );
+    m_templateProcessor.processFrame( image, &preview, &points );
 
     return new MonocularIcon( preview, image.size(), points, QObject::tr("Frame") + " " + QString::number( m_iconCount++ ) );
 }
@@ -502,10 +497,9 @@ void StereoImageCalibrationWidget::calculate()
 {
     auto calibrationResult = calcStereoCalibration( m_iconsList->icons(), m_parametersWidget->templateCount(), m_parametersWidget->templateSize() );
 
-    m_reportDialog->showMaximized();
-    m_reportDialog->activateWindow();
+    auto doc = application()->mainWindow()->addStereoReportDocument();
 
-    m_reportDialog->report( calibrationResult );
+    doc->report( calibrationResult );
 
 }
 
@@ -533,8 +527,8 @@ void StereoImageCalibrationWidget::loadIcon( const QString &leftFileName, const 
 
 StereoIcon *StereoImageCalibrationWidget::createIcon( const CvImage &leftImage, const CvImage &rightImage )
 {
-    m_processor.setCount( m_parametersWidget->templateCount() );
-    m_processor.setSize( m_parametersWidget->templateSize() );
+    m_templateProcessor.setCount( m_parametersWidget->templateCount() );
+    m_templateProcessor.setSize( m_parametersWidget->templateSize() );
 
     if ( leftImage.size() == rightImage.size() ) {
 
@@ -543,8 +537,8 @@ StereoIcon *StereoImageCalibrationWidget::createIcon( const CvImage &leftImage, 
         CvImage leftPreview;
         CvImage rightPreview;
 
-        m_processor.processFrame( leftImage, &leftPreview, &leftPoints );
-        m_processor.processFrame( rightImage, &rightPreview, &rightPoints );
+        m_templateProcessor.processFrame( leftImage, &leftPreview, &leftPoints );
+        m_templateProcessor.processFrame( rightImage, &rightPreview, &rightPoints );
 
         return new StereoIcon( leftPreview, rightPreview,
                                leftImage.size(), leftPoints, rightPoints,
@@ -614,10 +608,9 @@ void MonocularCameraCalibrationWidget::calculate()
 {
     auto calibrationResult = calcMonocularCalibration( m_iconsList->icons(), m_taskWidget->templateCount(), m_taskWidget->templateSize() );
 
-    m_reportDialog->showMaximized();
-    m_reportDialog->activateWindow();
+    auto doc = application()->mainWindow()->addMonocularReportDocument();
 
-    m_reportDialog->report( calibrationResult );
+    doc->report( calibrationResult );
 
 }
 
@@ -632,13 +625,13 @@ void MonocularCameraCalibrationWidget::grabFrame()
 
 MonocularIcon *MonocularCameraCalibrationWidget::createIcon( const CvImage &image )
 {
-    m_processor.setCount( m_taskWidget->templateCount() );
-    m_processor.setSize( m_taskWidget->templateSize() );
+    m_templateProcessor.setCount( m_taskWidget->templateCount() );
+    m_templateProcessor.setSize( m_taskWidget->templateSize() );
 
     std::vector< cv::Point2f > points;
     CvImage preview;
 
-    m_processor.processFrame( image, &preview, &points );
+    m_templateProcessor.processFrame( image, &preview, &points );
 
     return new MonocularIcon( preview, image.size(), points, QObject::tr("Frame") + " " + QString::number( m_iconCount++ ) );
 }
@@ -646,7 +639,6 @@ MonocularIcon *MonocularCameraCalibrationWidget::createIcon( const CvImage &imag
 void MonocularCameraCalibrationWidget::addIcon( const CvImage &image )
 {
     CalibrationWidgetBase::addIcon( createIcon( image ) );
-
 }
 
 void MonocularCameraCalibrationWidget::insertIcon( const CvImage &image )
@@ -731,10 +723,9 @@ void StereoCameraCalibrationWidget::calculate()
 {
     auto calibrationResult = calcStereoCalibration( m_iconsList->icons(), m_taskWidget->templateCount(), m_taskWidget->templateSize() );
 
-    m_reportDialog->showMaximized();
-    m_reportDialog->activateWindow();
+    auto doc = application()->mainWindow()->addStereoReportDocument();
 
-    m_reportDialog->report( calibrationResult );
+    doc->report( calibrationResult );
 
 }
 
@@ -762,8 +753,8 @@ void StereoCameraCalibrationWidget::loadIcon( const QString &leftFileName, const
 
 StereoIcon *StereoCameraCalibrationWidget::createIcon( const CvImage &leftImage, const CvImage &rightImage )
 {
-    m_processor.setCount( m_taskWidget->templateCount() );
-    m_processor.setSize( m_taskWidget->templateSize() );
+    m_templateProcessor.setCount( m_taskWidget->templateCount() );
+    m_templateProcessor.setSize( m_taskWidget->templateSize() );
 
     if ( leftImage.size() == rightImage.size() ) {
 
@@ -772,8 +763,8 @@ StereoIcon *StereoCameraCalibrationWidget::createIcon( const CvImage &leftImage,
         CvImage leftPreview;
         CvImage rightPreview;
 
-        m_processor.processFrame( leftImage, &leftPreview, &leftPoints );
-        m_processor.processFrame( rightImage, &rightPreview, &rightPoints );
+        m_templateProcessor.processFrame( leftImage, &leftPreview, &leftPoints );
+        m_templateProcessor.processFrame( rightImage, &rightPreview, &rightPoints );
 
         return new StereoIcon( leftPreview, rightPreview,
                                leftImage.size(), leftPoints, rightPoints,

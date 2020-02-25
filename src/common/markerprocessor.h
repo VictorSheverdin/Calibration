@@ -23,15 +23,29 @@ protected:
     std::vector< cv::Point2f > m_corners ;
 } ;
 
+using ArucoMarkerList = std::list< ArucoMarker >;
+
 class ArucoProcessor
 {
 public:
     ArucoProcessor();
 
-    void detectMarkers( const CvImage &image ) ;
+    void setResizeFlag( const bool value );
+    void setFrameMaximumSize( const unsigned int value );
+
+    bool resizeFlag() const;
+    unsigned int frameMaximumFlag() const;
+
+    ArucoMarkerList detectMarkers( const CvImage &image ) ;
+
+    bool processFrame( const Frame &frame, CvImage *view, ArucoMarkerList *markers );
+    bool processPreview( const Frame &frame, CvImage *preview );
 
 protected:
     cv::Ptr< cv::aruco::Dictionary > m_dictionary ;
+
+    bool m_resizeFlag;
+    int m_frameMaximumSize;
 
 private:
     void initialize();

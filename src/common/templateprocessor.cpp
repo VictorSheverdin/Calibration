@@ -2,7 +2,7 @@
 
 #include "templateprocessor.h"
 
-#include "src/common/functions.h"
+#include "functions.h"
 
 // ProcessorData
 ProcessorState::ProcessorState()
@@ -172,7 +172,7 @@ bool TemplateProcessor::processFrame(const Frame &frame, CvImage *view, std::vec
 
 }
 
-bool TemplateProcessor::processPreview(const Frame &frame, CvImage *preview, std::vector< cv::Point2f > *points )
+bool TemplateProcessor::processPreview(const Frame &frame, CvImage *preview )
 {
     bool ret = false;
 
@@ -187,7 +187,7 @@ bool TemplateProcessor::processPreview(const Frame &frame, CvImage *preview, std
         else
             frame.copyTo( sourceFrame );
 
-        ret = processFrame( sourceFrame, preview, points );
+        ret = processFrame( sourceFrame, preview, nullptr );
 
     }
 
@@ -195,7 +195,7 @@ bool TemplateProcessor::processPreview(const Frame &frame, CvImage *preview, std
 
 }
 
-bool TemplateProcessor::calcChessboardCorners( std::vector< cv::Point3f > *corners )
+bool TemplateProcessor::calcCorners( std::vector< cv::Point3f > *corners )
 {
     corners->clear();
 
@@ -213,8 +213,6 @@ bool TemplateProcessor::calcChessboardCorners( std::vector< cv::Point3f > *corne
                 for( int j = 0; j < m_count.width; j++ )
                     corners->push_back( cv::Point3f( ( 2*j + i % 2 ) * m_size, i * m_size, 0 ) );
             return true;
-        case ARUCO_MARKERS:
-            break;
 
     }
 
@@ -222,7 +220,7 @@ bool TemplateProcessor::calcChessboardCorners( std::vector< cv::Point3f > *corne
 
 }
 
-bool TemplateProcessor::findPoints(const CvImage &frame, std::vector<cv::Point2f> *points )
+bool TemplateProcessor::findPoints( const CvImage &frame, std::vector< cv::Point2f > *points )
 {
     bool ret = false;
 
@@ -231,82 +229,19 @@ bool TemplateProcessor::findPoints(const CvImage &frame, std::vector<cv::Point2f
 
         if ( ret && !points->empty() && m_subPixFlag ) {
             cv::Mat gray;
-            cv::cvtColor(frame, gray, cv::COLOR_BGR2GRAY);
+            cv::cvtColor( frame, gray, cv::COLOR_BGR2GRAY );
             cv::cornerSubPix( gray, *points, m_subPixWinSize, m_subPixZeroZone, cv::TermCriteria( cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 30, 0.1 ) );
 
         }
 
     }
-    else if ( m_templateType == CIRCLES )
+    else if ( m_templateType == CIRCLES ) {
         ret = cv::findCirclesGrid( frame, m_count, *points, cv::CALIB_CB_SYMMETRIC_GRID );
-    else if ( m_templateType == ASYM_CIRCLES )
+    }
+    else if ( m_templateType == ASYM_CIRCLES ) {
         ret = cv::findCirclesGrid( frame, m_count, *points, cv::CALIB_CB_ASYMMETRIC_GRID );
+    }
 
     return ret;
 
 }
-
-// MonocularProcessorThread
-MonocularProcessorThread::MonocularProcessorThread( const TemplateProcessor &processor, QObject *parent )
-    : QThread( parent )
-{
-    initialize();
-
-    setProcessor( processor );
-
-}
-
-void MonocularProcessorThread::initialize()
-{
-}
-
-void MonocularProcessorThread::setProcessor( const TemplateProcessor &processor )
-{
-    m_processor = processor;
-}
-
-const TemplateProcessor &MonocularProcessorThread::processor() const
-{
-    return m_processor;
-}
-
-TemplateProcessor &MonocularProcessorThread::processor()
-{
-    return m_processor;
-}
-
-void MonocularProcessorThread::addFrame( const Frame &frame )
-{
-    m_framesMutex.lock();
-    m_framesQueue.push( frame );
-    m_framesMutex.unlock();
-
-}
-
-void MonocularProcessorThread::run()
-{
-    if ( !m_framesQueue.empty() ) {
-        /*CvImage procFrame;
-        std::vector< cv::Point2f > previewPoints;
-        m_processor.processPreview( m_frame, &procFrame, &previewPoints );*/
-
-    }
-
-}
-
-// StereoProcessorThread
-StereoProcessorThread::StereoProcessorThread( QObject *parent )
-    : QThread( parent )
-{
-    initialize();
-}
-
-void StereoProcessorThread::initialize()
-{
-}
-
-void StereoProcessorThread::run()
-{
-}
-
-

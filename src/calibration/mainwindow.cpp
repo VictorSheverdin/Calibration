@@ -54,24 +54,59 @@ void MainWindow::initialize()
 
 }
 
-void MainWindow::addMonocularCameraCalibrationDocument(const QString &cameraIp )
+QPointer< MonocularCameraCalibrationDocument > MainWindow::addMonocularCameraCalibrationDocument(const QString &cameraIp )
 {
-    addDocument( new MonocularCameraCalibrationDocument( cameraIp, this ) );
+    QPointer< MonocularCameraCalibrationDocument > ret = new MonocularCameraCalibrationDocument( cameraIp, this );
+
+    addDocument( ret );
+
+    return ret;
 }
 
-void MainWindow::addStereoCameraCalibrationDocument( const QString &leftCameraIp, const QString &rightCameraIp )
+QPointer< StereoCameraCalibrationDocument > MainWindow::addStereoCameraCalibrationDocument( const QString &leftCameraIp, const QString &rightCameraIp )
 {
-    addDocument( new StereoCameraCalibrationDocument( leftCameraIp, rightCameraIp, this ) );
+    QPointer< StereoCameraCalibrationDocument > ret = new StereoCameraCalibrationDocument( leftCameraIp, rightCameraIp, this );
+
+    addDocument( ret );
+
+    return ret;
 }
 
-void MainWindow::addMonocularCalibrationDocument()
+QPointer< MonocularImageCalibrationDocument > MainWindow::addMonocularCalibrationDocument()
 {
-    addDocument( new MonocularImageCalibrationDocument( this ) );
+
+    QPointer< MonocularImageCalibrationDocument > ret = new MonocularImageCalibrationDocument( this );
+
+    addDocument( ret );
+
+    return ret;
 }
 
-void MainWindow::addStereoCalibrationDocument()
+QPointer< StereoImageCalibrationDocument > MainWindow::addStereoCalibrationDocument()
 {
-    addDocument( new StereoImageCalibrationDocument( this ) );
+    QPointer< StereoImageCalibrationDocument > ret = new StereoImageCalibrationDocument( this );
+
+    addDocument( ret );
+
+    return ret;
+}
+
+QPointer< MonocularReportDocument > MainWindow::addMonocularReportDocument()
+{
+    QPointer< MonocularReportDocument > ret = new MonocularReportDocument( this );
+
+    addDocument( ret );
+
+    return ret;
+}
+
+QPointer< StereoReportDocument > MainWindow::addStereoReportDocument()
+{
+    QPointer< StereoReportDocument > ret = new StereoReportDocument( this );
+
+    addDocument( ret );
+
+    return ret;
 }
 
 CalibrationDocumentBase *MainWindow::currentCalibrationDocument() const
@@ -99,9 +134,9 @@ TrippleCalibrationDocument *MainWindow::currentTrippleCalibrationDocument() cons
     return getCurrentDocument< TrippleCalibrationDocument >();
 }
 
-ReportDocument *MainWindow::currentReportDocument() const
+ReportDocumentBase *MainWindow::currentReportDocument() const
 {
-    return getCurrentDocument< ReportDocument >();
+    return getCurrentDocument< ReportDocumentBase >();
 }
 
 void MainWindow::setupActions()
@@ -119,6 +154,7 @@ void MainWindow::setupActions()
     m_autoGrabAction->setCheckable( true );
     m_autoGrabAction->setChecked( true );
 
+    m_exportYamlAction = new QAction( QIcon( ":/resources/images/xml.ico" ), tr( "Export YAML" ), this );
     m_calculateAction = new QAction( QIcon( ":/resources/images/checkerflag.ico" ), tr( "Calculate" ), this );
 
     m_clearIconsAction = new QAction( QIcon( ":/resources/images/trash.ico" ), tr( "Clear" ), this );
@@ -133,11 +169,11 @@ void MainWindow::setupActions()
     connect( m_exportAction, &QAction::triggered, this, &MainWindow::exportDialog );
 
     connect( m_grabAction, &QAction::triggered, this, &MainWindow::grabFrame );
+    connect( m_exportYamlAction, &QAction::triggered, this, &MainWindow::exportYamlResults );
     connect( m_calculateAction, &QAction::triggered, this, &MainWindow::calculate );
     connect( m_clearIconsAction, &QAction::triggered, this, &MainWindow::clearIcons );
     connect( m_settingsAction, &QAction::triggered, this, &MainWindow::settingsDialog );
     connect( m_exitAction, &QAction::triggered, this, &MainWindow::close );
-
 }
 
 void MainWindow::setupMenus()
@@ -158,6 +194,8 @@ void MainWindow::setupMenus()
     auto actionsMenu = m_menuBar->addMenu( tr( "Actions" ) );
     actionsMenu->addAction( m_grabAction );
     actionsMenu->addAction( m_autoGrabAction );
+    actionsMenu->addSeparator();
+    actionsMenu->addAction( m_exportYamlAction );
     actionsMenu->addSeparator();
     actionsMenu->addAction( m_calculateAction );
     actionsMenu->addSeparator();
@@ -187,6 +225,8 @@ void MainWindow::setupToolBars()
     m_toolBar->addSeparator();
     m_toolBar->addAction( m_grabAction );
     m_toolBar->addAction( m_autoGrabAction );
+    m_toolBar->addSeparator();
+    m_toolBar->addAction( m_exportYamlAction );
     m_toolBar->addSeparator();
     m_toolBar->addAction( m_calculateAction );
 }
@@ -223,6 +263,15 @@ void MainWindow::grabFrame()
 
     if (doc)
         doc->grabFrame();
+}
+
+void MainWindow::exportYamlResults()
+{
+    auto doc = currentReportDocument();
+
+    if (doc)
+        doc->exportYaml();
+
 }
 
 void MainWindow::calculate()

@@ -25,6 +25,8 @@ set ( COMMON_SOURCES
     src/common/functions.cpp
     src/common/calibrationdatabase.h
     src/common/calibrationdatabase.cpp
+    src/common/templateprocessor.h
+    src/common/templateprocessor.cpp
     src/common/rectificationprocessor.h
     src/common/rectificationprocessor.cpp
     src/common/stereoprocessor.h
@@ -181,8 +183,8 @@ add_executable( calibration ${COMMON_SOURCES} ${RES_SOURCES}
     src/calibration/previewwidget.cpp
     src/calibration/taskwidget.h
     src/calibration/taskwidget.cpp
-    src/calibration/templateprocessor.h
-    src/calibration/templateprocessor.cpp
+    src/calibration/templatethread.h
+    src/calibration/templatethread.cpp
     src/calibration/reportwidget.h
     src/calibration/reportwidget.cpp
     src/calibration/parameterswidget.h

@@ -33,13 +33,10 @@ class StereoRectificationProcessor : public RectificationProcessorBase
 {
 public:
     StereoRectificationProcessor();
-    StereoRectificationProcessor( const StereoCalibrationDataShort &calibrationData );
-    StereoRectificationProcessor( const std::string &fileName );
+    StereoRectificationProcessor( const StereoCalibrationDataBase &calibrationData );
 
-    void setCalibrationData( const StereoCalibrationDataShort &calibrationData );
-    const StereoCalibrationDataShort &calibration() const;
-
-    bool loadYaml( const std::string &fileName );
+    void setCalibrationData( const StereoCalibrationDataBase &calibrationData );
+    const StereoCalibrationDataBase &calibration() const;
 
     bool rectifyLeft( const CvImage &image, CvImage *result );
     bool rectifyRight( const CvImage &image , CvImage *result );
@@ -53,6 +50,6 @@ public:
     bool isValid() const;
 
 protected:
-    StereoCalibrationDataShort m_calibrationData;
+    StereoCalibrationDataBase m_calibrationData;
 
 };

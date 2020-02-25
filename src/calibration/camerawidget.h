@@ -3,7 +3,10 @@
 #include <QSplitter>
 #include <QMutex>
 
-#include "templateprocessor.h"
+#include "templatethread.h"
+#include "src/common/markerprocessor.h"
+
+#include "parameterswidget.h"
 
 #include "src/common/defs.h"
 
@@ -20,7 +23,7 @@ class CameraWidgetBase : public QSplitter
 public:
     CameraWidgetBase( QWidget* parent = nullptr );
 
-    void setType(const TemplateProcessor::Type type );
+    void setType(const TypeComboBox::Type type );
     void setCount( const cv::Size &count );
     void setTemplateSize( const double value );
     void setResizeFlag( const bool value );
@@ -31,7 +34,7 @@ public:
     void setFilterQuads( const bool value );
     void setFastCheck( const bool value );
 
-    TemplateProcessor::Type templateType() const;
+    TypeComboBox::Type templateType() const;
     const cv::Size &templateCount() const;
     double templateSize() const;
     bool resizeFlag() const;
@@ -43,10 +46,10 @@ public:
     bool fastCheck() const;
 
 protected:
-    TemplateProcessor m_previewProcessor;
+    TemplateProcessor m_previewTemplateProcessor;
+    ArucoProcessor m_previewArucoProcessor;
 
-    static const int m_aquireInterval = 30;
-    static const int m_aquireCount = 10;
+    TypeComboBox::Type m_type;
 
 private:
     void initialize();
@@ -61,14 +64,13 @@ public:
 
     const CvImage sourceImage() const;
     const CvImage previewImage() const;
-    const std::vector<cv::Point2f> &previewPoints() const;
 
+    void setTemplateExist( const bool value );
     bool isTemplateExist() const;
 
 public slots:
     void setSourceImage(const CvImage image);
     void setPreviewImage(const CvImage image);
-    void setPreviewPoints(const std::vector<cv::Point2f> &points );
 
 protected slots:
     void updateFrame();
@@ -94,11 +96,9 @@ public:
 
     const CvImage leftSourceImage() const;
     const CvImage leftDisplayedImage() const;
-    const std::vector<cv::Point2f> &leftPreviewPoints() const;
 
     const CvImage rightSourceImage() const;
     const CvImage rightDisplayedImage() const;
-    const std::vector<cv::Point2f> &rightPreviewPoints() const;
 
     bool isTemplateExist() const;
 
@@ -107,11 +107,9 @@ public:
 public slots:
     void setLeftSourceImage( const CvImage image );
     void setLeftDisplayedImage( const CvImage image );
-    void setLeftPreviewPoints(const std::vector<cv::Point2f> &points );
 
     void setRightSourceImage( const CvImage image );
     void setRightDisplayedImage( const CvImage image );
-    void setRightPreviewPoints( const std::vector<cv::Point2f> &points );
 
 protected slots:
     void updateFrame();

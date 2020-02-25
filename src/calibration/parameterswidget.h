@@ -2,11 +2,10 @@
 
 #include <QWidget>
 
-#include "templateprocessor.h"
-
 class CountSpinBox;
 class SizeSpinBox;
 class QCheckBox;
+class QLabel;
 class RescaleSpinBox;
 
 class QHBoxLayout;
@@ -16,9 +15,11 @@ class TypeComboBox : public QComboBox
     Q_OBJECT
 
 public:
+    enum Type { CHECKERBOARD, CIRCLES, ASYM_CIRCLES, ARUCO_MARKERS };
+
     explicit TypeComboBox( QWidget *parent = nullptr );
 
-    TemplateProcessor::Type currentType() const;
+    Type currentType() const;
 
 private:
     void initialize();
@@ -32,7 +33,7 @@ class ParametersWidget : public QWidget
 public:
     explicit ParametersWidget( QWidget* parent = nullptr );
 
-    TemplateProcessor::Type templateType() const;
+    TypeComboBox::Type templateType() const;
 
     unsigned int xCount() const;
     unsigned int yCount() const;
@@ -43,13 +44,22 @@ public:
 signals:
     void parametersChanges();
 
-protected:
-    QPointer<QHBoxLayout> m_layout;
+protected slots:
+    void updateVisibility();
 
-    QPointer<TypeComboBox> m_typeCombo;
-    QPointer<CountSpinBox> m_xCountSpinBox;
-    QPointer<CountSpinBox> m_yCountSpinBox;
-    QPointer<SizeSpinBox> m_sizeSpinBox;
+protected:
+    QPointer< QHBoxLayout > m_layout;
+
+    QPointer< QLabel > m_countLabel;
+    QPointer< TypeComboBox > m_typeCombo;
+    QPointer< CountSpinBox > m_xCountSpinBox;
+    QPointer< CountSpinBox > m_yCountSpinBox;
+    QPointer< QLabel > m_sizeLabel;
+    QPointer< SizeSpinBox > m_sizeSpinBox;
+    QPointer< QLabel > m_sizeMeasLabel;
+    QPointer< QLabel > m_intervalLabel;
+    QPointer< SizeSpinBox > m_intervalSpinBox;
+    QPointer< QLabel > m_intervalMeasLabel;
 
 private:
     void initialize();

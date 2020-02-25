@@ -14,15 +14,15 @@ TypeComboBox::TypeComboBox(QWidget *parent )
 
 void TypeComboBox::initialize()
 {
-    addItem( tr( "Checkerboard" ), TemplateProcessor::CHECKERBOARD );
-    addItem( tr( "Circles" ), TemplateProcessor::CIRCLES );
-    addItem( tr( "Asymetric circles" ), TemplateProcessor::ASYM_CIRCLES );
-    addItem( tr( "Aruco markers" ), TemplateProcessor::ASYM_CIRCLES );
+    addItem( tr( "Checkerboard" ), CHECKERBOARD );
+    addItem( tr( "Circles" ), CIRCLES );
+    addItem( tr( "Asymetric circles" ), ASYM_CIRCLES );
+    addItem( tr( "Aruco markers" ), ARUCO_MARKERS );
 }
 
-TemplateProcessor::Type TypeComboBox::currentType() const
+TypeComboBox::Type TypeComboBox::currentType() const
 {
-    return static_cast<TemplateProcessor::Type>( currentData().toInt() );
+    return static_cast< Type >( currentData().toInt() );
 }
 
 // ParametersWidget
@@ -47,7 +47,8 @@ void ParametersWidget::initialize()
 
     QHBoxLayout *countLayout = new QHBoxLayout();
 
-    countLayout->addWidget( new QLabel( tr( "Count:" ) ) );
+    m_countLabel = new QLabel( tr( "Count:" ) );
+    countLayout->addWidget( m_countLabel );
 
     m_xCountSpinBox = new CountSpinBox( this );
     m_xCountSpinBox->setValue( 9 );
@@ -61,19 +62,39 @@ void ParametersWidget::initialize()
 
     QHBoxLayout *sizeLayout = new QHBoxLayout();
 
-    sizeLayout->addWidget( new QLabel( tr( "Size:" ) ) );
+    m_sizeLabel = new QLabel( tr( "Size:" ) );
+    sizeLayout->addWidget( m_sizeLabel );
 
     m_sizeSpinBox = new SizeSpinBox( this );
     m_sizeSpinBox->setValue( 0.05 );
+    m_sizeSpinBox->setDecimals( 3 );
     sizeLayout->addWidget( m_sizeSpinBox );
+
+    m_sizeMeasLabel = new QLabel( tr( "m. " ) );
+    sizeLayout->addWidget( m_sizeMeasLabel );
+
+    m_intervalLabel = new QLabel( tr( "Interval:" ) );
+    sizeLayout->addWidget( m_intervalLabel );
+
+    m_intervalSpinBox = new SizeSpinBox( this );
+    m_intervalSpinBox->setValue( 0.05 );
+    m_intervalSpinBox->setDecimals( 3 );
+    sizeLayout->addWidget( m_intervalSpinBox );
+
+    m_intervalMeasLabel = new QLabel( tr( "m. " ) );
+    sizeLayout->addWidget( m_intervalMeasLabel );
 
     m_layout->addLayout( sizeLayout );
 
     m_layout->addStretch();
 
+    connect( m_typeCombo, static_cast< void ( TypeComboBox::* )( int ) >( &TypeComboBox::currentIndexChanged ), this, &ParametersWidget::updateVisibility );
+
+    updateVisibility();
+
 }
 
-TemplateProcessor::Type ParametersWidget::templateType() const
+TypeComboBox::Type ParametersWidget::templateType() const
 {
     return m_typeCombo->currentType();
 }
@@ -96,6 +117,29 @@ const cv::Size ParametersWidget::templateCount() const
 double ParametersWidget::templateSize() const
 {
     return m_sizeSpinBox->value();
+}
+
+void ParametersWidget::updateVisibility()
+{
+    auto templateType = this->templateType();
+
+    if ( templateType == TypeComboBox::CHECKERBOARD || templateType == TypeComboBox::CIRCLES || templateType == TypeComboBox::ASYM_CIRCLES ) {
+        m_countLabel->setVisible( true );
+        m_xCountSpinBox->setVisible( true );
+        m_yCountSpinBox->setVisible( true );
+        m_intervalLabel->setVisible( false );
+        m_intervalSpinBox->setVisible( false );
+        m_intervalMeasLabel->setVisible( false );
+    }
+    else if ( templateType == TypeComboBox::ARUCO_MARKERS ) {
+        m_countLabel->setVisible( false );
+        m_xCountSpinBox->setVisible( false );
+        m_yCountSpinBox->setVisible( false );
+        m_intervalLabel->setVisible( true );
+        m_intervalSpinBox->setVisible( true );
+        m_intervalMeasLabel->setVisible( true );
+    }
+
 }
 
 // CameraParametersWidget
@@ -135,6 +179,7 @@ void CameraParametersWidget::initialize()
 
     rescaleLayout->addWidget( new QLabel( tr( "Maximum size:" ) ) );
     rescaleLayout->addWidget( m_rescaleSizeSpinBox );
+    rescaleLayout->addWidget( new QLabel( tr( "pix. " ) ) );
 
     m_layout->addLayout( rescaleLayout );
 

@@ -6,6 +6,8 @@
 #include "camerawidget.h"
 #include "src/common/functions.h"
 
+#include "src/common/rectificationprocessor.h"
+
 // ReportWidget
 ReportWidget::ReportWidget( QWidget* parent )
     : QTextEdit( parent )
@@ -171,6 +173,25 @@ const MonocularCalibrationData &MonocularReportWidget::calibrationResults() cons
     return m_calibrationResults;
 }
 
+void MonocularReportWidget::saveYAMLDialog()
+{
+    if ( m_calibrationResults.isOk() ) {
+        auto fileName = QFileDialog::getSaveFileName( nullptr, tr( "Save calibration file" ), QString(), tr( "OpenCV YAML files (*.yaml)" ), nullptr,
+                                                      QFileDialog::DontUseNativeDialog );
+
+        if ( !fileName.isEmpty() ) {
+            m_calibrationResults.saveYaml( fileName.toStdString() );
+
+        }
+
+    }
+
+}
+
+void MonocularReportWidget::loadYAMLDialog()
+{
+}
+
 // StereoReportWidget
 StereoReportWidget::StereoReportWidget( QWidget *parent )
     : ReportWidget( parent )
@@ -193,22 +214,28 @@ void StereoReportWidget::report(const StereoCalibrationData &calibration )
 
         if ( !leftImage.empty() && !rightImage.empty() ) {
 
-            cv::Mat leftRectifiedImage;
-            cv::Mat rightRectifiedImage;
+            StereoRectificationProcessor rectificationProcessor( calibration );
 
-            cv::remap( leftImage, leftRectifiedImage, calibration.leftRMap(), calibration.leftDMap(), cv::INTER_LANCZOS4 );
-            cv::remap( rightImage, rightRectifiedImage, calibration.rightRMap(), calibration.rightDMap(), cv::INTER_LANCZOS4 );
+            CvImage leftRectifiedImage;
+            CvImage rightRectifiedImage;
+            CvImage leftCroppedImage;
+            CvImage rightCroppedImage;
 
-            auto image1 = resizeTo( leftRectifiedImage, m_reportFrameSize );
-            auto image2 = resizeTo( rightRectifiedImage, m_reportFrameSize );
+            if ( rectificationProcessor.rectify( leftImage, rightImage, &leftRectifiedImage, &rightRectifiedImage )
+                        && rectificationProcessor.crop( leftRectifiedImage, rightRectifiedImage, &leftCroppedImage, &rightCroppedImage ) ) {
 
-            auto stitchedImage = makeStraightPreview( image1, image2 );
+                auto leftResizedImage = resizeTo( leftRectifiedImage, m_reportFrameSize );
+                auto rightResizedImage = resizeTo( rightRectifiedImage, m_reportFrameSize );
 
-            if ( !stitchedImage.empty() ) {
-                drawTraceLines( stitchedImage, 15 );
+                auto stitchedImage = makeStraightPreview( leftResizedImage, rightResizedImage );
 
-                addImage( stitchedImage );
-                addSpace();
+                if ( !stitchedImage.empty() ) {
+                    drawTraceLines( stitchedImage, 15 );
+
+                    addImage( stitchedImage );
+                    addSpace();
+
+                }
 
             }
 
@@ -288,66 +315,14 @@ const StereoCalibrationData &StereoReportWidget::calibrationResults() const
     return m_calibrationResults;
 }
 
-// ReportDialogBase
-ReportDialogBase::ReportDialogBase( QWidget *parent )
-    : QDialog( parent )
+void StereoReportWidget::saveYAMLDialog()
 {
-    initialize();
-}
-
-void ReportDialogBase::initialize()
-{
-    setWindowTitle( tr( "Report" ) );
-
-    m_layout = new QVBoxLayout( this );
-
-    m_toolBar = new QToolBar( tr("Report"), this );
-
-    m_exportYamlAction = new QAction( QIcon( ":/resources/images/xml.ico" ), tr( "Export YAML" ), this );
-    m_exportOpenCVAction = new QAction( QIcon( ":/resources/images/opencv.ico" ), tr( "Export OpenCV" ) );
-
-    m_toolBar->addAction( m_exportYamlAction );
-    m_toolBar->addAction( m_exportOpenCVAction );
-
-    m_layout->addWidget( m_toolBar );
-
-}
-
-// MonocularReportDialog
-MonocularReportDialog::MonocularReportDialog( QWidget *parent )
-    : ReportDialogBase( parent )
-{
-    initialize();
-}
-
-void MonocularReportDialog::initialize()
-{
-    m_reportWidget = new MonocularReportWidget( this );
-
-    m_layout->addWidget( m_reportWidget );
-
-    connect( m_exportOpenCVAction, &QAction::triggered, this, &MonocularReportDialog::saveYAMLDialog );
-
-}
-
-void MonocularReportDialog::report( const MonocularCalibrationData &calibration )
-{
-    m_reportWidget->report( calibration );
-}
-
-const MonocularCalibrationData &MonocularReportDialog::calibrationResults() const
-{
-    return m_reportWidget->calibrationResults();
-}
-
-void MonocularReportDialog::saveYAMLDialog()
-{
-    if ( m_reportWidget->calibrationResults().isOk() ) {
+    if ( m_calibrationResults.isOk() ) {
         auto fileName = QFileDialog::getSaveFileName( nullptr, tr( "Save calibration file" ), QString(), tr( "OpenCV YAML files (*.yaml)" ), nullptr,
                                                       QFileDialog::DontUseNativeDialog );
 
         if ( !fileName.isEmpty() ) {
-            m_reportWidget->calibrationResults().saveYaml( fileName.toStdString() );
+            m_calibrationResults.saveYaml( fileName.toStdString() );
 
         }
 
@@ -355,52 +330,7 @@ void MonocularReportDialog::saveYAMLDialog()
 
 }
 
-void MonocularReportDialog::loadYAMLDialog()
+void StereoReportWidget::loadYAMLDialog()
 {
 }
 
-// StereoReportDialog
-StereoReportDialog::StereoReportDialog( QWidget *parent )
-    : ReportDialogBase( parent )
-{
-    initialize();
-}
-
-void StereoReportDialog::initialize()
-{
-    m_reportWidget = new StereoReportWidget( this );
-
-    m_layout->addWidget( m_reportWidget );
-
-    connect( m_exportOpenCVAction, &QAction::triggered, this, &StereoReportDialog::saveYAMLDialog );
-
-}
-
-void StereoReportDialog::report( const StereoCalibrationData &calibration )
-{
-    m_reportWidget->report( calibration );
-}
-
-const StereoCalibrationData &StereoReportDialog::calibrationResults() const
-{
-    return m_reportWidget->calibrationResults();
-}
-
-void StereoReportDialog::saveYAMLDialog()
-{
-    if ( m_reportWidget->calibrationResults().isOk() ) {
-        auto fileName = QFileDialog::getSaveFileName( nullptr, tr( "Save calibration file" ), QString(), tr( "OpenCV YAML files (*.yaml)" ), nullptr,
-                                                      QFileDialog::DontUseNativeDialog );
-
-        if ( !fileName.isEmpty() ) {
-            m_reportWidget->calibrationResults().saveYaml( fileName.toStdString() );
-
-        }
-
-    }
-
-}
-
-void StereoReportDialog::loadYAMLDialog()
-{
-}

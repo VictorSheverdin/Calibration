@@ -51,29 +51,19 @@ StereoRectificationProcessor::StereoRectificationProcessor()
 {
 }
 
-StereoRectificationProcessor::StereoRectificationProcessor( const StereoCalibrationDataShort &calibrationData )
+StereoRectificationProcessor::StereoRectificationProcessor( const StereoCalibrationDataBase &calibrationData )
 {
     setCalibrationData( calibrationData );
 }
 
-StereoRectificationProcessor::StereoRectificationProcessor( const std::string &fileName )
-{
-    loadYaml( fileName );
-}
-
-void StereoRectificationProcessor::setCalibrationData( const StereoCalibrationDataShort &calibrationData )
+void StereoRectificationProcessor::setCalibrationData( const StereoCalibrationDataBase &calibrationData )
 {
     m_calibrationData = calibrationData;
 }
 
-const StereoCalibrationDataShort &StereoRectificationProcessor::calibration() const
+const StereoCalibrationDataBase &StereoRectificationProcessor::calibration() const
 {
     return m_calibrationData;
-}
-
-bool StereoRectificationProcessor::loadYaml( const std::string &fileName )
-{
-    return m_calibrationData.loadYaml( fileName );
 }
 
 bool StereoRectificationProcessor::rectifyLeft( const CvImage &image , CvImage *result )

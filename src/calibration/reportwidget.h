@@ -46,6 +46,10 @@ public:
     void report( const MonocularCalibrationData &calibration );
     const MonocularCalibrationData &calibrationResults() const;
 
+public slots:
+    void saveYAMLDialog();
+    void loadYAMLDialog();
+
 protected:
     MonocularCalibrationData m_calibrationResults;
 
@@ -61,71 +65,13 @@ public:
     void report( const StereoCalibrationData &calibration );
     const StereoCalibrationData &calibrationResults() const;
 
+public slots:
+    void saveYAMLDialog();
+    void loadYAMLDialog();
+
 protected:
     StereoCalibrationData m_calibrationResults;
 
 };
 
-class ReportDialogBase : public QDialog
-{
-    Q_OBJECT
 
-public:
-    explicit ReportDialogBase( QWidget *parent = nullptr );
-
-protected:
-    QPointer< QVBoxLayout > m_layout;
-
-    QPointer< QAction > m_exportYamlAction;
-    QPointer< QAction > m_exportOpenCVAction;
-
-    QPointer< QToolBar > m_toolBar;
-
-private:
-    void initialize();
-
-};
-
-class MonocularReportDialog : public ReportDialogBase
-{
-    Q_OBJECT
-
-public:
-    explicit MonocularReportDialog( QWidget *parent = nullptr );
-
-    void report( const MonocularCalibrationData &calibration );
-    const MonocularCalibrationData &calibrationResults() const;
-
-public slots:
-    void saveYAMLDialog();
-    void loadYAMLDialog();
-
-protected:
-    QPointer< MonocularReportWidget > m_reportWidget;
-
-private:
-    void initialize();
-
-};
-
-class StereoReportDialog : public ReportDialogBase
-{
-    Q_OBJECT
-
-public:
-    explicit StereoReportDialog( QWidget *parent = nullptr );
-
-    void report( const StereoCalibrationData &calibration );
-    const StereoCalibrationData &calibrationResults() const;
-
-public slots:
-    void saveYAMLDialog();
-    void loadYAMLDialog();
-
-protected:
-    QPointer< StereoReportWidget > m_reportWidget;
-
-private:
-    void initialize();
-
-};

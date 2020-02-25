@@ -4,7 +4,7 @@
 #include <QSplitter>
 
 #include "src/common/imagewidget.h"
-#include "templateprocessor.h"
+#include "templatethread.h"
 
 #include <opencv2/opencv.hpp>
 
@@ -13,23 +13,22 @@ class CameraPreviewWidget : public ImageWidget
     Q_OBJECT
 
 public:
-    CameraPreviewWidget( QWidget* parent = nullptr );
+    CameraPreviewWidget( QWidget *parent = nullptr );
 
     const CvImage sourceImage() const;
     const CvImage previewImage() const;
-    const std::vector<cv::Point2f> &previewPoints() const;
 
+    void setTemplateExist( const bool value );
     bool isTemplateExist() const;
 
 public slots:
     void setSourceImage( const CvImage image );
     void setPreviewImage( const CvImage image );
-    void setPreviewPoints( const std::vector<cv::Point2f> &points );
 
 protected:
     CvImage m_sourceImage;
 
-    std::vector<cv::Point2f> m_previewPoints;
+    bool m_templateExist;
 
 private:
     void initialize();

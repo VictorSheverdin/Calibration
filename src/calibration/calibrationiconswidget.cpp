@@ -76,7 +76,7 @@ void MonocularIcon::setPoints( const std::vector< cv::Point2f > &points )
     m_points = points;
 }
 
-const std::vector<cv::Point2f> &MonocularIcon::points() const
+const std::vector< cv::Point2f > &MonocularIcon::points() const
 {
     return m_points;
 }
