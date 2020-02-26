@@ -23,7 +23,18 @@ protected:
     std::vector< cv::Point2f > m_corners ;
 } ;
 
-using ArucoMarkerList = std::list< ArucoMarker >;
+class ArucoMarkerList : public std::list< ArucoMarker >
+{
+public:
+    ArucoMarkerList() = default;
+
+    std::vector< cv::Point2f > points() const;
+
+    bool operator==( const ArucoMarkerList& other ) const;
+
+protected:
+
+};
 
 class ArucoProcessor
 {
@@ -32,20 +43,30 @@ public:
 
     void setResizeFlag( const bool value );
     void setFrameMaximumSize( const unsigned int value );
+    void setSize( const double value );
+    void setInterval( const double value );
 
     bool resizeFlag() const;
     unsigned int frameMaximumFlag() const;
+    double size() const;
+    double interval() const;
 
-    ArucoMarkerList detectMarkers( const CvImage &image ) ;
-
+    bool processFrame( const Frame &frame, CvImage *view, std::vector< int > *markerIds, std::vector< std::vector< cv::Point2f > > *markerCorners );
     bool processFrame( const Frame &frame, CvImage *view, ArucoMarkerList *markers );
     bool processPreview( const Frame &frame, CvImage *preview );
+
+    std::vector< cv::Point3f > calcCorners( const ArucoMarkerList &list );
 
 protected:
     cv::Ptr< cv::aruco::Dictionary > m_dictionary ;
 
     bool m_resizeFlag;
     int m_frameMaximumSize;
+
+    double m_size;
+    double m_interval;
+
+    bool detectMarkers( const CvImage &image, std::vector< int > *markerIds, std::vector< std::vector< cv::Point2f > > *markerCorners ) ;
 
 private:
     void initialize();

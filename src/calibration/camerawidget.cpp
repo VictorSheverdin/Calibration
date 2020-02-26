@@ -87,14 +87,19 @@ double CameraWidgetBase::templateSize() const
     return m_previewTemplateProcessor.size();
 }
 
+double CameraWidgetBase::intervalSize() const
+{
+    return m_previewArucoProcessor.interval();
+}
+
 bool CameraWidgetBase::resizeFlag() const
 {
     return m_previewTemplateProcessor.resizeFlag();
 }
 
-unsigned int CameraWidgetBase::frameMaximumFlag() const
+unsigned int CameraWidgetBase::frameMaximumSize() const
 {
-    return m_previewTemplateProcessor.frameMaximumFlag();
+    return m_previewTemplateProcessor.frameMaximumSize();
 }
 
 bool CameraWidgetBase::adaptiveThreshold() const

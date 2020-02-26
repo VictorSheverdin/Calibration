@@ -40,6 +40,39 @@ void ArucoMarker::set( const int id, const std::vector< cv::Point2f > &corners )
     setCorners( corners );
 }
 
+// ArucoMarkerList
+std::vector< cv::Point2f > ArucoMarkerList::points() const
+{
+    std::vector< cv::Point2f > ret;
+
+    for ( auto i = begin(); i != end(); ++i )
+        ret.insert( ret.end(), i->corners().begin(), i->corners().end() );
+
+    return ret;
+
+}
+
+bool ArucoMarkerList::operator==( const ArucoMarkerList& other ) const
+{
+    if ( size() != other.size() )
+        return false;
+
+    for ( auto i = begin(); i != end(); ++i ) {
+        bool foundFlag = false;
+        for ( auto j = other.begin(); j != other.end(); ++j )
+            if ( j->id() == i->id() ) {
+                foundFlag = true;
+                break;
+            }
+        if ( !foundFlag )
+            return false;
+
+    }
+
+    return true;
+
+}
+
 // ArucoProcessor
 ArucoProcessor::ArucoProcessor()
 {
@@ -48,6 +81,9 @@ ArucoProcessor::ArucoProcessor()
 
 void ArucoProcessor::initialize()
 {
+    m_resizeFlag = false;
+    m_frameMaximumSize = 500;
+
     m_dictionary = cv::aruco::getPredefinedDictionary( cv::aruco::DICT_6X6_50 ) ;
 }
 
@@ -61,6 +97,16 @@ void ArucoProcessor::setFrameMaximumSize( const unsigned int value )
     m_frameMaximumSize = value;
 }
 
+void ArucoProcessor::setSize( const double value )
+{
+    m_size = value;
+}
+
+void ArucoProcessor::setInterval( const double value )
+{
+    m_interval = value;
+}
+
 bool ArucoProcessor::resizeFlag() const
 {
     return m_resizeFlag;
@@ -71,45 +117,65 @@ unsigned int ArucoProcessor::frameMaximumFlag() const
     return m_frameMaximumSize;
 }
 
-ArucoMarkerList ArucoProcessor::detectMarkers( const CvImage &image )
+double ArucoProcessor::size() const
 {
-    ArucoMarkerList ret;
-
-    std::vector< int > markerIds;
-    std::vector< std::vector< cv::Point2f > > markerCorners;
-
-    cv::aruco::detectMarkers( image, m_dictionary, markerCorners, markerIds );
-
-    if ( markerCorners.size() != markerIds.size() )
-        return ret;
-
-    for ( size_t i = 0; i < markerCorners.size(); ++i )
-        ret.push_back( ArucoMarker( markerIds[ i ], markerCorners[ i ] ) );
-
-    return ret;
-
+    return m_size;
 }
 
-bool ArucoProcessor::processFrame( const Frame &frame, CvImage *view, ArucoMarkerList *markers )
+double ArucoProcessor::interval() const
 {
-    bool ret = false;
+    return m_interval;
+}
 
+bool ArucoProcessor::detectMarkers( const CvImage &image, std::vector< int > *markerIds, std::vector< std::vector< cv::Point2f > > *markerCorners )
+{
+    if ( markerIds && markerCorners ) {
+
+        cv::aruco::detectMarkers( image, m_dictionary, *markerCorners, *markerIds );
+
+        if ( markerIds->empty() || markerCorners->size() != markerIds->size() )
+            return false;
+
+        return true;
+
+    }
+
+    return false;
+}
+
+bool ArucoProcessor::processFrame( const Frame &frame, CvImage *view, std::vector< int > *markerIds, std::vector< std::vector< cv::Point2f > > *markerCorners )
+{
     if ( !frame.empty() ) {
-        auto markersList = detectMarkers( frame );
 
-        if ( !markersList.empty() )
-            ret = true;
+        auto ret = detectMarkers( frame, markerIds, markerCorners );
 
         if (view) {
             frame.copyTo( *view );
 
-            if (ret && view)
-                drawMarkers( view, markersList );
+            if ( ret && view )
+                cv::aruco::drawDetectedMarkers( *view, *markerCorners, *markerIds );
 
         }
 
-        if ( markers )
-            *markers = markersList;
+        return ret;
+
+    }
+
+    return false;
+}
+
+bool ArucoProcessor::processFrame( const Frame &frame, CvImage *view, ArucoMarkerList *markers )
+{
+    std::vector< int > markerIds;
+    std::vector< std::vector< cv::Point2f > > markerCorners;
+
+    auto ret = processFrame( frame, view, &markerIds, &markerCorners );
+
+    if ( ret && markers ) {
+        markers->clear();
+
+        for ( size_t i = 0; i < markerIds.size(); ++i )
+            markers->push_back( ArucoMarker( markerIds[ i ], markerCorners[ i ] ) );
 
     }
 
@@ -136,6 +202,11 @@ bool ArucoProcessor::processPreview( const Frame &frame, CvImage *preview )
     }
 
     return ret;
-
 }
 
+std::vector< cv::Point3f > ArucoProcessor::calcCorners( const ArucoMarkerList &list )
+{
+    std::vector< cv::Point3f > ret;
+
+    return ret;
+}

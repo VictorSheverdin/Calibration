@@ -59,7 +59,7 @@ void View3DWidget::pickingEventHandler( const pcl::visualization::PointPickingEv
 {
     float x, y, z;
 
-    if (event.getPointIndex () == -1) {
+    if ( event.getPointIndex() == -1 ) {
         return;
     }
 
@@ -73,10 +73,10 @@ void View3DWidget::pickingEventHandler( const pcl::visualization::PointPickingEv
     application()->setStatusBarText( tr( "Distance = %1" )
                                      .arg( QString::number( distance ) ) );
 
-    auto widget = reinterpret_cast< pcl::visualization::PCLVisualizer *>( viewer_void );
+    auto widget = reinterpret_cast< pcl::visualization::PCLVisualizer * >( viewer_void );
 
-    widget->removeText3D( "Text" );
-    widget->addText3D( ss.str(), pcl::PointXYZ( x, y, z - 0.1 ), 0.2, 1.0, 0, 0, "Text" );
+    widget->removeText3D( "Distance" );
+    widget->addText3D( ss.str(), pcl::PointXYZ( x, y, z ), 0.1, 1.0, 0, 0, "Distance" );
 
 }
 
@@ -114,7 +114,7 @@ void DisparityWidgetBase::initialize()
     m_csbpProcessor = std::shared_ptr< CSBPDisparityProcessor >( new CSBPDisparityProcessor );
     m_elasProcessor = std::shared_ptr< ElasDisparityProcessor >( new ElasDisparityProcessor );
 
-    m_processor = std::shared_ptr<StereoResultProcessor>( new StereoResultProcessor );
+    m_processor = std::shared_ptr< StereoResultProcessor >( new StereoResultProcessor );
 
     m_processorThread.setProcessor( m_processor );
 

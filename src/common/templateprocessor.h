@@ -37,7 +37,7 @@ public:
     const cv::Size &count() const;
     double size() const;
     bool resizeFlag() const;
-    unsigned int frameMaximumFlag() const;
+    unsigned int frameMaximumSize() const;
 
     bool adaptiveThreshold() const;
     bool normalizeImage() const;

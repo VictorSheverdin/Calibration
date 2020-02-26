@@ -1,6 +1,6 @@
 #include "src/common/precompiled.h"
 
-#include "templatethread.h"
+#include "threads.h"
 
 // MonocularProcessorThread
 MonocularProcessorThread::MonocularProcessorThread( const TemplateProcessor &processor, QObject *parent )

@@ -85,7 +85,7 @@ bool TemplateProcessor::resizeFlag() const
     return m_resizeFlag;
 }
 
-unsigned int TemplateProcessor::frameMaximumFlag() const
+unsigned int TemplateProcessor::frameMaximumSize() const
 {
     return m_frameMaximumSize;
 }
@@ -148,17 +148,16 @@ void TemplateProcessor::setFastCheck( const bool value )
 
 bool TemplateProcessor::processFrame(const Frame &frame, CvImage *view, std::vector< cv::Point2f > *points )
 {
-    bool ret = false;
-
     if ( !frame.empty() ) {
+
         std::vector< cv::Point2f > pointsVec;
 
-        ret = findPoints( frame, &pointsVec );
+        auto ret = findPoints( frame, &pointsVec );
 
-        if (view) {
+        if ( view ) {
             frame.copyTo( *view );
 
-            if (ret && view)
+            if ( ret && view )
                 cv::drawChessboardCorners( *view, m_count, pointsVec, true );
 
         }
@@ -166,16 +165,16 @@ bool TemplateProcessor::processFrame(const Frame &frame, CvImage *view, std::vec
         if (points)
             *points = pointsVec;
 
+        return ret;
+
     }
 
-    return ret;
+    return false;
 
 }
 
 bool TemplateProcessor::processPreview(const Frame &frame, CvImage *preview )
 {
-    bool ret = false;
-
     if ( !frame.empty() ) {
 
         auto extent = std::max( frame.width(), frame.height() );
@@ -187,11 +186,11 @@ bool TemplateProcessor::processPreview(const Frame &frame, CvImage *preview )
         else
             frame.copyTo( sourceFrame );
 
-        ret = processFrame( sourceFrame, preview, nullptr );
+        return processFrame( sourceFrame, preview, nullptr );
 
     }
 
-    return ret;
+    return false;
 
 }
 
@@ -211,7 +210,7 @@ bool TemplateProcessor::calcCorners( std::vector< cv::Point3f > *corners )
         case ASYM_CIRCLES:
             for( int i = 0; i < m_count.height; i++ )
                 for( int j = 0; j < m_count.width; j++ )
-                    corners->push_back( cv::Point3f( ( 2*j + i % 2 ) * m_size, i * m_size, 0 ) );
+                    corners->push_back( cv::Point3f( ( 2 * j + i % 2 ) * m_size, i * m_size, 0 ) );
             return true;
 
     }
@@ -225,9 +224,11 @@ bool TemplateProcessor::findPoints( const CvImage &frame, std::vector< cv::Point
     bool ret = false;
 
     if ( m_templateType == CHECKERBOARD ) {
+
         ret = cv::findChessboardCorners( frame, m_count, *points, m_flags ) ;
 
         if ( ret && !points->empty() && m_subPixFlag ) {
+
             cv::Mat gray;
             cv::cvtColor( frame, gray, cv::COLOR_BGR2GRAY );
             cv::cornerSubPix( gray, *points, m_subPixWinSize, m_subPixZeroZone, cv::TermCriteria( cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 30, 0.1 ) );
@@ -235,11 +236,13 @@ bool TemplateProcessor::findPoints( const CvImage &frame, std::vector< cv::Point
         }
 
     }
-    else if ( m_templateType == CIRCLES ) {
+    else if ( m_templateType == CIRCLES ) {        
         ret = cv::findCirclesGrid( frame, m_count, *points, cv::CALIB_CB_SYMMETRIC_GRID );
+
     }
-    else if ( m_templateType == ASYM_CIRCLES ) {
+    else if ( m_templateType == ASYM_CIRCLES ) {        
         ret = cv::findCirclesGrid( frame, m_count, *points, cv::CALIB_CB_ASYMMETRIC_GRID );
+
     }
 
     return ret;

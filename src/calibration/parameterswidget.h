@@ -40,6 +40,7 @@ public:
 
     const cv::Size templateCount() const;
     double templateSize() const;
+    double intervalSize() const;
 
 signals:
     void parametersChanges();

@@ -183,8 +183,8 @@ add_executable( calibration ${COMMON_SOURCES} ${RES_SOURCES}
     src/calibration/previewwidget.cpp
     src/calibration/taskwidget.h
     src/calibration/taskwidget.cpp
-    src/calibration/templatethread.h
-    src/calibration/templatethread.cpp
+    src/calibration/threads.h
+    src/calibration/threads.cpp
     src/calibration/reportwidget.h
     src/calibration/reportwidget.cpp
     src/calibration/parameterswidget.h

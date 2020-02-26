@@ -3,8 +3,6 @@
 #include <QWidget>
 #include <QPointer>
 
-#include "templatethread.h"
-
 #include "camerawidget.h"
 
 class QVBoxLayout;
@@ -19,10 +17,11 @@ public:
     explicit GrabWidgetBase( QWidget* parent = nullptr );
 
     TypeComboBox::Type templateType() const;
-    const cv::Size &templateCount() const;
+    const cv::Size templateCount() const;
     double templateSize() const;
+    double intervalSize() const;
     bool resizeFlag() const;
-    unsigned int frameMaximumFlag() const;
+    unsigned int frameMaximumSize() const;
 
     bool adaptiveThreshold() const;
     bool normalizeImage() const;

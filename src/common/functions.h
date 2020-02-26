@@ -35,4 +35,3 @@ cv::Point3f matToPoint3f( const cv::Mat &mat )
     return cv::Point3f( mat.at< T >( 0, 0 ), mat.at< T >( 1, 0 ), mat.at< T >( 2, 0 ) );
 }
 
-void drawMarkers( CvImage *target, const ArucoMarkerList &list, const cv::Scalar &color = cv::Scalar( 0, 255, 0, 255 ) );

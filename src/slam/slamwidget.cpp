@@ -71,6 +71,8 @@ View3DWidget::View3DWidget( QWidget* parent )
 void View3DWidget::initialize()
 {
     m_pclViewer->addCoordinateSystem( 0.5 );
+
+    m_pclViewer->registerPointPickingCallback( View3DWidget::pickingEventHandler, m_pclViewer.get() );
 }
 
 vtkSmartPointer< vtkPolyDataMapper > polyLineMapper( std::list< cv::Vec3d > &points )
@@ -255,6 +257,28 @@ void View3DWidget::setRightFrustum( const ProjectionMatrix &cameraMatrix )
     }
 
     m_rightCameraActor->SetMapper( mapper ) ;
+
+}
+
+void View3DWidget::pickingEventHandler( const pcl::visualization::PointPickingEvent &event, void *viewer_void )
+{
+    float x, y, z;
+
+    if ( event.getPointIndex() == -1 ) {
+        return;
+    }
+
+    event.getPoint( x, y, z );
+
+    auto distance = sqrt( x * x + y * y + z * z );
+
+    std::stringstream ss;
+    ss << distance;
+
+    auto widget = reinterpret_cast< pcl::visualization::PCLVisualizer * >( viewer_void );
+
+    widget->removeText3D( "Distance" );
+    widget->addText3D( ss.str(), pcl::PointXYZ( x, y, z ), 0.1, 1.0, 0, 0, "Distance" );
 
 }
 

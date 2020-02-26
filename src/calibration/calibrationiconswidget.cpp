@@ -6,10 +6,11 @@
 #include "src/common/functions.h"
 
 // CalibrationIconBase
-CalibrationIconBase::CalibrationIconBase(const CvImage image, const cv::Size &frameSize, const QString &text )
+CalibrationIconBase::CalibrationIconBase( const CvImage image, const cv::Size &frameSize, const std::vector<cv::Point3f> &worldPoints, const QString &text )
     : IconBase( image, text )
 {
     setFrameSize( frameSize );
+    setWorldPoints( worldPoints );
 
     initialize();
 }
@@ -58,11 +59,25 @@ const cv::Size &CalibrationIconBase::frameSize() const
     return m_frameSize;
 }
 
-// MonocularIcon
-MonocularIcon::MonocularIcon(const CvImage previewImage, const cv::Size &frameSize, const std::vector<cv::Point2f> &points, const QString &text )
-    : CalibrationIconBase( previewImage, frameSize, text )
+void CalibrationIconBase::setWorldPoints( const std::vector< cv::Point3f > &points )
 {
-    setPoints( points );
+    m_worldPoints = points;
+}
+
+const std::vector< cv::Point3f > &CalibrationIconBase::worldPoints() const
+{
+    return m_worldPoints;
+}
+
+// MonocularIcon
+MonocularIcon::MonocularIcon( const CvImage previewImage,
+                              const cv::Size &frameSize,
+                              const std::vector<cv::Point2f> &imagePoints,
+                              const std::vector<cv::Point3f> &worldPoints,
+                              const QString &text )
+    : CalibrationIconBase( previewImage, frameSize, worldPoints, text )
+{
+    setImagePoints( imagePoints );
 
     initialize();
 }
@@ -71,26 +86,31 @@ void MonocularIcon::initialize()
 {
 }
 
-void MonocularIcon::setPoints( const std::vector< cv::Point2f > &points )
+void MonocularIcon::setImagePoints( const std::vector< cv::Point2f > &points )
 {
-    m_points = points;
+    m_imagePoints = points;
 }
 
-const std::vector< cv::Point2f > &MonocularIcon::points() const
+const std::vector< cv::Point2f > &MonocularIcon::imagePoints() const
 {
-    return m_points;
+    return m_imagePoints;
 }
 
 // StereoIcon
-StereoIcon::StereoIcon(const CvImage leftPreviewImage, const CvImage rightPreviewImage, const cv::Size &frameSize,
-                       const std::vector< cv::Point2f > &leftPoints, const std::vector< cv::Point2f > &rightPoints, const QString &text )
-    : CalibrationIconBase( makeOverlappedPreview( leftPreviewImage, rightPreviewImage ), frameSize, text )
+StereoIcon::StereoIcon( const CvImage leftPreviewImage,
+                        const CvImage rightPreviewImage,
+                        const cv::Size &frameSize,
+                        const std::vector< cv::Point2f > &leftImagePoints,
+                        const std::vector< cv::Point2f > &rightImagePoints,
+                        const std::vector<cv::Point3f> &worldPoints,
+                        const QString &text )
+    : CalibrationIconBase( makeOverlappedPreview( leftPreviewImage, rightPreviewImage ), frameSize, worldPoints, text )
 {
     setLeftPreview( leftPreviewImage );
-    setRightPreview( leftPreviewImage );
+    setRightPreview( rightPreviewImage );
 
-    setLeftPoints( leftPoints );
-    setRightPoints( rightPoints );
+    setLeftImagePoints( leftImagePoints );
+    setRightImagePoints( rightImagePoints );
 
     initialize();
 }
@@ -119,29 +139,29 @@ const CvImage &StereoIcon::rightPreview() const
     return m_rightPreview;
 }
 
-const CvImage StereoIcon::straightPreview() const
+const CvImage StereoIcon::stackedPreview() const
 {
     return makeStraightPreview( m_leftPreview, m_rightPreview );
 }
 
-void StereoIcon::setLeftPoints( const std::vector< cv::Point2f > &points )
+void StereoIcon::setLeftImagePoints( const std::vector< cv::Point2f > &points )
 {
-    m_leftPoints = points;
+    m_leftImagePoints = points;
 }
 
-std::vector< cv::Point2f > StereoIcon::leftPoints() const
+std::vector< cv::Point2f > StereoIcon::leftImagePoints() const
 {
-    return m_leftPoints;
+    return m_leftImagePoints;
 }
 
-void StereoIcon::setRightPoints( const std::vector< cv::Point2f > &points )
+void StereoIcon::setRightImagePoints( const std::vector< cv::Point2f > &points )
 {
-    m_rightPoints = points;
+    m_rightImagePoints = points;
 }
 
-std::vector< cv::Point2f > StereoIcon::rightPoints() const
+std::vector< cv::Point2f > StereoIcon::rightImagePoints() const
 {
-    return m_rightPoints;
+    return m_rightImagePoints;
 }
 
 // IconsListWidget

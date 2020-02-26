@@ -4,7 +4,6 @@
 #include <QSplitter>
 
 #include "src/common/imagewidget.h"
-#include "templatethread.h"
 
 #include <opencv2/opencv.hpp>
 

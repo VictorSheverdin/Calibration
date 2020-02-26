@@ -3,7 +3,7 @@
 #include <QSplitter>
 #include <QMutex>
 
-#include "templatethread.h"
+#include "src/common/templateprocessor.h"
 #include "src/common/markerprocessor.h"
 
 #include "parameterswidget.h"
@@ -37,8 +37,9 @@ public:
     TypeComboBox::Type templateType() const;
     const cv::Size &templateCount() const;
     double templateSize() const;
+    double intervalSize() const;
     bool resizeFlag() const;
-    unsigned int frameMaximumFlag() const;
+    unsigned int frameMaximumSize() const;
 
     bool adaptiveThreshold() const;
     bool normalizeImage() const;

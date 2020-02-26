@@ -60,6 +60,8 @@ protected:
     void setLeftFrustum( const ProjectionMatrix &cameraMatrix );
     void setRightFrustum( const ProjectionMatrix &cameraMatrix );
 
+    static void pickingEventHandler( const pcl::visualization::PointPickingEvent &event, void *viewer_void );
+
 private:
     void initialize();
 

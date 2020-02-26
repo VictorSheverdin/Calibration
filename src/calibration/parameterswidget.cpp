@@ -119,6 +119,11 @@ double ParametersWidget::templateSize() const
     return m_sizeSpinBox->value();
 }
 
+double ParametersWidget::intervalSize() const
+{
+    return m_intervalSpinBox->value();
+}
+
 void ParametersWidget::updateVisibility()
 {
     auto templateType = this->templateType();

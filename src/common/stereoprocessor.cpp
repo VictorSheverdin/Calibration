@@ -712,7 +712,7 @@ pcl::PointCloud< pcl::PointXYZRGB >::Ptr StereoProcessor::producePointCloud( con
 
         for (int cols = 0; cols < points.cols; ++cols) {
 
-            cv::Point3f point = points.at< cv::Point3f >(rows, cols);
+            cv::Point3f point = points.at< cv::Point3f >( rows, cols );
 
             if ( isValidPoint( point ) ) {
 
@@ -722,9 +722,9 @@ pcl::PointCloud< pcl::PointXYZRGB >::Ptr StereoProcessor::producePointCloud( con
                 pclPoint.z = point.z;
 
                 cv::Vec3b intensity = rgbLeftImage.at< cv::Vec3b >( rows, cols );
-                pclPoint.r = intensity[0];
-                pclPoint.g = intensity[1];
-                pclPoint.b = intensity[2];
+                pclPoint.r = intensity[ 0 ];
+                pclPoint.g = intensity[ 1 ];
+                pclPoint.b = intensity[ 2 ];
                 pointCloud->push_back( pclPoint );
 
             }

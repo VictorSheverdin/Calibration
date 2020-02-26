@@ -22,53 +22,58 @@ void GrabWidgetBase::initialize()
 
     m_layout->addWidget( m_parametersWidget );
 
-    connect (m_parametersWidget, &CameraParametersWidget::parametersChanges, this, &GrabWidgetBase::updateParameters );
+    connect ( m_parametersWidget, &CameraParametersWidget::parametersChanges, this, &GrabWidgetBase::updateParameters );
 
 }
 
 TypeComboBox::Type GrabWidgetBase::templateType() const
 {
-    return m_cameraWidget->templateType();
+    return m_parametersWidget->templateType();
 }
 
-const cv::Size &GrabWidgetBase::templateCount() const
+const cv::Size GrabWidgetBase::templateCount() const
 {
-    return m_cameraWidget->templateCount();
+    return m_parametersWidget->templateCount();
 }
 
 double GrabWidgetBase::templateSize() const
 {
-    return m_cameraWidget->templateSize();
+    return m_parametersWidget->templateSize();
+}
+
+double GrabWidgetBase::intervalSize() const
+{
+    return m_parametersWidget->intervalSize();
 }
 
 bool GrabWidgetBase::resizeFlag() const
 {
-    return m_cameraWidget->resizeFlag();
+    return m_parametersWidget->rescaleFlag();
 }
 
-unsigned int GrabWidgetBase::frameMaximumFlag() const
+unsigned int GrabWidgetBase::frameMaximumSize() const
 {
-    return m_cameraWidget->frameMaximumFlag();
+    return m_parametersWidget->rescaleSize();
 }
 
 bool GrabWidgetBase::adaptiveThreshold() const
 {
-    return m_cameraWidget->adaptiveThreshold();
+    return m_parametersWidget->adaptiveThreshold();
 }
 
 bool GrabWidgetBase::normalizeImage() const
 {
-    return m_cameraWidget->normalizeImage();
+    return m_parametersWidget->normalizeImage();
 }
 
 bool GrabWidgetBase::filterQuads() const
 {
-    return m_cameraWidget->filterQuads();
+    return m_parametersWidget->filterQuads();
 }
 
 bool GrabWidgetBase::fastCheck() const
 {
-    return m_cameraWidget->fastCheck();
+    return m_parametersWidget->fastCheck();
 }
 
 void GrabWidgetBase::updateParameters()

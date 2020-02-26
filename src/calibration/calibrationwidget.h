@@ -3,7 +3,7 @@
 #include <QSplitter>
 #include <QPointer>
 
-#include "templatethread.h"
+#include "src/common/templateprocessor.h"
 #include "src/common/markerprocessor.h"
 
 #include "reportwidget.h"
@@ -47,7 +47,7 @@ protected:
 
     static const int m_minimumCalibrationFrames = 5;
 
-    MonocularCalibrationData calcMonocularCalibration( const QList<CalibrationIconBase *> &icons, const cv::Size &count, const double size );
+    MonocularCalibrationData calcMonocularCalibration( const QList<CalibrationIconBase *> &icons );
 
     MonocularCalibrationData calcMonocularCalibration( const std::vector< std::vector< cv::Point2f > > &points, cv::Size &frameSize, const cv::Size &count, const double size );
     StereoCalibrationData calcStereoCalibration( const QList<CalibrationIconBase *> &icons, const cv::Size &count, const double size );

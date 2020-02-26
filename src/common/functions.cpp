@@ -135,17 +135,4 @@ void drawLabel( CvImage *target, const std::string text, int height, int fontFac
 
 }
 
-void drawMarkers( CvImage *target, const ArucoMarkerList &list , const cv::Scalar &color )
-{
-    std::vector< int > markerIds;
-    std::vector< std::vector< cv::Point2f > > markerCorners;
-
-    for ( auto &i : list ) {
-        markerIds.push_back( i.id() );
-        markerCorners.push_back( i.corners() );
-    }
-
-    cv::aruco::drawDetectedMarkers( *target, markerCorners, markerIds, color );
-
-}
 

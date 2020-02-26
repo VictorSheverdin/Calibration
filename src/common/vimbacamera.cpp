@@ -183,10 +183,6 @@ void MasterCamera::initialize( const std::string &ip )
 
     vimbaRunCommand( m_camera, "GVSPAdjustPacketSize" );
 
-    setVimbaFeature( m_camera, "ExposureTimeAbs", 10000.0 );
-
-    setVimbaFeature( m_camera, "Gain", 3.0 );
-
     setVimbaFeature( m_camera, "TriggerMode", "Off" );
 
     SP_SET( m_frameObserver, new FrameObserver( m_camera ) );
@@ -224,10 +220,6 @@ void SlaveCamera::initialize( const std::string &ip )
     setVimbaFeature( m_camera, "PixelFormat", VmbPixelFormatBayerGB8 );
 
     vimbaRunCommand( m_camera, "GVSPAdjustPacketSize" );
-
-    setVimbaFeature( m_camera, "ExposureTimeAbs", 10000.0 );
-
-    setVimbaFeature( m_camera, "Gain", 3.0 );
 
     setVimbaFeature( m_camera, "TriggerSelector", "FrameStart" );
     setVimbaFeature( m_camera, "TriggerSource", "Line1" );
