@@ -49,8 +49,8 @@ protected:
 
     MonocularCalibrationData calcMonocularCalibration( const QList<CalibrationIconBase *> &icons );
 
-    MonocularCalibrationData calcMonocularCalibration( const std::vector< std::vector< cv::Point2f > > &points, cv::Size &frameSize, const cv::Size &count, const double size );
-    StereoCalibrationData calcStereoCalibration( const QList<CalibrationIconBase *> &icons, const cv::Size &count, const double size );
+    MonocularCalibrationData calcMonocularCalibration( const std::vector< std::vector< cv::Point2f > > &points2d, const std::vector<std::vector<cv::Point3f> > &points3d, cv::Size &frameSize );
+    StereoCalibrationData calcStereoCalibration( const QList<CalibrationIconBase *> &icons );
 
     int m_iconCount;
 

@@ -81,6 +81,7 @@ void GrabWidgetBase::updateParameters()
     m_cameraWidget->setType( m_parametersWidget->templateType() );
     m_cameraWidget->setCount( m_parametersWidget->templateCount() );
     m_cameraWidget->setTemplateSize( m_parametersWidget->templateSize() );
+    m_cameraWidget->setIntervalSize( m_parametersWidget->intervalSize() );
 
     m_cameraWidget->setAdaptiveThreshold( m_parametersWidget->adaptiveThreshold() );
     m_cameraWidget->setNormalizeImage( m_parametersWidget->normalizeImage() );

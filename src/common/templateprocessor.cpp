@@ -150,14 +150,24 @@ bool TemplateProcessor::processFrame(const Frame &frame, CvImage *view, std::vec
 {
     if ( !frame.empty() ) {
 
+        cv::Mat sourceFrame;
+
+        auto extent = std::max( frame.width(), frame.height() );
+
+        if ( m_resizeFlag && extent > m_frameMaximumSize )
+            sourceFrame = resizeTo( frame, m_frameMaximumSize );
+        else
+            frame.copyTo( sourceFrame );
+
         std::vector< cv::Point2f > pointsVec;
 
-        auto ret = findPoints( frame, &pointsVec );
+        auto ret = findPoints( sourceFrame, &pointsVec );
 
         if ( view ) {
-            frame.copyTo( *view );
 
-            if ( ret && view )
+            *view = sourceFrame;
+
+            if ( ret )
                 cv::drawChessboardCorners( *view, m_count, pointsVec, true );
 
         }
@@ -166,27 +176,6 @@ bool TemplateProcessor::processFrame(const Frame &frame, CvImage *view, std::vec
             *points = pointsVec;
 
         return ret;
-
-    }
-
-    return false;
-
-}
-
-bool TemplateProcessor::processPreview(const Frame &frame, CvImage *preview )
-{
-    if ( !frame.empty() ) {
-
-        auto extent = std::max( frame.width(), frame.height() );
-
-        cv::Mat sourceFrame;
-
-        if ( m_resizeFlag && extent > m_frameMaximumSize )
-            sourceFrame = resizeTo( frame, m_frameMaximumSize );
-        else
-            frame.copyTo( sourceFrame );
-
-        return processFrame( sourceFrame, preview, nullptr );
 
     }
 

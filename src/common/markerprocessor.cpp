@@ -40,6 +40,11 @@ void ArucoMarker::set( const int id, const std::vector< cv::Point2f > &corners )
     setCorners( corners );
 }
 
+bool ArucoMarker::operator<( const ArucoMarker &other ) const
+{
+    return m_id < other.m_id;
+}
+
 // ArucoMarkerList
 std::vector< cv::Point2f > ArucoMarkerList::points() const
 {
@@ -57,17 +62,9 @@ bool ArucoMarkerList::operator==( const ArucoMarkerList& other ) const
     if ( size() != other.size() )
         return false;
 
-    for ( auto i = begin(); i != end(); ++i ) {
-        bool foundFlag = false;
-        for ( auto j = other.begin(); j != other.end(); ++j )
-            if ( j->id() == i->id() ) {
-                foundFlag = true;
-                break;
-            }
-        if ( !foundFlag )
+    for ( auto i = begin(); i != end(); ++i )
+        if ( other.find( *i ) == other.end() )
             return false;
-
-    }
 
     return true;
 
@@ -85,6 +82,10 @@ void ArucoProcessor::initialize()
     m_frameMaximumSize = 500;
 
     m_dictionary = cv::aruco::getPredefinedDictionary( cv::aruco::DICT_6X6_50 ) ;
+    m_parameters = cv::aruco::DetectorParameters::create() ;
+
+    m_parameters->cornerRefinementMethod = cv::aruco::CORNER_REFINE_SUBPIX;
+
 }
 
 void ArucoProcessor::setResizeFlag( const bool value )
@@ -131,7 +132,7 @@ bool ArucoProcessor::detectMarkers( const CvImage &image, std::vector< int > *ma
 {
     if ( markerIds && markerCorners ) {
 
-        cv::aruco::detectMarkers( image, m_dictionary, *markerCorners, *markerIds );
+        cv::aruco::detectMarkers( image, m_dictionary, *markerCorners, *markerIds, m_parameters );
 
         if ( markerIds->empty() || markerCorners->size() != markerIds->size() )
             return false;
@@ -147,12 +148,21 @@ bool ArucoProcessor::processFrame( const Frame &frame, CvImage *view, std::vecto
 {
     if ( !frame.empty() ) {
 
-        auto ret = detectMarkers( frame, markerIds, markerCorners );
+        cv::Mat sourceFrame;
 
-        if (view) {
-            frame.copyTo( *view );
+        auto extent = std::max( frame.width(), frame.height() );
 
-            if ( ret && view )
+        if ( m_resizeFlag && extent > m_frameMaximumSize )
+            sourceFrame = resizeTo( frame, m_frameMaximumSize );
+        else
+            frame.copyTo( sourceFrame );
+
+        auto ret = detectMarkers( sourceFrame, markerIds, markerCorners );
+
+        if ( view ) {
+            *view = sourceFrame;
+
+            if ( ret )
                 cv::aruco::drawDetectedMarkers( *view, *markerCorners, *markerIds );
 
         }
@@ -162,6 +172,7 @@ bool ArucoProcessor::processFrame( const Frame &frame, CvImage *view, std::vecto
     }
 
     return false;
+
 }
 
 bool ArucoProcessor::processFrame( const Frame &frame, CvImage *view, ArucoMarkerList *markers )
@@ -175,38 +186,38 @@ bool ArucoProcessor::processFrame( const Frame &frame, CvImage *view, ArucoMarke
         markers->clear();
 
         for ( size_t i = 0; i < markerIds.size(); ++i )
-            markers->push_back( ArucoMarker( markerIds[ i ], markerCorners[ i ] ) );
+            markers->insert( ArucoMarker( markerIds[ i ], markerCorners[ i ] ) );
 
     }
 
     return ret;
-}
 
-bool ArucoProcessor::processPreview( const Frame &frame, CvImage *preview )
-{
-    bool ret = false;
-
-    if ( !frame.empty() ) {
-
-        auto extent = std::max( frame.width(), frame.height() );
-
-        cv::Mat sourceFrame;
-
-        if ( m_resizeFlag && extent > m_frameMaximumSize )
-            sourceFrame = resizeTo( frame, m_frameMaximumSize );
-        else
-            frame.copyTo( sourceFrame );
-
-        ret = processFrame( sourceFrame, preview, nullptr );
-
-    }
-
-    return ret;
 }
 
 std::vector< cv::Point3f > ArucoProcessor::calcCorners( const ArucoMarkerList &list )
 {
     std::vector< cv::Point3f > ret;
 
+    const int firstId = 10;
+    const int markersInRow = 5;
+
+    static const double multiplier = m_size + m_interval;
+
+    for ( auto &i : list ) {
+        // Calculate offset index
+
+        auto offsetId = i.id() - firstId;
+
+        int row = offsetId / markersInRow;
+        int col = offsetId % markersInRow;
+
+        ret.push_back( cv::Point3f( row * multiplier, col * multiplier, 0 ) );
+        ret.push_back( cv::Point3f( row * multiplier,  col * multiplier + m_size, 0 ) );
+        ret.push_back( cv::Point3f( row * multiplier + m_size, col * multiplier + m_size, 0 ) );
+        ret.push_back( cv::Point3f( row * multiplier + m_size, col * multiplier, 0 ) );
+
+    }
+
     return ret;
+
 }

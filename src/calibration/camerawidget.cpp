@@ -40,6 +40,11 @@ void CameraWidgetBase::setTemplateSize( const double value )
     m_previewTemplateProcessor.setSize( value );
 }
 
+void CameraWidgetBase::setIntervalSize( const double value )
+{
+    m_previewArucoProcessor.setInterval( value );
+}
+
 void CameraWidgetBase::setResizeFlag( const bool value )
 {
     m_previewTemplateProcessor.setResizeFlag( value );
@@ -181,9 +186,9 @@ void MonocularCameraWidget::updateFrame()
             CvImage procFrame;
 
             if ( m_type == TypeComboBox::CHECKERBOARD || m_type == TypeComboBox::CIRCLES || m_type == TypeComboBox::ASYM_CIRCLES )
-                exist = m_previewTemplateProcessor.processPreview( frame, &procFrame );
+                exist = m_previewTemplateProcessor.processFrame( frame, &procFrame );
             else if ( m_type == TypeComboBox::ARUCO_MARKERS )
-                exist = m_previewArucoProcessor.processPreview( frame, &procFrame );
+                exist = m_previewArucoProcessor.processFrame( frame, &procFrame );
 
             setPreviewImage( procFrame );
             setTemplateExist( exist );
@@ -281,14 +286,13 @@ void StereoCameraWidget::updateFrame()
             CvImage leftProcFrame;
             CvImage rightProcFrame;
 
-
             if ( m_type == TypeComboBox::CHECKERBOARD || m_type == TypeComboBox::CIRCLES || m_type == TypeComboBox::ASYM_CIRCLES ) {
-                leftExist = m_previewTemplateProcessor.processPreview( frame.leftFrame(), &leftProcFrame );
-                rightExist = m_previewTemplateProcessor.processPreview( frame.rightFrame(), &rightProcFrame );
+                leftExist = m_previewTemplateProcessor.processFrame( frame.leftFrame(), &leftProcFrame );
+                rightExist = m_previewTemplateProcessor.processFrame( frame.rightFrame(), &rightProcFrame );
             }
             else if ( m_type == TypeComboBox::ARUCO_MARKERS ) {
-                leftExist = m_previewArucoProcessor.processPreview( frame.leftFrame(), &leftProcFrame );
-                rightExist = m_previewArucoProcessor.processPreview( frame.rightFrame(), &rightProcFrame );
+                leftExist = m_previewArucoProcessor.processFrame( frame.leftFrame(), &leftProcFrame );
+                rightExist = m_previewArucoProcessor.processFrame( frame.rightFrame(), &rightProcFrame );
             }
 
             m_leftCameraWidget->setPreviewImage( leftProcFrame );
@@ -368,6 +372,4 @@ void TripleCameraWidget::updatePreview()
 
 void TripleCameraWidget::updatePreview( const unsigned int cameraIndex )
 {
-
 }
-

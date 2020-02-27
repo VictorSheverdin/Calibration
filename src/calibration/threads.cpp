@@ -2,52 +2,74 @@
 
 #include "threads.h"
 
+#include <thread>
+
 // MonocularProcessorThread
-MonocularProcessorThread::MonocularProcessorThread( const TemplateProcessor &processor, QObject *parent )
+MonocularProcessorThread::MonocularProcessorThread( QObject *parent )
     : QThread( parent )
 {
     initialize();
-
-    setProcessor( processor );
 
 }
 
 void MonocularProcessorThread::initialize()
 {
+    m_type = NONE;
 }
 
-void MonocularProcessorThread::setProcessor( const TemplateProcessor &processor )
+const TemplateProcessor &MonocularProcessorThread::templateProcessor() const
 {
-    m_processor = processor;
+    return m_templateProcessor;
 }
 
-const TemplateProcessor &MonocularProcessorThread::processor() const
+TemplateProcessor &MonocularProcessorThread::templateProcessor()
 {
-    return m_processor;
+    return m_templateProcessor;
 }
 
-TemplateProcessor &MonocularProcessorThread::processor()
+const ArucoProcessor &MonocularProcessorThread::markerProcessor() const
 {
-    return m_processor;
+    return m_markerProcessor;
 }
 
-void MonocularProcessorThread::addFrame( const Frame &frame )
+ArucoProcessor &MonocularProcessorThread::markerProcessor()
 {
-    m_framesMutex.lock();
-    m_framesQueue.push( frame );
-    m_framesMutex.unlock();
+    return m_markerProcessor;
+}
+
+void MonocularProcessorThread::processFrame( const Frame &frame )
+{
+    m_mutex.lock();
+    m_frame = frame;
+    m_mutex.unlock();
 
 }
 
 void MonocularProcessorThread::run()
 {
-    if ( !m_framesQueue.empty() ) {
-        /*CvImage procFrame;
-        std::vector< cv::Point2f > previewPoints;
-        m_processor.processPreview( m_frame, &procFrame, &previewPoints );*/
+    while( true ) {
+
+        if ( m_type == TEMPLATE ) {
+            m_type = NONE;
+
+            m_templateProcessor.processFrame( m_frame, &m_preview, &m_imagePoints );
+
+            emit updateSignal();
+
+        }
+        else if ( m_type == MARKER ) {
+            m_type = NONE;
+
+            ArucoMarkerList list;
+
+            m_markerProcessor.processFrame( m_frame, &m_preview, &list );
+
+            emit updateSignal();
+        }
+
+        std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
 
     }
-
 }
 
 // StereoProcessorThread

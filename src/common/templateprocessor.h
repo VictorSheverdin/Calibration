@@ -44,9 +44,7 @@ public:
     bool filterQuads() const;
     bool fastCheck() const;
 
-    bool processFrame( const Frame &frame, CvImage *view, std::vector< cv::Point2f > *points );
-    bool processPreview( const Frame &frame, CvImage *preview );
-
+    bool processFrame( const Frame &frame, CvImage *view = nullptr, std::vector< cv::Point2f > *points = nullptr );
     bool calcCorners( std::vector< cv::Point3f > *corners );
 
 protected:

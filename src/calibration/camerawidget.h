@@ -14,6 +14,8 @@
 
 #include <opencv2/opencv.hpp>
 
+#include "threads.h"
+
 class CameraPreviewWidget;
 
 class CameraWidgetBase : public QSplitter
@@ -26,6 +28,7 @@ public:
     void setType(const TypeComboBox::Type type );
     void setCount( const cv::Size &count );
     void setTemplateSize( const double value );
+    void setIntervalSize( const double value );
     void setResizeFlag( const bool value );
     void setFrameMaximumSize( const unsigned int value );
 
@@ -80,6 +83,8 @@ protected:
     QPointer< CameraPreviewWidget > m_previewWidget;
 
     MasterCamera m_camera;
+
+    MonocularProcessorThread m_previewThread;
 
     QMutex m_updateMutex;
 

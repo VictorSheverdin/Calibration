@@ -4,26 +4,39 @@
 #include <QMutex>
 
 #include "src/common/templateprocessor.h"
+#include "src/common/markerprocessor.h"
 
 class MonocularProcessorThread : public QThread
 {
     Q_OBJECT
 
 public:
-    explicit MonocularProcessorThread( const TemplateProcessor &processor, QObject *parent = nullptr );
+    enum Type { NONE, TEMPLATE, MARKER };
 
-    void setProcessor( const TemplateProcessor &processor );
+    explicit MonocularProcessorThread( QObject *parent = nullptr );
 
-    const TemplateProcessor &processor() const;
-    TemplateProcessor &processor();
+    const TemplateProcessor &templateProcessor() const;
+    TemplateProcessor &templateProcessor();
 
-    void addFrame( const Frame &frame );
+    const ArucoProcessor &markerProcessor() const;
+    ArucoProcessor &markerProcessor();
+
+    void processFrame( const Frame &frame );
+
+signals:
+    void updateSignal();
 
 protected:
-    TemplateProcessor m_processor;
+    TemplateProcessor m_templateProcessor;
+    ArucoProcessor m_markerProcessor;
 
-    LimitedQueue< Frame > m_framesQueue;
-    QMutex m_framesMutex;
+    Frame m_frame;
+    Type m_type;
+    QMutex m_mutex;
+
+    CvImage m_preview;
+    std::vector< cv::Point2f > m_imagePoints;
+    std::vector< cv::Point2f > m_worldPoints;
 
     virtual void run() override;
 
