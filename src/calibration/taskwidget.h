@@ -28,9 +28,6 @@ public:
     bool filterQuads() const;
     bool fastCheck() const;
 
-protected slots:
-    void updateParameters();
-
 protected:
     QPointer<QVBoxLayout> m_layout;
     QPointer< CameraParametersWidget > m_parametersWidget;
@@ -55,11 +52,13 @@ public:
 
     bool isTemplateExist() const;
 
+protected slots:
+    void updateParameters();
+
 private:
     void initialize (const QString &cameraIp );
 
 };
-
 
 class StereoGrabWidget : public GrabWidgetBase
 {
@@ -75,7 +74,7 @@ public:
 
     bool isTemplateExist() const;
 
-    const StereoFrame frame() const;
+    const StereoFrame sourceFrame() const;
 
 public slots:
     void setLeftSourceImage( const CvImage image );
@@ -83,6 +82,9 @@ public slots:
 
     void setRightSourceImage( const CvImage image );
     void setRightDisplayedImage( const CvImage image );
+
+protected slots:
+    void updateParameters();
 
 private:
     void initialize( const QString &leftCameraIp, const QString &rightCameraIp );

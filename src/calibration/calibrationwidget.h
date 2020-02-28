@@ -9,6 +9,8 @@
 #include "reportwidget.h"
 #include "src/common/defs.h"
 
+#include "threads.h"
+
 class GrabWidgetBase;
 class MonocularGrabWidget;
 class StereoGrabWidget;
@@ -181,9 +183,14 @@ public slots:
 
     void loadIcon( const QString &fileName );
 
+protected slots:
+    void makeIcon();
+
 protected:
     QPointer< QSplitter > m_splitter;
     QPointer< MonocularGrabWidget > m_taskWidget;
+
+    MonocularProcessorThread m_processorThread;
 
     MonocularIcon *createIcon( const CvImage &image );
 
@@ -213,9 +220,14 @@ public slots:
 
     void loadIcon( const QString &leftFileName, const QString &rightFileName );
 
+protected slots:
+    void makeIcon();
+
 protected:
     QPointer< QSplitter > m_splitter;
     QPointer< StereoGrabWidget > m_taskWidget;
+
+    StereoProcessorThread m_processorThread;
 
     StereoIcon *createIcon( const CvImage &leftImage, const CvImage &rightImage );
 

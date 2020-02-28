@@ -26,33 +26,9 @@ public:
     CameraWidgetBase( QWidget* parent = nullptr );
 
     void setType(const TypeComboBox::Type type );
-    void setCount( const cv::Size &count );
-    void setTemplateSize( const double value );
-    void setIntervalSize( const double value );
-    void setResizeFlag( const bool value );
-    void setFrameMaximumSize( const unsigned int value );
-
-    void setAdaptiveThreshold( const bool value );
-    void setNormalizeImage( const bool value );
-    void setFilterQuads( const bool value );
-    void setFastCheck( const bool value );
-
-    TypeComboBox::Type templateType() const;
-    const cv::Size &templateCount() const;
-    double templateSize() const;
-    double intervalSize() const;
-    bool resizeFlag() const;
-    unsigned int frameMaximumSize() const;
-
-    bool adaptiveThreshold() const;
-    bool normalizeImage() const;
-    bool filterQuads() const;
-    bool fastCheck() const;
+    TypeComboBox::Type type() const;
 
 protected:
-    TemplateProcessor m_previewTemplateProcessor;
-    ArucoProcessor m_previewArucoProcessor;
-
     TypeComboBox::Type m_type;
 
 private:
@@ -72,12 +48,31 @@ public:
     void setTemplateExist( const bool value );
     bool isTemplateExist() const;
 
+    const TemplateProcessor &templateProcessor() const;
+    TemplateProcessor &templateProcessor();
+
+    const ArucoProcessor &markerProcessor() const;
+    ArucoProcessor &markerProcessor();
+
+    void setType(const TypeComboBox::Type type );
+    void setCount( const cv::Size &count );
+    void setTemplateSize( const double value );
+    void setIntervalSize( const double value );
+    void setResizeFlag( const bool value );
+    void setFrameMaximumSize( const unsigned int value );
+
+    void setAdaptiveThreshold( const bool value );
+    void setNormalizeImage( const bool value );
+    void setFilterQuads( const bool value );
+    void setFastCheck( const bool value );
+
 public slots:
     void setSourceImage(const CvImage image);
     void setPreviewImage(const CvImage image);
 
 protected slots:
-    void updateFrame();
+    void reciveFrame();
+    void updateView();
 
 protected:
     QPointer< CameraPreviewWidget > m_previewWidget;
@@ -86,7 +81,7 @@ protected:
 
     MonocularProcessorThread m_previewThread;
 
-    QMutex m_updateMutex;
+    mutable QMutex m_updateMutex;
 
 private:
     void initialize();
@@ -106,9 +101,39 @@ public:
     const CvImage rightSourceImage() const;
     const CvImage rightDisplayedImage() const;
 
+    const TemplateProcessor &templateProcessor() const;
+    TemplateProcessor &templateProcessor();
+
+    const ArucoProcessor &markerProcessor() const;
+    ArucoProcessor &markerProcessor();
+
+    void setType(const TypeComboBox::Type type );
+    void setCount( const cv::Size &count );
+    void setTemplateSize( const double value );
+    void setIntervalSize( const double value );
+    void setResizeFlag( const bool value );
+    void setFrameMaximumSize( const unsigned int value );
+
+    void setAdaptiveThreshold( const bool value );
+    void setNormalizeImage( const bool value );
+    void setFilterQuads( const bool value );
+    void setFastCheck( const bool value );
+
+    TypeComboBox::Type type() const;
+    const cv::Size &templateCount() const;
+    double templateSize() const;
+    double intervalSize() const;
+    bool resizeFlag() const;
+    unsigned int frameMaximumSize() const;
+
+    bool adaptiveThreshold() const;
+    bool normalizeImage() const;
+    bool filterQuads() const;
+    bool fastCheck() const;
+
     bool isTemplateExist() const;
 
-    StereoFrame stereoFrame();
+    StereoFrame sourceFrame();
 
 public slots:
     void setLeftSourceImage( const CvImage image );
@@ -118,52 +143,21 @@ public slots:
     void setRightDisplayedImage( const CvImage image );
 
 protected slots:
-    void updateFrame();
+    void reciveFrame();
+    void updateView();
 
 protected:
     QPointer<CameraPreviewWidget> m_leftCameraWidget;
     QPointer<CameraPreviewWidget> m_rightCameraWidget;
 
+    StereoProcessorThread m_previewThread;
+
     StereoCamera m_camera;
+
+    StereoFrame m_sourceFrame;
 
     QMutex m_updateMutex;
 
 private:
     void initialize();
-};
-
-template < int NUM >
-class NCameraWidgetCore
-{
-public:
-    NCameraWidgetCore() = default;
-
-protected:
-    QPointer< CameraPreviewWidget > m_cameraWidgets[ NUM ];
-    cv::VideoCapture m_videoCaptures[ NUM ];
-};
-
-class TripleCameraWidget : public CameraWidgetBase, public NCameraWidgetCore< 3 >
-{
-    Q_OBJECT
-
-public:
-    TripleCameraWidget( const int camera1Index, const int camera2Index, const int camera3Index, QWidget* parent = nullptr );
-
-    const CvImage sourceImage( const unsigned int cameraIndex ) const;
-    const CvImage previewImage( const unsigned int cameraIndex ) const;
-
-public slots:
-    void setSource1Image( const unsigned int cameraIndex, const CvImage image );
-    void setPreviewImage( const unsigned int cameraIndex, const CvImage image );
-
-protected slots:
-    void updatePreview();
-
-protected:
-    void updatePreview( const unsigned int cameraIndex );
-
-private:
-    void initialize( const int camera1Index, const int camera2Index, const int camera3Index );
-
 };

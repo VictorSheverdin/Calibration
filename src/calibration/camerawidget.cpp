@@ -20,111 +20,12 @@ void CameraWidgetBase::initialize()
 
 void CameraWidgetBase::setType( const TypeComboBox::Type type )
 {
-    if ( type == TypeComboBox::CHECKERBOARD )
-        m_previewTemplateProcessor.setType( TemplateProcessor::CHECKERBOARD );
-    else if ( type == TypeComboBox::CIRCLES )
-        m_previewTemplateProcessor.setType( TemplateProcessor::CIRCLES );
-    else if ( type == TypeComboBox::ASYM_CIRCLES )
-        m_previewTemplateProcessor.setType( TemplateProcessor::ASYM_CIRCLES );
-
     m_type = type;
 }
 
-void CameraWidgetBase::setCount( const cv::Size &count )
-{
-    m_previewTemplateProcessor.setCount( count );
-}
-
-void CameraWidgetBase::setTemplateSize( const double value )
-{
-    m_previewTemplateProcessor.setSize( value );
-}
-
-void CameraWidgetBase::setIntervalSize( const double value )
-{
-    m_previewArucoProcessor.setInterval( value );
-}
-
-void CameraWidgetBase::setResizeFlag( const bool value )
-{
-    m_previewTemplateProcessor.setResizeFlag( value );
-    m_previewArucoProcessor.setResizeFlag( value );
-}
-
-void CameraWidgetBase::setFrameMaximumSize( const unsigned int value )
-{
-    m_previewTemplateProcessor.setFrameMaximumSize( value );
-    m_previewArucoProcessor.setFrameMaximumSize( value );
-}
-
-void CameraWidgetBase::setAdaptiveThreshold( const bool value )
-{
-    m_previewTemplateProcessor.setAdaptiveThreshold( value );
-}
-
-void CameraWidgetBase::setNormalizeImage( const bool value )
-{
-    m_previewTemplateProcessor.setNormalizeImage( value );
-}
-
-void CameraWidgetBase::setFilterQuads( const bool value )
-{
-    m_previewTemplateProcessor.setFilterQuads( value );
-}
-
-void CameraWidgetBase::setFastCheck( const bool value )
-{
-    m_previewTemplateProcessor.setFastCheck( value );
-}
-
-TypeComboBox::Type CameraWidgetBase::templateType() const
+TypeComboBox::Type CameraWidgetBase::type() const
 {
     return m_type;
-}
-
-const cv::Size &CameraWidgetBase::templateCount() const
-{
-    return m_previewTemplateProcessor.count();
-}
-
-double CameraWidgetBase::templateSize() const
-{
-    return m_previewTemplateProcessor.size();
-}
-
-double CameraWidgetBase::intervalSize() const
-{
-    return m_previewArucoProcessor.interval();
-}
-
-bool CameraWidgetBase::resizeFlag() const
-{
-    return m_previewTemplateProcessor.resizeFlag();
-}
-
-unsigned int CameraWidgetBase::frameMaximumSize() const
-{
-    return m_previewTemplateProcessor.frameMaximumSize();
-}
-
-bool CameraWidgetBase::adaptiveThreshold() const
-{
-    return m_previewTemplateProcessor.adaptiveThreshold();
-}
-
-bool CameraWidgetBase::normalizeImage() const
-{
-    return m_previewTemplateProcessor.normalizeImage();
-}
-
-bool CameraWidgetBase::filterQuads() const
-{
-    return m_previewTemplateProcessor.filterQuads();
-}
-
-bool CameraWidgetBase::fastCheck() const
-{
-    return m_previewTemplateProcessor.fastCheck();
 }
 
 // MonocularCameraWidget
@@ -139,7 +40,10 @@ void MonocularCameraWidget::initialize()
     m_previewWidget = new CameraPreviewWidget( this );
     addWidget( m_previewWidget );
 
-    connect( &m_camera, &MasterCamera::receivedFrame, this, &MonocularCameraWidget::updateFrame );
+    m_previewThread.start();
+
+    connect( &m_camera, &MasterCamera::receivedFrame, this, &MonocularCameraWidget::reciveFrame );
+    connect( &m_previewThread, &MonocularProcessorThread::updateSignal, this, &MonocularCameraWidget::updateView );
 
 }
 
@@ -155,7 +59,13 @@ void MonocularCameraWidget::setPreviewImage(const CvImage image)
 
 const CvImage MonocularCameraWidget::sourceImage() const
 {
-    return m_previewWidget->sourceImage();
+    CvImage ret;
+
+    m_updateMutex.lock();
+    ret = m_previewWidget->sourceImage();
+    m_updateMutex.unlock();
+
+    return ret;
 }
 
 const CvImage MonocularCameraWidget::previewImage() const
@@ -173,32 +83,113 @@ bool MonocularCameraWidget::isTemplateExist() const
     return m_previewWidget->isTemplateExist();
 }
 
-void MonocularCameraWidget::updateFrame()
+void MonocularCameraWidget::reciveFrame()
+{
+    auto frame = m_camera.getFrame();
+
+    if ( !frame.empty() ) {
+        if ( m_type == TypeComboBox::CHECKERBOARD || m_type == TypeComboBox::CIRCLES || m_type == TypeComboBox::ASYM_CIRCLES )
+            m_previewThread.processFrame( frame, MonocularProcessorThread::TEMPLATE );
+        else if ( m_type == TypeComboBox::ARUCO_MARKERS )
+            m_previewThread.processFrame( frame, MonocularProcessorThread::MARKER );
+
+    }
+
+}
+
+void MonocularCameraWidget::updateView()
 {
     if ( m_updateMutex.tryLock() ) {
 
-        auto frame = m_camera.getFrame();
+        auto result = m_previewThread.result();
 
-        if ( !frame.empty() ) {
-            setSourceImage( frame );
-
-            bool exist = false;
-            CvImage procFrame;
-
-            if ( m_type == TypeComboBox::CHECKERBOARD || m_type == TypeComboBox::CIRCLES || m_type == TypeComboBox::ASYM_CIRCLES )
-                exist = m_previewTemplateProcessor.processFrame( frame, &procFrame );
-            else if ( m_type == TypeComboBox::ARUCO_MARKERS )
-                exist = m_previewArucoProcessor.processFrame( frame, &procFrame );
-
-            setPreviewImage( procFrame );
-            setTemplateExist( exist );
-
-        }
+        setSourceImage( result.sourceFrame );
+        setPreviewImage( result.preview );
+        setTemplateExist( result.exist );
 
         m_updateMutex.unlock();
 
     }
 
+}
+
+const TemplateProcessor &MonocularCameraWidget::templateProcessor() const
+{
+    return m_previewThread.templateProcessor();
+}
+
+TemplateProcessor &MonocularCameraWidget::templateProcessor()
+{
+    return m_previewThread.templateProcessor();
+}
+
+const ArucoProcessor &MonocularCameraWidget::markerProcessor() const
+{
+    return m_previewThread.markerProcessor();
+}
+
+ArucoProcessor &MonocularCameraWidget::markerProcessor()
+{
+    return m_previewThread.markerProcessor();
+}
+
+void MonocularCameraWidget::setType( const TypeComboBox::Type type )
+{
+    CameraWidgetBase::setType( type );
+
+    if ( type == TypeComboBox::CHECKERBOARD )
+        templateProcessor().setType( TemplateProcessor::CHECKERBOARD );
+    else if ( type == TypeComboBox::CIRCLES )
+        templateProcessor().setType( TemplateProcessor::CIRCLES );
+    else if ( type == TypeComboBox::ASYM_CIRCLES )
+        templateProcessor().setType( TemplateProcessor::ASYM_CIRCLES );
+}
+
+void MonocularCameraWidget::setCount( const cv::Size &count )
+{
+    templateProcessor().setCount( count );
+}
+
+void MonocularCameraWidget::setTemplateSize( const double value )
+{
+    templateProcessor().setSize( value );
+}
+
+void MonocularCameraWidget::setIntervalSize( const double value )
+{
+    markerProcessor().setInterval( value );
+}
+
+void MonocularCameraWidget::setResizeFlag( const bool value )
+{
+    templateProcessor().setResizeFlag( value );
+    markerProcessor().setResizeFlag( value );
+}
+
+void MonocularCameraWidget::setFrameMaximumSize( const unsigned int value )
+{
+    templateProcessor().setFrameMaximumSize( value );
+    markerProcessor().setFrameMaximumSize( value );
+}
+
+void MonocularCameraWidget::setAdaptiveThreshold( const bool value )
+{
+    templateProcessor().setAdaptiveThreshold( value );
+}
+
+void MonocularCameraWidget::setNormalizeImage( const bool value )
+{
+    templateProcessor().setNormalizeImage( value );
+}
+
+void MonocularCameraWidget::setFilterQuads( const bool value )
+{
+    templateProcessor().setFilterQuads( value );
+}
+
+void MonocularCameraWidget::setFastCheck( const bool value )
+{
+    templateProcessor().setFastCheck( value );
 }
 
 // StereoCameraWidget
@@ -216,7 +207,10 @@ void StereoCameraWidget::initialize()
     addWidget( m_leftCameraWidget );
     addWidget( m_rightCameraWidget );
 
-    connect( &m_camera, &StereoCamera::receivedFrame, this, &StereoCameraWidget::updateFrame );
+    m_previewThread.start();
+
+    connect( &m_camera, &StereoCamera::receivedFrame, this, &StereoCameraWidget::reciveFrame );
+    connect( &m_previewThread, &StereoProcessorThread::updateSignal, this, &StereoCameraWidget::updateView );
 
 }
 
@@ -265,43 +259,47 @@ bool StereoCameraWidget::isTemplateExist() const
     return m_leftCameraWidget->isTemplateExist() || m_rightCameraWidget->isTemplateExist();
 }
 
-StereoFrame StereoCameraWidget::stereoFrame()
+StereoFrame StereoCameraWidget::sourceFrame()
 {
-    return m_camera.getFrame();
+    StereoFrame ret;
+
+    m_updateMutex.lock();
+    ret = m_sourceFrame;
+    m_updateMutex.unlock();
+
+    return ret;
 }
 
-void StereoCameraWidget::updateFrame()
+void StereoCameraWidget::reciveFrame()
+{
+    auto frame = m_camera.getFrame();
+
+    if ( !frame.empty() ) {
+        if ( m_type == TypeComboBox::CHECKERBOARD || m_type == TypeComboBox::CIRCLES || m_type == TypeComboBox::ASYM_CIRCLES )
+            m_previewThread.processFrame( frame, StereoProcessorThread::TEMPLATE );
+        else if ( m_type == TypeComboBox::ARUCO_MARKERS )
+            m_previewThread.processFrame( frame, StereoProcessorThread::MARKER );
+
+    }
+
+}
+
+void StereoCameraWidget::updateView()
 {
     if ( m_updateMutex.tryLock() ) {
 
-        auto frame = m_camera.getFrame();
+        auto result = m_previewThread.result();
 
-        if ( !frame.empty() ) {
+        m_sourceFrame = result.sourceFrame;
 
-            m_leftCameraWidget->setSourceImage( frame.leftFrame() );
-            m_rightCameraWidget->setSourceImage( frame.rightFrame() );
+        m_leftCameraWidget->setSourceImage( result.sourceFrame.leftFrame() );
+        m_rightCameraWidget->setSourceImage( result.sourceFrame.rightFrame() );
 
-            bool leftExist = false;
-            bool rightExist = false;
-            CvImage leftProcFrame;
-            CvImage rightProcFrame;
+        m_leftCameraWidget->setPreviewImage( result.leftPreview );
+        m_leftCameraWidget->setTemplateExist( result.leftExist );
 
-            if ( m_type == TypeComboBox::CHECKERBOARD || m_type == TypeComboBox::CIRCLES || m_type == TypeComboBox::ASYM_CIRCLES ) {
-                leftExist = m_previewTemplateProcessor.processFrame( frame.leftFrame(), &leftProcFrame );
-                rightExist = m_previewTemplateProcessor.processFrame( frame.rightFrame(), &rightProcFrame );
-            }
-            else if ( m_type == TypeComboBox::ARUCO_MARKERS ) {
-                leftExist = m_previewArucoProcessor.processFrame( frame.leftFrame(), &leftProcFrame );
-                rightExist = m_previewArucoProcessor.processFrame( frame.rightFrame(), &rightProcFrame );
-            }
-
-            m_leftCameraWidget->setPreviewImage( leftProcFrame );
-            m_leftCameraWidget->setTemplateExist( leftExist );
-
-            m_rightCameraWidget->setPreviewImage( rightProcFrame );
-            m_rightCameraWidget->setTemplateExist( rightExist );
-
-        }
+        m_rightCameraWidget->setPreviewImage( result.rightPreview );
+        m_rightCameraWidget->setTemplateExist( result.rightExist );
 
         m_updateMutex.unlock();
 
@@ -309,67 +307,81 @@ void StereoCameraWidget::updateFrame()
 
 }
 
-// TripleCameraWidget
-TripleCameraWidget::TripleCameraWidget( const int camera1Index, const int camera2Index, const int camera3Index, QWidget* parent )
-    : CameraWidgetBase( parent )
+const TemplateProcessor &StereoCameraWidget::templateProcessor() const
 {
-    initialize( camera1Index, camera2Index, camera3Index );
+    return m_previewThread.templateProcessor();
 }
 
-void TripleCameraWidget::initialize( const int camera1Index, const int camera2Index, const int camera3Index )
+TemplateProcessor &StereoCameraWidget::templateProcessor()
 {
-    m_videoCaptures[0].open( camera1Index );
-    m_videoCaptures[1].open( camera2Index );
-    m_videoCaptures[2].open( camera3Index );
-
-    m_cameraWidgets[0] = new CameraPreviewWidget( this );
-    m_cameraWidgets[1] = new CameraPreviewWidget( this );
-    m_cameraWidgets[2] = new CameraPreviewWidget( this );
-
-    addWidget( m_cameraWidgets[0] );
-    addWidget( m_cameraWidgets[1] );
-    addWidget( m_cameraWidgets[2] );
-
+    return m_previewThread.templateProcessor();
 }
 
-const CvImage TripleCameraWidget::sourceImage( const unsigned int cameraIndex ) const
+const ArucoProcessor &StereoCameraWidget::markerProcessor() const
 {
-    if( cameraIndex >= 0 && cameraIndex < 3 )
-        return m_cameraWidgets[ cameraIndex ]->sourceImage();
-    else
-        return CvImage();
-
+    return m_previewThread.markerProcessor();
 }
 
-const CvImage TripleCameraWidget::previewImage( const unsigned int cameraIndex ) const
+ArucoProcessor &StereoCameraWidget::markerProcessor()
 {
-    if( cameraIndex >= 0 && cameraIndex < 3 )
-        return m_cameraWidgets[ cameraIndex ]->previewImage();
-    else
-        return CvImage();
-
+    return m_previewThread.markerProcessor();
 }
 
-void TripleCameraWidget::setSource1Image( const unsigned int cameraIndex, const CvImage image )
+void StereoCameraWidget::setType( const TypeComboBox::Type type )
 {
-    if( cameraIndex >= 0 && cameraIndex < 3 )
-        m_cameraWidgets[ cameraIndex ]->setSourceImage( image );
+    CameraWidgetBase::setType( type );
 
+    if ( type == TypeComboBox::CHECKERBOARD )
+        templateProcessor().setType( TemplateProcessor::CHECKERBOARD );
+    else if ( type == TypeComboBox::CIRCLES )
+        templateProcessor().setType( TemplateProcessor::CIRCLES );
+    else if ( type == TypeComboBox::ASYM_CIRCLES )
+        templateProcessor().setType( TemplateProcessor::ASYM_CIRCLES );
 }
 
-void TripleCameraWidget::setPreviewImage( const unsigned int cameraIndex, const CvImage image )
+void StereoCameraWidget::setCount( const cv::Size &count )
 {
-    if( cameraIndex >= 0 && cameraIndex < 3 )
-        m_cameraWidgets[ cameraIndex ]->setSourceImage( image );
-
+    templateProcessor().setCount( count );
 }
 
-void TripleCameraWidget::updatePreview()
+void StereoCameraWidget::setTemplateSize( const double value )
 {
-    for ( int i = 0; i < 3; ++i )
-        updatePreview( i );
+    templateProcessor().setSize( value );
 }
 
-void TripleCameraWidget::updatePreview( const unsigned int cameraIndex )
+void StereoCameraWidget::setIntervalSize( const double value )
 {
+    markerProcessor().setInterval( value );
+}
+
+void StereoCameraWidget::setResizeFlag( const bool value )
+{
+    templateProcessor().setResizeFlag( value );
+    markerProcessor().setResizeFlag( value );
+}
+
+void StereoCameraWidget::setFrameMaximumSize( const unsigned int value )
+{
+    templateProcessor().setFrameMaximumSize( value );
+    markerProcessor().setFrameMaximumSize( value );
+}
+
+void StereoCameraWidget::setAdaptiveThreshold( const bool value )
+{
+    templateProcessor().setAdaptiveThreshold( value );
+}
+
+void StereoCameraWidget::setNormalizeImage( const bool value )
+{
+    templateProcessor().setNormalizeImage( value );
+}
+
+void StereoCameraWidget::setFilterQuads( const bool value )
+{
+    templateProcessor().setFilterQuads( value );
+}
+
+void StereoCameraWidget::setFastCheck( const bool value )
+{
+    templateProcessor().setFastCheck( value );
 }

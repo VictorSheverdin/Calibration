@@ -6,14 +6,35 @@
 #include "src/common/templateprocessor.h"
 #include "src/common/markerprocessor.h"
 
-class MonocularProcessorThread : public QThread
+struct MonocularProcessorResult
+{
+    Frame sourceFrame;
+    bool exist;
+    CvImage preview;
+    std::vector< cv::Point2f > imagePoints;
+    std::vector< cv::Point3f > worldPoints;
+};
+
+struct StereoProcessorResult
+{
+    StereoFrame sourceFrame;
+    bool leftExist;
+    bool rightExist;
+    CvImage leftPreview;
+    CvImage rightPreview;
+    std::vector< cv::Point2f > leftImagePoints;
+    std::vector< cv::Point2f > rightImagePoints;
+    std::vector< cv::Point3f > worldPoints;
+};
+
+class ProcessorThreadBase : public QThread
 {
     Q_OBJECT
 
 public:
     enum Type { NONE, TEMPLATE, MARKER };
 
-    explicit MonocularProcessorThread( QObject *parent = nullptr );
+    explicit ProcessorThreadBase( QObject *parent = nullptr );
 
     const TemplateProcessor &templateProcessor() const;
     TemplateProcessor &templateProcessor();
@@ -21,22 +42,36 @@ public:
     const ArucoProcessor &markerProcessor() const;
     ArucoProcessor &markerProcessor();
 
-    void processFrame( const Frame &frame );
-
 signals:
     void updateSignal();
 
 protected:
+    Type m_type;
+
     TemplateProcessor m_templateProcessor;
     ArucoProcessor m_markerProcessor;
 
-    Frame m_frame;
-    Type m_type;
-    QMutex m_mutex;
+    mutable QMutex m_mutex;
 
-    CvImage m_preview;
-    std::vector< cv::Point2f > m_imagePoints;
-    std::vector< cv::Point2f > m_worldPoints;
+private:
+    void initialize();
+
+};
+
+class MonocularProcessorThread : public ProcessorThreadBase
+{
+    Q_OBJECT
+
+public:
+    explicit MonocularProcessorThread( QObject *parent = nullptr );
+
+    void processFrame( const Frame &frame, Type type );
+
+    MonocularProcessorResult result() const;
+
+protected:
+    Frame m_frame;
+    MonocularProcessorResult m_result;
 
     virtual void run() override;
 
@@ -45,14 +80,21 @@ private:
 
 };
 
-class StereoProcessorThread : public QThread
+class StereoProcessorThread : public ProcessorThreadBase
 {
     Q_OBJECT
 
 public:
     explicit StereoProcessorThread( QObject *parent = nullptr );
 
+    void processFrame( const StereoFrame &frame, Type type );
+
+    StereoProcessorResult result() const;
+
 protected:
+    StereoFrame m_frame;
+    StereoProcessorResult m_result;
+
     virtual void run() override;
 
 private:

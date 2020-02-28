@@ -22,8 +22,6 @@ void GrabWidgetBase::initialize()
 
     m_layout->addWidget( m_parametersWidget );
 
-    connect ( m_parametersWidget, &CameraParametersWidget::parametersChanges, this, &GrabWidgetBase::updateParameters );
-
 }
 
 TypeComboBox::Type GrabWidgetBase::templateType() const
@@ -76,23 +74,6 @@ bool GrabWidgetBase::fastCheck() const
     return m_parametersWidget->fastCheck();
 }
 
-void GrabWidgetBase::updateParameters()
-{
-    m_cameraWidget->setType( m_parametersWidget->templateType() );
-    m_cameraWidget->setCount( m_parametersWidget->templateCount() );
-    m_cameraWidget->setTemplateSize( m_parametersWidget->templateSize() );
-    m_cameraWidget->setIntervalSize( m_parametersWidget->intervalSize() );
-
-    m_cameraWidget->setAdaptiveThreshold( m_parametersWidget->adaptiveThreshold() );
-    m_cameraWidget->setNormalizeImage( m_parametersWidget->normalizeImage() );
-    m_cameraWidget->setFilterQuads( m_parametersWidget->filterQuads() );
-    m_cameraWidget->setFastCheck( m_parametersWidget->fastCheck() );
-
-    m_cameraWidget->setResizeFlag( m_parametersWidget->rescaleFlag() );
-    m_cameraWidget->setFrameMaximumSize( m_parametersWidget->rescaleSize() );
-
-}
-
 // MonocularGrabWidget
 MonocularGrabWidget::MonocularGrabWidget( const QString &cameraIp, QWidget* parent )
     : GrabWidgetBase( parent )
@@ -104,6 +85,8 @@ void MonocularGrabWidget::initialize( const QString &cameraIp )
 {
     m_cameraWidget = new MonocularCameraWidget( cameraIp, this );
     m_layout->addWidget( m_cameraWidget );
+
+    connect ( m_parametersWidget, &CameraParametersWidget::parametersChanges, this, &MonocularGrabWidget::updateParameters );
 
     updateParameters();
 }
@@ -128,6 +111,23 @@ bool MonocularGrabWidget::isTemplateExist() const
     return cameraWidget()->isTemplateExist();
 }
 
+void MonocularGrabWidget::updateParameters()
+{
+    cameraWidget()->setType( m_parametersWidget->templateType() );
+    cameraWidget()->setCount( m_parametersWidget->templateCount() );
+    cameraWidget()->setTemplateSize( m_parametersWidget->templateSize() );
+    cameraWidget()->setIntervalSize( m_parametersWidget->intervalSize() );
+
+    cameraWidget()->setAdaptiveThreshold( m_parametersWidget->adaptiveThreshold() );
+    cameraWidget()->setNormalizeImage( m_parametersWidget->normalizeImage() );
+    cameraWidget()->setFilterQuads( m_parametersWidget->filterQuads() );
+    cameraWidget()->setFastCheck( m_parametersWidget->fastCheck() );
+
+    cameraWidget()->setResizeFlag( m_parametersWidget->rescaleFlag() );
+    cameraWidget()->setFrameMaximumSize( m_parametersWidget->rescaleSize() );
+
+}
+
 // StereoGrabWidget
 StereoGrabWidget::StereoGrabWidget( const QString &leftCameraIp, const QString &rightCameraIp, QWidget* parent )
     : GrabWidgetBase( parent )
@@ -139,6 +139,8 @@ void StereoGrabWidget::initialize( const QString &leftCameraIp, const QString &r
 {
     m_cameraWidget = new StereoCameraWidget( leftCameraIp,  rightCameraIp, this );
     m_layout->addWidget( m_cameraWidget );
+
+    connect ( m_parametersWidget, &CameraParametersWidget::parametersChanges, this, &StereoGrabWidget::updateParameters );
 
     updateParameters();
 }
@@ -163,9 +165,9 @@ bool StereoGrabWidget::isTemplateExist() const
     return cameraWidget()->isTemplateExist();
 }
 
-const StereoFrame StereoGrabWidget::frame() const
+const StereoFrame StereoGrabWidget::sourceFrame() const
 {
-    return cameraWidget()->stereoFrame();
+    return cameraWidget()->sourceFrame();
 }
 
 void StereoGrabWidget::setLeftSourceImage( const CvImage image )
@@ -186,4 +188,21 @@ void StereoGrabWidget::setRightSourceImage( const CvImage image )
 void StereoGrabWidget::setRightDisplayedImage( const CvImage image )
 {
     return cameraWidget()->setRightDisplayedImage( image );
+}
+
+void StereoGrabWidget::updateParameters()
+{
+    cameraWidget()->setType( m_parametersWidget->templateType() );
+    cameraWidget()->setCount( m_parametersWidget->templateCount() );
+    cameraWidget()->setTemplateSize( m_parametersWidget->templateSize() );
+    cameraWidget()->setIntervalSize( m_parametersWidget->intervalSize() );
+
+    cameraWidget()->setAdaptiveThreshold( m_parametersWidget->adaptiveThreshold() );
+    cameraWidget()->setNormalizeImage( m_parametersWidget->normalizeImage() );
+    cameraWidget()->setFilterQuads( m_parametersWidget->filterQuads() );
+    cameraWidget()->setFastCheck( m_parametersWidget->fastCheck() );
+
+    cameraWidget()->setResizeFlag( m_parametersWidget->rescaleFlag() );
+    cameraWidget()->setFrameMaximumSize( m_parametersWidget->rescaleSize() );
+
 }
