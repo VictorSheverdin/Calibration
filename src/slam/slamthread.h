@@ -8,6 +8,8 @@
 
 #include "src/common/image.h"
 
+#include "src/common/calibrationdatabase.h"
+
 namespace slam {
     class World;
     class Map;
@@ -36,6 +38,7 @@ protected:
 
     double m_scaleFactor;
 
+    StereoCalibrationDataShort m_calibration;
     std::shared_ptr< slam::World > m_system;
 
     virtual void run() override;

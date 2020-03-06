@@ -44,15 +44,14 @@ protected:
     QPointer< CalibrationIconsWidget > m_iconsList;
     QPointer< ImageDialog > m_iconViewDialog;
 
-    TemplateProcessor m_templateProcessor;
-    ArucoProcessor m_arucoProcessor;
-
+    static const int m_minimumCalibrationPoints = 7;
     static const int m_minimumCalibrationFrames = 5;
 
     MonocularCalibrationData calcMonocularCalibration( const QList<CalibrationIconBase *> &icons );
-
     MonocularCalibrationData calcMonocularCalibration( const std::vector< std::vector< cv::Point2f > > &points2d, const std::vector<std::vector<cv::Point3f> > &points3d, cv::Size &frameSize );
+
     StereoCalibrationData calcStereoCalibration( const QList<CalibrationIconBase *> &icons );
+    StereoCalibrationData calcStereoCalibration( const std::vector< std::vector< cv::Point2f > > &leftPoints, const std::vector< std::vector< cv::Point2f > > &rightPoints, const std::vector<std::vector<cv::Point3f> > &points3d, cv::Size &frameSize );
 
     int m_iconCount;
 
@@ -76,6 +75,8 @@ protected slots:
 protected:
     MonocularCalibrationWidgetBase( QWidget *parent = nullptr );
 
+    MonocularProcessorThread m_processorThread;
+
 private:
     void initialize();
 
@@ -90,6 +91,8 @@ protected slots:
 
 protected:
     StereoCalibrationWidgetBase( QWidget *parent = nullptr );
+
+    StereoProcessorThread m_processorThread;
 
 private:
     void initialize();
@@ -190,8 +193,6 @@ protected:
     QPointer< QSplitter > m_splitter;
     QPointer< MonocularGrabWidget > m_taskWidget;
 
-    MonocularProcessorThread m_processorThread;
-
     MonocularIcon *createIcon( const CvImage &image );
 
 private:
@@ -226,8 +227,6 @@ protected slots:
 protected:
     QPointer< QSplitter > m_splitter;
     QPointer< StereoGrabWidget > m_taskWidget;
-
-    StereoProcessorThread m_processorThread;
 
     StereoIcon *createIcon( const CvImage &leftImage, const CvImage &rightImage );
 

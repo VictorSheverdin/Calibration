@@ -4,10 +4,8 @@
 #include <memory>
 #include <thread>
 
-#include "src/common/calibrationdatabase.h"
-
 #include "optimizer.h"
-
+#include "src/common/calibrationdatabase.h"
 #include "src/common/colorpoint.h"
 
 namespace slam {

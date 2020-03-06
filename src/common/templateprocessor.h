@@ -1,6 +1,5 @@
 #pragma once
 
-#include "limitedqueue.h"
 #include "image.h"
 
 class ProcessorState
@@ -32,6 +31,7 @@ public:
     void setNormalizeImage( const bool value );
     void setFilterQuads( const bool value );
     void setFastCheck( const bool value );
+    void setSubPixFlag( const bool value );
 
     Type type() const;
     const cv::Size &count() const;
@@ -43,9 +43,10 @@ public:
     bool normalizeImage() const;
     bool filterQuads() const;
     bool fastCheck() const;
+    bool subPixFlag() const;
 
-    bool processFrame( const Frame &frame, CvImage *view = nullptr, std::vector< cv::Point2f > *points = nullptr );
-    bool calcCorners( std::vector< cv::Point3f > *corners );
+    bool processFrame( const CvImage &frame, CvImage *view = nullptr, std::vector< cv::Point2f > *points = nullptr ) const;
+    bool calcCorners( std::vector< cv::Point3f > *corners ) const;
 
 protected:
     Type m_templateType;
@@ -60,7 +61,7 @@ protected:
     int m_frameMaximumSize;
     int m_flags;
 
-    bool findPoints( const CvImage &frame, std::vector<cv::Point2f> *points );
+    bool findPoints( const CvImage &frame, std::vector<cv::Point2f> *points ) const;
 
 private:
     void initialize();

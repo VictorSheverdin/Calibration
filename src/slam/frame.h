@@ -263,7 +263,7 @@ public:
     ProcessedFramePtr rightFrame() const;
 
     cv::Mat matchOptical( const size_t count );
-    cv::Mat matchFeatures( const size_t count );
+    cv::Mat matchFeatures();
 
     void clearImages();
 
@@ -378,7 +378,7 @@ public:
     static FramePtr create();
 
     cv::Mat trackOptical();
-    cv::Mat trackFeatures(const size_t count );
+    cv::Mat trackFeatures();
 
     double recoverPose();
 

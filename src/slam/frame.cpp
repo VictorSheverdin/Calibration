@@ -896,7 +896,7 @@ cv::Mat ProcessedStereoFrame::matchOptical( const size_t count )
 
 }
 
-cv::Mat ProcessedStereoFrame::matchFeatures( const size_t count )
+cv::Mat ProcessedStereoFrame::matchFeatures()
 {
     auto leftFrame = this->leftFrame();
     auto rightFrame = this->rightFrame();
@@ -1464,7 +1464,7 @@ cv::Mat AdjacentFrame::trackOptical()
     return cv::Mat();
 }
 
-cv::Mat AdjacentFrame::trackFeatures( const size_t count )
+cv::Mat AdjacentFrame::trackFeatures()
 {
     auto prevFrame = this->previousFrame();
     auto nextFrame = this->nextFrame();

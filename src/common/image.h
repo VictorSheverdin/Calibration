@@ -1,6 +1,5 @@
 #pragma once
 
-#include <QString>
 #include <QImage>
 
 #include <opencv2/opencv.hpp>
@@ -23,7 +22,6 @@ class CvImage : public cv::Mat
 {
 public:
     CvImage();
-    CvImage( const QString &fileName );
     CvImage( const std::string &fileName );
     CvImage( int width, int height, int type );
     CvImage( cv::Size size, int type );

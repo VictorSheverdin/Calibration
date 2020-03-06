@@ -148,7 +148,6 @@ find_package( Eigen3 3.1.0 REQUIRED )
 find_package( VTK 8 REQUIRED )
 find_package( PCL 1.9 REQUIRED )
 find_package( Pangolin REQUIRED )
-find_package( RTABMap REQUIRED )
 find_package( SuiteSparse REQUIRED )
 find_package( G2O REQUIRED )
 
@@ -209,8 +208,8 @@ add_executable( disparity ${COMMON_SOURCES} ${LIBELAS_SOURCES} ${RES_SOURCES}
     src/disparity/disparityiconswidget.cpp
     src/disparity/elasprocessor.h
     src/disparity/elasprocessor.cpp
-    src/disparity/stereoresultprocessor.h
-    src/disparity/stereoresultprocessor.cpp
+    src/disparity/processorthread.h
+    src/disparity/processorthread.cpp
     src/disparity/documentwidget.h
     src/disparity/documentwidget.cpp
     src/disparity/main.cpp
@@ -227,10 +226,6 @@ add_executable( cameraorbodometry ${COMMON_SOURCES} ${ANNOTATION_SOURCES} ${ORB_
 add_executable( visoodometry ${COMMON_SOURCES} ${VISO_SOURCES}
     src/visoodometry/main.cpp
 )
-
-#add_executable( rtabmapslam ${COMMON_SOURCES} ${RES_SOURCES}
-#    src/rtabmapslam/main.cpp
-#)
 
 add_executable( slam ${COMMON_SOURCES} ${RES_SOURCES}
     src/slam/application.h
@@ -282,7 +277,6 @@ add_executable( lidar ${COMMON_SOURCES} ${RES_SOURCES}
 
 target_include_directories( imagesorbodometry PRIVATE ${Pangolin_INCLUDE_DIRS} )
 target_include_directories( cameraorbodometry PRIVATE ${Pangolin_INCLUDE_DIRS} )
-#target_include_directories( rtabmapslam PRIVATE ${RTABMap_INCLUDE_DIRS} )
 target_include_directories( slam PRIVATE ${G2O_INCLUDE_DIR} ${CHOLMOD_INCLUDE_DIR} )
 
 target_link_libraries( calibration ${Qt5Widgets_LIBRARIES} ${YAML_CPP_LIBRARIES} )
@@ -290,7 +284,6 @@ target_link_libraries( disparity ${Qt5Widgets_LIBRARIES} ${VTK_LIBRARIES} ${YAML
 target_link_libraries( imagesorbodometry ${Qt5Widgets_LIBRARIES} ${Pangolin_LIBRARIES} ${PROJECT_SOURCE_DIR}/src/DBoW2/lib/libDBoW2.so ${PROJECT_SOURCE_DIR}/src/g2o/lib/libg2o.so )
 target_link_libraries( cameraorbodometry ${Qt5Widgets_LIBRARIES} ${Pangolin_LIBRARIES} ${PROJECT_SOURCE_DIR}/src/DBoW2/lib/libDBoW2.so ${PROJECT_SOURCE_DIR}/src/g2o/lib/libg2o.so )
 target_link_libraries( visoodometry ${Qt5Widgets_LIBRARIES} png )
-#target_link_libraries( rtabmapslam ${RTABMap_LIBRARIES} )
 
 target_link_libraries( slam PRIVATE
                             ${Qt5Widgets_LIBRARIES}

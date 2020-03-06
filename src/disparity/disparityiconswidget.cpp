@@ -42,12 +42,12 @@ const QString &DisparityIcon::rightFileName() const
 
 CvImage DisparityIcon::loadLeftImage() const
 {
-    return CvImage( m_leftFileName );
+    return CvImage( m_leftFileName.toStdString() );
 }
 
 CvImage DisparityIcon::loadRightImage() const
 {
-    return CvImage( m_rightFileName );
+    return CvImage( m_rightFileName.toStdString() );
 }
 
 StereoFrame DisparityIcon::stereoFrame() const

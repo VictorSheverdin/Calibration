@@ -110,6 +110,11 @@ bool TemplateProcessor::fastCheck() const
     return m_flags & cv::CALIB_CB_FAST_CHECK;
 }
 
+bool TemplateProcessor::subPixFlag() const
+{
+    return m_subPixFlag;
+}
+
 void TemplateProcessor::setAdaptiveThreshold( const bool value )
 {
     if (value)
@@ -146,7 +151,12 @@ void TemplateProcessor::setFastCheck( const bool value )
 
 }
 
-bool TemplateProcessor::processFrame(const Frame &frame, CvImage *view, std::vector< cv::Point2f > *points )
+void TemplateProcessor::setSubPixFlag( const bool value )
+{
+    m_subPixFlag = value;
+}
+
+bool TemplateProcessor::processFrame( const CvImage &frame, CvImage *view, std::vector< cv::Point2f > *points ) const
 {
     if ( !frame.empty() ) {
 
@@ -183,7 +193,7 @@ bool TemplateProcessor::processFrame(const Frame &frame, CvImage *view, std::vec
 
 }
 
-bool TemplateProcessor::calcCorners( std::vector< cv::Point3f > *corners )
+bool TemplateProcessor::calcCorners( std::vector< cv::Point3f > *corners ) const
 {
     corners->clear();
 
@@ -208,7 +218,7 @@ bool TemplateProcessor::calcCorners( std::vector< cv::Point3f > *corners )
 
 }
 
-bool TemplateProcessor::findPoints( const CvImage &frame, std::vector< cv::Point2f > *points )
+bool TemplateProcessor::findPoints( const CvImage &frame, std::vector< cv::Point2f > *points ) const
 {
     bool ret = false;
 

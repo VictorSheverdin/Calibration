@@ -5,7 +5,7 @@
 
 #include "src/common/defs.h"
 
-#include "stereoresultprocessor.h"
+#include "processorthread.h"
 #include "elasprocessor.h"
 
 #include "src/common/vimbacamera.h"

@@ -55,6 +55,39 @@ void MonocularProcessorThread::processFrame( const Frame &frame, Type type )
 
 }
 
+MonocularProcessorResult MonocularProcessorThread::calculate( const Frame &frame , const Type type ) const
+{
+    MonocularProcessorResult ret;
+
+    if ( type == TEMPLATE ) {
+
+        ret.sourceFrame = frame;
+
+        ret.exist = m_templateProcessor.processFrame( frame, &ret.preview, &ret.imagePoints );
+
+        if ( ret.exist )
+            m_templateProcessor.calcCorners( &ret.worldPoints );
+
+    }
+    else if ( type == MARKER ) {
+
+        ret.sourceFrame = frame;
+
+        ArucoMarkerList list;
+
+        ret.exist = m_markerProcessor.processFrame( frame, &ret.preview, &list );
+
+        if ( ret.exist ) {
+            ret.imagePoints = list.centerPoints();
+            ret.worldPoints = m_markerProcessor.calcCentroids( list );
+
+        }
+
+    }
+
+    return ret;
+}
+
 MonocularProcessorResult MonocularProcessorThread::result() const
 {
     MonocularProcessorResult ret;
@@ -71,34 +104,14 @@ void MonocularProcessorThread::run()
 {
     while( true ) {
 
-        if ( m_type == TEMPLATE ) {
+        if ( m_type != NONE ) {
+
+            m_result = calculate( m_frame, m_type );
+
             m_type = NONE;
-
-            m_result.sourceFrame = m_frame;
-
-            m_result.exist = m_templateProcessor.processFrame( m_frame, &m_result.preview, &m_result.imagePoints );
-
-            if ( m_result.exist )
-                m_templateProcessor.calcCorners( &m_result.worldPoints );
 
             emit updateSignal();
 
-        }
-        else if ( m_type == MARKER ) {
-            m_type = NONE;
-
-            m_result.sourceFrame = m_frame;
-
-            ArucoMarkerList list;
-
-            m_result.exist = m_markerProcessor.processFrame( m_frame, &m_result.preview, &list );
-
-            if ( m_result.exist ) {
-                m_result.imagePoints = list.points();
-                m_result.worldPoints = m_markerProcessor.calcCorners( list );
-            }
-
-            emit updateSignal();
         }
 
         std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
@@ -127,6 +140,47 @@ void StereoProcessorThread::processFrame( const StereoFrame &frame, Type type )
 
 }
 
+StereoProcessorResult StereoProcessorThread::calculate(const StereoFrame &frame, const Type type ) const
+{
+    StereoProcessorResult ret;
+
+    if ( type == TEMPLATE ) {
+
+        ret.sourceFrame = frame;
+
+        ret.leftExist = m_templateProcessor.processFrame( frame.leftFrame(), &ret.leftPreview, &ret.leftImagePoints );
+        ret.rightExist = m_templateProcessor.processFrame( frame.rightFrame(), &ret.rightPreview, &ret.rightImagePoints );
+
+        if ( ret.leftExist && ret.rightExist )
+            m_templateProcessor.calcCorners( &ret.worldPoints );
+
+    }
+    else if ( type == MARKER ) {
+
+        ret.sourceFrame = frame;
+
+        ArucoMarkerList leftList;
+        ArucoMarkerList rightList;
+
+        ret.leftExist = m_markerProcessor.processFrame( frame.leftFrame(), &ret.leftPreview, &leftList );
+        ret.rightExist = m_markerProcessor.processFrame( frame.rightFrame(), &ret.rightPreview, &rightList );
+
+        if ( ret.leftExist && ret.rightExist ) {
+
+            fit( &leftList, &rightList );
+
+            ret.leftImagePoints = leftList.centerPoints();
+            ret.rightImagePoints = rightList.centerPoints();
+
+            ret.worldPoints = m_markerProcessor.calcCentroids( leftList );
+
+        }
+
+    }
+
+    return ret;
+}
+
 StereoProcessorResult StereoProcessorThread::result() const
 {
     StereoProcessorResult ret;
@@ -136,48 +190,20 @@ StereoProcessorResult StereoProcessorThread::result() const
     m_mutex.unlock();
 
     return ret;
-
 }
 
 void StereoProcessorThread::run()
 {
     while( true ) {
 
-        if ( m_type == TEMPLATE ) {
+        if ( m_type != NONE ) {
+
+            m_result = calculate( m_frame, m_type );
+
             m_type = NONE;
-
-            m_result.sourceFrame = m_frame;
-
-            m_result.leftExist = m_templateProcessor.processFrame( m_frame.leftFrame(), &m_result.leftPreview, &m_result.leftImagePoints );
-            m_result.rightExist = m_templateProcessor.processFrame( m_frame.rightFrame(), &m_result.rightPreview, &m_result.rightImagePoints );
-
-            if ( m_result.leftExist && m_result.rightExist )
-                m_templateProcessor.calcCorners( &m_result.worldPoints );
 
             emit updateSignal();
 
-        }
-        else if ( m_type == MARKER ) {
-            m_type = NONE;
-
-            m_result.sourceFrame = m_frame;
-
-            ArucoMarkerList list;
-
-            m_result.leftExist = m_markerProcessor.processFrame( m_frame.leftFrame(), &m_result.leftPreview, &list );
-
-            if ( m_result.leftExist )
-                m_result.leftImagePoints = list.points();
-
-            m_result.rightExist = m_markerProcessor.processFrame( m_frame.rightFrame(), &m_result.rightPreview, &list );
-
-            if ( m_result.rightExist )
-                m_result.rightImagePoints = list.points();
-
-            if ( m_result.leftExist && m_result.rightExist )
-                m_result.worldPoints = m_markerProcessor.calcCorners( list );
-
-            emit updateSignal();
         }
 
         std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );

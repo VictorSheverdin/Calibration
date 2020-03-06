@@ -50,7 +50,7 @@ public:
     MonocularCalibrationResult &result( const unsigned int i );
     const MonocularCalibrationResult &result( const unsigned int i ) const;
 
-    const unsigned int resultsSize() const;
+    unsigned int resultsSize() const;
 
     void setPreviewImage( const CvImage &image );
     const CvImage &previewImage() const;

@@ -2,6 +2,8 @@
 
 #include "slamthread.h"
 
+#include "src/common/defs.h"
+#include "src/common/functions.h"
 #include "src/common/rectificationprocessor.h"
 
 #include "world.h"
@@ -93,8 +95,14 @@ void SlamThread::run()
             CvImage leftResizedImage;
             CvImage rightResizedImage;
 
-            cv::resize( leftCroppedImage, leftResizedImage, cv::Size(), m_scaleFactor, m_scaleFactor, cv::INTER_CUBIC );
-            cv::resize( rightCroppedImage, rightResizedImage, cv::Size(), m_scaleFactor, m_scaleFactor, cv::INTER_CUBIC );
+            if ( std::abs( m_scaleFactor - 1.0 ) > DOUBLE_EPS ) {
+                cv::resize( leftCroppedImage, leftResizedImage, cv::Size(), m_scaleFactor, m_scaleFactor, cv::INTER_CUBIC );
+                cv::resize( rightCroppedImage, rightResizedImage, cv::Size(), m_scaleFactor, m_scaleFactor, cv::INTER_CUBIC );
+            }
+            else {
+                leftResizedImage = leftCroppedImage;
+                rightResizedImage = rightCroppedImage;
+            }
 
             auto time = std::chrono::system_clock::now();
 

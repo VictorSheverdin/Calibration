@@ -53,11 +53,6 @@ CvImage::CvImage()
 {
 }
 
-CvImage::CvImage( const QString &fileName )
-    : cv::Mat( cv::imread( fileName.toStdString() ) )
-{
-}
-
 CvImage::CvImage( const std::string &fileName )
     : cv::Mat( cv::imread( fileName ) )
 {

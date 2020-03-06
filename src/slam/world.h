@@ -1,8 +1,5 @@
 #pragma once
 
-#include "src/common/calibrationdatabase.h"
-#include "src/common/rectificationprocessor.h"
-
 #include "map.h"
 
 namespace slam {

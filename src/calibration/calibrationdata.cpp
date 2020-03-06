@@ -93,7 +93,7 @@ const MonocularCalibrationResult &MonocularCalibrationData::result( const unsign
     return m_results[i];
 }
 
-const unsigned int MonocularCalibrationData::resultsSize() const
+unsigned int MonocularCalibrationData::resultsSize() const
 {
     return m_results.size();
 }

@@ -32,11 +32,6 @@ void CalibrationWidgetBase::initialize()
 
     connect( m_iconsList, SIGNAL( iconActivated( CalibrationIconBase* ) ), this, SLOT( showIcon( CalibrationIconBase* ) ) );
 
-    m_templateProcessor.setAdaptiveThreshold( true );
-    m_templateProcessor.setFastCheck( false );
-    m_templateProcessor.setFilterQuads( true );
-    m_templateProcessor.setNormalizeImage( true );
-
     m_iconViewDialog = new ImageDialog( application()->mainWindow() );
     m_iconViewDialog->resize( 800, 600 );
 
@@ -127,7 +122,7 @@ MonocularCalibrationData CalibrationWidgetBase::calcMonocularCalibration( const 
 
     std::vector< MonocularCalibrationResult > results;
 
-    if ( points2d.size() < m_minimumCalibrationFrames || points3d.size() < m_minimumCalibrationFrames || points2d.size() != points3d.size() )
+    if ( points2d.size() < m_minimumCalibrationFrames || points2d.size() != points3d.size() )
         throw std::exception();
 
     cv::Mat cameraMatrix = cv::Mat::eye( 3, 3, CV_64F );
@@ -189,17 +184,24 @@ StereoCalibrationData CalibrationWidgetBase::calcStereoCalibration(const QList< 
 
     }
 
-    if ( leftPoints.size() != rightPoints.size() )
-        throw std::exception();
+    ret = calcStereoCalibration( leftPoints, rightPoints, points3d, frameSize );
 
-    if ( leftPoints.size() < m_minimumCalibrationFrames )
+    ret.leftCameraResults().setPreviewImage( icons.front()->toStereoIcon()->leftPreview() );
+    ret.rightCameraResults().setPreviewImage( icons.front()->toStereoIcon()->rightPreview() );
+
+    return ret;
+
+}
+
+StereoCalibrationData CalibrationWidgetBase::calcStereoCalibration( const std::vector< std::vector< cv::Point2f > > &leftPoints, const std::vector< std::vector< cv::Point2f > > &rightPoints, const std::vector<std::vector<cv::Point3f> > &points3d, cv::Size &frameSize )
+{
+    StereoCalibrationData ret;
+
+    if ( leftPoints.size() != rightPoints.size() || leftPoints.size() != points3d.size() || leftPoints.size() < m_minimumCalibrationFrames )
         throw std::exception();
 
     ret.setLeftCameraResults( calcMonocularCalibration( leftPoints, points3d, frameSize ) );
     ret.setRightCameraResults( calcMonocularCalibration( rightPoints, points3d, frameSize ) );
-
-    ret.leftCameraResults().setPreviewImage( icons.front()->toStereoIcon()->leftPreview() );
-    ret.rightCameraResults().setPreviewImage( icons.front()->toStereoIcon()->rightPreview() );
 
     ret.setCorrespondFrameCount( points3d.size() );
 
@@ -266,6 +268,11 @@ MonocularCalibrationWidgetBase::MonocularCalibrationWidgetBase( QWidget *parent 
 
 void MonocularCalibrationWidgetBase::initialize()
 {
+    m_processorThread.templateProcessor().setAdaptiveThreshold( true );
+    m_processorThread.templateProcessor().setFastCheck( false );
+    m_processorThread.templateProcessor().setFilterQuads( true );
+    m_processorThread.templateProcessor().setNormalizeImage( true );
+
 }
 
 void MonocularCalibrationWidgetBase::showIcon( CalibrationIconBase *icon )
@@ -285,6 +292,10 @@ StereoCalibrationWidgetBase::StereoCalibrationWidgetBase( QWidget *parent )
 
 void StereoCalibrationWidgetBase::initialize()
 {
+    m_processorThread.templateProcessor().setAdaptiveThreshold( true );
+    m_processorThread.templateProcessor().setFastCheck( false );
+    m_processorThread.templateProcessor().setFilterQuads( true );
+    m_processorThread.templateProcessor().setNormalizeImage( true );
 }
 
 void StereoCalibrationWidgetBase::showIcon( CalibrationIconBase *icon )
@@ -339,59 +350,32 @@ void MonocularImageCalibrationWidget::calculate()
 
 MonocularIcon *MonocularImageCalibrationWidget::createIcon( const CvImage &image )
 {
-    CvImage preview;
+    if ( m_parametersWidget->templateType() == TypeComboBox::CHECKERBOARD )
+        m_processorThread.templateProcessor().setType( TemplateProcessor::CHECKERBOARD );
+    else if ( m_parametersWidget->templateType() == TypeComboBox::CIRCLES )
+        m_processorThread.templateProcessor().setType( TemplateProcessor::CIRCLES );
+    else if ( m_parametersWidget->templateType() == TypeComboBox::ASYM_CIRCLES )
+        m_processorThread.templateProcessor().setType( TemplateProcessor::ASYM_CIRCLES );
 
-    if ( m_parametersWidget->templateType() == TypeComboBox::CHECKERBOARD || m_parametersWidget->templateType() == TypeComboBox::CIRCLES || m_parametersWidget->templateType() == TypeComboBox::ASYM_CIRCLES ) {
+    m_processorThread.templateProcessor().setCount( m_parametersWidget->templateCount() );
+    m_processorThread.templateProcessor().setSize( m_parametersWidget->templateSize() );
+    m_processorThread.markerProcessor().setInterval( m_parametersWidget->intervalSize() );
 
-        switch ( m_parametersWidget->templateType() ) {
-        case TypeComboBox::CHECKERBOARD:
-            m_templateProcessor.setType( TemplateProcessor::CHECKERBOARD );
-            break;
-        case TypeComboBox::CIRCLES:
-            m_templateProcessor.setType( TemplateProcessor::CIRCLES );
-            break;
-        case TypeComboBox::ASYM_CIRCLES:
-            m_templateProcessor.setType( TemplateProcessor::ASYM_CIRCLES );
-            break;
-        default:
-            break;
-        }
+    MonocularProcessorResult result;
 
-        m_templateProcessor.setCount( m_parametersWidget->templateCount() );
-        m_templateProcessor.setSize( m_parametersWidget->templateSize() );
+    if ( m_parametersWidget->templateType() == TypeComboBox::CHECKERBOARD || m_parametersWidget->templateType() == TypeComboBox::CIRCLES || m_parametersWidget->templateType() == TypeComboBox::ASYM_CIRCLES  )
+        result = m_processorThread.calculate( image, MonocularProcessorThread::TEMPLATE );
+    else if ( m_parametersWidget->templateType() == TypeComboBox::ARUCO_MARKERS )
+        result = m_processorThread.calculate( image, MonocularProcessorThread::MARKER );
 
-        std::vector< cv::Point2f > points;
-        std::vector< cv::Point3f > corners;
-
-        auto res = m_templateProcessor.processFrame( image, &preview, &points );
-
-        if ( res ) {
-            m_templateProcessor.calcCorners( &corners );
-            return new MonocularIcon( preview, image.size(), points, corners, QObject::tr("Frame") + " " + QString::number( m_iconCount++ ) );
-
-        }
+    if ( result.exist && result.imagePoints.size() >= m_minimumCalibrationPoints ) {
+        return new MonocularIcon( result.preview, result.sourceFrame.size(),
+                                                    result.imagePoints, result.worldPoints, QObject::tr("Frame") + " " + QString::number( m_iconCount++ ) );
 
     }
-    else if ( m_parametersWidget->templateType() == TypeComboBox::ARUCO_MARKERS ) {
 
-        m_arucoProcessor.setSize( m_parametersWidget->templateSize() );
-        m_arucoProcessor.setInterval( m_parametersWidget->intervalSize() );
-
-        ArucoMarkerList markers;
-
-        auto res = m_arucoProcessor.processFrame( image, &preview, &markers );
-
-        if ( res ) {
-            auto points = markers.points();
-            auto corners = m_arucoProcessor.calcCorners( markers );
-
-            return new MonocularIcon( preview, image.size(), points, corners, QObject::tr("Frame") + " " + QString::number( m_iconCount++ ) );
-        }
-
-    }
 
     return nullptr;
-
 }
 
 void MonocularImageCalibrationWidget::addIcon( const CvImage &image )
@@ -485,72 +469,31 @@ void StereoImageCalibrationWidget::loadIcon( const QString &leftFileName, const 
 
 StereoIcon *StereoImageCalibrationWidget::createIcon( const CvImage &leftImage, const CvImage &rightImage )
 {
-    CvImage leftPreview;
-    CvImage rightPreview;
+   StereoFrame frame( leftImage, rightImage );
 
-    if ( m_parametersWidget->templateType() == TypeComboBox::CHECKERBOARD || m_parametersWidget->templateType() == TypeComboBox::CIRCLES || m_parametersWidget->templateType() == TypeComboBox::ASYM_CIRCLES ) {
+    if ( m_parametersWidget->templateType() == TypeComboBox::CHECKERBOARD )
+        m_processorThread.templateProcessor().setType( TemplateProcessor::CHECKERBOARD );
+    else if ( m_parametersWidget->templateType() == TypeComboBox::CIRCLES )
+        m_processorThread.templateProcessor().setType( TemplateProcessor::CIRCLES );
+    else if ( m_parametersWidget->templateType() == TypeComboBox::ASYM_CIRCLES )
+        m_processorThread.templateProcessor().setType( TemplateProcessor::ASYM_CIRCLES );
 
-        switch ( m_parametersWidget->templateType() ) {
-        case TypeComboBox::CHECKERBOARD:
-            m_templateProcessor.setType( TemplateProcessor::CHECKERBOARD );
-            break;
-        case TypeComboBox::CIRCLES:
-            m_templateProcessor.setType( TemplateProcessor::CIRCLES );
-            break;
-        case TypeComboBox::ASYM_CIRCLES:
-            m_templateProcessor.setType( TemplateProcessor::ASYM_CIRCLES );
-            break;
-        default:
-            break;
-        }
+    m_processorThread.templateProcessor().setCount( m_parametersWidget->templateCount() );
+    m_processorThread.templateProcessor().setSize( m_parametersWidget->templateSize() );
+    m_processorThread.markerProcessor().setInterval( m_parametersWidget->intervalSize() );
 
-        m_templateProcessor.setCount( m_parametersWidget->templateCount() );
-        m_templateProcessor.setSize( m_parametersWidget->templateSize() );
+    StereoProcessorResult result;
 
-        if ( leftImage.size() == rightImage.size() ) {
+    if ( m_parametersWidget->templateType() == TypeComboBox::CHECKERBOARD || m_parametersWidget->templateType() == TypeComboBox::CIRCLES || m_parametersWidget->templateType() == TypeComboBox::ASYM_CIRCLES  )
+        result = m_processorThread.calculate( frame, StereoProcessorThread::TEMPLATE );
+    else if ( m_parametersWidget->templateType() == TypeComboBox::ARUCO_MARKERS )
+        result = m_processorThread.calculate( frame, StereoProcessorThread::MARKER );
 
-            std::vector< cv::Point2f > leftPoints;
-            std::vector< cv::Point2f > rightPoints;
-            std::vector< cv::Point3f > corners;
-
-            auto leftRes = m_templateProcessor.processFrame( leftImage, &leftPreview, &leftPoints );
-            auto rightRes = m_templateProcessor.processFrame( rightImage, &rightPreview, &rightPoints );
-
-            if ( leftRes && rightRes ) {
-                m_templateProcessor.calcCorners( &corners );
-
-                return new StereoIcon( leftPreview, rightPreview,
-                                       leftImage.size(), leftPoints, rightPoints, corners,
-                                       QObject::tr("Frame") + " " + QString::number( m_iconCount++ ) );
-
-            }
-
-        }
-
-    }
-    else if ( m_parametersWidget->templateType() == TypeComboBox::ARUCO_MARKERS ) {
-
-        m_arucoProcessor.setSize( m_parametersWidget->templateSize() );
-        m_arucoProcessor.setInterval( m_parametersWidget->intervalSize() );
-
-        ArucoMarkerList leftMarkers;
-        ArucoMarkerList rightMarkers;
-
-        auto leftRes = m_arucoProcessor.processFrame( leftImage, &leftPreview, &leftMarkers );
-        auto rightRes = m_arucoProcessor.processFrame( rightImage, &rightPreview, &rightMarkers );
-
-        if ( leftRes && rightRes && leftMarkers == rightMarkers ) {
-
-            auto leftPoints = leftMarkers.points();
-            auto rightPoints = rightMarkers.points();
-
-            auto corners = m_arucoProcessor.calcCorners( leftMarkers );
-
-            return new StereoIcon( leftPreview, rightPreview,
-                                   leftImage.size(), leftPoints, rightPoints, corners,
-                                   QObject::tr("Frame") + " " + QString::number( m_iconCount++ ) );
-
-        }
+    if ( result.leftExist && result.rightExist && result.leftImagePoints.size() == result.rightImagePoints.size()
+                && result.leftImagePoints.size() >= m_minimumCalibrationPoints ) {
+        return new StereoIcon( result.leftPreview, result.rightPreview,
+                               result.sourceFrame.leftFrame().size(), result.leftImagePoints, result.rightImagePoints, result.worldPoints,
+                               QObject::tr("Frame") + " " + QString::number( m_iconCount++ ) );
 
     }
 
@@ -656,57 +599,32 @@ void MonocularCameraCalibrationWidget::grabFrame()
 
 MonocularIcon *MonocularCameraCalibrationWidget::createIcon( const CvImage &image )
 {
-    CvImage preview;
+    auto taskWidget = this->taskWidget();
 
-    if ( m_taskWidget->templateType() == TypeComboBox::CHECKERBOARD || m_taskWidget->templateType() == TypeComboBox::CIRCLES || m_taskWidget->templateType() == TypeComboBox::ASYM_CIRCLES ) {
+    if ( m_taskWidget->templateType() == TypeComboBox::CHECKERBOARD )
+        m_processorThread.templateProcessor().setType( TemplateProcessor::CHECKERBOARD );
+    else if ( m_taskWidget->templateType() == TypeComboBox::CIRCLES )
+        m_processorThread.templateProcessor().setType( TemplateProcessor::CIRCLES );
+    else if ( m_taskWidget->templateType() == TypeComboBox::ASYM_CIRCLES )
+        m_processorThread.templateProcessor().setType( TemplateProcessor::ASYM_CIRCLES );
 
-        switch ( m_taskWidget->templateType() ) {
-        case TypeComboBox::CHECKERBOARD:
-            m_templateProcessor.setType( TemplateProcessor::CHECKERBOARD );
-            break;
-        case TypeComboBox::CIRCLES:
-            m_templateProcessor.setType( TemplateProcessor::CIRCLES );
-            break;
-        case TypeComboBox::ASYM_CIRCLES:
-            m_templateProcessor.setType( TemplateProcessor::ASYM_CIRCLES );
-            break;
-        default:
-            break;
-        }
+    m_processorThread.templateProcessor().setCount( m_taskWidget->templateCount() );
+    m_processorThread.templateProcessor().setSize( m_taskWidget->templateSize() );
+    m_processorThread.markerProcessor().setInterval( m_taskWidget->intervalSize() );
 
-        m_templateProcessor.setCount( m_taskWidget->templateCount() );
-        m_templateProcessor.setSize( m_taskWidget->templateSize() );
+    MonocularProcessorResult result;
 
-        std::vector< cv::Point2f > points;
-        std::vector< cv::Point3f > corners;
+    if ( taskWidget->templateType() == TypeComboBox::CHECKERBOARD || taskWidget->templateType() == TypeComboBox::CIRCLES || taskWidget->templateType() == TypeComboBox::ASYM_CIRCLES  )
+        result = m_processorThread.calculate( image, MonocularProcessorThread::TEMPLATE );
+    else if ( taskWidget->templateType() == TypeComboBox::ARUCO_MARKERS )
+        result = m_processorThread.calculate( image, MonocularProcessorThread::MARKER );
 
-        auto res = m_templateProcessor.processFrame( image, &preview, &points );
-
-        if ( res ) {
-            m_templateProcessor.calcCorners( &corners );
-
-            return new MonocularIcon( preview, image.size(), points, corners, QObject::tr("Frame") + " " + QString::number( m_iconCount++ ) );
-
-        }
+    if ( result.exist && result.imagePoints.size() >= m_minimumCalibrationPoints ) {
+        return new MonocularIcon( result.preview, result.sourceFrame.size(),
+                                                    result.imagePoints, result.worldPoints, QObject::tr("Frame") + " " + QString::number( m_iconCount++ ) );
 
     }
-    else if ( m_taskWidget->templateType() == TypeComboBox::ARUCO_MARKERS ) {
 
-        m_arucoProcessor.setSize( m_taskWidget->templateSize() );
-        m_arucoProcessor.setInterval( m_taskWidget->intervalSize() );
-
-        ArucoMarkerList markers;
-
-        auto res = m_arucoProcessor.processFrame( image, &preview, &markers );
-
-        if ( res ) {
-            auto points = markers.points();
-            auto corners = m_arucoProcessor.calcCorners( markers );
-
-            return new MonocularIcon( preview, image.size(), points, corners, QObject::tr("Frame") + " " + QString::number( m_iconCount++ ) );
-        }
-
-    }
 
     return nullptr;
 }
@@ -736,7 +654,7 @@ void MonocularCameraCalibrationWidget::makeIcon()
 {
     auto result = m_processorThread.result();
 
-    if ( result.exist ) {
+    if ( result.exist && result.imagePoints.size() >= m_minimumCalibrationPoints ) {
         m_iconsList->insertIcon( new MonocularIcon( result.preview, result.sourceFrame.size(),
                                                     result.imagePoints, result.worldPoints, QObject::tr("Frame") + " " + QString::number( m_iconCount++ ) ) );
 
@@ -858,7 +776,8 @@ void StereoCameraCalibrationWidget::makeIcon()
 {
     auto result = m_processorThread.result();
 
-    if ( result.leftExist && result.rightExist ) {
+    if ( result.leftExist && result.rightExist && result.leftImagePoints.size() == result.rightImagePoints.size()
+         && result.leftImagePoints.size() >= m_minimumCalibrationPoints ) {
         m_iconsList->insertIcon( new StereoIcon( result.leftPreview, result.rightPreview,
                                result.sourceFrame.leftFrame().size(), result.leftImagePoints, result.rightImagePoints, result.worldPoints,
                                QObject::tr("Frame") + " " + QString::number( m_iconCount++ ) ) );
@@ -868,74 +787,34 @@ void StereoCameraCalibrationWidget::makeIcon()
 }
 
 StereoIcon *StereoCameraCalibrationWidget::createIcon( const CvImage &leftImage, const CvImage &rightImage )
-{
-    CvImage leftPreview;
-    CvImage rightPreview;
+{    
+    auto taskWidget = this->taskWidget();
 
-    if ( m_taskWidget->templateType() == TypeComboBox::CHECKERBOARD || m_taskWidget->templateType() == TypeComboBox::CIRCLES || m_taskWidget->templateType() == TypeComboBox::ASYM_CIRCLES ) {
+   StereoFrame frame( leftImage, rightImage );
 
-        switch ( m_taskWidget->templateType() ) {
-        case TypeComboBox::CHECKERBOARD:
-            m_templateProcessor.setType( TemplateProcessor::CHECKERBOARD );
-            break;
-        case TypeComboBox::CIRCLES:
-            m_templateProcessor.setType( TemplateProcessor::CIRCLES );
-            break;
-        case TypeComboBox::ASYM_CIRCLES:
-            m_templateProcessor.setType( TemplateProcessor::ASYM_CIRCLES );
-            break;
-        default:
-            break;
-        }
+    if ( m_taskWidget->templateType() == TypeComboBox::CHECKERBOARD )
+        m_processorThread.templateProcessor().setType( TemplateProcessor::CHECKERBOARD );
+    else if ( m_taskWidget->templateType() == TypeComboBox::CIRCLES )
+        m_processorThread.templateProcessor().setType( TemplateProcessor::CIRCLES );
+    else if ( m_taskWidget->templateType() == TypeComboBox::ASYM_CIRCLES )
+        m_processorThread.templateProcessor().setType( TemplateProcessor::ASYM_CIRCLES );
 
-        m_templateProcessor.setCount( m_taskWidget->templateCount() );
-        m_templateProcessor.setSize( m_taskWidget->templateSize() );
+    m_processorThread.templateProcessor().setCount( m_taskWidget->templateCount() );
+    m_processorThread.templateProcessor().setSize( m_taskWidget->templateSize() );
+    m_processorThread.markerProcessor().setInterval( m_taskWidget->intervalSize() );
 
-        if ( leftImage.size() == rightImage.size() ) {
+    StereoProcessorResult result;
 
-            std::vector< cv::Point2f > leftPoints;
-            std::vector< cv::Point2f > rightPoints;
-            std::vector< cv::Point3f > corners;
+    if ( taskWidget->templateType() == TypeComboBox::CHECKERBOARD || taskWidget->templateType() == TypeComboBox::CIRCLES || taskWidget->templateType() == TypeComboBox::ASYM_CIRCLES  )
+        result = m_processorThread.calculate( frame, StereoProcessorThread::TEMPLATE );
+    else if ( taskWidget->templateType() == TypeComboBox::ARUCO_MARKERS )
+        result = m_processorThread.calculate( frame, StereoProcessorThread::MARKER );
 
-            auto leftRes = m_templateProcessor.processFrame( leftImage, &leftPreview, &leftPoints );
-            auto rightRes = m_templateProcessor.processFrame( rightImage, &rightPreview, &rightPoints );
-
-            if ( leftRes && rightRes ) {
-
-                m_templateProcessor.calcCorners( &corners );
-
-                return new StereoIcon( leftPreview, rightPreview,
-                                       leftImage.size(), leftPoints, rightPoints, corners,
-                                       QObject::tr("Frame") + " " + QString::number( m_iconCount++ ) );
-
-            }
-
-        }
-
-    }
-    else if ( m_taskWidget->templateType() == TypeComboBox::ARUCO_MARKERS ) {
-
-        m_arucoProcessor.setSize( m_taskWidget->templateSize() );
-        m_arucoProcessor.setInterval( m_taskWidget->intervalSize() );
-
-        ArucoMarkerList leftMarkers;
-        ArucoMarkerList rightMarkers;
-
-        auto leftRes = m_arucoProcessor.processFrame( leftImage, &leftPreview, &leftMarkers );
-        auto rightRes = m_arucoProcessor.processFrame( rightImage, &rightPreview, &rightMarkers );
-
-        if ( leftRes && rightRes && leftMarkers == rightMarkers ) {
-
-            auto leftPoints = leftMarkers.points();
-            auto rightPoints = rightMarkers.points();
-
-            auto corners = m_arucoProcessor.calcCorners( leftMarkers );
-
-            return new StereoIcon( leftPreview, rightPreview,
-                                   leftImage.size(), leftPoints, rightPoints, corners,
-                                   QObject::tr("Frame") + " " + QString::number( m_iconCount++ ) );
-
-        }
+    if ( result.leftExist && result.rightExist && result.leftImagePoints.size() == result.rightImagePoints.size()
+         && result.leftImagePoints.size() >= m_minimumCalibrationPoints ) {
+        return new StereoIcon( result.leftPreview, result.rightPreview,
+                               result.sourceFrame.leftFrame().size(), result.leftImagePoints, result.rightImagePoints, result.worldPoints,
+                               QObject::tr("Frame") + " " + QString::number( m_iconCount++ ) );
 
     }
 

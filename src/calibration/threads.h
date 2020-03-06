@@ -67,6 +67,8 @@ public:
 
     void processFrame( const Frame &frame, Type type );
 
+    MonocularProcessorResult calculate( const Frame &frame, const Type type ) const;
+
     MonocularProcessorResult result() const;
 
 protected:
@@ -88,6 +90,8 @@ public:
     explicit StereoProcessorThread( QObject *parent = nullptr );
 
     void processFrame( const StereoFrame &frame, Type type );
+
+    StereoProcessorResult calculate( const StereoFrame &frame, const Type type ) const;
 
     StereoProcessorResult result() const;
 
