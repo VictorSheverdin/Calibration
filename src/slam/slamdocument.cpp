@@ -43,20 +43,20 @@ void CameraDisparityDocument::loadCalibrationDialog()
 }
 */
 // ImageSlamDocument
-ImageSlamDocument::ImageSlamDocument( QWidget* parent )
+ImageSlamDocument::ImageSlamDocument( const QString &calibrationFile, QWidget* parent )
     : SlamDocumentBase( parent )
 {
-    initialize();
+    initialize( calibrationFile );
 }
 
-void ImageSlamDocument::initialize()
+void ImageSlamDocument::initialize( const QString &calibrationFile )
 {
-    setWidget( new SlamWidget( this ) );
+    setWidget( new SlamImageWidget( calibrationFile, this ) );
 }
 
-SlamWidget *ImageSlamDocument::widget() const
+SlamImageWidget *ImageSlamDocument::widget() const
 {
-    return dynamic_cast< SlamWidget * >( m_widget );
+    return dynamic_cast< SlamImageWidget * >( m_widget );
 }
 
 

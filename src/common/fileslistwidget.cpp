@@ -72,6 +72,8 @@ StereoFilesListWidget::StereoFilesListWidget( QWidget* parent )
 
 void StereoFilesListWidget::initialize()
 {
+    setSizePolicy( QSizePolicy::Expanding, QSizePolicy::Expanding );
+
     m_leftList = new MonocularFilesListWidget( this );
     m_rightList = new MonocularFilesListWidget( this );
 

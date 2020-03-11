@@ -185,11 +185,14 @@ class FileLine : public FileLineBase
     Q_OBJECT
 
 public:
-    explicit FileLine( QWidget *parent = nullptr );
-    explicit FileLine( const QString &label, QWidget *parent = nullptr );
+    explicit FileLine(const QString &filter, QWidget *parent = nullptr );
+    explicit FileLine( const QString &label, const QString &filter, QWidget *parent = nullptr );
 
 public slots:
     void choiceFileDialog();
+
+protected:
+    QString m_filter;
 
 private:
     void initialize();

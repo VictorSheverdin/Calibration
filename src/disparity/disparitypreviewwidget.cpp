@@ -153,7 +153,7 @@ void DisparityWidgetBase::loadCalibrationDialog()
                         this,
                         tr( "Select calibration file" ),
                         QString(),
-                        "Calibration files (*.yaml)"
+                        tr( "Calibration files (*.yaml)" )
                 );
 
     if ( !file.isEmpty() )

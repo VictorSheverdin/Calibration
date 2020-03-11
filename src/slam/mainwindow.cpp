@@ -65,7 +65,7 @@ void MainWindow::addCameraSlamDialog()
 
 void MainWindow::addImagesDocument()
 {
-    addDocument( new ImageSlamDocument( this ) );
+    addDocument( new ImageSlamDocument( "/home/victor/Polygon/calibration.yaml", this ) );
 }
 
 void MainWindow::addCamerasDocument()

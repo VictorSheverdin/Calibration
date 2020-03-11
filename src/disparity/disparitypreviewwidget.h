@@ -111,12 +111,13 @@ class CameraDisparityWidget : public DisparityWidgetBase
 public:
     explicit CameraDisparityWidget( const QString &leftCameraIp, const QString &rightCameraIp, QWidget* parent = nullptr );
 
+protected slots:
+    void updateFrame();
+
 protected:
     StereoCamera m_camera;
 
     QMutex m_updateMutex;
-
-    void updateFrame();
 
 private:
     void initialize();

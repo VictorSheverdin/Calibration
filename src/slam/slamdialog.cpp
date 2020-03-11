@@ -13,7 +13,7 @@ void ImagesChoiceWidget::initialize()
 {
     QVBoxLayout *layout = new QVBoxLayout( this );
 
-    m_calibrationFileLine = new FileLine( this );
+    m_calibrationFileLine = new FileLine( tr( "Calibration file:" ), tr( "Calibration files (*.yaml)" ), this );
     layout->addWidget( m_calibrationFileLine );
 
     m_filesListWidget = new StereoFilesListWidget( this );
@@ -41,6 +41,11 @@ QStringList ImagesChoiceWidget::rightFileNames() const
     return m_filesListWidget->rightFileNames();
 }
 
+QString ImagesChoiceWidget::calibrationFile() const
+{
+    return m_calibrationFileLine->path();
+}
+
 // ImagesDialog
 ImagesDialog::ImagesDialog( QWidget *parent )
     : DialogBase( QDialogButtonBox::Ok | QDialogButtonBox::Cancel, parent )
@@ -50,24 +55,72 @@ ImagesDialog::ImagesDialog( QWidget *parent )
 
 void ImagesDialog::initialize()
 {
-    setWidget( new StereoDirWidget( tr("Left images directory"), tr("Right images directory"), this ) );
+    setWidget( new ImagesChoiceWidget( this ) );
 
     connect( m_buttons, &QDialogButtonBox::accepted, this, &StereoDirDialog::accept );
 }
 
-StereoDirWidget *ImagesDialog::widget() const
+ImagesChoiceWidget *ImagesDialog::widget() const
 {
-    return dynamic_cast< StereoDirWidget * >( m_widget.data() );
+    return dynamic_cast< ImagesChoiceWidget * >( m_widget.data() );
 }
 
-QString ImagesDialog::leftDir() const
+int ImagesDialog::leftCount() const
 {
-    return widget()->leftDir();
+    return widget()->leftCount();
 }
 
-QString ImagesDialog::rightDir() const
+int ImagesDialog::rightCount() const
 {
-    return widget()->rightDir();
+    return widget()->rightCount();
+}
+
+QStringList ImagesDialog::leftFileNames() const
+{
+    return widget()->leftFileNames();
+}
+
+QStringList ImagesDialog::rightFileNames() const
+{
+    return widget()->rightFileNames();
+}
+
+QString ImagesDialog::calibrationFile() const
+{
+    return widget()->calibrationFile();
+}
+
+// CamerasChoiceWidget
+CamerasChoiceWidget::CamerasChoiceWidget( QWidget *parent )
+    : QWidget( parent )
+{
+    initialize();
+}
+
+void CamerasChoiceWidget::initialize()
+{
+    QVBoxLayout *layout = new QVBoxLayout( this );
+
+    m_calibrationFileLine = new FileLine( tr( "Calibration file:" ), tr( "Calibration files (*.yaml)" ), this );
+    layout->addWidget( m_calibrationFileLine );
+
+    m_camerasIpWidget = new StereoIPWidget( this );
+    layout->addWidget( m_camerasIpWidget );
+}
+
+QString CamerasChoiceWidget::leftIp() const
+{
+    return m_camerasIpWidget->leftIp();
+}
+
+QString CamerasChoiceWidget::rightIp() const
+{
+    return m_camerasIpWidget->rightIp();
+}
+
+QString CamerasChoiceWidget::calibrationFile() const
+{
+    return m_calibrationFileLine->path();
 }
 
 // StereoIPDialog
@@ -79,14 +132,14 @@ CamerasDialog::CamerasDialog( QWidget* parent )
 
 void CamerasDialog::initialize()
 {
-    setWidget( new StereoIPWidget( this ) );
+    setWidget( new CamerasChoiceWidget( this ) );
 
     connect( m_buttons, &QDialogButtonBox::accepted, this, &DialogBase::accept );
 }
 
-StereoIPWidget *CamerasDialog::widget() const
+CamerasChoiceWidget *CamerasDialog::widget() const
 {
-    return dynamic_cast< StereoIPWidget * >( m_widget.data() );
+    return dynamic_cast< CamerasChoiceWidget * >( m_widget.data() );
 }
 
 QString CamerasDialog::leftIp() const
@@ -97,4 +150,9 @@ QString CamerasDialog::leftIp() const
 QString CamerasDialog::rightIp() const
 {
     return widget()->rightIp();
+}
+
+QString CamerasDialog::calibrationFile() const
+{
+    return widget()->calibrationFile();
 }

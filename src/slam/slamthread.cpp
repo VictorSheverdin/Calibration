@@ -2,7 +2,8 @@
 
 #include "slamthread.h"
 
-#include "src/common/rectificationprocessor.h"
+#include "src/common/defs.h"
+#include "src/common/functions.h"
 
 #include "world.h"
 #include "mappoint.h"
@@ -11,29 +12,38 @@
 #include <thread>
 
 // SlamThread
-SlamThread::SlamThread( QObject *parent )
+SlamThread::SlamThread(const StereoCalibrationDataShort &calibration, QObject *parent )
     : QThread( parent )
 {
-    initialize();
+    initialize( calibration );
 }
 
-void SlamThread::initialize()
+void SlamThread::initialize( const StereoCalibrationDataShort &calibration )
 {
-    m_path = std::string ( "/home/victor/Polygon/" );
-
     m_scaleFactor = 1.0;
 
-    m_calibration.loadYaml( m_path + "calibration.yaml" );
+    m_rectificationProcessor.setCalibrationData( calibration );
 
-    auto cropRect = m_calibration.cropRect();
+    auto cropRect = calibration.cropRect();
     auto principal = cv::Vec2f( -cropRect.x, -cropRect.y );
 
-    auto projectionMatrix = m_calibration.projectionMatrix();
+    auto projectionMatrix = calibration.projectionMatrix();
 
     projectionMatrix.movePrincipalPoint( principal );
     projectionMatrix.multiplicateCameraMatrix( m_scaleFactor );
 
     m_system = slam::World::create( projectionMatrix );
+
+}
+
+void SlamThread::process( const CvImage leftImage, const CvImage rightImage )
+{
+    m_mutex.lock();
+
+    m_leftFrame = leftImage;
+    m_rightFrame = rightImage;
+
+    m_mutex.unlock();
 
 }
 
@@ -67,44 +77,51 @@ void SlamThread::run()
 
     optimizationThread5s.detach();
 
-    auto leftPath = m_path + "left/";
-    auto rightPath = m_path + "right/";
+    while( true )
+    {
+        if ( m_mutex.tryLock( ) ) {
 
-    StereoRectificationProcessor rectificationProcessor( m_calibration );
+            if ( !m_leftFrame.empty() && !m_rightFrame.empty() ) {
 
-    for ( auto i = 10000; i < 30000; ++i ) {
+                CvImage leftRectifiedImage;
+                CvImage rightRectifiedImage;
+                CvImage leftCroppedImage;
+                CvImage rightCroppedImage;
 
-        std::cout << i << std::endl;
+                if ( m_rectificationProcessor.rectify( m_leftFrame, m_rightFrame, &leftRectifiedImage, &rightRectifiedImage )
+                            && m_rectificationProcessor.crop( leftRectifiedImage, rightRectifiedImage, &leftCroppedImage, &rightCroppedImage ) ) {
 
-        std::string leftFile = leftPath + std::to_string( i ) + "_left.jpg";
-        std::string rightFile = rightPath + std::to_string( i ) + "_right.jpg";
+                    auto time = std::chrono::system_clock::now();
 
-        CvImage leftImage( leftFile );
-        CvImage rightImage( rightFile );
+                    if ( std::abs( m_scaleFactor - 1.0 ) > DOUBLE_EPS ) {
+                        CvImage leftResizedImage;
+                        CvImage rightResizedImage;
 
-        CvImage leftRectifiedImage;
-        CvImage rightRectifiedImage;
-        CvImage leftCroppedImage;
-        CvImage rightCroppedImage;
+                        cv::resize( leftCroppedImage, leftResizedImage, cv::Size(), m_scaleFactor, m_scaleFactor, cv::INTER_CUBIC );
+                        cv::resize( rightCroppedImage, rightResizedImage, cv::Size(), m_scaleFactor, m_scaleFactor, cv::INTER_CUBIC );
 
-        if ( rectificationProcessor.rectify( leftImage, rightImage, &leftRectifiedImage, &rightRectifiedImage )
-                    && rectificationProcessor.crop( leftRectifiedImage, rightRectifiedImage, &leftCroppedImage, &rightCroppedImage ) ) {
+                        m_system->track( leftResizedImage, rightResizedImage );
+                    }
+                    else
+                        m_system->track( leftCroppedImage, rightCroppedImage );
 
-            CvImage leftResizedImage;
-            CvImage rightResizedImage;
 
-            cv::resize( leftCroppedImage, leftResizedImage, cv::Size(), m_scaleFactor, m_scaleFactor, cv::INTER_CUBIC );
-            cv::resize( rightCroppedImage, rightResizedImage, cv::Size(), m_scaleFactor, m_scaleFactor, cv::INTER_CUBIC );
+                    std::cout << std::chrono::duration_cast< std::chrono::microseconds >( std::chrono::system_clock::now() - time ).count()  / 1.e6 << " sec" << std::endl;
 
-            auto time = std::chrono::system_clock::now();
+                    emit updateSignal();
 
-            m_system->track( leftResizedImage, rightResizedImage );
+                }
 
-            std::cout << std::chrono::duration_cast< std::chrono::microseconds >( std::chrono::system_clock::now() - time ).count()  / 1.e6 << " sec" << std::endl;
+                m_leftFrame.release();
+                m_rightFrame.release();
 
-            emit updateSignal();
+            }
+
+            m_mutex.unlock();
 
         }
+
+        std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
 
     }
 

@@ -17,6 +17,8 @@ public:
     QStringList leftFileNames() const;
     QStringList rightFileNames() const;
 
+    QString calibrationFile() const;
+
 protected:
     QPointer< FileLine > m_calibrationFileLine;
     QPointer< StereoFilesListWidget > m_filesListWidget;
@@ -33,10 +35,36 @@ class ImagesDialog : public DialogBase
 public:
     explicit ImagesDialog( QWidget *parent = nullptr );
 
-    StereoDirWidget *widget() const;
+    ImagesChoiceWidget *widget() const;
 
-    QString leftDir() const;
-    QString rightDir() const;
+    int leftCount() const;
+    int rightCount() const;
+
+    QStringList leftFileNames() const;
+    QStringList rightFileNames() const;
+
+    QString calibrationFile() const;
+
+private:
+    void initialize();
+
+};
+
+class CamerasChoiceWidget : public QWidget
+{
+    Q_OBJECT
+
+public:
+    explicit CamerasChoiceWidget( QWidget *parent = nullptr );
+
+    QString leftIp() const;
+    QString rightIp() const;
+
+    QString calibrationFile() const;
+
+protected:
+    QPointer< FileLine > m_calibrationFileLine;
+    QPointer< StereoIPWidget > m_camerasIpWidget;
 
 private:
     void initialize();
@@ -50,10 +78,12 @@ class CamerasDialog : public DialogBase
 public:
     explicit CamerasDialog( QWidget* parent = nullptr );
 
-    StereoIPWidget *widget() const;
+    CamerasChoiceWidget *widget() const;
 
     QString leftIp() const;
     QString rightIp() const;
+
+    QString calibrationFile() const;
 
 private:
     void initialize();

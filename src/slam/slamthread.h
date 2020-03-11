@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QThread>
+#include <QMutex>
 
 #include <memory>
 
@@ -8,7 +9,7 @@
 
 #include "src/common/image.h"
 
-#include "src/common/calibrationdatabase.h"
+#include "src/common/rectificationprocessor.h"
 
 namespace slam {
     class World;
@@ -22,7 +23,9 @@ class SlamThread : public QThread
 public:
     using MapPtr = std::shared_ptr< slam::Map >;
 
-    explicit SlamThread( QObject *parent = nullptr );
+    explicit SlamThread( const StereoCalibrationDataShort &calibration, QObject *parent = nullptr );
+
+    void process( const CvImage leftImage, const CvImage rightImage );
 
     const std::list < MapPtr > &maps() const;
 
@@ -34,16 +37,20 @@ signals:
     void updateSignal();
 
 protected:
-    std::string m_path;
+    CvImage m_leftFrame;
+    CvImage m_rightFrame;
+
+    QMutex m_mutex;
 
     double m_scaleFactor;
 
-    StereoCalibrationDataShort m_calibration;
     std::shared_ptr< slam::World > m_system;
+
+    StereoRectificationProcessor m_rectificationProcessor;
 
     virtual void run() override;
 
 private:
-    void initialize();
+    void initialize(const StereoCalibrationDataShort &calibration);
 
 };

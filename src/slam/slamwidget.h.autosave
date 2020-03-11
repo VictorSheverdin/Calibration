@@ -168,6 +168,8 @@ class SlamImageWidget : public SlamWidgetBase
 public:
     explicit SlamImageWidget( const QString &calibrationFile, QWidget* parent = nullptr );
 
+    void setImageList(const QStringList &leftList, const QStringList &rightList );
+    
 protected:
     QStringList m_leftList;
     QStringList m_rightList;

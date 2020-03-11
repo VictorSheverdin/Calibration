@@ -634,6 +634,15 @@ void SlamImageWidget::initialize()
     startTimer( 100 );
 }
 
+void SlamImageWidget::setImageList( const QStringList &leftList, const QStringList &rightList )
+{
+    if ( leftList.size() == rightList.size() ) {
+        m_leftList = leftList;
+        m_rightList = rightList;
+    }        
+        
+}
+
 void SlamImageWidget::timerEvent( QTimerEvent * )
 {
     auto path = std::string ( "/home/victor/Polygon/" );

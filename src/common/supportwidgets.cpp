@@ -259,26 +259,28 @@ void FileLineBase::initialize()
 }
 
 // FileLine
-FileLine::FileLine( QWidget *parent )
-    : FileLineBase( parent )
+FileLine::FileLine( const QString &filter, QWidget *parent )
+    : FileLineBase( parent ), m_filter( filter )
 {
     initialize();
 }
 
-FileLine::FileLine( const QString &label, QWidget *parent )
-    : FileLineBase( label, parent )
+FileLine::FileLine( const QString &label, const QString &filter, QWidget *parent )
+    : FileLineBase( label, parent ), m_filter( filter )
 {
     initialize();
 }
 
 void FileLine::initialize()
 {
+    setSizePolicy( QSizePolicy::Expanding, QSizePolicy::Minimum );
+
     connect( m_button, &QPushButton::clicked, this, &FileLine::choiceFileDialog );
 }
 
 void FileLine::choiceFileDialog()
 {
-    auto dir = QFileDialog::getExistingDirectory( this, tr( "Open Directory" ), QString(), QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks );
+    auto dir = QFileDialog::getOpenFileName( this, tr( "Open File" ), QString(), m_filter );
 
     if ( !dir.isEmpty() )
         setPath( dir );

@@ -4,7 +4,8 @@
 
 void drawTraceLines( CvImage &image, const unsigned int count );
 
-CvImage resizeTo( const CvImage &image, unsigned int size );
+CvImage resizeTo( const CvImage &image, const unsigned int size );
+CvImage scale( const CvImage &image, const double factor );
 
 CvImage stackImages( const CvImage &leftImage, const CvImage &rightImage, const double factor = 1.0 );
 

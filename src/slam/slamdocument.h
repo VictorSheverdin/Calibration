@@ -7,7 +7,7 @@
 class QVBoxLayout;
 
 // class CameraSlamWidget;
-class SlamWidget;
+class SlamImageWidget;
 
 class SlamDocumentBase : public DocumentBase
 {
@@ -47,12 +47,12 @@ class ImageSlamDocument : public SlamDocumentBase
     Q_OBJECT
 
 public:
-    explicit ImageSlamDocument( QWidget* parent = nullptr );
+    explicit ImageSlamDocument( const QString &calibrationFile, QWidget* parent = nullptr );
 
-    SlamWidget *widget() const;
+    SlamImageWidget *widget() const;
 
 private:
-    void initialize();
+    void initialize( const QString &calibrationFile );
 
 };
 
