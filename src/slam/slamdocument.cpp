@@ -14,49 +14,39 @@ SlamDocumentBase::SlamDocumentBase( QWidget* parent )
 void SlamDocumentBase::initialize()
 {
 }
-/*
-// CalibrationDocumentBase
-CameraDisparityDocument::CameraDisparityDocument( const QString &leftCameraIp, const QString &rightCameraIp, QWidget* parent )
-    : DisparityDocumentBase( parent )
-{
-    initialize( leftCameraIp, rightCameraIp );
-}
 
-void CameraDisparityDocument::initialize( const QString &leftCameraIp, const QString &rightCameraIp )
-{
-    setWidget( new CameraDisparityWidget( leftCameraIp, rightCameraIp, this ) );
-}
-
-CameraDisparityWidget *CameraDisparityDocument::widget() const
-{
-    return dynamic_cast< CameraDisparityWidget * >( m_widget );
-}
-
-void CameraDisparityDocument::loadCalibrationFile( const QString &fileName )
-{
-    widget()->loadCalibrationFile( fileName );
-}
-
-void CameraDisparityDocument::loadCalibrationDialog()
-{
-    widget()->loadCalibrationDialog();
-}
-*/
 // ImageSlamDocument
-ImageSlamDocument::ImageSlamDocument( const QString &calibrationFile, QWidget* parent )
+ImageSlamDocument::ImageSlamDocument( const QStringList &leftList, const QStringList &rightList, const QString &calibrationFile, QWidget* parent )
     : SlamDocumentBase( parent )
 {
-    initialize( calibrationFile );
+    initialize( leftList, rightList, calibrationFile );
 }
 
-void ImageSlamDocument::initialize( const QString &calibrationFile )
+void ImageSlamDocument::initialize( const QStringList &leftList, const QStringList &rightList, const QString &calibrationFile )
 {
-    setWidget( new SlamImageWidget( calibrationFile, this ) );
+    setWidget( new SlamImageWidget( leftList, rightList, calibrationFile, this ) );
 }
 
 SlamImageWidget *ImageSlamDocument::widget() const
 {
     return dynamic_cast< SlamImageWidget * >( m_widget );
+}
+
+// CameraSlamDocument
+CameraSlamDocument::CameraSlamDocument( const QString &leftCameraIp, const QString &rightCameraIp, const QString &calibrationFile, QWidget* parent )
+    : SlamDocumentBase( parent )
+{
+    initialize( leftCameraIp, rightCameraIp, calibrationFile );
+}
+
+void CameraSlamDocument::initialize( const QString &leftCameraIp, const QString &rightCameraIp, const QString &calibrationFile )
+{
+    setWidget( new SlamCameraWidget( leftCameraIp, rightCameraIp, calibrationFile, this ) );
+}
+
+SlamCameraWidget *CameraSlamDocument::widget() const
+{
+    return dynamic_cast< SlamCameraWidget * >( m_widget );
 }
 
 

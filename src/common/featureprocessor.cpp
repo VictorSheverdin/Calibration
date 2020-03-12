@@ -300,7 +300,9 @@ cv::Mat OpticalMatcher:: match( const CvImage &sourceImage, std::vector< cv::Key
             points1.reserve( statuses.size() );
             points2.reserve( statuses.size() );
 
-            auto maxErr = minErr + errDiff / 3.f;
+            double errorSize = 0.3;
+
+            auto maxErr = minErr + errDiff * errorSize;
 
             for ( size_t i = 0; i < statuses.size(); ++i ) {
 
@@ -327,7 +329,6 @@ cv::Mat OpticalMatcher:: match( const CvImage &sourceImage, std::vector< cv::Key
                 KeypointsMatrix keypointsMatrix( targetImage.rows, KeypointsRow( targetImage.cols, -1 ) );
 
                 // Acceleration matrix
-//#pragma omp parallel for
                 for ( size_t i = 0; i < targetKeypoints.size(); ++i )
                     keypointsMatrix[ targetKeypoints[ i ].pt.y ][ targetKeypoints[ i ].pt.x ] = i;
 

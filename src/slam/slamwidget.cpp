@@ -618,39 +618,49 @@ void SlamWidgetBase::updateDensePointCloud()
 void SlamWidgetBase::update3dView()
 {
     updatePath();
-    // updateSparseCloud();
+    updateSparseCloud();
     updateDensePointCloud();
 }
 
 // SlamImageWidget
-SlamImageWidget::SlamImageWidget( const QString &calibrationFile, QWidget* parent )
+SlamImageWidget::SlamImageWidget( const QStringList &leftList, const QStringList &rightList, const QString &calibrationFile, QWidget* parent )
     : SlamWidgetBase( calibrationFile, parent )
 {
     initialize();
+
+    setImageList( leftList, rightList );
 }
 
 void SlamImageWidget::initialize()
 {
-    startTimer( 100 );
+    m_index = 0;
+    startTimer( 100 );    
+}
+
+void SlamImageWidget::setImageList( const QStringList &leftList, const QStringList &rightList )
+{
+    if ( leftList.size() == rightList.size() ) {
+        m_leftList = leftList;
+        m_rightList = rightList;
+
+        m_index = 0;
+
+    }
+
 }
 
 void SlamImageWidget::timerEvent( QTimerEvent * )
 {
-    auto path = std::string ( "/home/victor/Polygon/" );
+    if ( m_index < m_leftList.size() ) {
 
-    auto leftPath = path + "left/";
-    auto rightPath = path + "right/";
+        CvImage leftImage( m_leftList[ m_index ].toStdString() );
+        CvImage rightImage( m_rightList[ m_index ].toStdString() );
 
-    static int index = 10000;
+        m_slamThread->process( leftImage, rightImage );
+        ++m_index;
 
-    std::string leftFile = leftPath + std::to_string( index ) + "_left.jpg";
-    std::string rightFile = rightPath + std::to_string( index ) + "_right.jpg";
-    ++index;
+    }
 
-    CvImage leftImage( leftFile );
-    CvImage rightImage( rightFile );
-
-    m_slamThread->process( leftImage, rightImage );
 }
 
 // SlamCameraWidget

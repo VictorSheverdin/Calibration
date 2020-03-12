@@ -114,8 +114,7 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
     denseFrame->extractKeyPoints();
     denseFrame->extractGradientPoints();
 
-    //if ( m_frames.size() % 5 == 0 )
-        denseFrame->processDenseCloud();
+    denseFrame->processDenseCloud();
 
     const std::lock_guard< std::mutex > lock( m_mutex );
 
@@ -150,12 +149,14 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
 
             auto maxKeypointsCount = previousLeftFrame->keyPointsCount();
 
+            int triangulatePointsCount = 0;
+
             do {
 
                 do {
 
                     previousDenseFrame->matchOptical( keypointsCount );
-                    previousDenseFrame->triangulatePoints();
+                    triangulatePointsCount = previousDenseFrame->triangulatePoints();
 
                     auto trackFramePointsCount = std::max( 0, m_trackFramePointsCount - adjacentLeftFrame->trackFramePointsCount() );
 
@@ -174,6 +175,13 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
                 inliersRatio = adjacentLeftFrame->recoverPose();
 
             } while ( inliersRatio < m_minTrackInliersRatio && m_previousKeypointsCount <= maxKeypointsCount );
+
+            std::cout << "Prev keypoints count: " << previousLeftFrame->keyPointsCount() << std::endl;
+            std::cout << "Cur keypoints count: " << leftFrame->keyPointsCount() << std::endl;
+            std::cout << "Stereo points count: " << previousDenseFrame->stereoPointsCount() << std::endl;
+            std::cout << "Triangulated points count: " << triangulatePointsCount << std::endl;
+            std::cout << "Adjacent points count: " << adjacentLeftFrame->adjacentPointsCount() << std::endl;
+            std::cout << "Tracked points count: " << trackedPointCount << std::endl;
 
             std::cout << "Inliers: " << inliersRatio << std::endl;
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QSplitter>
+#include <QTimer>
 
 #include <QVTKOpenGLWidget.h>
 #include <vtkRenderWindow.h>
@@ -166,11 +167,15 @@ class SlamImageWidget : public SlamWidgetBase
     Q_OBJECT
 
 public:
-    explicit SlamImageWidget( const QString &calibrationFile, QWidget* parent = nullptr );
+    explicit SlamImageWidget( const QStringList &leftList, const QStringList &rightList, const QString &calibrationFile, QWidget* parent = nullptr );
+
+    void setImageList(const QStringList &leftList, const QStringList &rightList );
 
 protected:
     QStringList m_leftList;
     QStringList m_rightList;
+
+    int m_index;
 
     virtual void timerEvent( QTimerEvent * ) override;
 

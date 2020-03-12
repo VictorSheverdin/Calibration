@@ -93,7 +93,7 @@ public:
     void cleanPoints();
     void cleanMapPoints();
 
-    void triangulatePoints();
+    int triangulatePoints();
 
     const std::vector< cv::KeyPoint > &keyPoints() const;
     size_t keyPointsCount() const;
@@ -276,7 +276,7 @@ public:
 
     MapPtr parentMap() const;
 
-    bool triangulatePoints();
+    int triangulatePoints();
 
     void cleanMapPoints();
 
@@ -288,8 +288,6 @@ public:
 
 protected:
     ProcessedStereoFrame( const MapPtr &parentMap );
-
-    static const float m_maxYParallax;
 
     static const double m_minXDistasnce;
 

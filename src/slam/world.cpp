@@ -22,7 +22,7 @@ World::World( const StereoCameraMatrix &cameraMatrix )
     slam::DenseFrameBase::setMinDisparity( 0 );
     slam::DenseFrameBase::setNumDisparities( 256 );
     slam::DenseFrameBase::setTextureThreshold( 350 );
-    slam::DenseFrameBase::setUniquenessRatio( 5 );
+    slam::DenseFrameBase::setUniquenessRatio( 10 );
     slam::DenseFrameBase::setSpeckleWindowSize( 65 );
     slam::DenseFrameBase::setSpeckleRange( 5 );
     slam::DenseFrameBase::setDisp12MaxDiff( 0 );

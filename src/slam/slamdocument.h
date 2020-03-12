@@ -6,7 +6,7 @@
 
 class QVBoxLayout;
 
-// class CameraSlamWidget;
+class SlamCameraWidget;
 class SlamImageWidget;
 
 class SlamDocumentBase : public DocumentBase
@@ -21,38 +21,31 @@ private:
 
 };
 
-/*
-class CameraSlamDocument : public SlamDocumentBase
-{
-    Q_OBJECT
-
-public:
-    explicit CameraSlamDocument( const QString &leftCameraIp, const QString &rightCameraIp, QWidget* parent = nullptr );
-
-    CameraSlamWidget *widget() const;
-
-    void loadCalibrationFile( const QString &fileName );
-
-public slots:
-    virtual void loadCalibrationDialog() override;
-
-private:
-    void initialize( const QString &leftCameraIp, const QString &rightCameraIp );
-
-};
-
-*/
 class ImageSlamDocument : public SlamDocumentBase
 {
     Q_OBJECT
 
 public:
-    explicit ImageSlamDocument( const QString &calibrationFile, QWidget* parent = nullptr );
+    explicit ImageSlamDocument( const QStringList &leftList, const QStringList &rightList, const QString &calibrationFile, QWidget* parent = nullptr );
 
     SlamImageWidget *widget() const;
 
 private:
-    void initialize( const QString &calibrationFile );
+    void initialize( const QStringList &leftList, const QStringList &rightList, const QString &calibrationFile );
 
 };
 
+
+class CameraSlamDocument : public SlamDocumentBase
+{
+    Q_OBJECT
+
+public:
+    explicit CameraSlamDocument( const QString &leftCameraIp, const QString &rightCameraIp, const QString &calibrationFile, QWidget* parent = nullptr );
+
+    SlamCameraWidget *widget() const;
+
+private:
+    void initialize( const QString &leftCameraIp, const QString &rightCameraIp , const QString &calibrationFile );
+
+};

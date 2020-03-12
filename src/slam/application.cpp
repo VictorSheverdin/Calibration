@@ -9,8 +9,10 @@
 
 #include "src/common/functions.h"
 
+#include "src/common/vimbacamera.h"
+
 Application::Application( int &argc, char **argv )
-    : QApplication( argc, argv )
+    : QApplication( argc, argv ), m_vimbaSystem( AVT::VmbAPI::VimbaSystem::GetInstance() )
 {
     initialize( argc, argv );
 }
@@ -21,6 +23,8 @@ Application::~Application()
 
 void Application::initialize( int &, char ** )
 {
+    checkVimbaStatus( m_vimbaSystem.Startup(), "Could not start Vimba system" );
+
     qRegisterMetaType< CvImage >();
     qRegisterMetaType< SlamGeometry >();
 
@@ -39,6 +43,11 @@ void Application::initialize( int &, char ** )
 
     m_mainWindow->showMaximized();
 
+}
+
+AVT::VmbAPI::VimbaSystem &Application::vimbaSystem() const
+{
+    return m_vimbaSystem;
 }
 
 MainWindow *Application::mainWindow() const

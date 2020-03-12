@@ -18,8 +18,6 @@ void MainWindow::initialize()
     setupActions();
     setupMenus();
     setupToolBars();
-
-    addImagesDocument();
 }
 
 
@@ -52,7 +50,7 @@ void MainWindow::addImageSlamDialog()
     ImagesDialog dialog( this );
 
     if ( dialog.exec() == DialogBase::Accepted )
-        addImagesDocument();
+        addImagesDocument( dialog.leftFileNames(), dialog.rightFileNames(), dialog.calibrationFile() );
 }
 
 void MainWindow::addCameraSlamDialog()
@@ -60,16 +58,17 @@ void MainWindow::addCameraSlamDialog()
     CamerasDialog dialog( this );
 
     if ( dialog.exec() == DialogBase::Accepted )
-        addCamerasDocument();
+        addCamerasDocument( dialog.leftIp(), dialog.rightIp(), dialog.calibrationFile() );
 }
 
-void MainWindow::addImagesDocument()
+void MainWindow::addImagesDocument( const QStringList &leftList, const QStringList &rightList, const QString &calibrationFile )
 {
-    addDocument( new ImageSlamDocument( "/home/victor/Polygon/calibration.yaml", this ) );
+    addDocument( new ImageSlamDocument( leftList, rightList, calibrationFile, this ) );
 }
 
-void MainWindow::addCamerasDocument()
+void MainWindow::addCamerasDocument( const QString &leftCameraIp, const QString &rightCameraIp, const QString &calibrationFile )
 {
+    addDocument( new CameraSlamDocument( leftCameraIp, rightCameraIp, calibrationFile, this ) );
 }
 
 void MainWindow::setupActions()

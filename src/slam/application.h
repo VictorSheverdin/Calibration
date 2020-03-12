@@ -3,6 +3,8 @@
 #include <QApplication>
 #include <QPointer>
 
+#include "VimbaCPP/Include/VimbaCPP.h"
+
 class MainWindow;
 
 class Application : public QApplication
@@ -15,8 +17,12 @@ public:
 
     MainWindow *mainWindow() const;
 
+    AVT::VmbAPI::VimbaSystem &vimbaSystem() const;
+
 protected:
     QPointer< MainWindow > m_mainWindow;
+
+    AVT::VmbAPI::VimbaSystem &m_vimbaSystem;
 
 private:
     void initialize(int &, char **);

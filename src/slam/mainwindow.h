@@ -26,8 +26,8 @@ protected:
 
     QPointer< QToolBar > m_toolBar;
 
-    void addImagesDocument();
-    void addCamerasDocument();
+    void addImagesDocument( const QStringList &leftList, const QStringList &rightList, const QString &calibrationFile );
+    void addCamerasDocument( const QString &leftCameraIp, const QString &rightCameraIp, const QString &calibrationFile );
 
     void setupActions();
     void setupMenus();

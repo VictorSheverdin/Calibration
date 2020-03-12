@@ -283,8 +283,10 @@ void ProcessedFrame::cleanMapPoints()
     }
 }
 
-void ProcessedFrame::triangulatePoints()
+int ProcessedFrame::triangulatePoints()
 {
+    int ret = 0;
+
     std::map< MonoFramePtr, std::vector< PointPtr > > frames;
     std::map< PointPtr, ProcessedPointPtr > points;
 
@@ -399,6 +401,8 @@ void ProcessedFrame::triangulatePoints()
 
                                 if ( prevNorm < MAX_REPROJECTION_ERROR && nextNorm < MAX_REPROJECTION_ERROR ) {
 
+                                    ++ret;
+
                                     MapPointPtr mapPoint = processedPoint->mapPoint();
 
                                     if ( !mapPoint ) {
@@ -434,6 +438,8 @@ void ProcessedFrame::triangulatePoints()
 
     }
 
+    return ret;
+
 }
 
 const std::vector< cv::KeyPoint > &ProcessedFrame::keyPoints() const
@@ -450,7 +456,7 @@ CvImage ProcessedFrame::drawPoints() const
 {
     if ( !m_image.empty() ) {
 
-        int radius = std::max( std::min( m_image.width(), m_image.height() ) / 500.0, 1.0 );
+        int radius = std::max( std::min( m_image.width(), m_image.height() ) / 300.0, 1.0 );
         int smallerRadius = std::max( std::min( m_image.width(), m_image.height() ) / 1000.0, 1.0 );
 
         CvImage ret;
@@ -812,7 +818,6 @@ void StereoFrameBase::setLeftSe3Pose( g2o::SE3Quat &pose )
 }
 
 // ProcessedStereoFrame
-const float ProcessedStereoFrame::m_maxYParallax = 2.0;
 const double ProcessedStereoFrame::m_minXDistasnce = 1.0;
 
 ProcessedStereoFrame::ProcessedStereoFrame( const MapPtr &parentMap )
@@ -877,7 +882,7 @@ cv::Mat ProcessedStereoFrame::matchOptical( const size_t count )
                 auto leftPoint = leftFramePoint->point();
                 auto rightPoint = rightFramePoint->point();
 
-                if ( std::abs( leftPoint.y - rightPoint.y ) < m_maxYParallax && leftPoint.x - rightPoint.x >  m_minXDistasnce ) {
+                if ( leftPoint.x - rightPoint.x > m_minXDistasnce ) {
 
                     leftFramePoint->setStereoPoint( rightFramePoint );
                     rightFramePoint->setStereoPoint( leftFramePoint );
@@ -919,7 +924,7 @@ cv::Mat ProcessedStereoFrame::matchFeatures()
                 auto leftPoint = leftFramePoint->point();
                 auto rightPoint = rightFramePoint->point();
 
-                if ( leftPoint.x > rightPoint.x && fabs( leftPoint.y - rightPoint.y ) < m_maxYParallax ) {
+                if ( leftPoint.x - rightPoint.x > m_minXDistasnce ) {
 
                     leftFramePoint->setStereoPoint( rightFramePoint );
                     rightFramePoint->setStereoPoint( leftFramePoint );
@@ -1060,8 +1065,10 @@ ProcessedStereoFrame::MapPtr ProcessedStereoFrame::parentMap() const
     return m_parentMap.lock();
 }
 
-bool ProcessedStereoFrame::triangulatePoints()
+int ProcessedStereoFrame::triangulatePoints()
 {
+    int ret = 0;
+
     auto map = parentMap();
 
     if ( map ) {
@@ -1128,6 +1135,8 @@ bool ProcessedStereoFrame::triangulatePoints()
 
                             if ( leftNorm < MAX_REPROJECTION_ERROR && rightNorm < MAX_REPROJECTION_ERROR ) {
 
+                                ++ret;
+
                                 auto leftFramePoint = stereoPoints[i].leftFramePoint();
                                 auto rightFramePoint = stereoPoints[i].rightFramePoint();
 
@@ -1176,13 +1185,11 @@ bool ProcessedStereoFrame::triangulatePoints()
 
             }
 
-            return true;
-
         }
 
     }
 
-    return false;
+    return ret;
 
 }
 
