@@ -975,7 +975,7 @@ StereoResultProcessor::StereoResultProcessor( const std::shared_ptr< DisparityPr
 {
 }
 
-void StereoResultProcessor::setCalibration( const StereoCalibrationDataBase &data )
+void StereoResultProcessor::setCalibration( const StereoCalibrationDataShort &data )
 {
     m_rectificationProcessor.setCalibrationData( data );
     setDisparityToDepthMatrix( data.disparityToDepthMatrix() );

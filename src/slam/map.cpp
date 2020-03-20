@@ -15,20 +15,27 @@ namespace slam {
 
 const double Map::m_minTrackInliersRatio = 0.9;
 
-Map::Map( const StereoCameraMatrix &projectionMatrix )
-    :  m_projectionMatrix( projectionMatrix )
+Map::Map( const StereoCameraMatrix &projectionMatrix, const WorldPtr &parentWorld)
+    :  m_parentWorld( parentWorld )
 {
-    initialize();
+    initialize( projectionMatrix );
 }
 
-void Map::initialize()
+void Map::initialize( const StereoCameraMatrix &projectionMatrix )
 {
+    m_projectionMatrix = projectionMatrix;
+
     m_previousKeypointsCount = m_goodTrackPoints * 2;
 }
 
-Map::MapPtr Map::create( const StereoCameraMatrix &cameraMatrix )
+Map::MapPtr Map::create( const StereoCameraMatrix &cameraMatrix , const WorldPtr &parentWorld )
 {
-    return MapPtr( new Map( cameraMatrix ) );
+    return MapPtr( new Map( cameraMatrix, parentWorld ) );
+}
+
+Map::WorldPtr Map::parentWorld() const
+{
+    return m_parentWorld.lock();
 }
 
 Map::MapPointPtr Map::createMapPoint( const cv::Point3d &pt, const cv::Scalar &color )

@@ -394,46 +394,6 @@ const cv::Rect &StereoCalibrationDataBase::rightROI() const
     return m_rightROI;
 }
 
-void StereoCalibrationDataBase::setLeftRMap( const cv::Mat &value )
-{
-    m_leftRMap = value;
-}
-
-const cv::Mat &StereoCalibrationDataBase::leftRMap() const
-{
-    return m_leftRMap;
-}
-
-void StereoCalibrationDataBase::setLeftDMap( const cv::Mat &value )
-{
-    m_leftDMap = value;
-}
-
-const cv::Mat &StereoCalibrationDataBase::leftDMap() const
-{
-    return m_leftDMap;
-}
-
-void StereoCalibrationDataBase::setRightRMap( const cv::Mat &value )
-{
-    m_rightRMap = value;
-}
-
-const cv::Mat &StereoCalibrationDataBase::rightRMap() const
-{
-    return m_rightRMap;
-}
-
-void StereoCalibrationDataBase::setRightDMap( const cv::Mat &value )
-{
-    m_rightDMap = value;
-}
-
-const cv::Mat &StereoCalibrationDataBase::rightDMap() const
-{
-    return m_rightDMap;
-}
-
 double StereoCalibrationDataBase::distance() const
 {
     auto xTrans = m_translationVector.at<double>( 0 );
@@ -630,24 +590,6 @@ bool StereoCalibrationDataShort::loadYaml( const std::string &fileName )
 
         setLeftROI( leftROI );
         setRightROI( rightROI );
-
-        cv::Mat leftRMap, leftDMap;
-
-        cv::initUndistortRectifyMap( leftCameraMatrix, leftDistortionCoefficients,
-                                     leftRectifyMatrix, leftProjectionMatrix, frameSize,
-                                     CV_32FC2, leftRMap, leftDMap );
-
-        setLeftRMap( leftRMap );
-        setLeftDMap( leftDMap );
-
-        cv::Mat rightRMap, rightDMap;
-
-        cv::initUndistortRectifyMap( rightCameraMatrix, rightDistortionCoefficients,
-                                     rightRectifyMatrix, rightProjectionMatrix, frameSize,
-                                     CV_32FC2, rightRMap, rightDMap );
-
-        setRightRMap( rightRMap );
-        setRightDMap( rightDMap );
 
         setError( error );
 

@@ -340,7 +340,7 @@ public:
     StereoResultProcessor();
     StereoResultProcessor( const std::shared_ptr< DisparityProcessorBase > &proc );
 
-    void setCalibration( const StereoCalibrationDataBase &data );
+    void setCalibration( const StereoCalibrationDataShort &data );
     bool loadYaml( const std::string &fileName );
 
     StereoResult process( const StereoFrame &frame );

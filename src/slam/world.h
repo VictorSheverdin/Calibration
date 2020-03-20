@@ -29,10 +29,12 @@ protected:
 
     std::list < MapPtr > m_maps;
 
+    StereoCameraMatrix m_startCameraMatrix;
+
     static const int m_keypointsCount = 25000;
 
 private:
-    void initialize();
+    void initialize( const StereoCameraMatrix &cameraMatrix );
 
 };
 

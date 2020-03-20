@@ -52,7 +52,6 @@ void SlamThread::run()
     auto localOptimizationThread = std::thread( [ & ] {
 
         while ( true ) {
-
             m_system->localAdjustment();
             std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
 

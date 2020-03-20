@@ -26,7 +26,9 @@ public:
 
     using WorldPtr = std::shared_ptr< World >;
 
-    static MapPtr create( const StereoCameraMatrix &cameraMatrix );
+    static MapPtr create( const StereoCameraMatrix &cameraMatrix, const WorldPtr &parentWorld );
+
+    Map::WorldPtr parentWorld() const;
 
     MapPointPtr createMapPoint( const cv::Point3d &pt, const cv::Scalar &color );
 
@@ -55,7 +57,9 @@ public:
 protected:
     using WorldPtrImpl = std::weak_ptr< World >;
 
-    Map( const StereoCameraMatrix &projectionMatrix );
+    Map( const StereoCameraMatrix &projectionMatrix, const WorldPtr &parentWorld );
+
+    WorldPtrImpl m_parentWorld;
 
     std::list< FramePtr > m_frames;
     std::set< MapPointPtr > m_mapPoints;
@@ -78,7 +82,7 @@ protected:
     std::mutex m_mutex;
 
 private:
-    void initialize();
+    void initialize( const StereoCameraMatrix &projectionMatrix );
 
 };
 

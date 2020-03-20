@@ -10,9 +10,7 @@ namespace slam {
 
 World::World( const StereoCameraMatrix &cameraMatrix )
 {
-    initialize();
-
-    m_maps.push_back( Map::create( cameraMatrix ) );
+    initialize( cameraMatrix );
 
     slam::DenseFrameBase::setDisparityToDepthMatrix( cameraMatrix.disparityToDepthMatrix() );
 
@@ -22,16 +20,19 @@ World::World( const StereoCameraMatrix &cameraMatrix )
     slam::DenseFrameBase::setMinDisparity( 0 );
     slam::DenseFrameBase::setNumDisparities( 256 );
     slam::DenseFrameBase::setTextureThreshold( 350 );
-    slam::DenseFrameBase::setUniquenessRatio( 10 );
+    slam::DenseFrameBase::setUniquenessRatio( 5 );
     slam::DenseFrameBase::setSpeckleWindowSize( 65 );
     slam::DenseFrameBase::setSpeckleRange( 5 );
     slam::DenseFrameBase::setDisp12MaxDiff( 0 );
 
 }
 
-void World::initialize()
+void World::initialize( const StereoCameraMatrix &cameraMatrix )
 {
     ProcessedFrame::setMaxFeatures( m_keypointsCount );
+
+    m_startCameraMatrix = cameraMatrix;
+
 }
 
 World::WorldPtr World::create( const StereoCameraMatrix &cameraMatrix )
@@ -51,17 +52,34 @@ std::list < World::MapPtr > &World::maps()
 
 bool World::track( const CvImage &leftImage, const CvImage &rightImage )
 {
-    return m_maps.back()->track( leftImage, rightImage );
+    if ( m_maps.empty() )
+        m_maps.push_back( Map::create( m_startCameraMatrix, shared_from_this() ) );
+
+    auto result = m_maps.back()->track( leftImage, rightImage );
+
+    if ( !result ) {
+        auto lastProjectionMatrix = m_maps.back()->frames().back()->projectionMatrix();
+
+        m_maps.push_back( Map::create( lastProjectionMatrix, shared_from_this() ) );
+
+        m_maps.back()->track( leftImage, rightImage );
+
+    }
+
+    return result;
+
 }
 
 void World::adjust( const int frames )
 {
-    return m_maps.back()->adjust( frames );
+    if ( !m_maps.empty() )
+        m_maps.back()->adjust( frames );
 }
 
 void World::localAdjustment()
 {
-    return m_maps.back()->localAdjustment();
+    if ( !m_maps.empty() )
+        m_maps.back()->localAdjustment();
 }
 
 }

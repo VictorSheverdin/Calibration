@@ -342,24 +342,6 @@ bool StereoCalibrationData::loadYaml( const std::string &fileName )
         setLeftROI( leftROI );
         setRightROI( rightROI );
 
-        cv::Mat leftRMap, leftDMap;
-
-        cv::initUndistortRectifyMap( leftCameraMatrix, leftDistortionCoefficients,
-                                     leftRectifyMatrix, leftProjectionMatrix, frameSize,
-                                     CV_32FC2, leftRMap, leftDMap );
-
-        setLeftRMap( leftRMap );
-        setLeftDMap( leftDMap );
-
-        cv::Mat rightRMap, rightDMap;
-
-        cv::initUndistortRectifyMap( rightCameraMatrix, rightDistortionCoefficients,
-                                     rightRectifyMatrix, rightProjectionMatrix, frameSize,
-                                     CV_32FC2, rightRMap, rightDMap );
-
-        setRightRMap( rightRMap );
-        setRightDMap( rightDMap );
-
         setError( error );
 
         setOk( true );
@@ -370,5 +352,17 @@ bool StereoCalibrationData::loadYaml( const std::string &fileName )
     return false;
 
 }
+
+StereoCalibrationData::operator StereoCalibrationDataShort() const
+{
+    StereoCalibrationDataShort ret( *this );
+
+    ret.setLeftCameraResults( m_leftCameraResults );
+    ret.setRightCameraResults( m_rightCameraResults );
+
+    return ret;
+
+}
+
 
 

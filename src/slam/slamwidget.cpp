@@ -619,7 +619,7 @@ void SlamWidgetBase::update3dView()
 {
     updatePath();
     updateSparseCloud();
-    updateDensePointCloud();
+    // updateDensePointCloud();
 }
 
 // SlamImageWidget

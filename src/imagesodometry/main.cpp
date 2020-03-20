@@ -35,7 +35,7 @@
 
 #include "src/ORB/System.h"
 
-#include "src/common/calibrationdatabase.h"
+#include "src/common/rectificationprocessor.h"
 
 using namespace std;
 
@@ -75,6 +75,8 @@ int main( int argc, char **argv )
 
         if ( calibrationData.isOk() ) {
 
+            StereoRectificationProcessor rectProcessor( calibrationData );
+
             ORB_SLAM2::Settings settings( calibrationData );
 
             settings.setCx( settings.cx() - calibrationData.leftROI().x );
@@ -84,7 +86,7 @@ int main( int argc, char **argv )
 
             ORB_SLAM2::System SLAM( pathToVocabulary, settings, ORB_SLAM2::System::STEREO, true );
 
-            cv::Mat imLeft, imRight;
+            CvImage imLeft, imRight;
 
             double tframe = 0;
 
@@ -107,16 +109,12 @@ int main( int argc, char **argv )
                 CvImage leftRectifiedImage;
                 CvImage rightRectifiedImage;
 
-                cv::remap( imLeft, leftRectifiedImage, calibrationData.leftRMap(), calibrationData.leftDMap(), cv::INTER_LANCZOS4 );
-                cv::remap( imRight, rightRectifiedImage, calibrationData.rightRMap(), calibrationData.rightDMap(), cv::INTER_LANCZOS4 );
+                rectProcessor.rectify( imLeft, imRight, &leftRectifiedImage, &rightRectifiedImage );
 
                 CvImage leftCroppedFrame;
                 CvImage rightCroppedFrame;
 
-                if (!calibrationData.leftROI().empty() && !calibrationData.rightROI().empty()) {
-                    leftCroppedFrame = leftRectifiedImage( calibrationData.leftROI() );
-                    rightCroppedFrame = rightRectifiedImage( calibrationData.leftROI() );
-                }
+                rectProcessor.crop( leftRectifiedImage, rightRectifiedImage, &leftCroppedFrame, &rightCroppedFrame );
 
                 tframe += 1.0/10.0;
 

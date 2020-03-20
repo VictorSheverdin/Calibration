@@ -240,19 +240,6 @@ StereoCalibrationData CalibrationWidgetBase::calcStereoCalibration( const std::v
     ret.setLeftROI( leftROI );
     ret.setRightROI( rightROI );
 
-    cv::Mat leftRMap, leftDMap, rightRMap, rightDMap;
-
-    cv::initUndistortRectifyMap( ret.leftCameraResults().cameraMatrix(), ret.leftCameraResults().distortionCoefficients(), R1, P1,
-                                 ret.leftCameraResults().frameSize(), CV_32FC2, leftRMap, leftDMap );
-    cv::initUndistortRectifyMap( ret.rightCameraResults().cameraMatrix(), ret.rightCameraResults().distortionCoefficients(), R2, P2,
-                                 ret.leftCameraResults().frameSize(), CV_32FC2, rightRMap, rightDMap );
-
-
-    ret.setLeftRMap( leftRMap );
-    ret.setLeftDMap( leftDMap );
-    ret.setRightRMap( rightRMap );
-    ret.setRightDMap( rightDMap );
-
     ret.setOk( true );
 
     return ret;

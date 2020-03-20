@@ -121,18 +121,6 @@ public:
     void setRightROI( const cv::Rect &value );
     const cv::Rect &rightROI() const;
 
-    void setLeftRMap( const cv::Mat &value );
-    const cv::Mat &leftRMap() const;
-
-    void setLeftDMap( const cv::Mat &value );
-    const cv::Mat &leftDMap() const;
-
-    void setRightRMap( const cv::Mat &value );
-    const cv::Mat &rightRMap() const;
-
-    void setRightDMap( const cv::Mat &value );
-    const cv::Mat &rightDMap() const;
-
     double distance() const;
 
     cv::Rect cropRect() const;
@@ -154,11 +142,6 @@ protected:
 
     cv::Rect m_leftROI;
     cv::Rect m_rightROI;
-
-    cv::Mat m_leftRMap;
-    cv::Mat m_leftDMap;
-    cv::Mat m_rightRMap;
-    cv::Mat m_rightDMap;
 
 private:
     void initialize();

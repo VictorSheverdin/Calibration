@@ -38,7 +38,7 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA
 #include "opencv2/opencv.hpp"
 #include "opencv2/viz.hpp"
 
-#include "src/common/calibrationdatabase.h"
+#include "src/common/rectificationprocessor.h"
 
 using namespace std;
 
@@ -52,6 +52,8 @@ int main (int argc, char** argv) {
     StereoCalibrationDataShort calibrationData( pathToSettings );
 
     if ( calibrationData.isOk() ) {
+
+        StereoRectificationProcessor rectProcessor( calibrationData );
 
         cv::namedWindow( "Features", cv::WINDOW_KEEPRATIO );
         cv::resizeWindow("Features", 800, 600);
@@ -94,8 +96,8 @@ int main (int argc, char** argv) {
         // catch image read/write errors here
         try {
 
-            auto leftMat = cv::imread( left_img_file_name );
-            auto rightMat = cv::imread( right_img_file_name );
+            CvImage leftMat = cv::imread( left_img_file_name );
+            CvImage rightMat = cv::imread( right_img_file_name );
 
             cv::Mat leftGray, rightGray;
 
@@ -105,16 +107,12 @@ int main (int argc, char** argv) {
             CvImage leftRectifiedImage;
             CvImage rightRectifiedImage;
 
-            cv::remap( leftGray, leftRectifiedImage, calibrationData.leftRMap(), calibrationData.leftDMap(), cv::INTER_LANCZOS4 );
-            cv::remap( rightGray, rightRectifiedImage, calibrationData.rightRMap(), calibrationData.rightDMap(), cv::INTER_LANCZOS4 );
+            rectProcessor.rectify( leftMat, rightMat, &leftRectifiedImage, &rightRectifiedImage );
 
             CvImage leftCroppedFrame;
             CvImage rightCroppedFrame;
 
-            if (!calibrationData.leftROI().empty() && !calibrationData.rightROI().empty()) {
-                leftCroppedFrame = leftRectifiedImage( calibrationData.leftROI() );
-                rightCroppedFrame = rightRectifiedImage( calibrationData.leftROI() );
-            }
+            rectProcessor.crop( leftRectifiedImage, rightRectifiedImage, &leftCroppedFrame, &rightCroppedFrame );
 
             cv::imshow( "Features", leftCroppedFrame );
 

@@ -1,4 +1,4 @@
-cmake_minimum_required( VERSION 2.6 )
+cmake_minimum_required( VERSION 3.10 )
 project ( Calibration )
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -150,6 +150,10 @@ find_package( PCL 1.9 REQUIRED )
 find_package( Pangolin REQUIRED )
 find_package( SuiteSparse REQUIRED )
 find_package( G2O REQUIRED )
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS ON)
 
 set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O3 -march=native ${OpenMP_C_FLAGS}")
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O3 -march=native ${OpenMP_CXX_FLAGS}")

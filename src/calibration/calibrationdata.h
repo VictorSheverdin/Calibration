@@ -86,6 +86,8 @@ public:
     bool saveYaml( const std::string &fileName ) const;
     bool loadYaml( const std::string &fileName );
 
+    operator StereoCalibrationDataShort() const;
+
 protected:
     MonocularCalibrationData m_leftCameraResults;
     MonocularCalibrationData m_rightCameraResults;
