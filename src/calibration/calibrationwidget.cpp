@@ -236,7 +236,6 @@ StereoCalibrationData CalibrationWidgetBase::calcStereoCalibration( const std::v
     ret.setRightRectifyMatrix( R2 );
     ret.setLeftProjectionMatrix( P1 );
     ret.setRightProjectionMatrix( P2 );
-    ret.setDisparityToDepthMatrix( Q );
     ret.setLeftROI( leftROI );
     ret.setRightROI( rightROI );
 

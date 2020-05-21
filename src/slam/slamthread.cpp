@@ -49,9 +49,9 @@ void SlamThread::process( const CvImage leftImage, const CvImage rightImage )
 
 void SlamThread::run()
 {
-    auto localOptimizationThread = std::thread( [ & ] {
+   /*auto localOptimizationThread = std::thread( [ & ] {
 
-        while ( true ) {
+        while ( !isInterruptionRequested() ) {
             m_system->localAdjustment();
             std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
 
@@ -59,11 +59,9 @@ void SlamThread::run()
 
     } );
 
-    localOptimizationThread.detach();
-
     auto optimizationThread5s = std::thread( [ & ] {
 
-        while ( true ) {
+        while ( !isInterruptionRequested() ) {
 
             const int frames = 100;
 
@@ -72,11 +70,9 @@ void SlamThread::run()
 
         }
 
-    } );
+    } );*/
 
-    optimizationThread5s.detach();
-
-    while( true )
+    while( !isInterruptionRequested() )
     {
         if ( m_mutex.tryLock( ) ) {
 
@@ -86,6 +82,9 @@ void SlamThread::run()
                 CvImage rightRectifiedImage;
                 CvImage leftCroppedImage;
                 CvImage rightCroppedImage;
+
+                cv::rectangle( m_leftFrame, cv::Point( 0, 1500 ), cv::Point( 2048, 2048 ), cv::Scalar( 0, 0, 0, 255 ), cv::FILLED );
+                cv::rectangle( m_rightFrame, cv::Point( 0, 1500 ), cv::Point( 2048, 2048 ), cv::Scalar( 0, 0, 0, 255 ), cv::FILLED );
 
                 if ( m_rectificationProcessor.rectify( m_leftFrame, m_rightFrame, &leftRectifiedImage, &rightRectifiedImage )
                             && m_rectificationProcessor.crop( leftRectifiedImage, rightRectifiedImage, &leftCroppedImage, &rightCroppedImage ) ) {
@@ -101,9 +100,23 @@ void SlamThread::run()
 
                         m_system->track( leftResizedImage, rightResizedImage );
                     }
-                    else
-                        m_system->track( leftCroppedImage, rightCroppedImage );
+                    else {
 
+                        /*cv::medianBlur( leftCroppedImage, leftCroppedImage, 3 );
+                        cv::medianBlur( rightCroppedImage, rightCroppedImage, 3 );
+
+                        cv::Mat sharpeningKernel = ( cv::Mat_< double >( 3, 3 ) << 0, -1, 0,
+                                -1, 5, -1,
+                                0, -1, 0 );
+
+                        cv::filter2D( leftCroppedImage, leftCroppedImage, -1, sharpeningKernel );
+                        cv::filter2D( rightCroppedImage, rightCroppedImage, -1, sharpeningKernel );*/
+
+                        cv::GaussianBlur( leftCroppedImage, leftCroppedImage, cv::Size( 3, 3 ), 0 );
+                        cv::GaussianBlur( rightCroppedImage, rightCroppedImage, cv::Size( 3, 3 ), 0 );
+
+                        m_system->track( leftCroppedImage, rightCroppedImage );
+                    }
 
                     std::cout << std::chrono::duration_cast< std::chrono::microseconds >( std::chrono::system_clock::now() - time ).count()  / 1.e6 << " sec" << std::endl;
 
@@ -124,23 +137,48 @@ void SlamThread::run()
 
     }
 
+    static std::ofstream file( "/home/victor/coords.txt" );
+
+    auto maps = this->maps();
+
+    for ( auto &i : maps ) {
+
+        auto frames = i->frames();
+
+        for ( auto &j : frames ) {
+
+            cv::Mat leftTranslation = -j->leftFrame()->rotation().t() * j->leftFrame()->translation();
+
+            file << leftTranslation.at< double >( 0, 0 ) << " " << leftTranslation.at< double >( 1, 0 ) << " " << leftTranslation.at< double >( 2, 0 ) << std::endl;
+
+        }
+
+    }
+
+    /*localOptimizationThread.join();
+    optimizationThread5s.join();*/
+
 }
 
-const std::list< SlamThread::MapPtr > &SlamThread::maps() const
+std::list< SlamThread::MapPtr > SlamThread::maps() const
 {
     return m_system->maps();
 }
 
 CvImage SlamThread::pointsImage() const
 {
-    if ( !m_system->maps().empty() ) {
+    auto maps = m_system->maps();
 
-        if ( !m_system->maps().back()->frames().empty() ) {
+    if ( !maps.empty() ) {
 
-            auto processedFrame = std::dynamic_pointer_cast< slam::ProcessedStereoFrame >( m_system->maps().back()->frames().back() );
+        auto frames = maps.back()->frames();
+
+        if ( !frames.empty() ) {
+
+            auto processedFrame = std::dynamic_pointer_cast< slam::FeatureStereoFrame >( frames.back() );
 
             if ( processedFrame )
-                return processedFrame->drawPoints();
+                return processedFrame->drawExtractedPoints();
 
         }
 
@@ -152,11 +190,15 @@ CvImage SlamThread::pointsImage() const
 
 CvImage SlamThread::tracksImage() const
 {
-    if ( !m_system->maps().empty() ) {
+    auto maps = m_system->maps();
 
-        if ( !m_system->maps().back()->frames().empty() ) {
+    if ( !maps.empty() ) {
 
-            auto processedFrame = std::dynamic_pointer_cast< slam::ProcessedStereoFrame >( m_system->maps().back()->frames().back() );
+        auto frames = maps.back()->frames();
+
+        if ( !frames.empty() ) {
+
+            auto processedFrame = std::dynamic_pointer_cast< slam::FeatureStereoFrame >( frames.back() );
 
             if ( processedFrame )
                 return processedFrame->leftFrame()->drawTracks();
@@ -171,11 +213,15 @@ CvImage SlamThread::tracksImage() const
 
 CvImage SlamThread::stereoImage() const
 {
-    if ( !m_system->maps().empty() ) {
+    auto maps = m_system->maps();
 
-        if ( m_system->maps().back()->frames().size() > 1 ) {
+    if ( !maps.empty() ) {
 
-            auto processedFrame = std::dynamic_pointer_cast< slam::ProcessedStereoFrame >( *(++m_system->maps().back()->frames().rbegin()) );
+        auto frames = maps.back()->frames();
+
+        if ( frames.size() > 1 ) {
+
+            auto processedFrame = std::dynamic_pointer_cast< slam::FeatureStereoFrame >( *(++frames.rbegin()) );
 
             if ( processedFrame )
                 return processedFrame->drawStereoCorrespondences();

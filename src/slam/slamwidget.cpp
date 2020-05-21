@@ -417,7 +417,7 @@ SlamWidgetBase::SlamWidgetBase( const QString &calibrationFile, QWidget* parent 
 
 SlamWidgetBase::~SlamWidgetBase()
 {
-    m_slamThread->terminate();
+    m_slamThread->requestInterruption();
     m_slamThread->wait();
 }
 
@@ -435,7 +435,12 @@ void SlamWidgetBase::initialize( const QString &calibrationFile )
 
     m_slamThread = new SlamThread( calibration, this );
 
-    connect( m_slamThread, &SlamThread::updateSignal, this, &SlamWidgetBase::updateViews );
+    m_updateTimer = new QTimer( this );
+    m_updateTimer->start( 1000 / 5 );
+
+    connect( m_updateTimer, &QTimer::timeout, this, &SlamWidgetBase::updateViews );
+
+    // connect( m_slamThread, &SlamThread::updateSignal, this, &SlamWidgetBase::updateViews );
 
     m_slamThread->start();
 
@@ -618,8 +623,8 @@ void SlamWidgetBase::updateDensePointCloud()
 void SlamWidgetBase::update3dView()
 {
     updatePath();
-    updateSparseCloud();
-    // updateDensePointCloud();
+    // updateSparseCloud();
+    updateDensePointCloud();
 }
 
 // SlamImageWidget

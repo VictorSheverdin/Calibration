@@ -1,6 +1,8 @@
 #pragma once
 
 #include "map.h"
+#include "tracker.h"
+#include "src/common/stereoprocessor.h"
 
 namespace slam {
 
@@ -16,13 +18,28 @@ public:
 
     static WorldPtr create( const StereoCameraMatrix &cameraMatrix );
 
-    const std::list < MapPtr > &maps() const;
-    std::list < MapPtr > &maps();
+    std::list<MapPtr> maps() const;
 
     bool track( const CvImage &leftImage, const CvImage &rightImage );
 
     void adjust( const int frames );
     void localAdjustment();
+
+    BMStereoProcessor &stereoProcessor();
+    const BMStereoProcessor &stereoProcessor() const;
+
+    FlowTracker &flowTracker();
+    const FlowTracker &flowTracker() const;
+
+    const std::unique_ptr< FeatureTracker > &featureTracker() const;
+
+    double maxReprojectionError() const;
+
+    double minStereoXDisparity() const;
+    double maxStereoYDisparity() const;
+
+    double minAdjacentPointsDistance() const;
+    double minAdjacentCameraMultiplier() const;
 
 protected:
     World( const StereoCameraMatrix &cameraMatrix );
@@ -31,7 +48,22 @@ protected:
 
     StereoCameraMatrix m_startCameraMatrix;
 
-    static const int m_keypointsCount = 25000;
+    BMStereoProcessor m_stereoProcessor;
+
+    FlowTracker m_flowTracker;
+    std::unique_ptr< FeatureTracker > m_featureTracker;
+
+    static const int m_keypointsCount = 100000;
+
+    static const double m_maxReprojectionError;
+
+    static const double m_minStereoXDisparity;
+    static const double m_maxStereoYDisparity;
+
+    static const double m_minAdjacentPointsDistance;
+    static const double m_minAdjacentCameraMultiplier;
+
+    mutable std::mutex m_mutex;
 
 private:
     void initialize( const StereoCameraMatrix &cameraMatrix );

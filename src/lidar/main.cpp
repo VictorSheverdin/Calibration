@@ -2,11 +2,11 @@
 
 #include "application.h"
 
-#include <QVTKOpenGLWidget.h>
+#include <QVTKOpenGLNativeWidget.h>
 
 int main(int argc, char** argv)
 {
-    QSurfaceFormat::setDefaultFormat( QVTKOpenGLWidget::defaultFormat() );
+    QSurfaceFormat::setDefaultFormat( QVTKOpenGLNativeWidget::defaultFormat() );
 
     Application a(argc, argv);
 

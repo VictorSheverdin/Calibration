@@ -67,16 +67,15 @@ void View3DWidget::pickingEventHandler( const pcl::visualization::PointPickingEv
 
     auto distance = sqrt( x * x + y * y + z * z );
 
-    std::stringstream ss;
-    ss << distance;
+    auto distanceString = QString::number( distance );
 
-    application()->setStatusBarText( tr( "Distance = %1" )
-                                     .arg( QString::number( distance ) ) );
+    application()->setStatusBarText( tr( "x = %1, y = %2, z = %3, distance = %4" )
+                                     .arg( QString::number( x ) ).arg( QString::number( y ) ).arg( QString::number( z ) ).arg( distanceString ) );
 
     auto widget = reinterpret_cast< pcl::visualization::PCLVisualizer * >( viewer_void );
 
     widget->removeText3D( "Distance" );
-    widget->addText3D( ss.str(), pcl::PointXYZ( x, y, z ), 0.1, 1.0, 0, 0, "Distance" );
+    widget->addText3D( distanceString.toStdString(), pcl::PointXYZ( x, y, z ), 1.0, 1.0, 0, 0, "Distance" );
 
 }
 

@@ -2,11 +2,11 @@
 
 #include "colorpoint.h"
 
-#include <QVTKOpenGLWidget.h>
+#include <QVTKOpenGLNativeWidget.h>
 #include <vtkRenderWindow.h>
 #include <pcl/visualization/pcl_visualizer.h>
 
-class PCLWidget : public QVTKOpenGLWidget
+class PCLWidget : public QVTKOpenGLNativeWidget
 {
     Q_OBJECT
 
@@ -25,6 +25,8 @@ public:
     bool contains( const std::string &id ) const ;
 
     void showPointCloud( const std::string &id, const bool flag ) ;
+
+    void exportPointCloud( const std::string &fileName );
 
 public slots:
     void update();

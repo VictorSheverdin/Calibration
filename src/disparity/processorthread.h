@@ -1,6 +1,6 @@
 #pragma once
 
-#include "src/common/stereoprocessor.h"
+#include "stereoresultprocessor.h"
 #include "src/common/rectificationprocessor.h"
 
 #include <QThread>

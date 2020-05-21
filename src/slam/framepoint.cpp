@@ -214,48 +214,75 @@ namespace slam {
 
     }
 
-    // ProcessedPoint
-    ProcessedPoint::ProcessedPoint( const FramePtr &parentFrame , const size_t keyPointIndex )
-        : MonoPoint( parentFrame ), m_keyPointIndex( keyPointIndex )
+    // ProcessedPointBase
+    ProcessedPointBase::ProcessedPointBase( const FramePtr &parentFrame )
+        : MonoPoint( parentFrame )
     {
     }
 
-    ProcessedPoint::PointPtr ProcessedPoint::create( const FramePtr &parentFrame, const size_t keyPointIndex )
+    // FlowPoint
+    FlowPoint::FlowPoint( const FramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color )
+        : ProcessedPointBase( parentFrame ), m_point( point ), m_color( color )
     {
-        return PointPtr( new ProcessedPoint( parentFrame, keyPointIndex ) );
     }
 
-    ProcessedPoint::FramePtr ProcessedPoint::parentFrame() const
+    const cv::Point2f &FlowPoint::point() const
     {
-        return std::dynamic_pointer_cast< ProcessedFrame >( m_parentFrame.lock() );
+        return m_point;
     }
 
-    bool ProcessedPoint::lastTriangulated() const
+    const cv::Scalar &FlowPoint::color() const
     {
-        auto mapPoint = this->mapPoint();
-
-        if ( mapPoint ) {
-            if ( mapPoint->isLastFramePoint( shared_from_this() ) )
-                return true;
-        }
-
-        return false;
-
+        return m_color;
     }
 
-    const cv::Point2f &ProcessedPoint::point() const
+    FlowPoint::PointPtr FlowPoint::create( const FramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color )
+    {
+        return PointPtr( new FlowPoint( parentFrame, point, color ) );
+    }
+
+    FlowPoint::FramePtr FlowPoint::parentFrame() const
+    {
+        return std::dynamic_pointer_cast< FlowFrame >( m_parentFrame.lock() );
+    }
+
+    // FeaturePoint
+    FeaturePoint::FeaturePoint( const FramePtr &parentFrame , const size_t keyPointIndex )
+        : ProcessedPointBase( parentFrame ), m_keyPointIndex( keyPointIndex )
+    {
+    }
+
+    FeaturePoint::PointPtr FeaturePoint::create( const FramePtr &parentFrame, const size_t keyPointIndex )
+    {
+        return PointPtr( new FeaturePoint( parentFrame, keyPointIndex ) );
+    }
+
+    FeaturePoint::FramePtr FeaturePoint::parentFrame() const
+    {
+        return std::dynamic_pointer_cast< FeatureFrame >( m_parentFrame.lock() );
+    }
+
+    const cv::Point2f &FeaturePoint::point() const
     {
         return parentFrame()->m_keyPoints[ m_keyPointIndex ].pt;
     }
 
-    const cv::Scalar &ProcessedPoint::color() const
+    const cv::Scalar &FeaturePoint::color() const
     {
         return parentFrame()->m_colors[ m_keyPointIndex ];
     }
 
-    const cv::KeyPoint &ProcessedPoint::keyPoint() const
+    const cv::KeyPoint &FeaturePoint::keyPoint() const
     {
         return parentFrame()->m_keyPoints[ m_keyPointIndex ];
+    }
+
+    cv::Mat FeaturePoint::descriptor() const
+    {
+        if ( parentFrame()->m_descriptors.rows > static_cast< int >( m_keyPointIndex ) )
+            return parentFrame()->m_descriptors.row( m_keyPointIndex );
+        else
+            return cv::Mat();
     }
 
     // FramePoint
@@ -294,7 +321,7 @@ namespace slam {
         return std::dynamic_pointer_cast< Frame >( m_parentFrame.lock() );
     }
 
-    void FramePoint::replace( const ProcessedPointPtr &point )
+    void FramePoint::replace( const FeaturePointPtr &point )
     {
         if ( point ) {
 

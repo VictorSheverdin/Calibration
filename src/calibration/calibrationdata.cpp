@@ -337,7 +337,6 @@ bool StereoCalibrationData::loadYaml( const std::string &fileName )
         setRightRectifyMatrix( rightRectifyMatrix );
         setLeftProjectionMatrix( leftProjectionMatrix );
         setRightProjectionMatrix( rightProjectionMatrix );
-        setDisparityToDepthMatrix( disparityToDepthMatrix );
 
         setLeftROI( leftROI );
         setRightROI( rightROI );

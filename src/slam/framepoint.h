@@ -9,7 +9,8 @@ namespace slam {
 
 class Frame;
 class MonoFrame;
-class ProcessedFrame;
+class FlowFrame;
+class FeatureFrame;
 class MapPoint;
 
 class PointBase
@@ -82,27 +83,54 @@ protected:
 
 };
 
-class ProcessedPoint : public MonoPoint
+class ProcessedPointBase : public MonoPoint
 {
 public:
-    using FramePtr = std::shared_ptr< ProcessedFrame >;
-    using PointPtr = std::shared_ptr< ProcessedPoint >;
+protected:
+    ProcessedPointBase( const FramePtr &parentFrame );
+};
+
+class FlowPoint : public ProcessedPointBase
+{
+public:
+    using FramePtr = std::shared_ptr< FlowFrame >;
+    using PointPtr = std::shared_ptr< FlowPoint >;
+
+    virtual const cv::Point2f &point() const override;
+    virtual const cv::Scalar &color() const override;
+
+    static PointPtr create( const FramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color );
+
+    FramePtr parentFrame() const;
+
+protected:
+    FlowPoint( const FramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color );
+
+    cv::Point2f m_point;
+    cv::Scalar m_color;
+
+};
+
+class FeaturePoint : public ProcessedPointBase
+{
+public:
+    using FramePtr = std::shared_ptr< FeatureFrame >;
+    using PointPtr = std::shared_ptr< FeaturePoint >;
 
     virtual const cv::Point2f &point() const override;
     virtual const cv::Scalar &color() const override;
 
     const cv::KeyPoint &keyPoint() const;
+    cv::Mat descriptor() const;
 
     static PointPtr create( const FramePtr &parentFrame, const size_t keyPointIndex );
 
     FramePtr parentFrame() const;
 
-    bool lastTriangulated() const;
-
 protected:
-    using FramePtrImpl = std::weak_ptr< ProcessedFrame >;
+    using FramePtrImpl = std::weak_ptr< FeatureFrame >;
 
-    ProcessedPoint( const FramePtr &parentFrame, const size_t keyPointIndex );
+    FeaturePoint( const FramePtr &parentFrame, const size_t keyPointIndex );
 
     size_t m_keyPointIndex; // Index of keypoint in parent frame
 
@@ -114,7 +142,7 @@ public:
     using FramePtr = std::shared_ptr< Frame >;
     using PointPtr = std::shared_ptr< FramePoint >;
 
-    using ProcessedPointPtr = std::shared_ptr< ProcessedPoint >;
+    using FeaturePointPtr = std::shared_ptr< FeaturePoint >;
 
     virtual const cv::Point2f &point() const override;
     virtual const cv::Scalar &color() const override;
@@ -124,7 +152,7 @@ public:
 
     FramePtr parentFrame() const;
 
-    void replace( const ProcessedPointPtr &point );
+    void replace( const FeaturePointPtr &point );
 
 protected:
     FramePoint( const FramePtr &parentFrame );

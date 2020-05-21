@@ -7,8 +7,10 @@
 #include <vtkInteractorStyleTrackballCamera.h>
 #include <vtkPointPicker.h>
 
+#include <pcl/io/pcd_io.h>
+
 PCLWidget::PCLWidget( QWidget* parent )
-    : QVTKOpenGLWidget( parent )
+    : QVTKOpenGLNativeWidget( parent )
 {
     initialize();
 }
@@ -117,6 +119,6 @@ void PCLWidget::update()
 {
     m_pclViewer->getRenderWindow()->Render();
 
-    QVTKOpenGLWidget::update();
+    QVTKOpenGLNativeWidget::update();
 }
 

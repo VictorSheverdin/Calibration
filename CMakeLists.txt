@@ -1,9 +1,9 @@
 cmake_minimum_required( VERSION 3.10 )
-project ( Calibration )
+project( Calibration )
 
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTOUIC ON)
+set( CMAKE_INCLUDE_CURRENT_DIR ON )
+set( CMAKE_AUTOMOC ON )
+set( CMAKE_AUTOUIC ON )
 
 set ( COMMON_SOURCES
     src/common/defs.h
@@ -87,50 +87,6 @@ set ( VISO_SOURCES
     src/viso2/viso_stereo.cpp
 )
 
-set ( ORB_SOURCES
-    src/ORB/Settings.h
-    src/ORB/Settings.cpp
-    src/ORB/System.h
-    src/ORB/System.cc
-    src/ORB/Tracking.h
-    src/ORB/Tracking.cc
-    src/ORB/LocalMapping.h
-    src/ORB/LocalMapping.cc
-    src/ORB/LoopClosing.h
-    src/ORB/LoopClosing.cc
-    src/ORB/ORBVocabulary.h
-    src/ORB/ORBextractor.h
-    src/ORB/ORBextractor.cc
-    src/ORB/ORBmatcher.h
-    src/ORB/ORBmatcher.cc
-    src/ORB/FrameDrawer.h
-    src/ORB/FrameDrawer.cc
-    src/ORB/Converter.h
-    src/ORB/Converter.cc
-    src/ORB/MapPoint.h
-    src/ORB/MapPoint.cc
-    src/ORB/KeyFrame.h
-    src/ORB/KeyFrame.cc
-    src/ORB/Map.h
-    src/ORB/Map.cc
-    src/ORB/MapDrawer.h
-    src/ORB/MapDrawer.cc
-    src/ORB/Optimizer.h
-    src/ORB/Optimizer.cc
-    src/ORB/PnPsolver.h
-    src/ORB/PnPsolver.cc
-    src/ORB/Frame.h
-    src/ORB/Frame.cc
-    src/ORB/KeyFrameDatabase.h
-    src/ORB/KeyFrameDatabase.cc
-    src/ORB/Sim3Solver.h
-    src/ORB/Sim3Solver.cc
-    src/ORB/Initializer.h
-    src/ORB/Initializer.cc
-    src/ORB/Viewer.h
-    src/ORB/Viewer.cc
-)
-
 set ( ANNOTATION_SOURCES
     src/rapidxml/xmlTree.cpp
     src/annotations/annotation.h
@@ -145,19 +101,18 @@ find_package( OpenMP REQUIRED )
 find_package( Qt5Widgets REQUIRED )
 find_package( OpenCV 4 REQUIRED )
 find_package( Eigen3 3.1.0 REQUIRED )
-find_package( VTK 8 REQUIRED )
+find_package( VTK 8.2 REQUIRED )
 find_package( PCL 1.9 REQUIRED )
-find_package( Pangolin REQUIRED )
 find_package( SuiteSparse REQUIRED )
 find_package( G2O REQUIRED )
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS ON)
+set( CMAKE_CXX_STANDARD 17 )
+set( CMAKE_CXX_STANDARD_REQUIRED ON )
+set( CMAKE_CXX_EXTENSIONS ON )
 
-set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O3 -march=native ${OpenMP_C_FLAGS}")
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O3 -march=native ${OpenMP_CXX_FLAGS}")
-set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O3 -march=native ${OpenMP_C_FLAGS}" )
+set ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O3 -march=native ${OpenMP_CXX_FLAGS}" )
+set ( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}" )
 
 add_definitions( ${QT_DEFINITIONS} )
 include_directories( ${Qt5Widgets_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR} ${PCL_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR}/src/vimba/include )
@@ -210,6 +165,8 @@ add_executable( disparity ${COMMON_SOURCES} ${LIBELAS_SOURCES} ${RES_SOURCES}
     src/disparity/disparitypreviewwidget.cpp
     src/disparity/disparityiconswidget.h
     src/disparity/disparityiconswidget.cpp
+    src/disparity/stereoresultprocessor.h
+    src/disparity/stereoresultprocessor.cpp
     src/disparity/elasprocessor.h
     src/disparity/elasprocessor.cpp
     src/disparity/processorthread.h
@@ -217,14 +174,6 @@ add_executable( disparity ${COMMON_SOURCES} ${LIBELAS_SOURCES} ${RES_SOURCES}
     src/disparity/documentwidget.h
     src/disparity/documentwidget.cpp
     src/disparity/main.cpp
-)
-
-add_executable( imagesorbodometry ${COMMON_SOURCES} ${ANNOTATION_SOURCES} ${ORB_SOURCES} ${RES_SOURCES}
-    src/imagesodometry/main.cpp
-)
-
-add_executable( cameraorbodometry ${COMMON_SOURCES} ${ANNOTATION_SOURCES} ${ORB_SOURCES} ${RES_SOURCES}
-    src/cameraodometry/main.cpp
 )
 
 add_executable( visoodometry ${COMMON_SOURCES} ${VISO_SOURCES}
@@ -246,6 +195,7 @@ add_executable( slam ${COMMON_SOURCES} ${RES_SOURCES}
     src/slam/framepoint.h
     src/slam/optimizer.h
     src/slam/world.h
+    src/slam/tracker.h
     src/slam/application.cpp
     src/slam/choicedialog.cpp
     src/slam/slamwidget.cpp
@@ -260,6 +210,7 @@ add_executable( slam ${COMMON_SOURCES} ${RES_SOURCES}
     src/slam/framepoint.cpp
     src/slam/optimizer.cpp
     src/slam/world.cpp
+    src/slam/tracker.cpp
     src/slam/main.cpp
 )
 
@@ -279,14 +230,10 @@ add_executable( lidar ${COMMON_SOURCES} ${RES_SOURCES}
     src/lidar/main.cpp
 )
 
-target_include_directories( imagesorbodometry PRIVATE ${Pangolin_INCLUDE_DIRS} )
-target_include_directories( cameraorbodometry PRIVATE ${Pangolin_INCLUDE_DIRS} )
 target_include_directories( slam PRIVATE ${G2O_INCLUDE_DIR} ${CHOLMOD_INCLUDE_DIR} )
 
 target_link_libraries( calibration ${Qt5Widgets_LIBRARIES} ${YAML_CPP_LIBRARIES} )
 target_link_libraries( disparity ${Qt5Widgets_LIBRARIES} ${VTK_LIBRARIES} ${YAML_CPP_LIBRARIES} )
-target_link_libraries( imagesorbodometry ${Qt5Widgets_LIBRARIES} ${Pangolin_LIBRARIES} ${PROJECT_SOURCE_DIR}/src/DBoW2/lib/libDBoW2.so ${PROJECT_SOURCE_DIR}/src/g2o/lib/libg2o.so )
-target_link_libraries( cameraorbodometry ${Qt5Widgets_LIBRARIES} ${Pangolin_LIBRARIES} ${PROJECT_SOURCE_DIR}/src/DBoW2/lib/libDBoW2.so ${PROJECT_SOURCE_DIR}/src/g2o/lib/libg2o.so )
 target_link_libraries( visoodometry ${Qt5Widgets_LIBRARIES} png )
 
 target_link_libraries( slam PRIVATE

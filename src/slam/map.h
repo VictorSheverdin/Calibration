@@ -14,10 +14,21 @@ class StereoFrameBase;
 class MapPoint;
 class World;
 
+class MapBase
+{
+public:
+};
+
+class FlowMap : public MapBase
+{
+};
+
+class FeatureMap : public MapBase
+{
+};
+
 class Map : public std::enable_shared_from_this< Map >
 {
-    friend class Optimizer;
-
 public:
     using MapPtr = std::shared_ptr< Map >;
 
@@ -36,11 +47,9 @@ public:
 
     bool track( const CvImage &leftImage, const CvImage &rightImage );
 
-    std::list< FramePtr > &frames();
-    const std::list< FramePtr > &frames() const;
+    std::list< FramePtr > frames() const;
 
-    std::set< MapPointPtr > &mapPoints();
-    const std::set< MapPointPtr > &mapPoints() const;
+    std::set< MapPointPtr > mapPoints() const;
 
     const FramePtr &backFrame() const;
 
@@ -49,10 +58,12 @@ public:
     const cv::Mat baselineVector() const;
     double baselineLenght() const;
 
+    double minTriangulateCameraDistance() const;
+
     void adjust( const int frames );
     void localAdjustment();
 
-    bool valid() const;
+    bool isRudimental() const;
 
 protected:
     using WorldPtrImpl = std::weak_ptr< World >;
@@ -70,6 +81,8 @@ protected:
 
     Optimizer m_optimizer;
 
+    static const double m_minTriangulateDistanceMultiplier;
+
     static const int m_minTrackPoints = 1 << 6;
 
     static const int m_goodTrackPoints = 1 << 7;
@@ -78,8 +91,9 @@ protected:
     static const int m_trackFramePointsCount = 1 << 7;
 
     static const double m_minTrackInliersRatio;
+    static const double m_goodTrackInliersRatio;
 
-    std::mutex m_mutex;
+    mutable std::mutex m_mutex;
 
 private:
     void initialize( const StereoCameraMatrix &projectionMatrix );

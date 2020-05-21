@@ -36,6 +36,7 @@ public:
     double cx() const;
     double cy() const;
 
+    Plane zeroPlane() const;
     Plane plane() const;
 
     bool saveYaml( const std::string &fileName ) const;

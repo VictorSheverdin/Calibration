@@ -152,14 +152,19 @@ double ProjectionMatrix::cy() const
     return m_cameraMatrix.at< double >( 1, 2 );
 }
 
+Plane ProjectionMatrix::zeroPlane() const
+{
+    return Plane( m_r.at< double >( 0, 2 ), m_r.at< double >( 1, 2 ), m_r.at< double >( 2, 2 ), 0.0 );
+
+}
+
 Plane ProjectionMatrix::plane() const
 {
-    auto a = m_r.at< double >( 0, 2 );
-    auto b = m_r.at< double >( 1, 2 );
-    auto c = m_r.at< double >( 2, 2 );
+    auto ret = zeroPlane();
 
-    return Plane( a, b, c, -a * x() - b * y() - c * z() );
+    ret.setD( ret.a() * -x() + ret.b() * -y() + ret.c() * -z() );
 
+    return ret;
 }
 
 bool ProjectionMatrix::saveYaml( const std::string &fileName ) const

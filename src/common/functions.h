@@ -2,6 +2,8 @@
 
 #include "image.h"
 
+#include <tuple>
+
 void drawTraceLines( CvImage &image, const unsigned int count );
 
 CvImage resizeTo( const CvImage &image, const unsigned int size );
@@ -21,6 +23,8 @@ bool drawFeaturePoints( CvImage *target, const std::vector< cv::KeyPoint > &keyp
 void drawLine( CvImage *target, const cv::Point2f &pt1, const cv::Point2f &pt2, const cv::Scalar &color = cv::Scalar( 0, 255, 0, 100 ) );
 
 void drawLabel( CvImage *target, const std::string text, int height, int fontFace = cv::FONT_HERSHEY_TRIPLEX, const int thickness = 1, const cv::Scalar &color = cv::Scalar( 255, 255, 255, 255 ) );
+
+std::tuple< double, double, double, double > mat2Quaternion( const cv::Mat &R );
 
 template < class T >
 cv::Mat point3fToMat( const cv::Point3f &point )

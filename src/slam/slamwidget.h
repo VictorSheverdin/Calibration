@@ -3,8 +3,6 @@
 #include <QSplitter>
 #include <QTimer>
 
-#include <QVTKOpenGLWidget.h>
-#include <vtkRenderWindow.h>
 #include <pcl/visualization/pcl_visualizer.h>
 
 #include "slamgeometry.h"
@@ -153,6 +151,8 @@ protected:
     QPointer< SlamViewWidget > m_viewWidget;
 
     QPointer< SlamThread > m_slamThread;
+
+    QPointer< QTimer > m_updateTimer;
 
     std::list< StereoCameraMatrix > path() const;
     std::list< ColorPoint3d > sparseCloud() const;

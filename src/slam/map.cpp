@@ -13,7 +13,10 @@
 
 namespace slam {
 
-const double Map::m_minTrackInliersRatio = 0.9;
+const double Map::m_minTriangulateDistanceMultiplier = 2.0;
+
+const double Map::m_minTrackInliersRatio = 0.75;
+const double Map::m_goodTrackInliersRatio = 0.9;
 
 Map::Map( const StereoCameraMatrix &projectionMatrix, const WorldPtr &parentWorld)
     :  m_parentWorld( parentWorld )
@@ -53,24 +56,22 @@ void Map::removeMapPoint( const MapPointPtr &point )
     m_mapPoints.erase( point );
 }
 
-std::list< Map::FramePtr > &Map::frames()
+std::list< Map::FramePtr > Map::frames() const
 {
-    return m_frames;
+    m_mutex.lock();
+    auto ret = m_frames;
+    m_mutex.unlock();
+
+    return ret;
 }
 
-const std::list< Map::FramePtr > &Map::frames() const
+std::set< Map::MapPointPtr > Map::mapPoints() const
 {
-    return m_frames;
-}
+    m_mutex.lock();
+    auto ret = m_mapPoints;
+    m_mutex.unlock();
 
-std::set< Map::MapPointPtr > &Map::mapPoints()
-{
-    return m_mapPoints;
-}
-
-const std::set< Map::MapPointPtr > &Map::mapPoints() const
-{
-    return m_mapPoints;
+    return ret;
 }
 
 const Map::FramePtr &Map::backFrame() const
@@ -93,23 +94,76 @@ double Map::baselineLenght() const
     return cv::norm( baselineVector() );
 }
 
+double Map::minTriangulateCameraDistance() const
+{
+    return baselineLenght() * m_minTriangulateDistanceMultiplier;
+}
+
 void Map::adjust( const int frames )
 {
     const std::lock_guard< std::mutex > lock( m_mutex );
 
-    m_optimizer.adjustStored( this, frames );
+    std::list< FramePtr > list;
+
+    int counter = 0;
+
+    for ( auto i = m_frames.rbegin(); i != m_frames.rend() && counter < frames; ++i, ++counter )
+        if ( std::dynamic_pointer_cast< StereoFrame >( *i ) )
+            list.push_front( *i );
+
+    m_optimizer.adjust( list );
+
+}
+
+size_t calcTrackLenght( const std::vector< std::shared_ptr< MonoPoint > > &points )
+{
+    size_t ret = 0;
+
+    for ( auto &i : points )
+        if ( i )
+            ret = std::max( ret, i->prevTrackLenght() );
+
+    return ret;
+
 }
 
 void Map::localAdjustment()
 {
     const std::lock_guard< std::mutex > lock( m_mutex );
 
-    m_optimizer.localAdjustment( this );
+    if ( !m_frames.empty() ) {
+
+        std::list< FramePtr > list;
+
+        auto backFrame = m_frames.back();
+
+        if ( backFrame ) {
+
+            auto leftFrame = backFrame->leftFrame();
+            auto rightFrame = backFrame->rightFrame();
+
+            if ( leftFrame && rightFrame ) {
+
+                auto count = std::max( calcTrackLenght( leftFrame->framePoints() ), calcTrackLenght( rightFrame->framePoints() ) );
+
+                size_t counter = 0;
+
+                for ( auto i = m_frames.rbegin(); i != m_frames.rend() && counter < count; ++i, ++counter )
+                    list.push_front( *i );
+
+                m_optimizer.adjust( list );
+
+            }
+
+        }
+
+    }
+
 }
 
-bool Map::valid() const
+bool Map::isRudimental() const
 {
-    return true;
+    return m_frames.size() <= 1;
 }
 
 bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
@@ -118,10 +172,8 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
 
     denseFrame->load( leftImage, rightImage );
 
-    denseFrame->extractKeyPoints();
-    denseFrame->extractGradientPoints();
-
-    denseFrame->processDenseCloud();
+    if ( m_frames.size() % 5 == 0 )
+        denseFrame->processDenseCloud();
 
     const std::lock_guard< std::mutex > lock( m_mutex );
 
@@ -137,12 +189,12 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
 
         if ( previousDenseFrame ) {
 
-            auto previousLeftFrame = std::dynamic_pointer_cast< ProcessedFrame >( previousDenseFrame->leftFrame() );
-            auto previousRightFrame = std::dynamic_pointer_cast< ProcessedFrame >( previousDenseFrame->rightFrame() );
-            auto leftFrame = std::dynamic_pointer_cast< ProcessedFrame >( denseFrame->leftFrame() );
-            auto rightFrame = std::dynamic_pointer_cast< ProcessedFrame >( denseFrame->rightFrame() );
+            auto previousLeftFrame = std::dynamic_pointer_cast< FeatureFrame >( previousDenseFrame->leftFrame() );
+            auto previousRightFrame = std::dynamic_pointer_cast< FeatureFrame >( previousDenseFrame->rightFrame() );
+            auto leftFrame = std::dynamic_pointer_cast< FeatureFrame >( denseFrame->leftFrame() );
+            auto rightFrame = std::dynamic_pointer_cast< FeatureFrame >( denseFrame->rightFrame() );
 
-            auto adjacentLeftFrame = AdjacentFrame::create();
+            auto adjacentLeftFrame = AdjacentFrame::create( shared_from_this() );
 
             adjacentLeftFrame->setFrames( previousLeftFrame, leftFrame );
 
@@ -154,7 +206,7 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
 
             double inliersRatio = 0.0;
 
-            auto maxKeypointsCount = previousLeftFrame->keyPointsCount();
+            auto maxKeypointsCount = previousLeftFrame->extractedPointsCount();
 
             int triangulatePointsCount = 0;
 
@@ -162,14 +214,16 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
 
                 do {
 
-                    previousDenseFrame->matchOptical( keypointsCount );
+                    previousLeftFrame->createFramePoints( keypointsCount );
+
+                    previousDenseFrame->match();
                     triangulatePointsCount = previousDenseFrame->triangulatePoints();
 
                     auto trackFramePointsCount = std::max( 0, m_trackFramePointsCount - adjacentLeftFrame->trackFramePointsCount() );
 
                     adjacentLeftFrame->createFramePoints( trackFramePointsCount );
 
-                    adjacentLeftFrame->trackOptical();
+                    adjacentLeftFrame->track();
 
                     trackedPointCount = adjacentLeftFrame->posePointsCount();
 
@@ -181,10 +235,10 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
 
                 inliersRatio = adjacentLeftFrame->recoverPose();
 
-            } while ( inliersRatio < m_minTrackInliersRatio && m_previousKeypointsCount <= maxKeypointsCount );
+            } while ( inliersRatio < m_goodTrackInliersRatio && m_previousKeypointsCount <= maxKeypointsCount );
 
-            std::cout << "Prev keypoints count: " << previousLeftFrame->keyPointsCount() << std::endl;
-            std::cout << "Cur keypoints count: " << leftFrame->keyPointsCount() << std::endl;
+            std::cout << "Prev keypoints count: " << previousLeftFrame->extractedPointsCount() << std::endl;
+            std::cout << "Cur keypoints count: " << leftFrame->extractedPointsCount() << std::endl;
             std::cout << "Stereo points count: " << previousDenseFrame->stereoPointsCount() << std::endl;
             std::cout << "Triangulated points count: " << triangulatePointsCount << std::endl;
             std::cout << "Adjacent points count: " << adjacentLeftFrame->adjacentPointsCount() << std::endl;
@@ -192,7 +246,7 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
 
             std::cout << "Inliers: " << inliersRatio << std::endl;
 
-            if ( trackedPointCount < m_minTrackPoints )
+            if ( trackedPointCount < m_minTrackPoints || inliersRatio < m_minTrackInliersRatio )
                 return false;
 
             if ( trackedPointCount > m_overTrackPoints )

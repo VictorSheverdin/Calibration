@@ -16,12 +16,14 @@
 #include <QtXml/QDomElement>
 #include <QModelIndex>
 
-#include <time.h>
-
 #include <opencv2/opencv.hpp>
 #include <opencv2/ximgproc.hpp>
 #include <opencv2/cudastereo.hpp>
 
 #include <VimbaCPP/Include/VimbaCPP.h>
 
+#include <time.h>
+
 #include <set>
+#include <vector>
+#include <array>

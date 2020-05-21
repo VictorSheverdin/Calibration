@@ -359,19 +359,24 @@ const ProjectionMatrix &StereoCalibrationDataBase::rightProjectionMatrix() const
     return m_projectionMatrix.rightProjectionMatrix();
 }
 
+void StereoCalibrationDataBase::setProjectionMatrix( const StereoCameraMatrix &value )
+{
+    m_projectionMatrix = value;
+}
+
+StereoCameraMatrix &StereoCalibrationDataBase::projectionMatrix()
+{
+    return m_projectionMatrix;
+}
+
 const StereoCameraMatrix &StereoCalibrationDataBase::projectionMatrix() const
 {
     return m_projectionMatrix;
 }
 
-void StereoCalibrationDataBase::setDisparityToDepthMatrix( const cv::Mat &value )
+cv::Mat StereoCalibrationDataBase::disparityToDepthMatrix() const
 {
-    m_disparityToDepthMatrix = value;
-}
-
-const cv::Mat &StereoCalibrationDataBase::disparityToDepthMatrix() const
-{
-    return m_disparityToDepthMatrix;
+    return m_projectionMatrix.disparityToDepthMatrix();
 }
 
 void StereoCalibrationDataBase::setLeftROI( const cv::Rect &value )
@@ -586,7 +591,6 @@ bool StereoCalibrationDataShort::loadYaml( const std::string &fileName )
         setRightRectifyMatrix( rightRectifyMatrix );
         setLeftProjectionMatrix( leftProjectionMatrix );
         setRightProjectionMatrix( rightProjectionMatrix );
-        setDisparityToDepthMatrix( disparityToDepthMatrix );
 
         setLeftROI( leftROI );
         setRightROI( rightROI );

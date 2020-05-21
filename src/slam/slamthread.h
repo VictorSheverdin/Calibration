@@ -27,7 +27,7 @@ public:
 
     void process( const CvImage leftImage, const CvImage rightImage );
 
-    const std::list < MapPtr > &maps() const;
+    std::list< MapPtr > maps() const;
 
     CvImage pointsImage() const;
     CvImage tracksImage() const;
@@ -40,7 +40,7 @@ protected:
     CvImage m_leftFrame;
     CvImage m_rightFrame;
 
-    QMutex m_mutex;
+    mutable QMutex m_mutex;
 
     double m_scaleFactor;
 

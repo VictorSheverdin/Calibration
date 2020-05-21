@@ -5,11 +5,11 @@
 #include <opencv2/viz.hpp>
 #include <opencv2/core/ocl.hpp>
 
-#include <QVTKOpenGLWidget.h>
+#include <QVTKOpenGLNativeWidget.h>
 
 int main(int argc, char** argv)
 {
-    QSurfaceFormat::setDefaultFormat( QVTKOpenGLWidget::defaultFormat() );
+    QSurfaceFormat::setDefaultFormat( QVTKOpenGLNativeWidget::defaultFormat() );
 
     Application a(argc, argv);
 
