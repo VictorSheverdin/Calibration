@@ -11,7 +11,7 @@
 
 namespace slam {
 
-class Map;
+class FeatureMap;
 class StereoFrameBase;
 
 class Optimizer

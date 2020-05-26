@@ -8,15 +8,15 @@
 
 namespace slam {
 
-class Map;
+class FeatureMap;
 class MonoPoint;
 
 class MapPoint : public ColorPoint3d, public std::enable_shared_from_this< MapPoint >
 {
-    friend class Map;
+    friend class FeatureMap;
 
 public:
-    using MapPtr = std::weak_ptr< Map >;
+    using MapPtr = std::weak_ptr< FeatureMap >;
     using PointPtr = std::shared_ptr< MapPoint >;
 
     using FramePointPtr = std::shared_ptr< MonoPoint >;

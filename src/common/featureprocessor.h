@@ -17,12 +17,33 @@ public:
 protected:
     FlowProcessorBase() = default;
 
+    static const double m_maxDistance;
+    static const double m_errorRatio;
+
 };
 
 class GPUFlowProcessor : public FlowProcessorBase
 {
 public:
-    GPUFlowProcessor() = default;
+    GPUFlowProcessor();
+
+    cv::Mat track( const CvImage &sourceImage, const std::vector<cv::Point2f> &sourcePoints, const CvImage &targetImage, std::vector< size_t > *trackedIndexes , std::vector< cv::Point2f > *trackedPoints );
+
+protected:
+    cv::Ptr< cv::cuda::SparsePyrLKOpticalFlow > m_opticalProcessor;
+
+    cv::cuda::GpuMat m_gpuSourceImage;
+    cv::cuda::GpuMat m_gpuTargetImage;
+    cv::cuda::GpuMat m_gpuSourcePoints;
+    cv::cuda::GpuMat m_gpuOpticalPoints;
+    cv::cuda::GpuMat m_gpuCheckPoints;
+    cv::cuda::GpuMat m_gpuStatuses;
+    cv::cuda::GpuMat m_gpuCheckStatuses;
+    cv::cuda::GpuMat m_gpuErr;
+    cv::cuda::GpuMat m_gpuCheckErr;
+
+private:
+    void initialize();
 
 };
 
@@ -30,6 +51,10 @@ class CPUFlowProcessor : public FlowProcessorBase
 {
 public:
     CPUFlowProcessor() = default;
+
+    cv::Mat track( const std::vector< cv::Mat > &sourceImagePyramid, const std::vector< cv::Point2f > &sourcePoints, const std::vector< cv::Mat > &targetImagePyramid, std::vector< size_t > *trackedIndexes, std::vector< cv::Point2f > *trackedPoints );
+
+    void buildImagePyramid( const CvImage &image, std::vector< cv::Mat > *imagePyramid );
 
 };
 
@@ -232,7 +257,6 @@ protected:
     OpticalMatcherBase() = default;
 
     static const double m_maxDistance;
-    static const double m_errorRatio;
 };
 
 class GPUOpticalMatcher : public OpticalMatcherBase
@@ -245,17 +269,7 @@ public:
                 std::vector< cv::DMatch > *matches );
 
 protected:
-    cv::Ptr< cv::cuda::SparsePyrLKOpticalFlow > m_opticalProcessor;
-
-    cv::cuda::GpuMat m_gpuSourceImage;
-    cv::cuda::GpuMat m_gpuTargetImage;
-    cv::cuda::GpuMat m_gpuSourcePoints;
-    cv::cuda::GpuMat m_gpuOpticalPoints;
-    cv::cuda::GpuMat m_gpuCheckPoints;
-    cv::cuda::GpuMat m_gpuStatuses;
-    cv::cuda::GpuMat m_gpuCheckStatuses;
-    cv::cuda::GpuMat m_gpuErr;
-    cv::cuda::GpuMat m_gpuCheckErr;
+    GPUFlowProcessor m_flowProcessor;
 
 private:
     void initialize();
@@ -272,5 +286,8 @@ public:
                 std::vector< cv::DMatch > *matches );
 
     void buildImagePyramid( const CvImage &image, std::vector< cv::Mat > *imagePyramid );
+
+protected:
+    CPUFlowProcessor m_flowProcessor;
 
 };

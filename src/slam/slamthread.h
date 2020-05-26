@@ -13,7 +13,7 @@
 
 namespace slam {
     class World;
-    class Map;
+    class FeatureMap;
 }
 
 class SlamThread : public QThread
@@ -21,7 +21,7 @@ class SlamThread : public QThread
     Q_OBJECT
 
 public:
-    using MapPtr = std::shared_ptr< slam::Map >;
+    using MapPtr = std::shared_ptr< slam::FeatureMap >;
 
     explicit SlamThread( const StereoCalibrationDataShort &calibration, QObject *parent = nullptr );
 

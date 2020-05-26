@@ -572,7 +572,7 @@ void SlamWidgetBase::updateDensePointCloud()
 
 /*
             auto stereoFrame = std::dynamic_pointer_cast< slam::StereoFrameBase >( *i );
-            auto processedDenseFrame = std::dynamic_pointer_cast< slam::ProcessedDenseFrame >( *i );
+            auto processedDenseFrame = std::dynamic_pointer_cast< slam::FeatureDenseFrame >( *i );
             auto denseFrame = std::dynamic_pointer_cast< slam::DenseFrameBase >( *i );
 
             if ( denseFrame ) {
@@ -624,7 +624,7 @@ void SlamWidgetBase::update3dView()
 {
     updatePath();
     // updateSparseCloud();
-    updateDensePointCloud();
+    // updateDensePointCloud();
 }
 
 // SlamImageWidget

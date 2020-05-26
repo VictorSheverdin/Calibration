@@ -13,35 +13,35 @@
 
 namespace slam {
 
-const double Map::m_minTriangulateDistanceMultiplier = 2.0;
+const double FeatureMap::m_minTriangulateDistanceMultiplier = 2.0;
 
-const double Map::m_minTrackInliersRatio = 0.75;
-const double Map::m_goodTrackInliersRatio = 0.9;
+const double FeatureMap::m_minTrackInliersRatio = 0.75;
+const double FeatureMap::m_goodTrackInliersRatio = 0.9;
 
-Map::Map( const StereoCameraMatrix &projectionMatrix, const WorldPtr &parentWorld)
+FeatureMap::FeatureMap( const StereoCameraMatrix &projectionMatrix, const WorldPtr &parentWorld)
     :  m_parentWorld( parentWorld )
 {
     initialize( projectionMatrix );
 }
 
-void Map::initialize( const StereoCameraMatrix &projectionMatrix )
+void FeatureMap::initialize( const StereoCameraMatrix &projectionMatrix )
 {
     m_projectionMatrix = projectionMatrix;
 
     m_previousKeypointsCount = m_goodTrackPoints * 2;
 }
 
-Map::MapPtr Map::create( const StereoCameraMatrix &cameraMatrix , const WorldPtr &parentWorld )
+FeatureMap::MapPtr FeatureMap::create( const StereoCameraMatrix &cameraMatrix , const WorldPtr &parentWorld )
 {
-    return MapPtr( new Map( cameraMatrix, parentWorld ) );
+    return MapPtr( new FeatureMap( cameraMatrix, parentWorld ) );
 }
 
-Map::WorldPtr Map::parentWorld() const
+FeatureMap::WorldPtr FeatureMap::parentWorld() const
 {
     return m_parentWorld.lock();
 }
 
-Map::MapPointPtr Map::createMapPoint( const cv::Point3d &pt, const cv::Scalar &color )
+FeatureMap::MapPointPtr FeatureMap::createMapPoint( const cv::Point3d &pt, const cv::Scalar &color )
 {
     auto point = MapPoint::create( shared_from_this(), pt, color );
 
@@ -51,12 +51,12 @@ Map::MapPointPtr Map::createMapPoint( const cv::Point3d &pt, const cv::Scalar &c
 
 }
 
-void Map::removeMapPoint( const MapPointPtr &point )
+void FeatureMap::removeMapPoint( const MapPointPtr &point )
 {
     m_mapPoints.erase( point );
 }
 
-std::list< Map::FramePtr > Map::frames() const
+std::list< FeatureMap::FramePtr > FeatureMap::frames() const
 {
     m_mutex.lock();
     auto ret = m_frames;
@@ -65,7 +65,7 @@ std::list< Map::FramePtr > Map::frames() const
     return ret;
 }
 
-std::set< Map::MapPointPtr > Map::mapPoints() const
+std::set< FeatureMap::MapPointPtr > FeatureMap::mapPoints() const
 {
     m_mutex.lock();
     auto ret = m_mapPoints;
@@ -74,32 +74,32 @@ std::set< Map::MapPointPtr > Map::mapPoints() const
     return ret;
 }
 
-const Map::FramePtr &Map::backFrame() const
+const FeatureMap::FramePtr &FeatureMap::backFrame() const
 {
     return m_frames.back();
 }
 
-void Map::addMapPoint( const MapPointPtr &point )
+void FeatureMap::addMapPoint( const MapPointPtr &point )
 {
     m_mapPoints.insert( point );
 }
 
-const cv::Mat Map::baselineVector() const
+const cv::Mat FeatureMap::baselineVector() const
 {
     return m_projectionMatrix.baselineVector();
 }
 
-double Map::baselineLenght() const
+double FeatureMap::baselineLenght() const
 {
     return cv::norm( baselineVector() );
 }
 
-double Map::minTriangulateCameraDistance() const
+double FeatureMap::minTriangulateCameraDistance() const
 {
     return baselineLenght() * m_minTriangulateDistanceMultiplier;
 }
 
-void Map::adjust( const int frames )
+void FeatureMap::adjust( const int frames )
 {
     const std::lock_guard< std::mutex > lock( m_mutex );
 
@@ -127,7 +127,7 @@ size_t calcTrackLenght( const std::vector< std::shared_ptr< MonoPoint > > &point
 
 }
 
-void Map::localAdjustment()
+void FeatureMap::localAdjustment()
 {
     const std::lock_guard< std::mutex > lock( m_mutex );
 
@@ -161,19 +161,19 @@ void Map::localAdjustment()
 
 }
 
-bool Map::isRudimental() const
+bool FeatureMap::isRudimental() const
 {
     return m_frames.size() <= 1;
 }
 
-bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
+bool FeatureMap::track( const CvImage &leftImage, const CvImage &rightImage )
 {
-    auto denseFrame = ProcessedDenseFrame::create( shared_from_this() );
+    auto denseFrame = FeatureDenseFrame::create( shared_from_this() );
 
     denseFrame->load( leftImage, rightImage );
 
-    if ( m_frames.size() % 5 == 0 )
-        denseFrame->processDenseCloud();
+    /*if ( m_frames.size() % 5 == 0 )
+        denseFrame->processDenseCloud();*/
 
     const std::lock_guard< std::mutex > lock( m_mutex );
 
@@ -184,8 +184,7 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
 
     }
     else {
-
-        auto previousDenseFrame = std::dynamic_pointer_cast< ProcessedDenseFrame >( m_frames.back() );
+        auto previousDenseFrame = std::dynamic_pointer_cast< FeatureDenseFrame >( m_frames.back() );
 
         if ( previousDenseFrame ) {
 
@@ -194,7 +193,7 @@ bool Map::track( const CvImage &leftImage, const CvImage &rightImage )
             auto leftFrame = std::dynamic_pointer_cast< FeatureFrame >( denseFrame->leftFrame() );
             auto rightFrame = std::dynamic_pointer_cast< FeatureFrame >( denseFrame->rightFrame() );
 
-            auto adjacentLeftFrame = AdjacentFrame::create( shared_from_this() );
+            auto adjacentLeftFrame = FeatureConsecutiveFrame::create( shared_from_this() );
 
             adjacentLeftFrame->setFrames( previousLeftFrame, leftFrame );
 

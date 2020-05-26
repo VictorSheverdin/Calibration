@@ -192,6 +192,7 @@ add_executable( slam ${COMMON_SOURCES} ${RES_SOURCES}
     src/slam/map.h
     src/slam/mappoint.h
     src/slam/frame.h
+    src/slam/frame.inl
     src/slam/framepoint.h
     src/slam/optimizer.h
     src/slam/world.h

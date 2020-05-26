@@ -6,8 +6,14 @@
 
 namespace slam {
 
-// FlowProcessorBase
-void FlowTracker::extractPoints( const CvImage &image, std::vector< cv::Point2f > *points )
+// GPUFlowTracker
+void GPUFlowTracker::extractPoints( const CvImage &image, std::vector< cv::Point2f > *points )
+{
+    m_pointsProcessor.extractPoints( image, points );
+}
+
+// CPUFlowTracker
+void CPUFlowTracker::extractPoints( const CvImage &image, std::vector< cv::Point2f > *points )
 {
     m_pointsProcessor.extractPoints( image, points );
 }

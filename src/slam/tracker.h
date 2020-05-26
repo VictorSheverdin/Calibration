@@ -12,12 +12,27 @@ protected:
     FlowTrackerBase() = default;
 };
 
-class FlowTracker
+class GPUFlowTracker : public FlowTrackerBase
 {
 public:
+    GPUFlowTracker() = default;
+
     void extractPoints( const CvImage &image, std::vector< cv::Point2f > *points );
 
-    FlowProcessorBase m_pointsProcessor;
+protected:
+    GPUFlowProcessor m_pointsProcessor;
+
+};
+
+class CPUFlowTracker : public FlowTrackerBase
+{
+public:
+    CPUFlowTracker() = default;
+
+    void extractPoints( const CvImage &image, std::vector< cv::Point2f > *points );
+
+protected:
+    CPUFlowProcessor m_pointsProcessor;
 
 };
 

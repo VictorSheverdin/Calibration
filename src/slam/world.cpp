@@ -64,7 +64,7 @@ std::list < World::MapPtr > World::maps() const
 bool World::track( const CvImage &leftImage, const CvImage &rightImage )
 {
     if ( m_maps.empty() )
-        m_maps.push_back( Map::create( m_startCameraMatrix, shared_from_this() ) );
+        m_maps.push_back( FeatureMap::create( m_startCameraMatrix, shared_from_this() ) );
 
     auto result = m_maps.back()->track( leftImage, rightImage );
 
@@ -75,7 +75,7 @@ bool World::track( const CvImage &leftImage, const CvImage &rightImage )
         if ( m_maps.back()->isRudimental() )
             m_maps.pop_back();
 
-        m_maps.push_back( Map::create( lastProjectionMatrix, shared_from_this() ) );
+        m_maps.push_back( FeatureMap::create( lastProjectionMatrix, shared_from_this() ) );
 
         m_maps.back()->track( leftImage, rightImage );
 
@@ -107,12 +107,12 @@ const BMStereoProcessor &World::stereoProcessor() const
     return m_stereoProcessor;
 }
 
-FlowTracker &World::flowTracker()
+GPUFlowTracker &World::flowTracker()
 {
     return m_flowTracker;
 }
 
-const FlowTracker &World::flowTracker() const
+const GPUFlowTracker &World::flowTracker() const
 {
     return m_flowTracker;
 }

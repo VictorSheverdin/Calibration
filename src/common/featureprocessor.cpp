@@ -34,10 +34,265 @@ void extractAndCompute( cv::Ptr< cv::Feature2D > processor, const CvImage &image
 }
 
 // FlowProcessorBase
+const double FlowProcessorBase::m_maxDistance = 1.0;
+const double FlowProcessorBase::m_errorRatio = 0.3;
+
 void FlowProcessorBase::extractPoints( const CvImage &image, std::vector< cv::Point2f > *points )
 {
     if ( points )
         cv::goodFeaturesToTrack( image, *points, 25000, 1.e-1, 1. );
+}
+
+// GPUFlowProcessor
+GPUFlowProcessor::GPUFlowProcessor()
+{
+    initialize();
+}
+
+void GPUFlowProcessor::initialize()
+{
+    m_opticalProcessor = cv::cuda::SparsePyrLKOpticalFlow::create(/* cv::Size( 31, 31 ), 7, 100 */);
+}
+
+void download( const cv::cuda::GpuMat &d_mat, std::vector< cv::Point2f > &vec )
+{
+    vec.resize( d_mat.cols );
+    cv::Mat mat( 1, d_mat.cols, CV_32FC2, ( void* )&vec[ 0 ] );
+    d_mat.download( mat );
+}
+
+void download( const cv::cuda::GpuMat &d_mat, std::vector< uchar > &vec )
+{
+    vec.resize( d_mat.cols );
+    cv::Mat mat( 1, d_mat.cols, CV_8UC1, ( void* )&vec[ 0 ] );
+    d_mat.download( mat );
+}
+
+void download( const cv::cuda::GpuMat &d_mat, std::vector< float > &vec )
+{
+    vec.resize( d_mat.cols );
+    cv::Mat mat( 1, d_mat.cols, CV_32FC1, ( void* )&vec[ 0 ] );
+    d_mat.download( mat );
+}
+
+cv::Mat GPUFlowProcessor::track( const CvImage &sourceImage, const std::vector< cv::Point2f > &sourcePoints, const CvImage &targetImage, std::vector< size_t > *trackedIndexes, std::vector< cv::Point2f > *trackedPoints )
+{    
+    if ( !trackedPoints || !trackedIndexes )
+        return cv::Mat();
+
+    trackedPoints->clear();
+    trackedIndexes->clear();
+
+    std::vector< cv::Point2f > opticalPoints;
+    std::vector< cv::Point2f > checkPoints;
+
+    std::vector< unsigned char > statuses;
+    std::vector< float > err;
+
+    std::vector< unsigned char > checkStatuses;
+    std::vector< float > checkErr;
+
+    m_gpuSourceImage.upload( sourceImage );
+    m_gpuTargetImage.upload( targetImage );
+    m_gpuSourcePoints.upload( sourcePoints );
+
+    m_opticalProcessor->calc( m_gpuSourceImage, m_gpuTargetImage, m_gpuSourcePoints, m_gpuOpticalPoints, m_gpuStatuses, m_gpuErr );
+    m_opticalProcessor->calc( m_gpuTargetImage, m_gpuSourceImage, m_gpuOpticalPoints, m_gpuCheckPoints, m_gpuCheckStatuses, m_gpuCheckErr );
+
+    download( m_gpuOpticalPoints, opticalPoints );
+    download( m_gpuCheckPoints, checkPoints );
+    download( m_gpuStatuses, statuses );
+    download( m_gpuCheckStatuses, checkStatuses );
+    download( m_gpuErr, err );
+    download( m_gpuCheckErr, checkErr );
+
+    if ( !err.empty() && err.size() == checkErr.size() ) {
+
+        float minErr;
+        float maxErr;
+        float minCheckErr;
+        float maxCheckErr;
+
+        minErr = err.front();
+        maxErr = err.front();
+        minCheckErr = checkErr.front();
+        maxCheckErr = checkErr.front();
+
+        for ( size_t i = 1; i < err.size(); ++i ) {
+            minErr = std::min( minErr, err[ i ] );
+            maxErr = std::max( maxErr, err[ i ] );
+            minCheckErr = std::min( minCheckErr, checkErr[ i ] );
+            maxCheckErr = std::max( maxCheckErr, checkErr[ i ] );
+        }
+
+        auto errDiff = maxErr - minErr;
+        auto checkErrDiff = maxCheckErr - minCheckErr;
+
+        std::vector< cv::Point2f > points1;
+        std::vector< cv::Point2f > points2;
+
+        std::vector< size_t > primTrackedIndexes;
+
+        primTrackedIndexes.reserve( statuses.size() );
+
+        points1.reserve( statuses.size() );
+        points2.reserve( statuses.size() );
+
+        auto errThreshold = minErr + errDiff * m_errorRatio;
+        auto checkErrThreshold = minCheckErr + checkErrDiff * m_errorRatio;
+
+        for ( size_t i = 0; i < statuses.size(); ++i ) {
+
+            if ( statuses[i] && checkStatuses[i] && err[i] < errThreshold && checkErr[i] < checkErrThreshold && cv::norm( checkPoints[ i ] - sourcePoints[ i ] ) < m_maxDistance  ) {
+                points1.push_back( sourcePoints[ i ] );
+                points2.push_back( opticalPoints[ i ] );
+
+                primTrackedIndexes.push_back( i );
+
+            }
+
+        }
+
+        if ( points1.size() > MIN_TRACK_POINTS_COUNT ) {
+
+            std::vector< uchar > inliers( points1.size(), 0 );
+
+            auto fmat = cv::findFundamentalMat( points1, points2, inliers, cv::FM_RANSAC );
+
+            if ( !fmat.empty() ) {
+
+                trackedPoints->reserve( inliers.size() );
+                trackedIndexes->reserve( inliers.size() );
+
+                for ( size_t i = 0; i < inliers.size(); ++i ) {
+
+                    if ( inliers[ i ] ) {
+
+                        trackedPoints->push_back( points2[ i ] );
+                        trackedIndexes->push_back( primTrackedIndexes[ i ] );
+
+                    }
+
+                }
+
+                return fmat;
+
+            }
+
+        }
+
+    }
+
+    return cv::Mat();
+
+}
+
+// CPUFlowProcessor
+cv::Mat CPUFlowProcessor::track( const std::vector<cv::Mat> &sourceImagePyramid, const std::vector<cv::Point2f> &sourcePoints, const std::vector<cv::Mat> &targetImagePyramid, std::vector< size_t > *trackedIndexes , std::vector< cv::Point2f > *trackedPoints )
+{
+    if ( !trackedPoints || !trackedIndexes )
+        return cv::Mat();
+
+    trackedPoints->clear();
+    trackedIndexes->clear();
+
+    std::vector< cv::Point2f > opticalPoints;
+    std::vector< cv::Point2f > checkPoints;
+
+    std::vector< unsigned char > statuses;
+    std::vector< float > err;
+
+    std::vector< unsigned char > checkStatuses;
+    std::vector< float > checkErr;
+
+    cv::calcOpticalFlowPyrLK( sourceImagePyramid, targetImagePyramid, sourcePoints, opticalPoints, statuses, err );
+    cv::calcOpticalFlowPyrLK( targetImagePyramid, sourceImagePyramid, opticalPoints, checkPoints, checkStatuses, checkErr );
+
+    if ( !err.empty() && err.size() == checkErr.size() ) {
+
+        float minErr;
+        float maxErr;
+        float minCheckErr;
+        float maxCheckErr;
+
+        minErr = err.front();
+        maxErr = err.front();
+        minCheckErr = checkErr.front();
+        maxCheckErr = checkErr.front();
+
+        for ( size_t i = 1; i < err.size(); ++i ) {
+            minErr = std::min( minErr, err[ i ] );
+            maxErr = std::max( maxErr, err[ i ] );
+            minCheckErr = std::min( minCheckErr, checkErr[ i ] );
+            maxCheckErr = std::max( maxCheckErr, checkErr[ i ] );
+        }
+
+        auto errDiff = maxErr - minErr;
+        auto checkErrDiff = maxCheckErr - minCheckErr;
+
+        std::vector< cv::Point2f > points1;
+        std::vector< cv::Point2f > points2;
+
+        std::vector< size_t > primTrackedIndexes;
+
+        primTrackedIndexes.reserve( statuses.size() );
+
+        points1.reserve( statuses.size() );
+        points2.reserve( statuses.size() );
+
+        auto errThreshold = minErr + errDiff * m_errorRatio;
+        auto checkErrThreshold = minCheckErr + checkErrDiff * m_errorRatio;
+
+        for ( size_t i = 0; i < statuses.size(); ++i ) {
+
+            if ( statuses[i] && checkStatuses[i] && err[i] < errThreshold && checkErr[i] < checkErrThreshold && cv::norm( checkPoints[ i ] - sourcePoints[ i ] ) < m_maxDistance  ) {
+                points1.push_back( sourcePoints[ i ] );
+                points2.push_back( opticalPoints[ i ] );
+
+                primTrackedIndexes.push_back( i );
+
+            }
+
+        }
+
+        if ( points1.size() > MIN_TRACK_POINTS_COUNT ) {
+
+            std::vector< uchar > inliers( points1.size(), 0 );
+
+            auto fmat = cv::findFundamentalMat( points1, points2, inliers, cv::FM_RANSAC );
+
+            if ( !fmat.empty() ) {
+
+                trackedPoints->reserve( inliers.size() );
+                trackedIndexes->reserve( inliers.size() );
+
+                for ( size_t i = 0; i < inliers.size(); ++i ) {
+
+                    if ( inliers[ i ] ) {
+
+                        trackedPoints->push_back( points2[ i ] );
+                        trackedIndexes->push_back( primTrackedIndexes[ i ] );
+
+                    }
+
+                }
+
+                return fmat;
+
+            }
+
+        }
+
+    }
+
+    return cv::Mat();
+
+}
+
+void CPUFlowProcessor::buildImagePyramid( const CvImage &image, std::vector< cv::Mat > *imagePyramid )
+{
+    if ( imagePyramid )
+        cv::buildOpticalFlowPyramid( image, *imagePyramid, cv::Size( 21, 21 ), 3 );
 }
 
 // KeyPointProcessor
@@ -298,7 +553,6 @@ void FlannMatcher::initialize()
 
 // OpticalMatcherBase
 const double OpticalMatcherBase::m_maxDistance = 1.0;
-const double OpticalMatcherBase::m_errorRatio = 0.3;
 
 // GPUOpticalMatcher
 GPUOpticalMatcher::GPUOpticalMatcher()
@@ -308,28 +562,6 @@ GPUOpticalMatcher::GPUOpticalMatcher()
 
 void GPUOpticalMatcher::initialize()
 {
-    m_opticalProcessor = cv::cuda::SparsePyrLKOpticalFlow::create(/* cv::Size( 31, 31 ), 7, 100 */);
-}
-
-void download( const cv::cuda::GpuMat& d_mat, std::vector< cv::Point2f >& vec )
-{
-    vec.resize(d_mat.cols);
-    cv::Mat mat( 1, d_mat.cols, CV_32FC2, ( void* )&vec[ 0 ] );
-    d_mat.download(mat);
-}
-
-void download(const cv::cuda::GpuMat& d_mat, std::vector< uchar >& vec)
-{
-    vec.resize( d_mat.cols );
-    cv::Mat mat( 1, d_mat.cols, CV_8UC1, ( void* )&vec[ 0 ] );
-    d_mat.download( mat );
-}
-
-void download(const cv::cuda::GpuMat& d_mat, std::vector< float >& vec)
-{
-    vec.resize( d_mat.cols );
-    cv::Mat mat( 1, d_mat.cols, CV_32FC1, ( void* )&vec[ 0 ] );
-    d_mat.download( mat );
 }
 
 cv::Mat GPUOpticalMatcher::match( const CvImage &sourceImage, const std::vector< cv::KeyPoint > &sourceKeypoints,
@@ -342,148 +574,71 @@ cv::Mat GPUOpticalMatcher::match( const CvImage &sourceImage, const std::vector<
     matches->clear();
 
     std::vector< cv::Point2f > sourcePoints( sourceKeypoints.size() );
-    std::vector< cv::Point2f > opticalPoints;
-    std::vector< cv::Point2f > checkPoints;
+    std::vector< cv::Point2f > trackedPoints;
+    std::vector< size_t > trackedIndexes;
 
     for ( size_t i = 0; i < sourceKeypoints.size(); ++i )
         sourcePoints[ i ] = sourceKeypoints[ i ].pt;
 
-    std::vector< unsigned char > statuses;
-    std::vector< float > err;
+    auto fmat = m_flowProcessor.track( sourceImage, sourcePoints, targetImage, &trackedIndexes, &trackedPoints );
 
-    std::vector< unsigned char > checkStatuses;
-    std::vector< float > checkErr;
-
-    m_gpuSourceImage.upload( sourceImage );
-    m_gpuTargetImage.upload( targetImage );
-    m_gpuSourcePoints.upload( sourcePoints );
-
-    m_opticalProcessor->calc( m_gpuSourceImage, m_gpuTargetImage, m_gpuSourcePoints, m_gpuOpticalPoints, m_gpuStatuses, m_gpuErr );
-    m_opticalProcessor->calc( m_gpuTargetImage, m_gpuSourceImage, m_gpuOpticalPoints, m_gpuCheckPoints, m_gpuCheckStatuses, m_gpuCheckErr );
-
-    download( m_gpuSourcePoints, sourcePoints );
-    download( m_gpuOpticalPoints, opticalPoints );
-    download( m_gpuCheckPoints, checkPoints );
-    download( m_gpuStatuses, statuses );
-    download( m_gpuCheckStatuses, checkStatuses );
-    download( m_gpuErr, err );
-    download( m_gpuCheckErr, checkErr );
-
-    if ( !err.empty() && err.size() == checkErr.size() ) {
-
-        float minErr;
-        float maxErr;
-        float minCheckErr;
-        float maxCheckErr;
-
-        minErr = err.front();
-        maxErr = err.front();
-        minCheckErr = checkErr.front();
-        maxCheckErr = checkErr.front();
-
-        for ( size_t i = 1; i < err.size(); ++i ) {
-            minErr = std::min( minErr, err[ i ] );
-            maxErr = std::max( maxErr, err[ i ] );
-            minCheckErr = std::min( minCheckErr, checkErr[ i ] );
-            maxCheckErr = std::max( maxCheckErr, checkErr[ i ] );
-        }
-
-        auto errDiff = maxErr - minErr;
-        auto checkErrDiff = maxCheckErr - minCheckErr;
+    if ( trackedIndexes.size() > MIN_TRACK_POINTS_COUNT ) {
 
         if ( !targetKeypoints.empty() ) {
 
-            std::vector< size_t > correspondences;
+            matches->reserve( trackedIndexes.size() );
 
-            std::vector< cv::Point2f > points1;
-            std::vector< cv::Point2f > points2;
+            for ( size_t i = 0; i < trackedIndexes.size(); ++i ) {
 
-            correspondences.reserve( statuses.size() );
-            points1.reserve( statuses.size() );
-            points2.reserve( statuses.size() );
+                auto pt = trackedPoints[ i ];
 
-            auto maxErr = minErr + errDiff * m_errorRatio;
-            auto maxCheckErr = minCheckErr + checkErrDiff * m_errorRatio;
+                size_t minIndex = 0;
+                auto minDistance = cv::norm( pt - targetKeypoints.front().pt );
 
-            for ( size_t i = 0; i < statuses.size(); ++i ) {
+                for ( int j = std::max( 0.0, pt.y - m_maxDistance );
+                                j < std::min( targetSearchMatrix.rows,
+                                              static_cast< int >( pt.y + m_maxDistance + 1 ) ); ++j  ) {
 
-                if ( statuses[i] && checkStatuses[i] && err[i] < maxErr && checkErr[i] < maxCheckErr && cv::norm( checkPoints[ i ] - sourcePoints[ i ] ) < m_maxDistance  ) {
-                    points1.push_back( sourcePoints[ i ] );
-                    points2.push_back( opticalPoints[ i ] );
+                    for ( int k = std::max( 0.0, pt.x - m_maxDistance );
+                                    k < std::min( targetSearchMatrix.cols,
+                                                  static_cast< int >( pt.x + m_maxDistance + 1 ) ); ++k  ) {
 
-                    correspondences.push_back( i );
+                        auto index = targetSearchMatrix.at< int >( j, k );
 
-                }
+                        if ( index != -1 ) {
 
-            }
+                            auto distance = cv::norm( pt - targetKeypoints[ index ].pt );
 
-            if ( points1.size() > MIN_TRACK_POINTS_COUNT ) {
-
-                std::vector< uchar > inliers( points1.size(), 0 );
-                auto fmat = cv::findFundamentalMat( points1, points2, inliers, cv::FM_RANSAC );
-
-                matches->reserve( inliers.size() );
-
-                for ( size_t i = 0; i < inliers.size(); ++i ) {
-
-                    if ( inliers[ i ] ) {
-
-                        auto pt = points2[ i ];
-
-                        size_t minIndex = 0;
-                        auto minDistance = cv::norm( pt - targetKeypoints.front().pt );
-
-                        for ( int j = std::max( 0.0, pt.y - m_maxDistance );
-                                        j < std::min( targetSearchMatrix.rows,
-                                                      static_cast< int >( pt.y + m_maxDistance + 1 ) ); ++j  ) {
-
-                            for ( int k = std::max( 0.0, pt.x - m_maxDistance );
-                                            k < std::min( targetSearchMatrix.cols,
-                                                          static_cast< int >( pt.x + m_maxDistance + 1 ) ); ++k  ) {
-
-                                auto index = targetSearchMatrix.at< int >( j, k );
-
-                                if ( index != -1 ) {
-
-                                    auto distance = cv::norm( pt - targetKeypoints[ index ].pt );
-
-                                    if ( distance < minDistance ) {
-                                        minDistance = distance;
-                                        minIndex = index;
-
-                                    }
-
-                                }
+                            if ( distance < minDistance ) {
+                                minDistance = distance;
+                                minIndex = index;
 
                             }
 
                         }
 
-                        if ( minDistance <= m_maxDistance )
-                            matches->push_back( cv::DMatch( correspondences[ i ], minIndex, minDistance ) );
-
                     }
 
                 }
 
-                return fmat;
+                if ( minDistance <= m_maxDistance )
+                    matches->push_back( cv::DMatch( trackedIndexes[ i ], minIndex, minDistance ) );
+
 
             }
-
 
         }
 
     }
 
-    return cv::Mat();
+    return fmat;
 
 }
 
 // CPUOpticalMatcher
 void CPUOpticalMatcher::buildImagePyramid( const CvImage &image, std::vector< cv::Mat > *imagePyramid )
 {
-    if ( imagePyramid )
-        cv::buildOpticalFlowPyramid( image, *imagePyramid, cv::Size( 21, 21 ), 3 );
+    m_flowProcessor.buildImagePyramid( image, imagePyramid );
 }
 
 cv::Mat CPUOpticalMatcher::match( const std::vector< cv::Mat > &sourceImagePyramid, const std::vector< cv::KeyPoint > &sourceKeypoints,
@@ -496,128 +651,64 @@ cv::Mat CPUOpticalMatcher::match( const std::vector< cv::Mat > &sourceImagePyram
     matches->clear();
 
     std::vector< cv::Point2f > sourcePoints( sourceKeypoints.size() );
-    std::vector< cv::Point2f > opticalPoints;
-    std::vector< cv::Point2f > checkPoints;
+    std::vector< cv::Point2f > trackedPoints;
+    std::vector< size_t > trackedIndexes;
 
     for ( size_t i = 0; i < sourceKeypoints.size(); ++i )
         sourcePoints[ i ] = sourceKeypoints[ i ].pt;
 
-    std::vector< unsigned char > statuses;
-    std::vector< float > err;
+    auto fmat = m_flowProcessor.track( sourceImagePyramid, sourcePoints, targetImagePyramid, &trackedIndexes, &trackedPoints );
 
-    std::vector< unsigned char > checkStatuses;
-    std::vector< float > checkErr;
-
-    cv::calcOpticalFlowPyrLK( sourceImagePyramid, targetImagePyramid, sourcePoints, opticalPoints, statuses, err );
-    cv::calcOpticalFlowPyrLK( targetImagePyramid, sourceImagePyramid, opticalPoints, checkPoints, checkStatuses, checkErr );
-
-    if ( !err.empty() && err.size() == checkErr.size() ) {
-
-        float minErr;
-        float maxErr;
-        float minCheckErr;
-        float maxCheckErr;
-
-        minErr = err.front();
-        maxErr = err.front();
-        minCheckErr = checkErr.front();
-        maxCheckErr = checkErr.front();
-
-        for ( size_t i = 1; i < err.size(); ++i ) {
-            minErr = std::min( minErr, err[ i ] );
-            maxErr = std::max( maxErr, err[ i ] );
-            minCheckErr = std::min( minCheckErr, checkErr[ i ] );
-            maxCheckErr = std::max( maxCheckErr, checkErr[ i ] );
-        }
-
-        auto errDiff = maxErr - minErr;
-        auto checkErrDiff = maxCheckErr - minCheckErr;
+    if ( trackedIndexes.size() > MIN_TRACK_POINTS_COUNT ) {
 
         if ( !targetKeypoints.empty() ) {
 
-            std::vector< size_t > correspondences;
+            matches->reserve( trackedIndexes.size() );
 
-            std::vector< cv::Point2f > points1;
-            std::vector< cv::Point2f > points2;
+            for ( size_t i = 0; i < trackedIndexes.size(); ++i ) {
 
-            correspondences.reserve( statuses.size() );
-            points1.reserve( statuses.size() );
-            points2.reserve( statuses.size() );
+                auto pt = trackedPoints[ i ];
 
-            auto maxErr = minErr + errDiff * m_errorRatio;
-            auto maxCheckErr = minCheckErr + checkErrDiff * m_errorRatio;
+                size_t minIndex = 0;
+                auto minDistance = cv::norm( pt - targetKeypoints.front().pt );
 
-            for ( size_t i = 0; i < statuses.size(); ++i ) {
+                for ( int j = std::max( 0.0, pt.y - m_maxDistance );
+                                j < std::min( targetSearchMatrix.rows,
+                                              static_cast< int >( pt.y + m_maxDistance + 1 ) ); ++j  ) {
 
-                if ( statuses[i] && checkStatuses[i] && err[i] < maxErr && checkErr[i] < maxCheckErr && cv::norm( checkPoints[ i ] - sourcePoints[ i ] ) < m_maxDistance  ) {
-                    points1.push_back( sourcePoints[ i ] );
-                    points2.push_back( opticalPoints[ i ] );
+                    for ( int k = std::max( 0.0, pt.x - m_maxDistance );
+                                    k < std::min( targetSearchMatrix.cols,
+                                                  static_cast< int >( pt.x + m_maxDistance + 1 ) ); ++k  ) {
 
-                    correspondences.push_back( i );
+                        auto index = targetSearchMatrix.at< int >( j, k );
 
-                }
+                        if ( index != -1 ) {
 
-            }
+                            auto distance = cv::norm( pt - targetKeypoints[ index ].pt );
 
-            if ( points1.size() > MIN_TRACK_POINTS_COUNT ) {
-
-                std::vector< uchar > inliers( points1.size(), 0 );
-                auto fmat = cv::findFundamentalMat( points1, points2, inliers, cv::FM_RANSAC );
-
-                matches->reserve( inliers.size() );
-
-                for ( size_t i = 0; i < inliers.size(); ++i ) {
-
-                    if ( inliers[ i ] ) {
-
-                        auto pt = points2[ i ];
-
-                        size_t minIndex = 0;
-                        auto minDistance = cv::norm( pt - targetKeypoints.front().pt );
-
-                        for ( int j = std::max( 0.0, pt.y - m_maxDistance );
-                                        j < std::min( targetSearchMatrix.rows,
-                                                      static_cast< int >( pt.y + m_maxDistance + 1 ) ); ++j  ) {
-
-                            for ( int k = std::max( 0.0, pt.x - m_maxDistance );
-                                            k < std::min( targetSearchMatrix.cols,
-                                                          static_cast< int >( pt.x + m_maxDistance + 1 ) ); ++k  ) {
-
-                                auto index = targetSearchMatrix.at< int >( j, k );
-
-                                if ( index != -1 ) {
-
-                                    auto distance = cv::norm( pt - targetKeypoints[ index ].pt );
-
-                                    if ( distance < minDistance ) {
-                                        minDistance = distance;
-                                        minIndex = index;
-
-                                    }
-
-                                }
+                            if ( distance < minDistance ) {
+                                minDistance = distance;
+                                minIndex = index;
 
                             }
 
                         }
 
-                        if ( minDistance <= m_maxDistance )
-                            matches->push_back( cv::DMatch( correspondences[ i ], minIndex, minDistance ) );
-
                     }
 
                 }
 
-                return fmat;
+                if ( minDistance <= m_maxDistance )
+                    matches->push_back( cv::DMatch( trackedIndexes[ i ], minIndex, minDistance ) );
+
 
             }
-
 
         }
 
     }
 
-    return cv::Mat();
+    return fmat;
 
 }
 

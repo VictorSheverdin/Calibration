@@ -23,14 +23,10 @@ class FlowMap : public MapBase
 {
 };
 
-class FeatureMap : public MapBase
-{
-};
-
-class Map : public std::enable_shared_from_this< Map >
+class FeatureMap : public std::enable_shared_from_this< FeatureMap >
 {
 public:
-    using MapPtr = std::shared_ptr< Map >;
+    using MapPtr = std::shared_ptr< FeatureMap >;
 
     using FramePtr = std::shared_ptr< StereoFrameBase >;
     using MapPointPtr = std::shared_ptr< MapPoint >;
@@ -39,7 +35,7 @@ public:
 
     static MapPtr create( const StereoCameraMatrix &cameraMatrix, const WorldPtr &parentWorld );
 
-    Map::WorldPtr parentWorld() const;
+    FeatureMap::WorldPtr parentWorld() const;
 
     MapPointPtr createMapPoint( const cv::Point3d &pt, const cv::Scalar &color );
 
@@ -68,7 +64,7 @@ public:
 protected:
     using WorldPtrImpl = std::weak_ptr< World >;
 
-    Map( const StereoCameraMatrix &projectionMatrix, const WorldPtr &parentWorld );
+    FeatureMap( const StereoCameraMatrix &projectionMatrix, const WorldPtr &parentWorld );
 
     WorldPtrImpl m_parentWorld;
 

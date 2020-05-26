@@ -11,10 +11,10 @@ class World : public std::enable_shared_from_this< World >
 public:
     using WorldPtr = std::shared_ptr< World >;
 
-    using FramePtr = Map::FramePtr;
+    using FramePtr = FeatureMap::FramePtr;
 
-    using MapPtr = Map::MapPtr;
-    using MapPointPtr = Map::MapPointPtr;
+    using MapPtr = FeatureMap::MapPtr;
+    using MapPointPtr = FeatureMap::MapPointPtr;
 
     static WorldPtr create( const StereoCameraMatrix &cameraMatrix );
 
@@ -28,8 +28,8 @@ public:
     BMStereoProcessor &stereoProcessor();
     const BMStereoProcessor &stereoProcessor() const;
 
-    FlowTracker &flowTracker();
-    const FlowTracker &flowTracker() const;
+    GPUFlowTracker &flowTracker();
+    const GPUFlowTracker &flowTracker() const;
 
     const std::unique_ptr< FeatureTracker > &featureTracker() const;
 
@@ -50,7 +50,7 @@ protected:
 
     BMStereoProcessor m_stereoProcessor;
 
-    FlowTracker m_flowTracker;
+    GPUFlowTracker m_flowTracker;
     std::unique_ptr< FeatureTracker > m_featureTracker;
 
     static const int m_keypointsCount = 100000;

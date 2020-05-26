@@ -15,7 +15,7 @@
 namespace slam {
 
 class World;
-class Map;
+class FeatureMap;
 class MapPoint;
 
 class FrameBase
@@ -56,7 +56,7 @@ private:
 class ProcessedFrame : public MonoFrame
 {
 public:
-    using MapPtr = std::shared_ptr< Map >;
+    using MapPtr = std::shared_ptr< FeatureMap >;
     using WorldPtr = std::shared_ptr< World >;
 
     virtual std::vector< cv::Point2f > extractedPoints() const = 0;
@@ -88,7 +88,7 @@ public:
     const std::vector< cv::Mat > &imagePyramid() const;
 
 protected:
-    using MapPtrImpl = std::weak_ptr< Map >;
+    using MapPtrImpl = std::weak_ptr< FeatureMap >;
 
     MapPtrImpl m_parentMap;
 
@@ -143,7 +143,7 @@ private:
 class FeatureFrame : public ProcessedFrame, public std::enable_shared_from_this< FeatureFrame >
 {
     friend class FeatureStereoFrame;
-    friend class AdjacentFrame;
+    friend class FeatureConsecutiveFrame;
     friend class FeaturePoint;
 
 public:
@@ -222,10 +222,10 @@ private:
 
 class DoubleFrame : public FrameBase
 {
-    friend class Map;
+    friend class FeatureMap;
 
 public:
-    using MapPtr = std::shared_ptr< Map >;
+    using MapPtr = std::shared_ptr< FeatureMap >;
     using WorldPtr = std::shared_ptr< World >;
 
     using MonoFramePtr = std::shared_ptr< MonoFrame >;
@@ -269,7 +269,7 @@ public:
     WorldPtr parentWorld() const;
 
 protected:
-    using MapPtrImpl = std::weak_ptr< Map >;
+    using MapPtrImpl = std::weak_ptr< FeatureMap >;
 
     StereoFrameBase( const MapPtr &parentMap );
 
@@ -281,41 +281,14 @@ private:
 class ProcessedStereoFrame : public StereoFrameBase
 {
 public:
+    using MapPointPtr = std::shared_ptr< MapPoint >;
+
     using ProcessedFramePtr = std::shared_ptr< ProcessedFrame >;
 
     ProcessedFramePtr leftFrame() const;
     ProcessedFramePtr rightFrame() const;
 
     void clearImages();
-
-protected:
-    ProcessedStereoFrame( const MapPtr &parentMap );
-};
-
-class FlowStereoFrame : public ProcessedStereoFrame
-{
-protected:
-    FlowStereoFrame( const MapPtr &parentMap );
-};
-
-class FeatureStereoFrame : public ProcessedStereoFrame
-{
-public:
-    using FramePtr = std::shared_ptr< FeatureStereoFrame >;
-    using FeatureFramePtr = std::shared_ptr< FeatureFrame >;
-
-    using MapPointPtr = std::shared_ptr< MapPoint >;
-
-    static FramePtr create( const MapPtr &parentMap );
-
-    void load( const CvImage &image1, const CvImage &image2 );
-
-    void setFrames( const FeatureFramePtr &leftFrame, const FeatureFramePtr &rightFrame );
-
-    FeatureFramePtr leftFrame() const;
-    FeatureFramePtr rightFrame() const;
-
-    cv::Mat match();
 
     CvImage drawExtractedPoints() const;
     CvImage drawStereoCorrespondences() const;
@@ -325,6 +298,37 @@ public:
     int stereoPointsCount() const;
 
     int triangulatePoints();
+
+protected:
+    ProcessedStereoFrame( const MapPtr &parentMap );
+};
+
+class FlowStereoFrame : public ProcessedStereoFrame
+{
+public:
+    using FramePtr = std::shared_ptr< FlowStereoFrame >;
+
+    static FramePtr create( const MapPtr &parentMap );
+
+protected:
+    FlowStereoFrame( const MapPtr &parentMap );
+
+};
+
+class FeatureStereoFrame : public ProcessedStereoFrame
+{
+public:
+    using FramePtr = std::shared_ptr< FeatureStereoFrame >;
+    using FeatureFramePtr = std::shared_ptr< FeatureFrame >;
+
+    static FramePtr create( const MapPtr &parentMap );
+
+    void load( const CvImage &image1, const CvImage &image2 );
+
+    FeatureFramePtr leftFrame() const;
+    FeatureFramePtr rightFrame() const;
+
+    cv::Mat match();
 
     void cleanMapPoints();
 
@@ -363,12 +367,14 @@ private:
 
 };
 
-class ProcessedDenseFrame : public FeatureStereoFrame, public DenseFrameBase
+template < class ProcessedFrameType >
+class ProcessedDenseFrame : public ProcessedFrameType, public DenseFrameBase
 {
     friend class DenseFrame;
 
 public:
-    using FramePtr = std::shared_ptr< ProcessedDenseFrame >;
+    using FramePtr = std::shared_ptr< ProcessedDenseFrame< ProcessedFrameType > >;
+    using MapPtr = typename ProcessedFrameType::MapPtr;
 
     static FramePtr create( const MapPtr &parentMap );
 
@@ -376,12 +382,29 @@ public:
 
 protected:
     ProcessedDenseFrame( const MapPtr &parentMap );
+
 };
 
-class AdjacentFrame : public DoubleFrame
+using FeatureDenseFrame = ProcessedDenseFrame< FeatureStereoFrame >;
+using FlowDenseFrame = ProcessedDenseFrame< FlowStereoFrame >;
+
+class ConsecutiveFrame : public DoubleFrame
 {
 public:
-    using FramePtr = std::shared_ptr< AdjacentFrame >;
+    using ProcessedFramePtr = std::shared_ptr< ProcessedFrame >;
+
+    ProcessedFramePtr previousFrame() const;
+    ProcessedFramePtr nextFrame() const;
+
+protected:
+    ConsecutiveFrame() = default;
+
+};
+
+class FeatureConsecutiveFrame : public ConsecutiveFrame
+{
+public:
+    using FramePtr = std::shared_ptr< FeatureConsecutiveFrame >;
     using FeatureFramePtr = std::shared_ptr< FeatureFrame >;
 
     static FramePtr create( const MapPtr &parentMap );
@@ -390,21 +413,19 @@ public:
 
     double recoverPose();
 
-    void setFrames( const FeatureFramePtr &prevFrame, const FeatureFramePtr &nextFrame );
-
     FeatureFramePtr previousFrame() const;
     FeatureFramePtr nextFrame() const;
 
     std::vector< AdjacentPoint > adjacentPoints() const;
     int adjacentPointsCount() const;
 
-    std::vector< AdjacentFrame::MonoPointPtr > posePoints() const;
+    std::vector< FeatureConsecutiveFrame::MonoPointPtr > posePoints() const;
     int posePointsCount() const;
 
     std::vector< MonoPointPtr > trackFramePoints() const;
     int trackFramePointsCount() const;
 
-    std::vector< AdjacentFrame::MonoPointPtr > trackedPoints() const;
+    std::vector< FeatureConsecutiveFrame::MonoPointPtr > trackedPoints() const;
     int trackedPointsCount() const;
 
     void createFramePoints( const size_t count );
@@ -413,9 +434,9 @@ public:
     WorldPtr parentWorld() const;
 
 protected:
-    using MapPtrImpl = std::weak_ptr< Map >;
+    using MapPtrImpl = std::weak_ptr< FeatureMap >;
 
-    AdjacentFrame( const MapPtr &parentMap );
+    FeatureConsecutiveFrame( const MapPtr &parentMap );
 
     MapPtrImpl m_parentMap;
 
@@ -451,7 +472,7 @@ class DenseFrame : public StereoFrame, public DenseFrameBase
 {
 public:
     using FramePtr = std::shared_ptr< DenseFrame >;
-    using ProcessedDenseFramePtr = std::shared_ptr< ProcessedDenseFrame >;
+    using ProcessedDenseFramePtr = std::shared_ptr< FeatureDenseFrame >;
 
     static FramePtr create( const MapPtr &parentMap );
 
@@ -469,5 +490,7 @@ protected:
 
 
 };
+
+#include "frame.inl"
 
 }
