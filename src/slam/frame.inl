@@ -6,9 +6,9 @@ ProcessedDenseFrame<ProcessedFrameType>::ProcessedDenseFrame( const MapPtr &pare
 }
 
 template < class ProcessedFrameType >
-typename ProcessedDenseFrame< ProcessedFrameType >::FramePtr ProcessedDenseFrame< ProcessedFrameType >::create( const MapPtr &parentMap )
+typename ProcessedDenseFrame< ProcessedFrameType >::ObjectPtr ProcessedDenseFrame< ProcessedFrameType >::create( const MapPtr &parentMap )
 {
-    return FramePtr( new ProcessedDenseFrame< ProcessedFrameType >( parentMap ) );
+    return ObjectPtr( new ProcessedDenseFrame< ProcessedFrameType >( parentMap ) );
 }
 
 template < class ProcessedFrameType >

@@ -19,6 +19,7 @@ Application::Application( int &argc, char **argv )
 
 Application::~Application()
 {
+    m_vimbaSystem.Shutdown();
 }
 
 void Application::initialize( int &, char ** )

@@ -5,9 +5,17 @@
 namespace slam {
 
 class FeatureFrame;
+class FlowFrame;
 
 class FlowTrackerBase
 {
+public:
+    using FlowFramePtr = std::shared_ptr< FlowFrame >;
+
+    virtual void prepareFrame( FlowFrame *frame ) = 0;
+
+    virtual cv::Mat match( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::vector<size_t> *trackedIndexes, std::vector<cv::Point2f> *trackedPoints ) = 0;
+
 protected:
     FlowTrackerBase() = default;
 };
@@ -17,7 +25,9 @@ class GPUFlowTracker : public FlowTrackerBase
 public:
     GPUFlowTracker() = default;
 
-    void extractPoints( const CvImage &image, std::vector< cv::Point2f > *points );
+    virtual void prepareFrame( FlowFrame *frame ) override;
+
+    virtual cv::Mat match(const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::vector<size_t> *trackedIndexes, std::vector<cv::Point2f> *trackedPoints ) override;
 
 protected:
     GPUFlowProcessor m_pointsProcessor;
@@ -29,7 +39,9 @@ class CPUFlowTracker : public FlowTrackerBase
 public:
     CPUFlowTracker() = default;
 
-    void extractPoints( const CvImage &image, std::vector< cv::Point2f > *points );
+    virtual void prepareFrame( FlowFrame *frame ) override;
+
+    virtual cv::Mat match( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::vector<size_t> *trackedIndexes, std::vector<cv::Point2f> *trackedPoints ) override;
 
 protected:
     CPUFlowProcessor m_pointsProcessor;

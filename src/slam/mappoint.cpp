@@ -21,9 +21,9 @@ void MapPoint::initialize()
 {
 }
 
-MapPoint::PointPtr MapPoint::create( const MapPtr &parentMap, const cv::Point3d &point, const cv::Scalar &color)
+MapPoint::ObjectPtr MapPoint::create( const MapPtr &parentMap, const cv::Point3d &point, const cv::Scalar &color)
 {
-    return PointPtr( new MapPoint( parentMap, point, color ) );
+    return ObjectPtr( new MapPoint( parentMap, point, color ) );
 }
 
 void MapPoint::setEigenPoint( const Eigen::Matrix< double, 3, 1 > &value )

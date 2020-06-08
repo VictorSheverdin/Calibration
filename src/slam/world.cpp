@@ -43,9 +43,9 @@ void World::initialize( const StereoCameraMatrix &cameraMatrix )
 
 }
 
-World::WorldPtr World::create( const StereoCameraMatrix &cameraMatrix )
+World::ObjectPtr World::create( const StereoCameraMatrix &cameraMatrix )
 {
-    return WorldPtr( new World( cameraMatrix ) );
+    return ObjectPtr( new World( cameraMatrix ) );
 }
 
 std::list < World::MapPtr > World::maps() const

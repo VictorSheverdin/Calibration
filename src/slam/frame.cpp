@@ -486,7 +486,7 @@ const std::vector< cv::Mat > &ProcessedFrame::imagePyramid() const
 }
 
 // FlowFrame
-FlowFrame::FlowFrame( const MapPtr &parentMap )
+FlowFrame::FlowFrame( const FlowMapPtr &parentMap )
     : ProcessedFrame( parentMap )
 {
     initialize();
@@ -497,9 +497,16 @@ void FlowFrame::initialize()
     m_usePointsCount = 0;
 }
 
-FlowFrame::FramePtr FlowFrame::create( const MapPtr &parentMap )
+FlowFrame::ObjectPtr FlowFrame::create( const FlowMapPtr &parentMap )
 {
-    return FramePtr( new FlowFrame( parentMap ) );
+    return ObjectPtr( new FlowFrame( parentMap ) );
+}
+
+void FlowFrame::load( const CvImage &image )
+{
+    ProcessedFrame::load( image );
+
+    parentWorld()->flowTracker().prepareFrame( this );
 }
 
 std::vector< FlowFrame::PointPtr > FlowFrame::framePoints() const
@@ -522,11 +529,6 @@ const std::list< FlowFrame::FlowPointPtr > &FlowFrame::flowPoints() const
     return m_points;
 }
 
-void FlowFrame::extractPoints()
-{
-    parentWorld()->flowTracker().extractPoints( m_image, &m_extractedPoints );
-}
-
 void FlowFrame::createFramePoints( const size_t count )
 {
 
@@ -541,6 +543,11 @@ void FlowFrame::createFramePoints( const size_t count )
 
     }
 
+}
+
+void FlowFrame::setExtractedPoints( const std::vector< cv::Point2f > &value )
+{
+    m_extractedPoints = value;
 }
 
 FlowFrame::FlowPointPtr FlowFrame::createFramePoint( const size_t keyPointIndex )
@@ -559,7 +566,7 @@ FlowFrame::FlowPointPtr FlowFrame::createFramePoint( const size_t keyPointIndex 
 }
 
 // FeatureFrame
-FeatureFrame::FeatureFrame( const MapPtr &parentMap )
+FeatureFrame::FeatureFrame( const FeatureMapPtr &parentMap )
     : ProcessedFrame( parentMap )
 {
     initialize();
@@ -625,9 +632,9 @@ const FeatureFrame::FeaturePointPtr &FeatureFrame::featurePoint( const size_t in
     return m_points.at( index );
 }
 
-FeatureFrame::FramePtr FeatureFrame::create( const MapPtr &parentMap )
+FeatureFrame::ObjectPtr FeatureFrame::create( const FeatureMapPtr &parentMap )
 {
-    return FramePtr( new FeatureFrame( parentMap ) );
+    return ObjectPtr( new FeatureFrame( parentMap ) );
 }
 
 void FeatureFrame::load( const CvImage &image )
@@ -641,7 +648,6 @@ void FeatureFrame::load( const CvImage &image )
 
     for ( size_t i = 0; i < m_keyPoints.size(); ++i )
         m_colors.push_back( m_image.at< cv::Vec3b >( m_keyPoints[ i ].pt ) );
-
 }
 
 FeatureFrame::FeaturePointPtr FeatureFrame::createFramePoint( const size_t keyPointIndex )
@@ -729,9 +735,9 @@ std::vector< Frame::PointPtr > Frame::framePoints() const
     return ret;
 }
 
-Frame::FramePtr Frame::create()
+Frame::ObjectPtr Frame::create()
 {
-    return FramePtr( new Frame() );
+    return ObjectPtr( new Frame() );
 }
 
 void Frame::replace( const FeatureFramePtr &frame )
@@ -1155,15 +1161,74 @@ int ProcessedStereoFrame::triangulatePoints()
 
 }
 
+void ProcessedStereoFrame::cleanMapPoints()
+{
+    auto leftFeatureFrame = this->leftFrame();
+
+    if ( leftFeatureFrame ) {
+        leftFeatureFrame->cleanMapPoints();
+
+    }
+
+}
+
 // FlowStereoFrame
-FlowStereoFrame::FlowStereoFrame( const MapPtr &parentMap )
+FlowStereoFrame::FlowStereoFrame( const FlowMapPtr &parentMap )
     : ProcessedStereoFrame( parentMap )
 {
 }
 
-FlowStereoFrame::FramePtr FlowStereoFrame::create( const MapPtr &parentMap )
+FlowStereoFrame::ObjectPtr FlowStereoFrame::create( const FlowMapPtr &parentMap )
 {
-    return FramePtr( new FlowStereoFrame( parentMap ) );
+    return ObjectPtr( new FlowStereoFrame( parentMap ) );
+}
+
+void FlowStereoFrame::load( const CvImage &image1, const CvImage &image2 )
+{
+    auto leftFrame = FlowFrame::create( parentMap() );
+    leftFrame->load( image1 );
+
+    auto rightFrame = FlowFrame::create( parentMap() );
+    rightFrame->load( image2 );
+
+    setFrames( leftFrame, rightFrame );
+}
+
+FlowStereoFrame::FlowFramePtr FlowStereoFrame::leftFrame() const
+{
+    return std::dynamic_pointer_cast< FlowFrame >( ProcessedStereoFrame::leftFrame() );
+}
+
+FlowStereoFrame::FlowFramePtr FlowStereoFrame::rightFrame() const
+{
+    return std::dynamic_pointer_cast< FlowFrame >( ProcessedStereoFrame::rightFrame() );
+}
+
+FlowStereoFrame::FlowMapPtr FlowStereoFrame::parentMap() const
+{
+    return std::dynamic_pointer_cast< FlowMap >( ProcessedStereoFrame::parentMap() );
+}
+
+cv::Mat FlowStereoFrame::match()
+{
+    auto leftFrame = this->leftFrame();
+    auto rightFrame = this->rightFrame();
+
+    if ( leftFrame && rightFrame ) {
+
+        std::vector<size_t> trackedIndexes;
+        std::vector<cv::Point2f> trackedPoints;
+
+        auto fmat = parentWorld()->flowTracker().match( leftFrame, rightFrame, &trackedIndexes, &trackedPoints );
+
+        auto trackPoints = leftFrame->flowPoints();
+
+
+
+    }
+
+    return cv::Mat();
+
 }
 
 // FeatureStereoFrame
@@ -1175,9 +1240,9 @@ FeatureStereoFrame::FeatureStereoFrame( const MapPtr &parentMap )
 {
 }
 
-FeatureStereoFrame::FramePtr FeatureStereoFrame::create( const MapPtr &parentMap )
+FeatureStereoFrame::ObjectPtr FeatureStereoFrame::create( const MapPtr &parentMap )
 {
-    return FramePtr( new FeatureStereoFrame( parentMap ) );
+    return ObjectPtr( new FeatureStereoFrame( parentMap ) );
 }
 
 void FeatureStereoFrame::load( const CvImage &image1, const CvImage &image2 )
@@ -1189,7 +1254,6 @@ void FeatureStereoFrame::load( const CvImage &image1, const CvImage &image2 )
     rightFrame->load( image2 );
 
     setFrames( leftFrame, rightFrame );
-
 }
 
 FeatureStereoFrame::FeatureFramePtr FeatureStereoFrame::leftFrame() const
@@ -1200,6 +1264,11 @@ FeatureStereoFrame::FeatureFramePtr FeatureStereoFrame::leftFrame() const
 FeatureStereoFrame::FeatureFramePtr FeatureStereoFrame::rightFrame() const
 {
     return std::dynamic_pointer_cast< FeatureFrame >( ProcessedStereoFrame::rightFrame() );
+}
+
+FeatureStereoFrame::FeatureMapPtr FeatureStereoFrame::parentMap() const
+{
+    return std::dynamic_pointer_cast< FeatureMap >( ProcessedStereoFrame::parentMap() );
 }
 
 cv::Mat FeatureStereoFrame::match()
@@ -1239,17 +1308,6 @@ cv::Mat FeatureStereoFrame::match()
     }
 
     return cv::Mat();
-
-}
-
-void FeatureStereoFrame::cleanMapPoints()
-{
-    auto leftFeatureFrame = this->leftFrame();
-
-    if ( leftFeatureFrame ) {
-        leftFeatureFrame->cleanMapPoints();
-
-    }
 
 }
 
@@ -1295,6 +1353,11 @@ void DenseFrameBase::setOptimizationGrid( const OptimizationGrid &grid )
 }
 
 // ConsecutiveFrame
+ConsecutiveFrame::ConsecutiveFrame( const MapPtr &parentMap )
+    : m_parentMap( parentMap )
+{
+}
+
 ConsecutiveFrame::ProcessedFramePtr ConsecutiveFrame::previousFrame() const
 {
     return std::dynamic_pointer_cast< ProcessedFrame >( frame1() );
@@ -1305,53 +1368,7 @@ ConsecutiveFrame::ProcessedFramePtr ConsecutiveFrame::nextFrame() const
     return std::dynamic_pointer_cast< ProcessedFrame >( frame2() );
 }
 
-// FeatureConsecutiveFrame
-FeatureConsecutiveFrame::FeatureConsecutiveFrame( const MapPtr &parentMap )
-    : m_parentMap( parentMap )
-{
-}
-
-FeatureConsecutiveFrame::FramePtr FeatureConsecutiveFrame::create( const MapPtr &parentMap )
-{
-    return FramePtr( new FeatureConsecutiveFrame( parentMap ) );
-}
-
-cv::Mat FeatureConsecutiveFrame::track()
-{
-    auto prevFrame = this->previousFrame();
-    auto nextFrame = this->nextFrame();
-
-    if ( prevFrame && nextFrame ) {
-
-        auto trackPoints = prevFrame->featurePoints();
-
-        std::vector< cv::DMatch > matches;
-
-        auto fmat = parentWorld()->featureTracker()->match( prevFrame, nextFrame, &matches );
-
-        for ( auto &i : matches ) {
-
-            auto prevPoint = trackPoints[ i.queryIdx ];
-            auto nextPoint = nextFrame->featurePoint( i.trainIdx );
-
-            prevPoint->setNextPoint( nextPoint );
-            nextPoint->setPrevPoint( prevPoint );
-
-            auto worlPoint = prevPoint->mapPoint();
-
-            if ( worlPoint )
-                nextPoint->setMapPoint( worlPoint );
-
-        }
-
-        return fmat;
-
-    }
-
-    return cv::Mat();
-}
-
-double FeatureConsecutiveFrame::recoverPose()
+double ConsecutiveFrame::recoverPose()
 {
     std::vector< cv::Point3f > points3d;
     std::vector< cv::Point2f > points2d;
@@ -1419,17 +1436,17 @@ double FeatureConsecutiveFrame::recoverPose()
 
 }
 
-FeatureConsecutiveFrame::FeatureFramePtr FeatureConsecutiveFrame::previousFrame() const
+ConsecutiveFrame::MapPtr ConsecutiveFrame::parentMap() const
 {
-    return std::dynamic_pointer_cast< FeatureFrame >( ConsecutiveFrame::previousFrame() );
+    return m_parentMap.lock();
 }
 
-FeatureConsecutiveFrame::FeatureFramePtr FeatureConsecutiveFrame::nextFrame() const
+ConsecutiveFrame::WorldPtr ConsecutiveFrame::parentWorld() const
 {
-    return std::dynamic_pointer_cast< FeatureFrame >( ConsecutiveFrame::nextFrame() );
+    return parentMap()->parentWorld();
 }
 
-std::vector< AdjacentPoint > FeatureConsecutiveFrame::adjacentPoints() const
+std::vector< AdjacentPoint > ConsecutiveFrame::adjacentPoints() const
 {
     auto prevFrame = this->previousFrame();
 
@@ -1440,54 +1457,121 @@ std::vector< AdjacentPoint > FeatureConsecutiveFrame::adjacentPoints() const
 
 }
 
-int FeatureConsecutiveFrame::adjacentPointsCount() const
+int ConsecutiveFrame::adjacentPointsCount() const
 {
     return adjacentPoints().size();
 }
 
-std::vector< DoubleFrame::MonoPointPtr > FeatureConsecutiveFrame::posePoints() const
+std::vector< ConsecutiveFrame::MonoPointPtr > ConsecutiveFrame::posePoints() const
 {
     return nextFrame()->posePoints();
 }
 
-int FeatureConsecutiveFrame::posePointsCount() const
+int ConsecutiveFrame::posePointsCount() const
 {
     return nextFrame()->posePointsCount();
 }
 
-std::vector< FeatureConsecutiveFrame::MonoPointPtr > FeatureConsecutiveFrame::trackFramePoints() const
+std::vector< ConsecutiveFrame::MonoPointPtr > ConsecutiveFrame::trackFramePoints() const
 {
     return previousFrame()->trackFramePoints();
 }
 
-int FeatureConsecutiveFrame::trackFramePointsCount() const
+int ConsecutiveFrame::trackFramePointsCount() const
 {
     return trackFramePoints().size();
 }
 
-std::vector< DoubleFrame::MonoPointPtr > FeatureConsecutiveFrame::trackedPoints() const
+std::vector< ConsecutiveFrame::MonoPointPtr > ConsecutiveFrame::trackedPoints() const
 {
     return previousFrame()->trackedPoints();
 }
 
-int FeatureConsecutiveFrame::trackedPointsCount() const
+int ConsecutiveFrame::trackedPointsCount() const
 {
     return trackedPoints().size();
+}
+
+// FlowConsecutiveFrame
+FlowConsecutiveFrame::FlowConsecutiveFrame( const MapPtr &parentMap )
+    : ConsecutiveFrame( parentMap )
+{
+}
+
+FlowConsecutiveFrame::ObjectPtr FlowConsecutiveFrame::create( const MapPtr &parentMap )
+{
+    return ObjectPtr( new FlowConsecutiveFrame( parentMap ) );
+}
+
+FlowConsecutiveFrame::FlowFramePtr FlowConsecutiveFrame::previousFrame() const
+{
+    return std::dynamic_pointer_cast< FlowFrame >( ConsecutiveFrame::previousFrame() );
+}
+
+FlowConsecutiveFrame::FlowFramePtr FlowConsecutiveFrame::nextFrame() const
+{
+    return std::dynamic_pointer_cast< FlowFrame >( ConsecutiveFrame::nextFrame() );
+}
+
+// FeatureConsecutiveFrame
+FeatureConsecutiveFrame::FeatureConsecutiveFrame( const MapPtr &parentMap )
+    : ConsecutiveFrame( parentMap )
+{
+}
+
+FeatureConsecutiveFrame::ObjectPtr FeatureConsecutiveFrame::create( const MapPtr &parentMap )
+{
+    return ObjectPtr( new FeatureConsecutiveFrame( parentMap ) );
+}
+
+cv::Mat FeatureConsecutiveFrame::track()
+{
+    auto prevFrame = this->previousFrame();
+    auto nextFrame = this->nextFrame();
+
+    if ( prevFrame && nextFrame ) {
+
+        auto trackPoints = prevFrame->featurePoints();
+
+        std::vector< cv::DMatch > matches;
+
+        auto fmat = parentWorld()->featureTracker()->match( prevFrame, nextFrame, &matches );
+
+        for ( auto &i : matches ) {
+
+            auto prevPoint = trackPoints[ i.queryIdx ];
+            auto nextPoint = nextFrame->featurePoint( i.trainIdx );
+
+            prevPoint->setNextPoint( nextPoint );
+            nextPoint->setPrevPoint( prevPoint );
+
+            auto worlPoint = prevPoint->mapPoint();
+
+            if ( worlPoint )
+                nextPoint->setMapPoint( worlPoint );
+
+        }
+
+        return fmat;
+
+    }
+
+    return cv::Mat();
+}
+
+FeatureConsecutiveFrame::FeatureFramePtr FeatureConsecutiveFrame::previousFrame() const
+{
+    return std::dynamic_pointer_cast< FeatureFrame >( ConsecutiveFrame::previousFrame() );
+}
+
+FeatureConsecutiveFrame::FeatureFramePtr FeatureConsecutiveFrame::nextFrame() const
+{
+    return std::dynamic_pointer_cast< FeatureFrame >( ConsecutiveFrame::nextFrame() );
 }
 
 void FeatureConsecutiveFrame::createFramePoints( const size_t count )
 {
     previousFrame()->createFramePoints( count );
-}
-
-FeatureConsecutiveFrame::MapPtr FeatureConsecutiveFrame::parentMap() const
-{
-    return m_parentMap.lock();
-}
-
-FeatureConsecutiveFrame::WorldPtr FeatureConsecutiveFrame::parentWorld() const
-{
-    return parentMap()->parentWorld();
 }
 
 // StereoFrame
@@ -1502,9 +1586,9 @@ void StereoFrame::initialize()
     setFrames( Frame::create(), Frame::create() );
 }
 
-StereoFrame::StereoFramePtr StereoFrame::create( const MapPtr &parentMap )
+StereoFrame::ObjectPtr StereoFrame::create( const MapPtr &parentMap )
 {
-    return StereoFramePtr( new StereoFrame( parentMap ) );
+    return ObjectPtr( new StereoFrame( parentMap ) );
 }
 
 void StereoFrame::setFrames( const FramePtr &leftFrame, const FramePtr &rightFrame )
@@ -1566,9 +1650,9 @@ DenseFrame::DenseFrame( const MapPtr &parentMap )
 {
 }
 
-DenseFrame::FramePtr DenseFrame::create( const MapPtr &parentMap )
+DenseFrame::ObjectPtr DenseFrame::create( const MapPtr &parentMap )
 {
-    return FramePtr( new DenseFrame( parentMap ) );
+    return ObjectPtr( new DenseFrame( parentMap ) );
 }
 
 void DenseFrame::replace( const ProcessedDenseFramePtr &frame )

@@ -49,7 +49,7 @@ void SlamThread::process( const CvImage leftImage, const CvImage rightImage )
 
 void SlamThread::run()
 {
-   /*auto localOptimizationThread = std::thread( [ & ] {
+   auto localOptimizationThread = std::thread( [ & ] {
 
         while ( !isInterruptionRequested() ) {
             m_system->localAdjustment();
@@ -70,7 +70,7 @@ void SlamThread::run()
 
         }
 
-    } );*/
+    } );
 
     while( !isInterruptionRequested() )
     {
@@ -155,8 +155,8 @@ void SlamThread::run()
 
     }
 
-    /*localOptimizationThread.join();
-    optimizationThread5s.join();*/
+    localOptimizationThread.join();
+    optimizationThread5s.join();
 
 }
 

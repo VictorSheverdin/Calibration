@@ -93,13 +93,13 @@ protected:
 class FlowPoint : public ProcessedPointBase
 {
 public:
+    using ObjectPtr = std::shared_ptr< FlowPoint >;
     using FramePtr = std::shared_ptr< FlowFrame >;
-    using PointPtr = std::shared_ptr< FlowPoint >;
 
     virtual const cv::Point2f &point() const override;
     virtual const cv::Scalar &color() const override;
 
-    static PointPtr create( const FramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color );
+    static ObjectPtr create( const FramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color );
 
     FramePtr parentFrame() const;
 
@@ -114,8 +114,8 @@ protected:
 class FeaturePoint : public ProcessedPointBase
 {
 public:
+    using ObjectPtr = std::shared_ptr< FeaturePoint >;
     using FramePtr = std::shared_ptr< FeatureFrame >;
-    using PointPtr = std::shared_ptr< FeaturePoint >;
 
     virtual const cv::Point2f &point() const override;
     virtual const cv::Scalar &color() const override;
@@ -123,7 +123,7 @@ public:
     const cv::KeyPoint &keyPoint() const;
     cv::Mat descriptor() const;
 
-    static PointPtr create( const FramePtr &parentFrame, const size_t keyPointIndex );
+    static ObjectPtr create( const FramePtr &parentFrame, const size_t keyPointIndex );
 
     FramePtr parentFrame() const;
 
@@ -139,16 +139,16 @@ protected:
 class FramePoint : public MonoPoint, public ColorPoint2d
 {
 public:
+    using ObjectPtr = std::shared_ptr< FramePoint >;
     using FramePtr = std::shared_ptr< Frame >;
-    using PointPtr = std::shared_ptr< FramePoint >;
 
     using FeaturePointPtr = std::shared_ptr< FeaturePoint >;
 
     virtual const cv::Point2f &point() const override;
     virtual const cv::Scalar &color() const override;
 
-    static PointPtr create( const FramePtr &parentFrame );
-    static PointPtr create( const FramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color );
+    static ObjectPtr create( const FramePtr &parentFrame );
+    static ObjectPtr create( const FramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color );
 
     FramePtr parentFrame() const;
 

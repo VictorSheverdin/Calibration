@@ -14,47 +14,32 @@ class StereoFrameBase;
 class MapPoint;
 class World;
 
-class MapBase
+class Map : public std::enable_shared_from_this< Map >
 {
 public:
-};
-
-class FlowMap : public MapBase
-{
-};
-
-class FeatureMap : public std::enable_shared_from_this< FeatureMap >
-{
-public:
-    using MapPtr = std::shared_ptr< FeatureMap >;
-
+    using WorldPtr = std::shared_ptr< World >;
     using FramePtr = std::shared_ptr< StereoFrameBase >;
     using MapPointPtr = std::shared_ptr< MapPoint >;
 
-    using WorldPtr = std::shared_ptr< World >;
+    virtual ~Map() = default;
 
-    static MapPtr create( const StereoCameraMatrix &cameraMatrix, const WorldPtr &parentWorld );
-
-    FeatureMap::WorldPtr parentWorld() const;
-
-    MapPointPtr createMapPoint( const cv::Point3d &pt, const cv::Scalar &color );
-
-    void removeMapPoint( const MapPointPtr &point );
-
-    bool track( const CvImage &leftImage, const CvImage &rightImage );
-
-    std::list< FramePtr > frames() const;
-
-    std::set< MapPointPtr > mapPoints() const;
-
-    const FramePtr &backFrame() const;
-
-    void addMapPoint( const MapPointPtr &point );
+    WorldPtr parentWorld() const;
 
     const cv::Mat baselineVector() const;
     double baselineLenght() const;
 
     double minTriangulateCameraDistance() const;
+
+    MapPointPtr createMapPoint( const cv::Point3d &pt, const cv::Scalar &color );
+
+    void removeMapPoint( const MapPointPtr &point );
+
+    void addMapPoint( const MapPointPtr &point );
+
+    std::set< MapPointPtr > mapPoints() const;
+
+    std::list< FramePtr > frames() const;
+    const FramePtr &backFrame() const;
 
     void adjust( const int frames );
     void localAdjustment();
@@ -64,18 +49,19 @@ public:
 protected:
     using WorldPtrImpl = std::weak_ptr< World >;
 
-    FeatureMap( const StereoCameraMatrix &projectionMatrix, const WorldPtr &parentWorld );
+    Map( const StereoCameraMatrix &projectionMatrix, const WorldPtr &parentWorld );
 
     WorldPtrImpl m_parentWorld;
 
-    std::list< FramePtr > m_frames;
-    std::set< MapPointPtr > m_mapPoints;
-
     StereoCameraMatrix m_projectionMatrix;
 
-    size_t m_previousKeypointsCount;
+    std::set< MapPointPtr > m_mapPoints;
+
+    std::list< FramePtr > m_frames;
 
     Optimizer m_optimizer;
+
+    mutable std::mutex m_mutex;
 
     static const double m_minTriangulateDistanceMultiplier;
 
@@ -89,10 +75,36 @@ protected:
     static const double m_minTrackInliersRatio;
     static const double m_goodTrackInliersRatio;
 
-    mutable std::mutex m_mutex;
+};
+
+class FlowMap : public Map
+{
+public:
+protected:
+    using ObjectPtr = std::shared_ptr< FlowMap >;
+
+    FlowMap( const StereoCameraMatrix &projectionMatrix, const WorldPtr &parentWorld );
+
+    static ObjectPtr create( const StereoCameraMatrix &cameraMatrix, const WorldPtr &parentWorld );
+
+};
+
+class FeatureMap : public Map
+{
+public:
+    using ObjectPtr = std::shared_ptr< FeatureMap >;
+
+    static ObjectPtr create( const StereoCameraMatrix &cameraMatrix, const WorldPtr &parentWorld );
+
+    bool track( const CvImage &leftImage, const CvImage &rightImage );
+
+protected:
+    FeatureMap( const StereoCameraMatrix &projectionMatrix, const WorldPtr &parentWorld );
+
+    size_t m_previousKeypointsCount;
 
 private:
-    void initialize( const StereoCameraMatrix &projectionMatrix );
+    void initialize();
 
 };
 

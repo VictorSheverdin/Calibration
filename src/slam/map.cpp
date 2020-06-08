@@ -13,35 +13,38 @@
 
 namespace slam {
 
-const double FeatureMap::m_minTriangulateDistanceMultiplier = 2.0;
+// Map
+const double Map::m_minTriangulateDistanceMultiplier = 2.0;
 
-const double FeatureMap::m_minTrackInliersRatio = 0.75;
-const double FeatureMap::m_goodTrackInliersRatio = 0.9;
+const double Map::m_minTrackInliersRatio = 0.75;
+const double Map::m_goodTrackInliersRatio = 0.9;
 
-FeatureMap::FeatureMap( const StereoCameraMatrix &projectionMatrix, const WorldPtr &parentWorld)
-    :  m_parentWorld( parentWorld )
+Map::Map( const StereoCameraMatrix &projectionMatrix, const WorldPtr &parentWorld )
+    :  m_parentWorld( parentWorld ), m_projectionMatrix( projectionMatrix )
 {
-    initialize( projectionMatrix );
 }
 
-void FeatureMap::initialize( const StereoCameraMatrix &projectionMatrix )
-{
-    m_projectionMatrix = projectionMatrix;
-
-    m_previousKeypointsCount = m_goodTrackPoints * 2;
-}
-
-FeatureMap::MapPtr FeatureMap::create( const StereoCameraMatrix &cameraMatrix , const WorldPtr &parentWorld )
-{
-    return MapPtr( new FeatureMap( cameraMatrix, parentWorld ) );
-}
-
-FeatureMap::WorldPtr FeatureMap::parentWorld() const
+Map::WorldPtr Map::parentWorld() const
 {
     return m_parentWorld.lock();
 }
 
-FeatureMap::MapPointPtr FeatureMap::createMapPoint( const cv::Point3d &pt, const cv::Scalar &color )
+const cv::Mat Map::baselineVector() const
+{
+    return m_projectionMatrix.baselineVector();
+}
+
+double Map::baselineLenght() const
+{
+    return cv::norm( baselineVector() );
+}
+
+double Map::minTriangulateCameraDistance() const
+{
+    return baselineLenght() * m_minTriangulateDistanceMultiplier;
+}
+
+Map::MapPointPtr Map::createMapPoint( const cv::Point3d &pt, const cv::Scalar &color )
 {
     auto point = MapPoint::create( shared_from_this(), pt, color );
 
@@ -51,21 +54,17 @@ FeatureMap::MapPointPtr FeatureMap::createMapPoint( const cv::Point3d &pt, const
 
 }
 
-void FeatureMap::removeMapPoint( const MapPointPtr &point )
+void Map::removeMapPoint( const MapPointPtr &point )
 {
     m_mapPoints.erase( point );
 }
 
-std::list< FeatureMap::FramePtr > FeatureMap::frames() const
+void Map::addMapPoint( const MapPointPtr &point )
 {
-    m_mutex.lock();
-    auto ret = m_frames;
-    m_mutex.unlock();
-
-    return ret;
+    m_mapPoints.insert( point );
 }
 
-std::set< FeatureMap::MapPointPtr > FeatureMap::mapPoints() const
+std::set< Map::MapPointPtr > Map::mapPoints() const
 {
     m_mutex.lock();
     auto ret = m_mapPoints;
@@ -74,32 +73,21 @@ std::set< FeatureMap::MapPointPtr > FeatureMap::mapPoints() const
     return ret;
 }
 
-const FeatureMap::FramePtr &FeatureMap::backFrame() const
+std::list< Map::FramePtr > Map::frames() const
+{
+    m_mutex.lock();
+    auto ret = m_frames;
+    m_mutex.unlock();
+
+    return ret;
+}
+
+const Map::FramePtr &Map::backFrame() const
 {
     return m_frames.back();
 }
 
-void FeatureMap::addMapPoint( const MapPointPtr &point )
-{
-    m_mapPoints.insert( point );
-}
-
-const cv::Mat FeatureMap::baselineVector() const
-{
-    return m_projectionMatrix.baselineVector();
-}
-
-double FeatureMap::baselineLenght() const
-{
-    return cv::norm( baselineVector() );
-}
-
-double FeatureMap::minTriangulateCameraDistance() const
-{
-    return baselineLenght() * m_minTriangulateDistanceMultiplier;
-}
-
-void FeatureMap::adjust( const int frames )
+void Map::adjust( const int frames )
 {
     const std::lock_guard< std::mutex > lock( m_mutex );
 
@@ -127,7 +115,7 @@ size_t calcTrackLenght( const std::vector< std::shared_ptr< MonoPoint > > &point
 
 }
 
-void FeatureMap::localAdjustment()
+void Map::localAdjustment()
 {
     const std::lock_guard< std::mutex > lock( m_mutex );
 
@@ -161,9 +149,37 @@ void FeatureMap::localAdjustment()
 
 }
 
-bool FeatureMap::isRudimental() const
+bool Map::isRudimental() const
 {
     return m_frames.size() <= 1;
+}
+
+// FlowMap
+FlowMap::FlowMap( const StereoCameraMatrix &projectionMatrix, const WorldPtr &parentWorld )
+    : Map( projectionMatrix, parentWorld )
+{
+}
+
+FlowMap::ObjectPtr FlowMap::create( const StereoCameraMatrix &cameraMatrix , const WorldPtr &parentWorld )
+{
+    return ObjectPtr( new FlowMap( cameraMatrix, parentWorld ) );
+}
+
+// FeatureMap
+FeatureMap::FeatureMap( const StereoCameraMatrix &projectionMatrix, const WorldPtr &parentWorld)
+    :  Map( projectionMatrix, parentWorld )
+{
+    initialize();
+}
+
+void FeatureMap::initialize()
+{
+    m_previousKeypointsCount = m_goodTrackPoints * 2;
+}
+
+FeatureMap::ObjectPtr FeatureMap::create( const StereoCameraMatrix &cameraMatrix , const WorldPtr &parentWorld )
+{
+    return ObjectPtr( new FeatureMap( cameraMatrix, parentWorld ) );
 }
 
 bool FeatureMap::track( const CvImage &leftImage, const CvImage &rightImage )

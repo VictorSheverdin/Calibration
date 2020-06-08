@@ -236,9 +236,9 @@ namespace slam {
         return m_color;
     }
 
-    FlowPoint::PointPtr FlowPoint::create( const FramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color )
+    FlowPoint::ObjectPtr FlowPoint::create( const FramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color )
     {
-        return PointPtr( new FlowPoint( parentFrame, point, color ) );
+        return ObjectPtr( new FlowPoint( parentFrame, point, color ) );
     }
 
     FlowPoint::FramePtr FlowPoint::parentFrame() const
@@ -252,9 +252,9 @@ namespace slam {
     {
     }
 
-    FeaturePoint::PointPtr FeaturePoint::create( const FramePtr &parentFrame, const size_t keyPointIndex )
+    FeaturePoint::ObjectPtr FeaturePoint::create( const FramePtr &parentFrame, const size_t keyPointIndex )
     {
-        return PointPtr( new FeaturePoint( parentFrame, keyPointIndex ) );
+        return ObjectPtr( new FeaturePoint( parentFrame, keyPointIndex ) );
     }
 
     FeaturePoint::FramePtr FeaturePoint::parentFrame() const
@@ -306,14 +306,14 @@ namespace slam {
         return ColorPoint2d::color();
     }
 
-    FramePoint::PointPtr FramePoint::create( const FramePtr &parentFrame )
+    FramePoint::ObjectPtr FramePoint::create( const FramePtr &parentFrame )
     {
-        return PointPtr( new FramePoint( parentFrame ) );
+        return ObjectPtr( new FramePoint( parentFrame ) );
     }
 
-    FramePoint::PointPtr FramePoint::create( const FramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color )
+    FramePoint::ObjectPtr FramePoint::create( const FramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color )
     {
-        return PointPtr( new FramePoint( parentFrame, point, color ) );
+        return ObjectPtr( new FramePoint( parentFrame, point, color ) );
     }
 
     FramePoint::FramePtr FramePoint::parentFrame() const

@@ -7,15 +7,75 @@
 namespace slam {
 
 // GPUFlowTracker
-void GPUFlowTracker::extractPoints( const CvImage &image, std::vector< cv::Point2f > *points )
+void GPUFlowTracker::prepareFrame( FlowFrame *frame )
 {
-    m_pointsProcessor.extractPoints( image, points );
+    if ( frame ) {
+
+        std::vector< cv::Point2f > points;
+
+        m_pointsProcessor.extractPoints( frame->image(), &points );
+
+        frame->setExtractedPoints( points );
+
+    }
+
+}
+
+cv::Mat GPUFlowTracker::match( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::vector< size_t > *trackedIndexes, std::vector< cv::Point2f > *trackedPoints )
+{
+    if ( trackedIndexes && trackedPoints ) {
+
+        auto flowPoints = frame1->flowPoints();
+
+        std::vector< cv::Point2f > points;
+        points.reserve( flowPoints.size() );
+
+        for ( auto &i : flowPoints )
+            if ( i )
+                points.push_back( i->point() );
+
+        auto fmat = m_pointsProcessor.track( frame1->image(), points, frame2->image(), trackedIndexes, trackedPoints );
+
+        return fmat;
+    }
+
+    return cv::Mat();
 }
 
 // CPUFlowTracker
-void CPUFlowTracker::extractPoints( const CvImage &image, std::vector< cv::Point2f > *points )
+void CPUFlowTracker::prepareFrame( FlowFrame *frame )
 {
-    m_pointsProcessor.extractPoints( image, points );
+    if ( frame ) {
+
+        std::vector< cv::Point2f > points;
+
+        m_pointsProcessor.extractPoints( frame->image(), &points );
+
+        frame->setExtractedPoints( points );
+
+    }
+
+}
+
+cv::Mat CPUFlowTracker::match( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::vector<size_t> *trackedIndexes, std::vector<cv::Point2f> *trackedPoints )
+{
+    if ( trackedIndexes && trackedPoints ) {
+
+        auto flowPoints = frame1->flowPoints();
+
+        std::vector< cv::Point2f > points;
+        points.reserve( flowPoints.size() );
+
+        for ( auto &i : flowPoints )
+            if ( i )
+                points.push_back( i->point() );
+
+        auto fmat = m_pointsProcessor.track( frame1->image(), points, frame2->image(), trackedIndexes, trackedPoints );
+
+        return fmat;
+    }
+
+    return cv::Mat();
 }
 
 // OpticalTrackerBase
@@ -32,6 +92,7 @@ int OpticalTrackerBase::maxFeatures()
 void OpticalTrackerBase::prepareFrame( FeatureFrame *frame )
 {
     if ( frame ) {
+
         std::vector< cv::KeyPoint > keypoints;
 
         auto &image = frame->image();

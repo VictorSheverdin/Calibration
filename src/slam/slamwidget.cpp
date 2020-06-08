@@ -440,8 +440,6 @@ void SlamWidgetBase::initialize( const QString &calibrationFile )
 
     connect( m_updateTimer, &QTimer::timeout, this, &SlamWidgetBase::updateViews );
 
-    // connect( m_slamThread, &SlamThread::updateSignal, this, &SlamWidgetBase::updateViews );
-
     m_slamThread->start();
 
     updateVisibility();

@@ -31,7 +31,7 @@ void Optimizer::adjust( std::list< FramePtr > &frames )
 
         optimizer.setVerbose( false );
 
-        std::map< MapPoint::PointPtr, std::shared_ptr< g2o::VertexSBAPointXYZ > > pointsMap;
+        std::map< MapPoint::ObjectPtr, std::shared_ptr< g2o::VertexSBAPointXYZ > > pointsMap;
         std::map< StereoFrameBase::FramePtr, std::shared_ptr< g2o::VertexSE3Expmap > > framesMap;
 
         std::list< std::shared_ptr< g2o::EdgeSE3ProjectXYZ > > projectEdges;

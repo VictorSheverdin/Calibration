@@ -9,16 +9,16 @@ namespace slam {
 class World : public std::enable_shared_from_this< World >
 {
 public:
-    using WorldPtr = std::shared_ptr< World >;
+    using ObjectPtr = std::shared_ptr< World >;
 
     using FramePtr = FeatureMap::FramePtr;
 
-    using MapPtr = FeatureMap::MapPtr;
+    using MapPtr = std::shared_ptr< FeatureMap >;
     using MapPointPtr = FeatureMap::MapPointPtr;
 
-    static WorldPtr create( const StereoCameraMatrix &cameraMatrix );
+    static ObjectPtr create( const StereoCameraMatrix &cameraMatrix );
 
-    std::list<MapPtr> maps() const;
+    std::list< MapPtr > maps() const;
 
     bool track( const CvImage &leftImage, const CvImage &rightImage );
 
