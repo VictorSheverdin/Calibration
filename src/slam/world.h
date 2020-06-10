@@ -9,11 +9,13 @@ namespace slam {
 class World : public std::enable_shared_from_this< World >
 {
 public:
+    enum class TrackType { FLOW, FEATURES };
+
     using ObjectPtr = std::shared_ptr< World >;
 
     using FramePtr = FeatureMap::FramePtr;
 
-    using MapPtr = std::shared_ptr< FeatureMap >;
+    using MapPtr = std::shared_ptr< Map >;
     using MapPointPtr = FeatureMap::MapPointPtr;
 
     static ObjectPtr create( const StereoCameraMatrix &cameraMatrix );
@@ -53,6 +55,8 @@ protected:
     GPUFlowTracker m_flowTracker;
     std::unique_ptr< FeatureTracker > m_featureTracker;
 
+    TrackType m_trackType;
+
     static const int m_keypointsCount = 100000;
 
     static const double m_maxReprojectionError;
@@ -64,6 +68,8 @@ protected:
     static const double m_minAdjacentCameraMultiplier;
 
     mutable std::mutex m_mutex;
+
+    void createMap( const StereoCameraMatrix &cameraMatrix );
 
 private:
     void initialize( const StereoCameraMatrix &cameraMatrix );

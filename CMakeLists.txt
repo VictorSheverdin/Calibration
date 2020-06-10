@@ -49,6 +49,8 @@ set ( COMMON_SOURCES
     src/common/fileslistwidget.cpp
     src/common/pclwidget.h
     src/common/pclwidget.cpp
+    src/common/matrix.h
+    src/common/matrix.inl
 )
 
 set ( LIBELAS_SOURCES

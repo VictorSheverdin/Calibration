@@ -507,6 +507,8 @@ void FlowFrame::load( const CvImage &image )
     ProcessedFrame::load( image );
 
     parentWorld()->flowTracker().prepareFrame( this );
+
+    m_searchMatrix.create( image.rows, image.cols );
 }
 
 std::vector< FlowFrame::PointPtr > FlowFrame::framePoints() const
@@ -519,19 +521,23 @@ std::vector< cv::Point2f > FlowFrame::extractedPoints() const
     return m_extractedPoints;
 }
 
-std::list< FlowFrame::FlowPointPtr > &FlowFrame::flowPoints()
+std::vector< FlowFrame::FlowPointPtr > &FlowFrame::flowPoints()
 {
     return m_points;
 }
 
-const std::list< FlowFrame::FlowPointPtr > &FlowFrame::flowPoints() const
+const std::vector< FlowFrame::FlowPointPtr > &FlowFrame::flowPoints() const
 {
     return m_points;
+}
+
+FlowFrame::FlowPointPtr FlowFrame::framePoint( const cv::Point2f &point ) const
+{
+    return m_searchMatrix.at( point.x, point.y );
 }
 
 void FlowFrame::createFramePoints( const size_t count )
 {
-
     for ( size_t i = 0; i < count; ++i ) {
 
         if ( m_usePointsCount >= m_extractedPoints.size() )
@@ -540,7 +546,6 @@ void FlowFrame::createFramePoints( const size_t count )
         createFramePoint( m_usePointsCount );
 
         ++m_usePointsCount;
-
     }
 
 }
@@ -555,11 +560,21 @@ FlowFrame::FlowPointPtr FlowFrame::createFramePoint( const size_t keyPointIndex 
     if ( keyPointIndex >= m_extractedPoints.size() )
         return FlowPointPtr();
 
-    auto point = m_extractedPoints[ keyPointIndex ];
+    return addFramePoint( m_extractedPoints[ keyPointIndex ] );
+}
+
+FlowFrame::FlowPointPtr FlowFrame::addFramePoint( const cv::Point2f &point )
+{
+    auto searchPoint = framePoint( point );
+
+    if ( searchPoint )
+        return searchPoint;
 
     auto flowPoint = FlowPoint::create( shared_from_this(), point, m_image.at< cv::Vec3b >( point ) );
 
     m_points.push_back( flowPoint );
+
+    m_searchMatrix.at( point.y, point.x ) = flowPoint;
 
     return flowPoint;
 
@@ -740,7 +755,7 @@ Frame::ObjectPtr Frame::create()
     return ObjectPtr( new Frame() );
 }
 
-void Frame::replace( const FeatureFramePtr &frame )
+void Frame::replace( const ProcessedFramePtr &frame )
 {
     if ( frame ) {
 
@@ -750,11 +765,9 @@ void Frame::replace( const FeatureFramePtr &frame )
 
         for ( auto &i : points ) {
 
-            auto processedPoint = std::dynamic_pointer_cast< FeaturePoint >( i );
-
-            if ( processedPoint ) {
-                auto point = createFramePoint( processedPoint->point(), processedPoint->color() );
-                point->replace( processedPoint );
+            if ( i ) {
+                auto point = createFramePoint( i->point(), i->color() );
+                point->replace( i );
 
             }
 
@@ -764,7 +777,7 @@ void Frame::replace( const FeatureFramePtr &frame )
 
 }
 
-void Frame::replaceAndClean( const FeatureFramePtr &frame )
+void Frame::replaceAndClean( const ProcessedFramePtr &frame )
 {
     if ( frame ) {
 
@@ -774,11 +787,9 @@ void Frame::replaceAndClean( const FeatureFramePtr &frame )
 
         for ( auto &i : points ) {
 
-            auto processedPoint = std::dynamic_pointer_cast< FeaturePoint >( i );
-
-            if ( processedPoint && ( processedPoint->mapPoint() || processedPoint->nextPoint() ) ) {
-                auto point = createFramePoint( processedPoint->point(), processedPoint->color() );
-                point->replace( processedPoint );
+            if ( i && ( i->mapPoint() || i->nextPoint() ) ) {
+                auto point = createFramePoint( i->point(), i->color() );
+                point->replace( i );
 
             }
 
@@ -898,6 +909,9 @@ StereoFrameBase::WorldPtr StereoFrameBase::parentWorld() const
 }
 
 // ProcessedStereoFrame
+const double ProcessedStereoFrame::m_minXDistasnce = 7.0;
+const double ProcessedStereoFrame::m_maxYDistasnce = 3.0;
+
 ProcessedStereoFrame::ProcessedStereoFrame( const MapPtr &parentMap )
     : StereoFrameBase( parentMap )
 {
@@ -1173,12 +1187,12 @@ void ProcessedStereoFrame::cleanMapPoints()
 }
 
 // FlowStereoFrame
-FlowStereoFrame::FlowStereoFrame( const FlowMapPtr &parentMap )
+FlowStereoFrame::FlowStereoFrame( const MapPtr &parentMap )
     : ProcessedStereoFrame( parentMap )
 {
 }
 
-FlowStereoFrame::ObjectPtr FlowStereoFrame::create( const FlowMapPtr &parentMap )
+FlowStereoFrame::ObjectPtr FlowStereoFrame::create( const MapPtr &parentMap )
 {
     return ObjectPtr( new FlowStereoFrame( parentMap ) );
 }
@@ -1204,7 +1218,7 @@ FlowStereoFrame::FlowFramePtr FlowStereoFrame::rightFrame() const
     return std::dynamic_pointer_cast< FlowFrame >( ProcessedStereoFrame::rightFrame() );
 }
 
-FlowStereoFrame::FlowMapPtr FlowStereoFrame::parentMap() const
+FlowStereoFrame::MapPtr FlowStereoFrame::parentMap() const
 {
     return std::dynamic_pointer_cast< FlowMap >( ProcessedStereoFrame::parentMap() );
 }
@@ -1216,14 +1230,36 @@ cv::Mat FlowStereoFrame::match()
 
     if ( leftFrame && rightFrame ) {
 
-        std::vector<size_t> trackedIndexes;
-        std::vector<cv::Point2f> trackedPoints;
+        std::vector< size_t > trackedIndexes;
+        std::vector< cv::Point2f > trackedPoints;
 
         auto fmat = parentWorld()->flowTracker().match( leftFrame, rightFrame, &trackedIndexes, &trackedPoints );
 
         auto trackPoints = leftFrame->flowPoints();
 
+        for ( size_t i = 0; i < trackedIndexes.size(); ++i ) {
 
+            auto leftFlowPoint = trackPoints[ trackedIndexes[ i ] ];
+            auto leftPoint = leftFlowPoint->point();
+            auto rightPoint = trackedPoints[ i ];
+
+            if ( leftPoint.x - rightPoint.x > m_minXDistasnce && std::abs( leftPoint.y - rightPoint.y ) < m_maxYDistasnce ) {
+
+                auto rightFlowPoint = rightFrame->addFramePoint( trackedPoints[ i ] );
+
+                leftFlowPoint->setStereoPoint( rightFlowPoint );
+                rightFlowPoint->setStereoPoint( leftFlowPoint );
+
+                auto worlPoint = leftFlowPoint->mapPoint();
+
+                if ( worlPoint )
+                    rightFlowPoint->setMapPoint( worlPoint );
+
+            }
+
+        }
+
+        return fmat;
 
     }
 
@@ -1232,9 +1268,6 @@ cv::Mat FlowStereoFrame::match()
 }
 
 // FeatureStereoFrame
-const double FeatureStereoFrame::m_minXDistasnce = 7.0;
-const double FeatureStereoFrame::m_maxYDistasnce = 3.0;
-
 FeatureStereoFrame::FeatureStereoFrame( const MapPtr &parentMap )
     : ProcessedStereoFrame( parentMap )
 {
@@ -1266,7 +1299,7 @@ FeatureStereoFrame::FeatureFramePtr FeatureStereoFrame::rightFrame() const
     return std::dynamic_pointer_cast< FeatureFrame >( ProcessedStereoFrame::rightFrame() );
 }
 
-FeatureStereoFrame::FeatureMapPtr FeatureStereoFrame::parentMap() const
+FeatureStereoFrame::MapPtr FeatureStereoFrame::parentMap() const
 {
     return std::dynamic_pointer_cast< FeatureMap >( ProcessedStereoFrame::parentMap() );
 }
@@ -1503,6 +1536,42 @@ FlowConsecutiveFrame::ObjectPtr FlowConsecutiveFrame::create( const MapPtr &pare
     return ObjectPtr( new FlowConsecutiveFrame( parentMap ) );
 }
 
+cv::Mat FlowConsecutiveFrame::track()
+{
+    auto prevFrame = this->previousFrame();
+    auto nextFrame = this->nextFrame();
+
+    if ( prevFrame && nextFrame ) {
+
+        std::vector< size_t > trackedIndexes;
+        std::vector< cv::Point2f > trackedPoints;
+
+        auto fmat = parentWorld()->flowTracker().match( prevFrame, nextFrame, &trackedIndexes, &trackedPoints );
+
+        auto trackPoints = prevFrame->flowPoints();
+
+        for ( size_t i = 0; i < trackedIndexes.size(); ++i ) {
+
+            auto prevPoint = trackPoints[ trackedIndexes[ i ] ];
+            auto nextPoint = nextFrame->addFramePoint( trackedPoints[ i ] );
+
+            prevPoint->setNextPoint( nextPoint );
+            nextPoint->setPrevPoint( prevPoint );
+
+            auto worlPoint = prevPoint->mapPoint();
+
+            if ( worlPoint )
+                nextPoint->setMapPoint( worlPoint );
+
+        }
+
+        return fmat;
+
+    }
+
+    return cv::Mat();
+}
+
 FlowConsecutiveFrame::FlowFramePtr FlowConsecutiveFrame::previousFrame() const
 {
     return std::dynamic_pointer_cast< FlowFrame >( ConsecutiveFrame::previousFrame() );
@@ -1511,6 +1580,11 @@ FlowConsecutiveFrame::FlowFramePtr FlowConsecutiveFrame::previousFrame() const
 FlowConsecutiveFrame::FlowFramePtr FlowConsecutiveFrame::nextFrame() const
 {
     return std::dynamic_pointer_cast< FlowFrame >( ConsecutiveFrame::nextFrame() );
+}
+
+void FlowConsecutiveFrame::createFramePoints( const size_t count )
+{
+    previousFrame()->createFramePoints( count );
 }
 
 // FeatureConsecutiveFrame
@@ -1655,35 +1729,6 @@ DenseFrame::ObjectPtr DenseFrame::create( const MapPtr &parentMap )
     return ObjectPtr( new DenseFrame( parentMap ) );
 }
 
-void DenseFrame::replace( const ProcessedDenseFramePtr &frame )
-{
-    StereoFrame::replace( frame );
-
-    replaceProcedure( frame );
-
-}
-
-void DenseFrame::replaceAndClean( const ProcessedDenseFramePtr &frame )
-{
-    StereoFrame::replaceAndClean( frame );
-
-    replaceProcedure( frame );
-
-}
-
-void DenseFrame::replaceProcedure( const ProcessedDenseFramePtr &frame )
-{
-    if ( frame ) {
-        // TODO: Smarter selection
-        for ( auto &i : frame->m_points )
-            if ( cv::norm( i.point() ) < m_maximumLenght )
-                m_points.push_back( i );
-
-        setOptimizationGrid( frame->m_optimizationGrid );
-    }
-
-}
-
 std::list< ColorPoint3d > DenseFrame::translatedPoints() const
 {
     std::list< ColorPoint3d > ret;
@@ -1704,6 +1749,7 @@ std::list< ColorPoint3d > DenseFrame::translatedPoints() const
     }
 
     return ret;
+
 }
 
 }

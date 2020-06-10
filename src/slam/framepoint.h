@@ -142,7 +142,7 @@ public:
     using ObjectPtr = std::shared_ptr< FramePoint >;
     using FramePtr = std::shared_ptr< Frame >;
 
-    using FeaturePointPtr = std::shared_ptr< FeaturePoint >;
+    using MonoPointPtr = std::shared_ptr< MonoPoint >;
 
     virtual const cv::Point2f &point() const override;
     virtual const cv::Scalar &color() const override;
@@ -152,7 +152,7 @@ public:
 
     FramePtr parentFrame() const;
 
-    void replace( const FeaturePointPtr &point );
+    void replace( const MonoPointPtr &point );
 
 protected:
     FramePoint( const FramePtr &parentFrame );

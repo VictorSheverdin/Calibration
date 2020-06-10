@@ -53,6 +53,12 @@ void CPUFlowTracker::prepareFrame( FlowFrame *frame )
 
         frame->setExtractedPoints( points );
 
+        std::vector< cv::Mat > imagePyramid;
+
+        m_pointsProcessor.buildImagePyramid( frame->image(), &imagePyramid );
+
+        frame->setImagePyramid( imagePyramid );
+
     }
 
 }
@@ -70,7 +76,7 @@ cv::Mat CPUFlowTracker::match( const FlowFramePtr &frame1, const FlowFramePtr &f
             if ( i )
                 points.push_back( i->point() );
 
-        auto fmat = m_pointsProcessor.track( frame1->image(), points, frame2->image(), trackedIndexes, trackedPoints );
+        auto fmat = m_pointsProcessor.track( frame1->imagePyramid(), points, frame2->imagePyramid(), trackedIndexes, trackedPoints );
 
         return fmat;
     }

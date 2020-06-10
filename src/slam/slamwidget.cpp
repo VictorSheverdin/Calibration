@@ -637,7 +637,7 @@ SlamImageWidget::SlamImageWidget( const QStringList &leftList, const QStringList
 void SlamImageWidget::initialize()
 {
     m_index = 0;
-    startTimer( 100 );    
+    startTimer( 100 );
 }
 
 void SlamImageWidget::setImageList( const QStringList &leftList, const QStringList &rightList )

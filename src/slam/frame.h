@@ -9,6 +9,7 @@
 #include "src/common/projectionmatrix.h"
 #include "src/common/featureprocessor.h"
 #include "src/common/stereoprocessor.h"
+#include "src/common/matrix.h"
 
 #include <g2o/types/slam3d/se3quat.h>
 
@@ -122,10 +123,13 @@ public:
     virtual std::vector< PointPtr > framePoints() const override;
     virtual std::vector< cv::Point2f > extractedPoints() const override;
 
-    std::list< FlowPointPtr > &flowPoints();
-    const std::list< FlowPointPtr > &flowPoints() const;
+    std::vector< FlowPointPtr > &flowPoints();
+    const std::vector< FlowPointPtr > &flowPoints() const;
+
+    FlowPointPtr framePoint( const cv::Point2f &point ) const;
 
     void createFramePoints( const size_t count );
+    FlowPointPtr addFramePoint( const cv::Point2f &point );
 
     void setExtractedPoints( const std::vector< cv::Point2f > &value );
 
@@ -134,9 +138,11 @@ protected:
 
     std::vector< cv::Point2f > m_extractedPoints;
 
-    std::list< FlowPointPtr > m_points;
+    std::vector< FlowPointPtr > m_points;
 
     size_t m_usePointsCount;
+
+    matrix< FlowPointPtr > m_searchMatrix;
 
     FlowPointPtr createFramePoint( const size_t keyPointIndex );
 
@@ -205,7 +211,7 @@ class Frame : public MonoFrame, public std::enable_shared_from_this< Frame >
 {
 public:
     using ObjectPtr = std::shared_ptr< Frame >;
-    using FeatureFramePtr = std::shared_ptr< FeatureFrame >;
+    using ProcessedFramePtr = std::shared_ptr< ProcessedFrame >;
 
     using FramePointPtr = std::shared_ptr< FramePoint >;
 
@@ -213,8 +219,8 @@ public:
 
     static ObjectPtr create();
 
-    void replace( const FeatureFramePtr &frame );
-    void replaceAndClean( const FeatureFramePtr &frame );
+    void replace( const ProcessedFramePtr &frame );
+    void replaceAndClean( const ProcessedFramePtr &frame );
 
 protected:
     Frame();
@@ -309,28 +315,32 @@ public:
 
 protected:
     ProcessedStereoFrame( const MapPtr &parentMap );
+
+    static const double m_minXDistasnce;
+    static const double m_maxYDistasnce;
+
 };
 
 class FlowStereoFrame : public ProcessedStereoFrame
 {
 public:
     using ObjectPtr = std::shared_ptr< FlowStereoFrame >;
-    using FlowMapPtr = std::shared_ptr< FlowMap >;
+    using MapPtr = std::shared_ptr< FlowMap >;
     using FlowFramePtr = std::shared_ptr< FlowFrame >;
 
-    static ObjectPtr create( const FlowMapPtr &parentMap );
+    static ObjectPtr create( const MapPtr &parentMap );
 
     void load( const CvImage &image1, const CvImage &image2 );
 
     FlowFramePtr leftFrame() const;
     FlowFramePtr rightFrame() const;
 
-    FlowMapPtr parentMap() const;
+    MapPtr parentMap() const;
 
     cv::Mat match();
 
 protected:
-    FlowStereoFrame( const FlowMapPtr &parentMap );
+    FlowStereoFrame( const MapPtr &parentMap );
 
 };
 
@@ -338,7 +348,7 @@ class FeatureStereoFrame : public ProcessedStereoFrame
 {
 public:
     using ObjectPtr = std::shared_ptr< FeatureStereoFrame >;
-    using FeatureMapPtr = std::shared_ptr< FeatureMap >;
+    using MapPtr = std::shared_ptr< FeatureMap >;
     using FeatureFramePtr = std::shared_ptr< FeatureFrame >;
 
     static ObjectPtr create( const MapPtr &parentMap );
@@ -348,15 +358,12 @@ public:
     FeatureFramePtr leftFrame() const;
     FeatureFramePtr rightFrame() const;
 
-    FeatureMapPtr parentMap() const;
+    MapPtr parentMap() const;
 
     cv::Mat match();
 
 protected:
     FeatureStereoFrame( const MapPtr &parentMap );
-
-    static const double m_minXDistasnce;
-    static const double m_maxYDistasnce;
 
 };
 
@@ -405,8 +412,8 @@ protected:
 
 };
 
-using FeatureDenseFrame = ProcessedDenseFrame< FeatureStereoFrame >;
 using FlowDenseFrame = ProcessedDenseFrame< FlowStereoFrame >;
+using FeatureDenseFrame = ProcessedDenseFrame< FeatureStereoFrame >;
 
 class ConsecutiveFrame : public DoubleFrame
 {
@@ -452,8 +459,12 @@ public:
 
     static ObjectPtr create( const MapPtr &parentMap );
 
+    cv::Mat track();
+
     FlowFramePtr previousFrame() const;
     FlowFramePtr nextFrame() const;
+
+    void createFramePoints( const size_t count );
 
 protected:
     FlowConsecutiveFrame( const MapPtr &parentMap );
@@ -486,7 +497,7 @@ class StereoFrame : public StereoFrameBase
 public:
     using ObjectPtr = std::shared_ptr< StereoFrame >;
     using FramePtr = std::shared_ptr< Frame >;
-    using ProcessedStereoFramePtr = std::shared_ptr< FeatureStereoFrame >;
+    using ProcessedStereoFramePtr = std::shared_ptr< ProcessedStereoFrame >;
 
     static ObjectPtr create( const MapPtr &parentMap );
 
@@ -510,22 +521,23 @@ class DenseFrame : public StereoFrame, public DenseFrameBase
 {
 public:
     using ObjectPtr = std::shared_ptr< DenseFrame >;
-    using ProcessedDenseFramePtr = std::shared_ptr< FeatureDenseFrame >;
 
     static ObjectPtr create( const MapPtr &parentMap );
 
-    void replace( const ProcessedDenseFramePtr &frame );
-    void replaceAndClean( const ProcessedDenseFramePtr &frame );
+    template < class DENSE_FRAME_TYPE >
+    void replace( const std::shared_ptr< DENSE_FRAME_TYPE > &frame );
+    template < class DENSE_FRAME_TYPE >
+    void replaceAndClean( const std::shared_ptr< DENSE_FRAME_TYPE > &frame );
 
     std::list< ColorPoint3d > translatedPoints() const;
 
 protected:
     DenseFrame( const MapPtr &parentMap );
 
-    void replaceProcedure( const ProcessedDenseFramePtr &frame );
+    template < class DENSE_FRAME_TYPE >
+    void replaceProcedure( const std::shared_ptr< DENSE_FRAME_TYPE > &frame );
 
     static const double m_maximumLenght;\
-
 
 };
 

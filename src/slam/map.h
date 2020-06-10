@@ -46,6 +46,8 @@ public:
 
     bool isRudimental() const;
 
+    virtual bool track( const CvImage &leftImage, const CvImage &rightImage ) = 0;
+
 protected:
     using WorldPtrImpl = std::weak_ptr< World >;
 
@@ -75,17 +77,27 @@ protected:
     static const double m_minTrackInliersRatio;
     static const double m_goodTrackInliersRatio;
 
+    size_t m_previousKeypointsCount;
+
+private:
+    void initialize();
+
 };
 
 class FlowMap : public Map
 {
 public:
-protected:
     using ObjectPtr = std::shared_ptr< FlowMap >;
 
-    FlowMap( const StereoCameraMatrix &projectionMatrix, const WorldPtr &parentWorld );
-
     static ObjectPtr create( const StereoCameraMatrix &cameraMatrix, const WorldPtr &parentWorld );
+
+    std::shared_ptr< FlowMap > shared_from_this();
+    std::shared_ptr< const FlowMap > shared_from_this() const;
+
+    virtual bool track( const CvImage &leftImage, const CvImage &rightImage ) override;
+
+protected:
+    FlowMap( const StereoCameraMatrix &projectionMatrix, const WorldPtr &parentWorld );
 
 };
 
@@ -96,15 +108,13 @@ public:
 
     static ObjectPtr create( const StereoCameraMatrix &cameraMatrix, const WorldPtr &parentWorld );
 
-    bool track( const CvImage &leftImage, const CvImage &rightImage );
+    std::shared_ptr< FeatureMap > shared_from_this();
+    std::shared_ptr< const FeatureMap > shared_from_this() const;
+
+    virtual bool track( const CvImage &leftImage, const CvImage &rightImage ) override;
 
 protected:
     FeatureMap( const StereoCameraMatrix &projectionMatrix, const WorldPtr &parentWorld );
-
-    size_t m_previousKeypointsCount;
-
-private:
-    void initialize();
 
 };
 

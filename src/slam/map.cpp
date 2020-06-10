@@ -22,6 +22,11 @@ const double Map::m_goodTrackInliersRatio = 0.9;
 Map::Map( const StereoCameraMatrix &projectionMatrix, const WorldPtr &parentWorld )
     :  m_parentWorld( parentWorld ), m_projectionMatrix( projectionMatrix )
 {
+    initialize();
+}
+
+void Map::initialize() {
+    m_previousKeypointsCount = m_goodTrackPoints * 2;
 }
 
 Map::WorldPtr Map::parentWorld() const
@@ -165,21 +170,140 @@ FlowMap::ObjectPtr FlowMap::create( const StereoCameraMatrix &cameraMatrix , con
     return ObjectPtr( new FlowMap( cameraMatrix, parentWorld ) );
 }
 
+std::shared_ptr< FlowMap > FlowMap::shared_from_this()
+{
+    return std::dynamic_pointer_cast< FlowMap >( Map::shared_from_this() );
+}
+
+std::shared_ptr< const FlowMap > FlowMap::shared_from_this() const
+{
+    return std::dynamic_pointer_cast< const FlowMap >( Map::shared_from_this() );
+}
+
+bool FlowMap::track( const CvImage &leftImage, const CvImage &rightImage )
+{
+    auto denseFrame = FlowDenseFrame::create( shared_from_this() );
+
+    denseFrame->load( leftImage, rightImage );
+
+    /*if ( m_frames.size() % 5 == 0 )
+        denseFrame->processDenseCloud();*/
+
+    if ( m_frames.empty() ) {
+
+        denseFrame->setProjectionMatrix( m_projectionMatrix );
+        m_frames.push_back( denseFrame );
+
+    }
+    else {
+
+        auto previousDenseFrame = std::dynamic_pointer_cast< FlowDenseFrame >( m_frames.back() );
+
+        if ( previousDenseFrame ) {
+
+            auto previousLeftFrame = std::dynamic_pointer_cast< FlowFrame >( previousDenseFrame->leftFrame() );
+            auto previousRightFrame = std::dynamic_pointer_cast< FlowFrame >( previousDenseFrame->rightFrame() );
+            auto leftFrame = std::dynamic_pointer_cast< FlowFrame >( denseFrame->leftFrame() );
+            auto rightFrame = std::dynamic_pointer_cast< FlowFrame >( denseFrame->rightFrame() );
+
+            auto adjacentLeftFrame = FlowConsecutiveFrame::create( shared_from_this() );
+
+            adjacentLeftFrame->setFrames( previousLeftFrame, leftFrame );
+
+            auto keypointsCount = m_previousKeypointsCount;
+
+            previousLeftFrame->triangulatePoints();
+
+            int trackedPointCount;
+
+            double inliersRatio = 0.0;
+
+            auto maxKeypointsCount = previousLeftFrame->extractedPointsCount();
+
+            int triangulatePointsCount = 0;
+
+            do {
+
+                do {
+
+                    previousLeftFrame->createFramePoints( keypointsCount );
+
+                    previousDenseFrame->match();
+                    triangulatePointsCount = previousDenseFrame->triangulatePoints();
+
+                    auto trackFramePointsCount = std::max( 0, m_trackFramePointsCount - adjacentLeftFrame->trackFramePointsCount() );
+
+                    adjacentLeftFrame->createFramePoints( trackFramePointsCount );
+
+                    adjacentLeftFrame->track();
+
+                    trackedPointCount = adjacentLeftFrame->posePointsCount();
+
+                    m_previousKeypointsCount = keypointsCount;
+
+                    keypointsCount *= 2;
+
+                } while( trackedPointCount < m_goodTrackPoints && m_previousKeypointsCount <= maxKeypointsCount );
+
+                inliersRatio = adjacentLeftFrame->recoverPose();
+
+            } while ( inliersRatio < m_goodTrackInliersRatio && m_previousKeypointsCount <= maxKeypointsCount );
+
+            std::cout << "Prev keypoints count: " << previousLeftFrame->extractedPointsCount() << std::endl;
+            std::cout << "Cur keypoints count: " << leftFrame->extractedPointsCount() << std::endl;
+            std::cout << "Stereo points count: " << previousDenseFrame->stereoPointsCount() << std::endl;
+            std::cout << "Triangulated points count: " << triangulatePointsCount << std::endl;
+            std::cout << "Adjacent points count: " << adjacentLeftFrame->adjacentPointsCount() << std::endl;
+            std::cout << "Tracked points count: " << trackedPointCount << std::endl;
+
+            std::cout << "Inliers: " << inliersRatio << std::endl;
+
+            if ( trackedPointCount < m_minTrackPoints || inliersRatio < m_minTrackInliersRatio )
+                return false;
+
+            if ( trackedPointCount > m_overTrackPoints )
+                m_previousKeypointsCount /= 2;
+
+            rightFrame->setCameraMatrix( previousRightFrame->cameraMatrix() );
+            rightFrame->setRotation( leftFrame->rotation() );
+            rightFrame->setTranslation( leftFrame->translation() + baselineVector() );
+
+            previousDenseFrame->cleanMapPoints();
+
+            auto replacedFrame = DenseFrame::create( shared_from_this() );
+            replacedFrame->replaceAndClean( previousDenseFrame );
+
+            m_frames.back() = replacedFrame;
+
+        }
+
+        m_frames.push_back( denseFrame );
+
+    }
+
+    return true;
+
+}
+
 // FeatureMap
 FeatureMap::FeatureMap( const StereoCameraMatrix &projectionMatrix, const WorldPtr &parentWorld)
     :  Map( projectionMatrix, parentWorld )
 {
-    initialize();
-}
-
-void FeatureMap::initialize()
-{
-    m_previousKeypointsCount = m_goodTrackPoints * 2;
 }
 
 FeatureMap::ObjectPtr FeatureMap::create( const StereoCameraMatrix &cameraMatrix , const WorldPtr &parentWorld )
 {
     return ObjectPtr( new FeatureMap( cameraMatrix, parentWorld ) );
+}
+
+std::shared_ptr< FeatureMap > FeatureMap::shared_from_this()
+{
+    return std::dynamic_pointer_cast< FeatureMap >( Map::shared_from_this() );
+}
+
+std::shared_ptr< const FeatureMap > FeatureMap::shared_from_this() const
+{
+    return std::dynamic_pointer_cast< const FeatureMap >( Map::shared_from_this() );
 }
 
 bool FeatureMap::track( const CvImage &leftImage, const CvImage &rightImage )
@@ -200,6 +324,7 @@ bool FeatureMap::track( const CvImage &leftImage, const CvImage &rightImage )
 
     }
     else {
+
         auto previousDenseFrame = std::dynamic_pointer_cast< FeatureDenseFrame >( m_frames.back() );
 
         if ( previousDenseFrame ) {

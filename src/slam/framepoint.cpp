@@ -321,7 +321,7 @@ namespace slam {
         return std::dynamic_pointer_cast< Frame >( m_parentFrame.lock() );
     }
 
-    void FramePoint::replace( const FeaturePointPtr &point )
+    void FramePoint::replace( const MonoPointPtr &point )
     {
         if ( point ) {
 

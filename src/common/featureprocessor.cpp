@@ -39,8 +39,15 @@ const double FlowProcessorBase::m_errorRatio = 0.3;
 
 void FlowProcessorBase::extractPoints( const CvImage &image, std::vector< cv::Point2f > *points )
 {
-    if ( points )
-        cv::goodFeaturesToTrack( image, *points, 25000, 1.e-1, 1. );
+    if ( points ) {
+
+        cv::Mat gray;
+        cv::cvtColor( image, gray, cv::COLOR_BGR2GRAY );
+
+        cv::goodFeaturesToTrack( gray, *points, 10000, 1.e-1, 3. );
+
+    }
+
 }
 
 // GPUFlowProcessor
@@ -331,7 +338,7 @@ GFTTProcessor::GFTTProcessor()
 
 void GFTTProcessor::initialize()
 {
-    m_processor = cv::GFTTDetector::create( 1000, 1.e-1, 3.0, 3 );
+    m_processor = cv::GFTTDetector::create( 10000, 1.e-1, 3.0 );
 }
 
 cv::Ptr< cv::GFTTDetector > GFTTProcessor::processor() const

@@ -34,6 +34,8 @@ World::World( const StereoCameraMatrix &cameraMatrix )
 
 void World::initialize( const StereoCameraMatrix &cameraMatrix )
 {
+    m_trackType = TrackType::FLOW;
+
     auto tracker = new CPUOpticalTracker();
     tracker->setMaxFeatures( m_keypointsCount );
 
@@ -64,7 +66,7 @@ std::list < World::MapPtr > World::maps() const
 bool World::track( const CvImage &leftImage, const CvImage &rightImage )
 {
     if ( m_maps.empty() )
-        m_maps.push_back( FeatureMap::create( m_startCameraMatrix, shared_from_this() ) );
+        createMap( m_startCameraMatrix );
 
     auto result = m_maps.back()->track( leftImage, rightImage );
 
@@ -75,7 +77,7 @@ bool World::track( const CvImage &leftImage, const CvImage &rightImage )
         if ( m_maps.back()->isRudimental() )
             m_maps.pop_back();
 
-        m_maps.push_back( FeatureMap::create( lastProjectionMatrix, shared_from_this() ) );
+        createMap( lastProjectionMatrix );
 
         m_maps.back()->track( leftImage, rightImage );
 
@@ -145,6 +147,15 @@ double World::minAdjacentPointsDistance() const
 double World::minAdjacentCameraMultiplier() const
 {
     return m_minAdjacentCameraMultiplier;
+}
+
+void World::createMap( const StereoCameraMatrix &cameraMatrix )
+{
+    if ( m_trackType == TrackType::FLOW )
+        m_maps.push_back( FlowMap::create( cameraMatrix, shared_from_this() ) );
+    else if ( m_trackType == TrackType::FEATURES )
+        m_maps.push_back( FeatureMap::create( cameraMatrix, shared_from_this() ) );
+
 }
 
 }

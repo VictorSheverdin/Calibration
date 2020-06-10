@@ -175,7 +175,7 @@ CvImage SlamThread::pointsImage() const
 
         if ( !frames.empty() ) {
 
-            auto processedFrame = std::dynamic_pointer_cast< slam::FeatureStereoFrame >( frames.back() );
+            auto processedFrame = std::dynamic_pointer_cast< slam::ProcessedStereoFrame >( frames.back() );
 
             if ( processedFrame )
                 return processedFrame->drawExtractedPoints();
@@ -198,7 +198,7 @@ CvImage SlamThread::tracksImage() const
 
         if ( !frames.empty() ) {
 
-            auto processedFrame = std::dynamic_pointer_cast< slam::FeatureStereoFrame >( frames.back() );
+            auto processedFrame = std::dynamic_pointer_cast< slam::ProcessedStereoFrame >( frames.back() );
 
             if ( processedFrame )
                 return processedFrame->leftFrame()->drawTracks();
@@ -221,7 +221,7 @@ CvImage SlamThread::stereoImage() const
 
         if ( frames.size() > 1 ) {
 
-            auto processedFrame = std::dynamic_pointer_cast< slam::FeatureStereoFrame >( *(++frames.rbegin()) );
+            auto processedFrame = std::dynamic_pointer_cast< slam::ProcessedStereoFrame >( *(++frames.rbegin()) );
 
             if ( processedFrame )
                 return processedFrame->drawStereoCorrespondences();
