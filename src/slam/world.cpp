@@ -34,7 +34,7 @@ World::World( const StereoCameraMatrix &cameraMatrix )
 
 void World::initialize( const StereoCameraMatrix &cameraMatrix )
 {
-    m_trackType = TrackType::FLOW;
+    m_trackType = TrackType::FEATURES;
 
     auto tracker = new CPUOpticalTracker();
     tracker->setMaxFeatures( m_keypointsCount );

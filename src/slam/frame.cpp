@@ -533,7 +533,7 @@ const std::vector< FlowFrame::FlowPointPtr > &FlowFrame::flowPoints() const
 
 FlowFrame::FlowPointPtr FlowFrame::framePoint( const cv::Point2f &point ) const
 {
-    return m_searchMatrix.at( point.x, point.y );
+    return m_searchMatrix.at( point.y, point.x );
 }
 
 void FlowFrame::createFramePoints( const size_t count )

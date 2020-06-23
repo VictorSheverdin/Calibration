@@ -44,7 +44,7 @@ void FlowProcessorBase::extractPoints( const CvImage &image, std::vector< cv::Po
         cv::Mat gray;
         cv::cvtColor( image, gray, cv::COLOR_BGR2GRAY );
 
-        cv::goodFeaturesToTrack( gray, *points, 10000, 1.e-1, 3. );
+        cv::goodFeaturesToTrack( gray, *points, 25000, 1.e-1, 3. );
 
     }
 
@@ -338,7 +338,7 @@ GFTTProcessor::GFTTProcessor()
 
 void GFTTProcessor::initialize()
 {
-    m_processor = cv::GFTTDetector::create( 10000, 1.e-1, 3.0 );
+    m_processor = cv::GFTTDetector::create( 25000, 1.e-1, 3.0 );
 }
 
 cv::Ptr< cv::GFTTDetector > GFTTProcessor::processor() const

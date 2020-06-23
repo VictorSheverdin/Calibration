@@ -99,10 +99,10 @@ void StereoResultProcessor::setCalibration( const StereoCalibrationDataShort &da
 {
     auto calibration = data;
 
-    auto cropRect = calibration.cropRect();
+    /*auto cropRect = calibration.cropRect();
     auto principal = cv::Vec2f( -cropRect.x, -cropRect.y );
 
-    calibration.projectionMatrix().movePrincipalPoint( principal );
+    calibration.projectionMatrix().movePrincipalPoint( principal );*/
 
     m_rectificationProcessor.setCalibrationData( calibration );
     setDisparityToDepthMatrix( calibration.disparityToDepthMatrix() );
