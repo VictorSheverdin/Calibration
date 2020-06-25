@@ -44,7 +44,7 @@ void FlowProcessorBase::extractPoints( const CvImage &image, std::vector< cv::Po
         cv::Mat gray;
         cv::cvtColor( image, gray, cv::COLOR_BGR2GRAY );
 
-        cv::goodFeaturesToTrack( gray, *points, 25000, 1.e-1, 3. );
+        cv::goodFeaturesToTrack( gray, *points, 1000, 1.e-3, 10. );
 
     }
 
@@ -91,49 +91,49 @@ cv::Mat GPUFlowProcessor::track( const CvImage &sourceImage, const std::vector< 
     trackedIndexes->clear();
 
     std::vector< cv::Point2f > opticalPoints;
-    std::vector< cv::Point2f > checkPoints;
+    //std::vector< cv::Point2f > checkPoints;
 
     std::vector< unsigned char > statuses;
     std::vector< float > err;
 
-    std::vector< unsigned char > checkStatuses;
-    std::vector< float > checkErr;
+    /*std::vector< unsigned char > checkStatuses;
+    std::vector< float > checkErr;*/
 
     m_gpuSourceImage.upload( sourceImage );
     m_gpuTargetImage.upload( targetImage );
     m_gpuSourcePoints.upload( sourcePoints );
 
     m_opticalProcessor->calc( m_gpuSourceImage, m_gpuTargetImage, m_gpuSourcePoints, m_gpuOpticalPoints, m_gpuStatuses, m_gpuErr );
-    m_opticalProcessor->calc( m_gpuTargetImage, m_gpuSourceImage, m_gpuOpticalPoints, m_gpuCheckPoints, m_gpuCheckStatuses, m_gpuCheckErr );
+    //m_opticalProcessor->calc( m_gpuTargetImage, m_gpuSourceImage, m_gpuOpticalPoints, m_gpuCheckPoints, m_gpuCheckStatuses, m_gpuCheckErr );
 
     download( m_gpuOpticalPoints, opticalPoints );
-    download( m_gpuCheckPoints, checkPoints );
+    //download( m_gpuCheckPoints, checkPoints );
     download( m_gpuStatuses, statuses );
-    download( m_gpuCheckStatuses, checkStatuses );
+    //download( m_gpuCheckStatuses, checkStatuses );
     download( m_gpuErr, err );
-    download( m_gpuCheckErr, checkErr );
+    //download( m_gpuCheckErr, checkErr );
 
-    if ( !err.empty() && err.size() == checkErr.size() ) {
+    if ( !err.empty() /*&& err.size() == checkErr.size()*/ ) {
 
         float minErr;
         float maxErr;
-        float minCheckErr;
-        float maxCheckErr;
+        //float minCheckErr;
+        //float maxCheckErr;
 
         minErr = err.front();
         maxErr = err.front();
-        minCheckErr = checkErr.front();
-        maxCheckErr = checkErr.front();
+        //minCheckErr = checkErr.front();
+        //maxCheckErr = checkErr.front();
 
         for ( size_t i = 1; i < err.size(); ++i ) {
             minErr = std::min( minErr, err[ i ] );
             maxErr = std::max( maxErr, err[ i ] );
-            minCheckErr = std::min( minCheckErr, checkErr[ i ] );
-            maxCheckErr = std::max( maxCheckErr, checkErr[ i ] );
+            //minCheckErr = std::min( minCheckErr, checkErr[ i ] );
+            //maxCheckErr = std::max( maxCheckErr, checkErr[ i ] );
         }
 
         auto errDiff = maxErr - minErr;
-        auto checkErrDiff = maxCheckErr - minCheckErr;
+        //auto checkErrDiff = maxCheckErr - minCheckErr;
 
         std::vector< cv::Point2f > points1;
         std::vector< cv::Point2f > points2;
@@ -146,11 +146,12 @@ cv::Mat GPUFlowProcessor::track( const CvImage &sourceImage, const std::vector< 
         points2.reserve( statuses.size() );
 
         auto errThreshold = minErr + errDiff * m_errorRatio;
-        auto checkErrThreshold = minCheckErr + checkErrDiff * m_errorRatio;
+        //auto checkErrThreshold = minCheckErr + checkErrDiff * m_errorRatio;
 
         for ( size_t i = 0; i < statuses.size(); ++i ) {
 
-            if ( statuses[i] && checkStatuses[i] && err[i] < errThreshold && checkErr[i] < checkErrThreshold && cv::norm( checkPoints[ i ] - sourcePoints[ i ] ) < m_maxDistance  ) {
+            if ( statuses[i] /*&& checkStatuses[i]*/ && err[i] < errThreshold /*&& checkErr[i] < checkErrThreshold && cv::norm( checkPoints[ i ] - sourcePoints[ i ] ) < m_maxDistance*/
+                 && opticalPoints[ i ].x >= 0 && opticalPoints[ i ].y >= 0 && opticalPoints[ i ].x < targetImage.cols &&  opticalPoints[ i ].y < targetImage.rows ) {
                 points1.push_back( sourcePoints[ i ] );
                 points2.push_back( opticalPoints[ i ] );
 
@@ -195,7 +196,7 @@ cv::Mat GPUFlowProcessor::track( const CvImage &sourceImage, const std::vector< 
 }
 
 // CPUFlowProcessor
-cv::Mat CPUFlowProcessor::track( const std::vector<cv::Mat> &sourceImagePyramid, const std::vector<cv::Point2f> &sourcePoints, const std::vector<cv::Mat> &targetImagePyramid, std::vector< size_t > *trackedIndexes , std::vector< cv::Point2f > *trackedPoints )
+cv::Mat CPUFlowProcessor::track( const std::vector<cv::Mat> &sourceImagePyramid, const std::vector< cv::Point2f > &sourcePoints, const std::vector< cv::Mat > &targetImagePyramid, std::vector< size_t > *trackedIndexes , std::vector< cv::Point2f > *trackedPoints )
 {
     if ( !trackedPoints || !trackedIndexes )
         return cv::Mat();
@@ -250,9 +251,14 @@ cv::Mat CPUFlowProcessor::track( const std::vector<cv::Mat> &sourceImagePyramid,
         auto errThreshold = minErr + errDiff * m_errorRatio;
         auto checkErrThreshold = minCheckErr + checkErrDiff * m_errorRatio;
 
+        auto rows = targetImagePyramid.front().rows;
+        auto cols = targetImagePyramid.front().cols;
+
         for ( size_t i = 0; i < statuses.size(); ++i ) {
 
-            if ( statuses[i] && checkStatuses[i] && err[i] < errThreshold && checkErr[i] < checkErrThreshold && cv::norm( checkPoints[ i ] - sourcePoints[ i ] ) < m_maxDistance  ) {
+            if ( statuses[i] && checkStatuses[i] && err[i] < errThreshold && checkErr[i] < checkErrThreshold && cv::norm( checkPoints[ i ] - sourcePoints[ i ] ) < m_maxDistance
+                 && opticalPoints[ i ].x >= 0 && opticalPoints[ i ].y >= 0 && opticalPoints[ i ].x < cols &&  opticalPoints[ i ].y < rows ) {
+
                 points1.push_back( sourcePoints[ i ] );
                 points2.push_back( opticalPoints[ i ] );
 
@@ -338,7 +344,7 @@ GFTTProcessor::GFTTProcessor()
 
 void GFTTProcessor::initialize()
 {
-    m_processor = cv::GFTTDetector::create( 25000, 1.e-1, 3.0 );
+    m_processor = cv::GFTTDetector::create( 1000, 1.e-3, 10. );
 }
 
 cv::Ptr< cv::GFTTDetector > GFTTProcessor::processor() const

@@ -5,9 +5,10 @@
 namespace slam {
 
 class FeatureFrame;
+class FeaturePoint;
 class FlowFrame;
 
-class FlowTrackerBase
+class FlowTracker
 {
 public:
     using FlowFramePtr = std::shared_ptr< FlowFrame >;
@@ -17,10 +18,10 @@ public:
     virtual cv::Mat match( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::vector<size_t> *trackedIndexes, std::vector<cv::Point2f> *trackedPoints ) = 0;
 
 protected:
-    FlowTrackerBase() = default;
+    FlowTracker() = default;
 };
 
-class GPUFlowTracker : public FlowTrackerBase
+class GPUFlowTracker : public FlowTracker
 {
 public:
     GPUFlowTracker() = default;
@@ -34,7 +35,7 @@ protected:
 
 };
 
-class CPUFlowTracker : public FlowTrackerBase
+class CPUFlowTracker : public FlowTracker
 {
 public:
     CPUFlowTracker() = default;
@@ -52,6 +53,7 @@ class FeatureTracker
 {
 public:
     using FeatureFramePtr = std::shared_ptr< FeatureFrame >;
+    using FeaturePointPtr = std::shared_ptr< FeaturePoint >;
 
     virtual void prepareFrame( FeatureFrame *frame ) = 0;
     virtual cv::Mat match( const FeatureFramePtr &frame1, const FeatureFramePtr &frame2, std::vector< cv::DMatch > *matches ) = 0;

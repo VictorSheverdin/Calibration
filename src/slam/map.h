@@ -67,17 +67,15 @@ protected:
 
     static const double m_minTriangulateDistanceMultiplier;
 
-    static const int m_minTrackPoints = 1 << 6;
+    static const size_t m_minTrackPoints = 1 << 6;
 
-    static const int m_goodTrackPoints = 1 << 7;
-    static const int m_overTrackPoints = 1 << 8;
+    static const size_t m_goodTrackPoints = 1 << 7;
+    static const size_t m_overTrackPoints = 1 << 8;
 
-    static const int m_trackFramePointsCount = 1 << 7;
+    static const size_t m_trackFramePointsCount = 1 << 7;
 
     static const double m_minTrackInliersRatio;
     static const double m_goodTrackInliersRatio;
-
-    size_t m_previousKeypointsCount;
 
 private:
     void initialize();

@@ -26,7 +26,6 @@ Map::Map( const StereoCameraMatrix &projectionMatrix, const WorldPtr &parentWorl
 }
 
 void Map::initialize() {
-    m_previousKeypointsCount = m_goodTrackPoints * 2;
 }
 
 Map::WorldPtr Map::parentWorld() const
@@ -181,13 +180,15 @@ std::shared_ptr< const FlowMap > FlowMap::shared_from_this() const
 }
 
 bool FlowMap::track( const CvImage &leftImage, const CvImage &rightImage )
-{
+{    
     auto denseFrame = FlowDenseFrame::create( shared_from_this() );
 
     denseFrame->load( leftImage, rightImage );
 
     /*if ( m_frames.size() % 5 == 0 )
         denseFrame->processDenseCloud();*/
+
+    const std::lock_guard< std::mutex > lock( m_mutex );
 
     if ( m_frames.empty() ) {
 
@@ -210,11 +211,9 @@ bool FlowMap::track( const CvImage &leftImage, const CvImage &rightImage )
 
             adjacentLeftFrame->setFrames( previousLeftFrame, leftFrame );
 
-            auto keypointsCount = m_previousKeypointsCount;
-
             previousLeftFrame->triangulatePoints();
 
-            int trackedPointCount;
+            size_t trackedPointCount;
 
             double inliersRatio = 0.0;
 
@@ -222,47 +221,46 @@ bool FlowMap::track( const CvImage &leftImage, const CvImage &rightImage )
 
             int triangulatePointsCount = 0;
 
+            std::cout << "Prev keypoints count: " << previousLeftFrame->extractedPointsCount() << std::endl;
+            std::cout << "Cur keypoints count: " << leftFrame->extractedPointsCount() << std::endl;
+
+            auto extractPointsCount = m_goodTrackPoints;
+
             do {
 
                 do {
 
-                    previousLeftFrame->createFramePoints( keypointsCount );
+                    adjacentLeftFrame->createFramePoints( extractPointsCount );
 
                     previousDenseFrame->match();
                     triangulatePointsCount = previousDenseFrame->triangulatePoints();
-
-                    auto trackFramePointsCount = std::max( 0, m_trackFramePointsCount - adjacentLeftFrame->trackFramePointsCount() );
-
-                    adjacentLeftFrame->createFramePoints( trackFramePointsCount );
 
                     adjacentLeftFrame->track();
 
                     trackedPointCount = adjacentLeftFrame->posePointsCount();
 
-                    m_previousKeypointsCount = keypointsCount;
+                    std::cout << "!" << previousLeftFrame->framePoints().size() << " " << maxKeypointsCount << std::endl;
 
-                    keypointsCount *= 2;
-
-                } while( trackedPointCount < m_goodTrackPoints && m_previousKeypointsCount <= maxKeypointsCount );
+                } while( trackedPointCount < m_goodTrackPoints && previousLeftFrame->framePoints().size() < maxKeypointsCount );
 
                 inliersRatio = adjacentLeftFrame->recoverPose();
 
-            } while ( inliersRatio < m_goodTrackInliersRatio && m_previousKeypointsCount <= maxKeypointsCount );
+                std::cout << "Stereo points count: " << previousDenseFrame->stereoPointsCount() << std::endl;
+                std::cout << "Triangulated points count: " << triangulatePointsCount << std::endl;
+                std::cout << "Adjacent points count: " << adjacentLeftFrame->adjacentPointsCount() << std::endl;
+                std::cout << "Tracked points count: " << trackedPointCount << std::endl;
 
-            std::cout << "Prev keypoints count: " << previousLeftFrame->extractedPointsCount() << std::endl;
-            std::cout << "Cur keypoints count: " << leftFrame->extractedPointsCount() << std::endl;
-            std::cout << "Stereo points count: " << previousDenseFrame->stereoPointsCount() << std::endl;
-            std::cout << "Triangulated points count: " << triangulatePointsCount << std::endl;
-            std::cout << "Adjacent points count: " << adjacentLeftFrame->adjacentPointsCount() << std::endl;
-            std::cout << "Tracked points count: " << trackedPointCount << std::endl;
+                std::cout << "Inliers: " << inliersRatio << std::endl;
 
-            std::cout << "Inliers: " << inliersRatio << std::endl;
+            } while ( inliersRatio < m_goodTrackInliersRatio && previousLeftFrame->framePoints().size() < maxKeypointsCount );
 
             if ( trackedPointCount < m_minTrackPoints || inliersRatio < m_minTrackInliersRatio )
                 return false;
 
-            if ( trackedPointCount > m_overTrackPoints )
-                m_previousKeypointsCount /= 2;
+            auto removeCount = static_cast< int >( adjacentLeftFrame->trackedPointsCount() ) - static_cast< int >( m_trackFramePointsCount );
+
+            /* if ( removeCount > 0 )
+                adjacentLeftFrame->removeExtraTrackPoints( removeCount ); */
 
             rightFrame->setCameraMatrix( previousRightFrame->cameraMatrix() );
             rightFrame->setRotation( leftFrame->rotation() );
@@ -338,11 +336,9 @@ bool FeatureMap::track( const CvImage &leftImage, const CvImage &rightImage )
 
             adjacentLeftFrame->setFrames( previousLeftFrame, leftFrame );
 
-            auto keypointsCount = m_previousKeypointsCount;
-
             previousLeftFrame->triangulatePoints();
 
-            int trackedPointCount;
+            size_t trackedPointCount;
 
             double inliersRatio = 0.0;
 
@@ -350,47 +346,48 @@ bool FeatureMap::track( const CvImage &leftImage, const CvImage &rightImage )
 
             int triangulatePointsCount = 0;
 
+            std::cout << "Prev keypoints count: " << previousLeftFrame->extractedPointsCount() << std::endl;
+            std::cout << "Cur keypoints count: " << leftFrame->extractedPointsCount() << std::endl;
+
+            auto extractPointsCount = m_goodTrackPoints;
+
             do {
 
                 do {
 
-                    previousLeftFrame->createFramePoints( keypointsCount );
+                    extractPointsCount *= 4;
+
+                    adjacentLeftFrame->createFramePoints( extractPointsCount );
 
                     previousDenseFrame->match();
                     triangulatePointsCount = previousDenseFrame->triangulatePoints();
-
-                    auto trackFramePointsCount = std::max( 0, m_trackFramePointsCount - adjacentLeftFrame->trackFramePointsCount() );
-
-                    adjacentLeftFrame->createFramePoints( trackFramePointsCount );
 
                     adjacentLeftFrame->track();
 
                     trackedPointCount = adjacentLeftFrame->posePointsCount();
 
-                    m_previousKeypointsCount = keypointsCount;
+                    std::cout << "!" << previousLeftFrame->framePoints().size() << " " << maxKeypointsCount << std::endl;
 
-                    keypointsCount *= 2;
-
-                } while( trackedPointCount < m_goodTrackPoints && m_previousKeypointsCount <= maxKeypointsCount );
+                } while( trackedPointCount < m_goodTrackPoints && previousLeftFrame->framePoints().size() < maxKeypointsCount );
 
                 inliersRatio = adjacentLeftFrame->recoverPose();
 
-            } while ( inliersRatio < m_goodTrackInliersRatio && m_previousKeypointsCount <= maxKeypointsCount );
+                std::cout << "Stereo points count: " << previousDenseFrame->stereoPointsCount() << std::endl;
+                std::cout << "Triangulated points count: " << triangulatePointsCount << std::endl;
+                std::cout << "Adjacent points count: " << adjacentLeftFrame->adjacentPointsCount() << std::endl;
+                std::cout << "Tracked points count: " << trackedPointCount << std::endl;
 
-            std::cout << "Prev keypoints count: " << previousLeftFrame->extractedPointsCount() << std::endl;
-            std::cout << "Cur keypoints count: " << leftFrame->extractedPointsCount() << std::endl;
-            std::cout << "Stereo points count: " << previousDenseFrame->stereoPointsCount() << std::endl;
-            std::cout << "Triangulated points count: " << triangulatePointsCount << std::endl;
-            std::cout << "Adjacent points count: " << adjacentLeftFrame->adjacentPointsCount() << std::endl;
-            std::cout << "Tracked points count: " << trackedPointCount << std::endl;
+                std::cout << "Inliers: " << inliersRatio << std::endl;
 
-            std::cout << "Inliers: " << inliersRatio << std::endl;
+            } while ( inliersRatio < m_goodTrackInliersRatio && previousLeftFrame->framePoints().size() < maxKeypointsCount );
 
             if ( trackedPointCount < m_minTrackPoints || inliersRatio < m_minTrackInliersRatio )
                 return false;
 
-            if ( trackedPointCount > m_overTrackPoints )
-                m_previousKeypointsCount /= 2;
+            auto removeCount = static_cast< int >( adjacentLeftFrame->trackedPointsCount() ) - static_cast< int >( m_trackFramePointsCount );
+
+            /* if ( removeCount > 0 )
+                adjacentLeftFrame->removeExtraTrackPoints( removeCount ); */
 
             rightFrame->setCameraMatrix( previousRightFrame->cameraMatrix() );
             rightFrame->setRotation( leftFrame->rotation() );

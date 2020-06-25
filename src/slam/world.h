@@ -30,9 +30,7 @@ public:
     BMStereoProcessor &stereoProcessor();
     const BMStereoProcessor &stereoProcessor() const;
 
-    GPUFlowTracker &flowTracker();
-    const GPUFlowTracker &flowTracker() const;
-
+    const std::unique_ptr< FlowTracker > &flowTracker() const;
     const std::unique_ptr< FeatureTracker > &featureTracker() const;
 
     double maxReprojectionError() const;
@@ -52,12 +50,10 @@ protected:
 
     BMStereoProcessor m_stereoProcessor;
 
-    GPUFlowTracker m_flowTracker;
+    std::unique_ptr< FlowTracker > m_flowTracker;
     std::unique_ptr< FeatureTracker > m_featureTracker;
 
     TrackType m_trackType;
-
-    static const int m_keypointsCount = 100000;
 
     static const double m_maxReprojectionError;
 

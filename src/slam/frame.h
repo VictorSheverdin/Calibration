@@ -79,13 +79,16 @@ public:
     void cleanMapPoints();
 
     std::vector< PointPtr > posePoints() const;
-    int posePointsCount() const;
+    size_t posePointsCount() const;
+
+    std::vector< PointPtr > spatialPoints() const;
+    size_t spatialPointsCount() const;
 
     std::vector< PointPtr > trackFramePoints() const;
-    int trackFramePointsCount() const;
+    size_t trackFramePointsCount() const;
 
     std::vector< PointPtr > trackedPoints() const;
-    int trackedPointsCount() const;
+    size_t trackedPointsCount() const;
 
     void setImagePyramid( const std::vector< cv::Mat > &value );
     const std::vector< cv::Mat > &imagePyramid() const;
@@ -307,7 +310,7 @@ public:
     CvImage drawTracks() const;
 
     std::vector< StereoPoint > stereoPoints() const;
-    int stereoPointsCount() const;
+    size_t stereoPointsCount() const;
 
     int triangulatePoints();
 
@@ -430,16 +433,19 @@ public:
     WorldPtr parentWorld() const;
 
     std::vector< AdjacentPoint > adjacentPoints() const;
-    int adjacentPointsCount() const;
+    size_t adjacentPointsCount() const;
 
     std::vector< MonoPointPtr > posePoints() const;
-    int posePointsCount() const;
+    size_t posePointsCount() const;
+
+    std::vector< MonoPointPtr > spatialPoints() const;
+    size_t spatialPointsCount() const;
 
     std::vector< MonoPointPtr > trackFramePoints() const;
-    int trackFramePointsCount() const;
+    size_t trackFramePointsCount() const;
 
     std::vector< MonoPointPtr > trackedPoints() const;
-    int trackedPointsCount() const;
+    size_t trackedPointsCount() const;
 
 protected:
     using MapPtrImpl = std::weak_ptr< Map >;

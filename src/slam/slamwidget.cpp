@@ -637,7 +637,7 @@ SlamImageWidget::SlamImageWidget( const QStringList &leftList, const QStringList
 void SlamImageWidget::initialize()
 {
     m_index = 0;
-    startTimer( 100 );
+    startTimer( 50 );
 }
 
 void SlamImageWidget::setImageList( const QStringList &leftList, const QStringList &rightList )
@@ -655,6 +655,8 @@ void SlamImageWidget::setImageList( const QStringList &leftList, const QStringLi
 void SlamImageWidget::timerEvent( QTimerEvent * )
 {
     if ( m_index < m_leftList.size() ) {
+
+        std::cout << m_leftList[ m_index ].toStdString() << " " << m_rightList[ m_index ].toStdString() << std::endl;
 
         CvImage leftImage( m_leftList[ m_index ].toStdString() );
         CvImage rightImage( m_rightList[ m_index ].toStdString() );

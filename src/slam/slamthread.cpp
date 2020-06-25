@@ -49,7 +49,7 @@ void SlamThread::process( const CvImage leftImage, const CvImage rightImage )
 
 void SlamThread::run()
 {
-   auto localOptimizationThread = std::thread( [ & ] {
+   /*auto localOptimizationThread = std::thread( [ & ] {
 
         while ( !isInterruptionRequested() ) {
             m_system->localAdjustment();
@@ -71,7 +71,7 @@ void SlamThread::run()
         }
 
     } );
-
+*/
     while( !isInterruptionRequested() )
     {
         if ( m_mutex.tryLock( ) ) {
@@ -83,42 +83,36 @@ void SlamThread::run()
                 CvImage leftCroppedImage;
                 CvImage rightCroppedImage;
 
-                cv::rectangle( m_leftFrame, cv::Point( 0, 1500 ), cv::Point( 2048, 2048 ), cv::Scalar( 0, 0, 0, 255 ), cv::FILLED );
-                cv::rectangle( m_rightFrame, cv::Point( 0, 1500 ), cv::Point( 2048, 2048 ), cv::Scalar( 0, 0, 0, 255 ), cv::FILLED );
+                // cv::rectangle( m_leftFrame, cv::Point( 0, 1500 ), cv::Point( 2048, 2048 ), cv::Scalar( 0, 0, 0, 255 ), cv::FILLED );
+                // cv::rectangle( m_rightFrame, cv::Point( 0, 1500 ), cv::Point( 2048, 2048 ), cv::Scalar( 0, 0, 0, 255 ), cv::FILLED );
 
                 if ( m_rectificationProcessor.rectify( m_leftFrame, m_rightFrame, &leftRectifiedImage, &rightRectifiedImage )
                             && m_rectificationProcessor.crop( leftRectifiedImage, rightRectifiedImage, &leftCroppedImage, &rightCroppedImage ) ) {
 
                     auto time = std::chrono::system_clock::now();
 
+                    CvImage leftResizedImage;
+                    CvImage rightResizedImage;
+
                     if ( std::abs( m_scaleFactor - 1.0 ) > DOUBLE_EPS ) {
-                        CvImage leftResizedImage;
-                        CvImage rightResizedImage;
 
                         cv::resize( leftCroppedImage, leftResizedImage, cv::Size(), m_scaleFactor, m_scaleFactor, cv::INTER_CUBIC );
                         cv::resize( rightCroppedImage, rightResizedImage, cv::Size(), m_scaleFactor, m_scaleFactor, cv::INTER_CUBIC );
 
-                        m_system->track( leftResizedImage, rightResizedImage );
                     }
                     else {
 
-                        /*cv::medianBlur( leftCroppedImage, leftCroppedImage, 3 );
-                        cv::medianBlur( rightCroppedImage, rightCroppedImage, 3 );
+                        leftResizedImage = leftCroppedImage;
+                        rightResizedImage = rightCroppedImage;
 
-                        cv::Mat sharpeningKernel = ( cv::Mat_< double >( 3, 3 ) << 0, -1, 0,
-                                -1, 5, -1,
-                                0, -1, 0 );
-
-                        cv::filter2D( leftCroppedImage, leftCroppedImage, -1, sharpeningKernel );
-                        cv::filter2D( rightCroppedImage, rightCroppedImage, -1, sharpeningKernel );*/
-
-                        cv::GaussianBlur( leftCroppedImage, leftCroppedImage, cv::Size( 3, 3 ), 0 );
-                        cv::GaussianBlur( rightCroppedImage, rightCroppedImage, cv::Size( 3, 3 ), 0 );
-
-                        m_system->track( leftCroppedImage, rightCroppedImage );
                     }
 
-                    std::cout << std::chrono::duration_cast< std::chrono::microseconds >( std::chrono::system_clock::now() - time ).count()  / 1.e6 << " sec" << std::endl;
+                    cv::GaussianBlur( leftResizedImage, leftResizedImage, cv::Size( 3, 3 ), 0 );
+                    cv::GaussianBlur( rightResizedImage, rightResizedImage, cv::Size( 3, 3 ), 0 );
+
+                    m_system->track( leftResizedImage, rightResizedImage );
+
+                    std::cout << std::chrono::duration_cast< std::chrono::microseconds >( std::chrono::system_clock::now() - time ).count()  / 1.e6 << " sec" << std::endl << std::endl;
 
                     emit updateSignal();
 
@@ -155,8 +149,8 @@ void SlamThread::run()
 
     }
 
-    localOptimizationThread.join();
-    optimizationThread5s.join();
+    // localOptimizationThread.join();
+    // optimizationThread5s.join();
 
 }
 

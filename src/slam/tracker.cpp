@@ -156,7 +156,7 @@ void CPUOpticalTracker::prepareFrame( FeatureFrame *frame )
 
 cv::Mat CPUOpticalTracker::match( const FeatureFramePtr &frame1, const FeatureFramePtr &frame2, std::vector< cv::DMatch > *matches )
 {
-    if ( frame1 && frame2 ) {
+    if ( frame1 && frame2 && matches ) {
 
         auto trackPoints = frame1->featurePoints();
 

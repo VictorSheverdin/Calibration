@@ -422,9 +422,33 @@ std::vector< ProcessedFrame::PointPtr > ProcessedFrame::posePoints() const
 
 }
 
-int ProcessedFrame::posePointsCount() const
+size_t ProcessedFrame::posePointsCount() const
 {
     return posePoints().size();
+}
+
+std::vector< ProcessedFrame::PointPtr > ProcessedFrame::spatialPoints() const
+{
+    std::vector< PointPtr > ret;
+
+    auto framePoints = this->framePoints();
+
+    ret.reserve( framePoints.size() );
+
+    for ( auto &i : framePoints ) {
+
+        if ( i && i->mapPoint() )
+            ret.push_back( i );
+
+    }
+
+    return ret;
+
+}
+
+size_t ProcessedFrame::spatialPointsCount() const
+{
+    return spatialPoints().size();
 }
 
 std::vector< ProcessedFrame::PointPtr > ProcessedFrame::trackFramePoints() const
@@ -446,7 +470,7 @@ std::vector< ProcessedFrame::PointPtr > ProcessedFrame::trackFramePoints() const
 
 }
 
-int ProcessedFrame::trackFramePointsCount() const
+size_t ProcessedFrame::trackFramePointsCount() const
 {
     return trackFramePoints().size();
 }
@@ -470,7 +494,7 @@ std::vector< ProcessedFrame::PointPtr > ProcessedFrame::trackedPoints() const
 
 }
 
-int ProcessedFrame::trackedPointsCount() const
+size_t ProcessedFrame::trackedPointsCount() const
 {
     return trackedPoints().size();
 }
@@ -506,7 +530,7 @@ void FlowFrame::load( const CvImage &image )
 {
     ProcessedFrame::load( image );
 
-    parentWorld()->flowTracker().prepareFrame( this );
+    parentWorld()->flowTracker()->prepareFrame( this );
 
     m_searchMatrix.create( image.rows, image.cols );
 }
@@ -1039,7 +1063,7 @@ std::vector< StereoPoint > ProcessedStereoFrame::stereoPoints() const
 
 }
 
-int ProcessedStereoFrame::stereoPointsCount() const
+size_t ProcessedStereoFrame::stereoPointsCount() const
 {
     return stereoPoints().size();
 }
@@ -1233,7 +1257,7 @@ cv::Mat FlowStereoFrame::match()
         std::vector< size_t > trackedIndexes;
         std::vector< cv::Point2f > trackedPoints;
 
-        auto fmat = parentWorld()->flowTracker().match( leftFrame, rightFrame, &trackedIndexes, &trackedPoints );
+        auto fmat = parentWorld()->flowTracker()->match( leftFrame, rightFrame, &trackedIndexes, &trackedPoints );
 
         auto trackPoints = leftFrame->flowPoints();
 
@@ -1311,11 +1335,11 @@ cv::Mat FeatureStereoFrame::match()
 
     if ( leftFrame && rightFrame ) {
 
-        auto trackPoints = leftFrame->featurePoints();
-
         std::vector< cv::DMatch > matches;
 
         auto fmat = parentWorld()->featureTracker()->match( leftFrame, rightFrame, &matches );
+
+        auto trackPoints = leftFrame->featurePoints();
 
         for ( auto &i : matches ) {
 
@@ -1490,7 +1514,7 @@ std::vector< AdjacentPoint > ConsecutiveFrame::adjacentPoints() const
 
 }
 
-int ConsecutiveFrame::adjacentPointsCount() const
+size_t ConsecutiveFrame::adjacentPointsCount() const
 {
     return adjacentPoints().size();
 }
@@ -1500,9 +1524,19 @@ std::vector< ConsecutiveFrame::MonoPointPtr > ConsecutiveFrame::posePoints() con
     return nextFrame()->posePoints();
 }
 
-int ConsecutiveFrame::posePointsCount() const
+size_t ConsecutiveFrame::posePointsCount() const
 {
     return nextFrame()->posePointsCount();
+}
+
+std::vector< ConsecutiveFrame::MonoPointPtr > ConsecutiveFrame::spatialPoints() const
+{
+    return previousFrame()->spatialPoints();
+}
+
+size_t ConsecutiveFrame::spatialPointsCount() const
+{
+    return spatialPoints().size();
 }
 
 std::vector< ConsecutiveFrame::MonoPointPtr > ConsecutiveFrame::trackFramePoints() const
@@ -1510,7 +1544,7 @@ std::vector< ConsecutiveFrame::MonoPointPtr > ConsecutiveFrame::trackFramePoints
     return previousFrame()->trackFramePoints();
 }
 
-int ConsecutiveFrame::trackFramePointsCount() const
+size_t ConsecutiveFrame::trackFramePointsCount() const
 {
     return trackFramePoints().size();
 }
@@ -1520,7 +1554,7 @@ std::vector< ConsecutiveFrame::MonoPointPtr > ConsecutiveFrame::trackedPoints() 
     return previousFrame()->trackedPoints();
 }
 
-int ConsecutiveFrame::trackedPointsCount() const
+size_t ConsecutiveFrame::trackedPointsCount() const
 {
     return trackedPoints().size();
 }
@@ -1546,7 +1580,7 @@ cv::Mat FlowConsecutiveFrame::track()
         std::vector< size_t > trackedIndexes;
         std::vector< cv::Point2f > trackedPoints;
 
-        auto fmat = parentWorld()->flowTracker().match( prevFrame, nextFrame, &trackedIndexes, &trackedPoints );
+        auto fmat = parentWorld()->flowTracker()->match( prevFrame, nextFrame, &trackedIndexes, &trackedPoints );
 
         auto trackPoints = prevFrame->flowPoints();
 

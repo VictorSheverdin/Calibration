@@ -34,12 +34,10 @@ World::World( const StereoCameraMatrix &cameraMatrix )
 
 void World::initialize( const StereoCameraMatrix &cameraMatrix )
 {
-    m_trackType = TrackType::FEATURES;
+    m_trackType = TrackType::FLOW;
 
-    auto tracker = new CPUOpticalTracker();
-    tracker->setMaxFeatures( m_keypointsCount );
-
-    m_featureTracker = std::unique_ptr< FeatureTracker >( tracker );
+    m_flowTracker = std::unique_ptr< FlowTracker >( new CPUFlowTracker() );
+    m_featureTracker = std::unique_ptr< FeatureTracker >( new CPUOpticalTracker() );
 
     m_startCameraMatrix = cameraMatrix;
 
@@ -109,12 +107,7 @@ const BMStereoProcessor &World::stereoProcessor() const
     return m_stereoProcessor;
 }
 
-GPUFlowTracker &World::flowTracker()
-{
-    return m_flowTracker;
-}
-
-const GPUFlowTracker &World::flowTracker() const
+const std::unique_ptr< FlowTracker > &World::flowTracker() const
 {
     return m_flowTracker;
 }
