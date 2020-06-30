@@ -35,8 +35,7 @@ public:
 
     double maxReprojectionError() const;
 
-    double minStereoXDisparity() const;
-    double maxStereoYDisparity() const;
+    double minStereoDisparity() const;
 
     double minAdjacentPointsDistance() const;
     double minAdjacentCameraMultiplier() const;
@@ -57,11 +56,12 @@ protected:
 
     static const double m_maxReprojectionError;
 
-    static const double m_minStereoXDisparity;
-    static const double m_maxStereoYDisparity;
+    static const double m_minStereoDisparity;
 
     static const double m_minAdjacentPointsDistance;
     static const double m_minAdjacentCameraMultiplier;
+
+    static const size_t m_pointsCount = 1000;
 
     mutable std::mutex m_mutex;
 

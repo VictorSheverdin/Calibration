@@ -530,9 +530,17 @@ void FlowFrame::load( const CvImage &image )
 {
     ProcessedFrame::load( image );
 
-    parentWorld()->flowTracker()->prepareFrame( this );
-
     m_searchMatrix.create( image.rows, image.cols );
+}
+
+void FlowFrame::buildPyramid()
+{
+    parentWorld()->flowTracker()->buildPyramid( this );
+}
+
+void FlowFrame::extractPoints()
+{
+    parentWorld()->flowTracker()->extractPoints( this );
 }
 
 std::vector< FlowFrame::PointPtr > FlowFrame::framePoints() const
@@ -562,6 +570,9 @@ FlowFrame::FlowPointPtr FlowFrame::framePoint( const cv::Point2f &point ) const
 
 void FlowFrame::createFramePoints( const size_t count )
 {
+    if ( m_extractedPoints.empty() )
+        extractPoints();
+
     for ( size_t i = 0; i < count; ++i ) {
 
         if ( m_usePointsCount >= m_extractedPoints.size() )
@@ -749,16 +760,6 @@ void FeatureFrame::setDescriptors( const cv::Mat &value )
     m_descriptors = value;
 }
 
-const cv::Mat &FeatureFrame::searchMatrix() const
-{
-    return m_searchMatrix;
-}
-
-void FeatureFrame::setSearchMatrix( const cv::Mat &value )
-{
-    m_searchMatrix = value;
-}
-
 // Frame
 Frame::Frame()
 {
@@ -933,9 +934,6 @@ StereoFrameBase::WorldPtr StereoFrameBase::parentWorld() const
 }
 
 // ProcessedStereoFrame
-const double ProcessedStereoFrame::m_minXDistasnce = 7.0;
-const double ProcessedStereoFrame::m_maxYDistasnce = 3.0;
-
 ProcessedStereoFrame::ProcessedStereoFrame( const MapPtr &parentMap )
     : StereoFrameBase( parentMap )
 {
@@ -967,18 +965,13 @@ void ProcessedStereoFrame::clearImages()
 CvImage ProcessedStereoFrame::drawExtractedPoints() const
 {
     CvImage leftImage;
-    CvImage rightImage;
 
     auto leftFeatureFrame = this->leftFrame();
-    auto rightFeatureFrame = this->rightFrame();
 
     if ( leftFeatureFrame )
         leftImage = leftFeatureFrame->drawExtractedPoints();
 
-    if ( rightFeatureFrame )
-        rightImage = rightFeatureFrame->drawExtractedPoints();
-
-    return stackImages( leftImage, rightImage );
+    return leftImage;
 }
 
 CvImage ProcessedStereoFrame::drawStereoCorrespondences() const
@@ -1232,6 +1225,30 @@ void FlowStereoFrame::load( const CvImage &image1, const CvImage &image2 )
     setFrames( leftFrame, rightFrame );
 }
 
+void FlowStereoFrame::buildPyramid()
+{
+    auto leftFrame = this->leftFrame();
+    auto rightFrame = this->rightFrame();
+
+    if ( leftFrame )
+        leftFrame->buildPyramid();
+
+    if ( rightFrame )
+        rightFrame->buildPyramid();
+}
+
+void FlowStereoFrame::extractPoints()
+{
+    auto leftFrame = this->leftFrame();
+    auto rightFrame = this->rightFrame();
+
+    if ( leftFrame )
+        leftFrame->extractPoints();
+
+    if ( rightFrame )
+        rightFrame->extractPoints();
+}
+
 FlowStereoFrame::FlowFramePtr FlowStereoFrame::leftFrame() const
 {
     return std::dynamic_pointer_cast< FlowFrame >( ProcessedStereoFrame::leftFrame() );
@@ -1254,22 +1271,23 @@ cv::Mat FlowStereoFrame::match()
 
     if ( leftFrame && rightFrame ) {
 
-        std::vector< size_t > trackedIndexes;
-        std::vector< cv::Point2f > trackedPoints;
+        std::map< size_t, cv::Point2f > trackedMap;
 
-        auto fmat = parentWorld()->flowTracker()->match( leftFrame, rightFrame, &trackedIndexes, &trackedPoints );
+        auto fmat = parentWorld()->flowTracker()->match( leftFrame, rightFrame, &trackedMap );
 
         auto trackPoints = leftFrame->flowPoints();
 
-        for ( size_t i = 0; i < trackedIndexes.size(); ++i ) {
+        auto minDistance = parentWorld()->minStereoDisparity();
 
-            auto leftFlowPoint = trackPoints[ trackedIndexes[ i ] ];
+        for ( auto &i : trackedMap ) {
+
+            auto leftFlowPoint = trackPoints[ i.first ];
             auto leftPoint = leftFlowPoint->point();
-            auto rightPoint = trackedPoints[ i ];
+            auto rightPoint = i.second;
 
-            if ( leftPoint.x - rightPoint.x > m_minXDistasnce && std::abs( leftPoint.y - rightPoint.y ) < m_maxYDistasnce ) {
+            if ( cv::norm( leftPoint - rightPoint ) > minDistance ) {
 
-                auto rightFlowPoint = rightFrame->addFramePoint( trackedPoints[ i ] );
+                auto rightFlowPoint = rightFrame->addFramePoint( rightPoint );
 
                 leftFlowPoint->setStereoPoint( rightFlowPoint );
                 rightFlowPoint->setStereoPoint( leftFlowPoint );
@@ -1341,12 +1359,14 @@ cv::Mat FeatureStereoFrame::match()
 
         auto trackPoints = leftFrame->featurePoints();
 
+        auto minDistance = parentWorld()->minAdjacentPointsDistance();
+
         for ( auto &i : matches ) {
 
             auto leftPoint = trackPoints[ i.queryIdx ];
             auto rightPoint = rightFrame->featurePoint( i.trainIdx );
 
-            if ( leftPoint->point().x - rightPoint->point().x > m_minXDistasnce && std::abs( leftPoint->point().y - rightPoint->point().y ) < m_maxYDistasnce ) {
+            if ( cv::norm( leftPoint->point() - rightPoint->point() ) > minDistance ) {
 
                 leftPoint->setStereoPoint( rightPoint );
                 rightPoint->setStereoPoint( leftPoint );
@@ -1577,17 +1597,16 @@ cv::Mat FlowConsecutiveFrame::track()
 
     if ( prevFrame && nextFrame ) {
 
-        std::vector< size_t > trackedIndexes;
-        std::vector< cv::Point2f > trackedPoints;
+        std::map< size_t, cv::Point2f > trackedMap;
 
-        auto fmat = parentWorld()->flowTracker()->match( prevFrame, nextFrame, &trackedIndexes, &trackedPoints );
+        auto fmat = parentWorld()->flowTracker()->track( prevFrame, nextFrame, &trackedMap );
 
         auto trackPoints = prevFrame->flowPoints();
 
-        for ( size_t i = 0; i < trackedIndexes.size(); ++i ) {
+        for ( auto &i : trackedMap ) {
 
-            auto prevPoint = trackPoints[ trackedIndexes[ i ] ];
-            auto nextPoint = nextFrame->addFramePoint( trackedPoints[ i ] );
+            auto prevPoint = trackPoints[ i.first ];
+            auto nextPoint = nextFrame->addFramePoint( i.second );
 
             prevPoint->setNextPoint( nextPoint );
             nextPoint->setPrevPoint( prevPoint );

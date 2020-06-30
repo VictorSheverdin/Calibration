@@ -58,9 +58,14 @@ private:
 
 };
 
+std::ostream &operator<<( std::ostream& out, const ProjectionMatrix& matrix );
+
 class StereoCameraMatrix
 {
+    friend std::ostream &operator<<( std::ostream& out, const StereoCameraMatrix& matrix );
+
 public:
+
     StereoCameraMatrix();
     StereoCameraMatrix( const ProjectionMatrix &leftProjectionMatrix, const ProjectionMatrix &rightProjectionMatrix );
     StereoCameraMatrix( const cv::Mat &leftProjectionMatrix, const cv::Mat &rightProjectionMatrix );
@@ -94,3 +99,5 @@ protected:
     ProjectionMatrix m_rightProjectionMatrix;
 
 };
+
+std::ostream &operator<<( std::ostream& out, const StereoCameraMatrix& matrix );

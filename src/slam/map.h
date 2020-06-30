@@ -77,6 +77,8 @@ protected:
     static const double m_minTrackInliersRatio;
     static const double m_goodTrackInliersRatio;
 
+    void localAdjustmentUnsafe();
+
 private:
     void initialize();
 

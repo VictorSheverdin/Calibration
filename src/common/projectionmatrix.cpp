@@ -232,6 +232,13 @@ bool ProjectionMatrix::operator==( const ProjectionMatrix &other ) const
     return std::abs( cv::norm( projectionMatrix() - other.projectionMatrix() ) ) <= DOUBLE_EPS ;
 }
 
+std::ostream &operator<<( std::ostream& out, const ProjectionMatrix& matrix )
+{
+    out << matrix.projectionMatrix() << std::endl;
+
+    return out;
+}
+
 // StereoCameraMatrix
 StereoCameraMatrix::StereoCameraMatrix()
 {
@@ -414,4 +421,11 @@ bool StereoCameraMatrix::operator==( const StereoCameraMatrix &other ) const
 bool StereoCameraMatrix::operator!=( const StereoCameraMatrix &other ) const
 {
     return !operator==( other ) ;
+}
+
+std::ostream &operator<<( std::ostream& out, const StereoCameraMatrix& matrix )
+{
+    out << matrix.m_leftProjectionMatrix << matrix.m_rightProjectionMatrix;
+
+    return out;
 }

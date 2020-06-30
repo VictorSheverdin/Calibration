@@ -49,6 +49,8 @@ protected:
     std::shared_ptr< slam::World > m_system;
 
     StereoRectificationProcessor m_rectificationProcessor;
+    MonoUndistortionProcessor m_leftUndistortionProcessor;
+    MonoUndistortionProcessor m_rightUndistortionProcessor;
 
     virtual void run() override;
 

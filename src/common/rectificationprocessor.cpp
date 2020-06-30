@@ -32,6 +32,8 @@ void MonoUndistortionProcessor::setCalibrationData( const MonocularCalibrationDa
 void MonoUndistortionProcessor::loadFile( const std::string &fileName )
 {
     m_calibrationData.loadYaml( fileName );
+
+    calcRectificationMaps();
 }
 
 void MonoUndistortionProcessor::calcRectificationMaps()

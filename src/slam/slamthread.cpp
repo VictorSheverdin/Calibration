@@ -4,6 +4,7 @@
 
 #include "src/common/defs.h"
 #include "src/common/functions.h"
+#include "src/common/tictoc.h"
 
 #include "world.h"
 #include "mappoint.h"
@@ -23,6 +24,8 @@ void SlamThread::initialize( const StereoCalibrationDataShort &calibration )
     m_scaleFactor = 1.0;
 
     m_rectificationProcessor.setCalibrationData( calibration );
+    m_leftUndistortionProcessor.setCalibrationData( calibration.leftCameraResults() );
+    m_rightUndistortionProcessor.setCalibrationData( calibration.rightCameraResults() );
 
     auto cropRect = calibration.cropRect();
     auto principal = cv::Vec2f( -cropRect.x, -cropRect.y );
@@ -86,37 +89,38 @@ void SlamThread::run()
                 // cv::rectangle( m_leftFrame, cv::Point( 0, 1500 ), cv::Point( 2048, 2048 ), cv::Scalar( 0, 0, 0, 255 ), cv::FILLED );
                 // cv::rectangle( m_rightFrame, cv::Point( 0, 1500 ), cv::Point( 2048, 2048 ), cv::Scalar( 0, 0, 0, 255 ), cv::FILLED );
 
+                TicToc time;
+
+                // leftCroppedImage = m_leftUndistortionProcessor.undistort( m_leftFrame );
+                // rightCroppedImage = m_rightUndistortionProcessor.undistort( m_rightFrame );
+
                 if ( m_rectificationProcessor.rectify( m_leftFrame, m_rightFrame, &leftRectifiedImage, &rightRectifiedImage )
                             && m_rectificationProcessor.crop( leftRectifiedImage, rightRectifiedImage, &leftCroppedImage, &rightCroppedImage ) ) {
 
-                    auto time = std::chrono::system_clock::now();
-
-                    CvImage leftResizedImage;
-                    CvImage rightResizedImage;
+                    CvImage leftProcImage;
+                    CvImage rightProcImage;
 
                     if ( std::abs( m_scaleFactor - 1.0 ) > DOUBLE_EPS ) {
-
-                        cv::resize( leftCroppedImage, leftResizedImage, cv::Size(), m_scaleFactor, m_scaleFactor, cv::INTER_CUBIC );
-                        cv::resize( rightCroppedImage, rightResizedImage, cv::Size(), m_scaleFactor, m_scaleFactor, cv::INTER_CUBIC );
+                        cv::resize( leftCroppedImage, leftProcImage, cv::Size(), m_scaleFactor, m_scaleFactor, cv::INTER_CUBIC );
+                        cv::resize( rightCroppedImage, rightProcImage, cv::Size(), m_scaleFactor, m_scaleFactor, cv::INTER_CUBIC );
 
                     }
                     else {
-
-                        leftResizedImage = leftCroppedImage;
-                        rightResizedImage = rightCroppedImage;
+                        leftProcImage = leftCroppedImage;
+                        rightProcImage = rightCroppedImage;
 
                     }
 
-                    cv::GaussianBlur( leftResizedImage, leftResizedImage, cv::Size( 3, 3 ), 0 );
-                    cv::GaussianBlur( rightResizedImage, rightResizedImage, cv::Size( 3, 3 ), 0 );
+                    /*cv::GaussianBlur( leftProcImage, leftProcImage, cv::Size( 3, 3 ), 0 );
+                    cv::GaussianBlur( rightProcImage, rightProcImage, cv::Size( 3, 3 ), 0 );*/
 
-                    m_system->track( leftResizedImage, rightResizedImage );
-
-                    std::cout << std::chrono::duration_cast< std::chrono::microseconds >( std::chrono::system_clock::now() - time ).count()  / 1.e6 << " sec" << std::endl << std::endl;
+                    m_system->track( leftProcImage, rightProcImage );
 
                     emit updateSignal();
 
                 }
+
+                time.report();
 
                 m_leftFrame.release();
                 m_rightFrame.release();
@@ -127,25 +131,7 @@ void SlamThread::run()
 
         }
 
-        std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
-
-    }
-
-    static std::ofstream file( "/home/victor/coords.txt" );
-
-    auto maps = this->maps();
-
-    for ( auto &i : maps ) {
-
-        auto frames = i->frames();
-
-        for ( auto &j : frames ) {
-
-            cv::Mat leftTranslation = -j->leftFrame()->rotation().t() * j->leftFrame()->translation();
-
-            file << leftTranslation.at< double >( 0, 0 ) << " " << leftTranslation.at< double >( 1, 0 ) << " " << leftTranslation.at< double >( 2, 0 ) << std::endl;
-
-        }
+        std::this_thread::sleep_for( std::chrono::microseconds( 1 ) );
 
     }
 

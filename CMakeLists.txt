@@ -51,6 +51,8 @@ set ( COMMON_SOURCES
     src/common/pclwidget.cpp
     src/common/matrix.h
     src/common/matrix.inl
+    src/common/tictoc.h
+    src/common/tictoc.cpp
 )
 
 set ( LIBELAS_SOURCES
@@ -67,26 +69,6 @@ set ( LIBELAS_SOURCES
     src/libelas/matrix.cpp
     src/libelas/triangle.cpp
     src/libelas/StereoEfficientLargeScale.cpp
-)
-
-set ( VISO_SOURCES
-    src/viso2/timer.h
-    src/viso2/filter.h
-    src/viso2/filter.cpp
-    src/viso2/matrix.h
-    src/viso2/matrix.cpp
-    src/viso2/matcher.h
-    src/viso2/matcher.cpp
-    src/viso2/triangle.h
-    src/viso2/triangle.cpp
-    src/viso2/reconstruction.h
-    src/viso2/reconstruction.cpp
-    src/viso2/viso.h
-    src/viso2/viso.cpp
-    src/viso2/viso_mono.h
-    src/viso2/viso_mono.cpp
-    src/viso2/viso_stereo.h
-    src/viso2/viso_stereo.cpp
 )
 
 set ( ANNOTATION_SOURCES
@@ -178,10 +160,6 @@ add_executable( disparity ${COMMON_SOURCES} ${LIBELAS_SOURCES} ${RES_SOURCES}
     src/disparity/main.cpp
 )
 
-add_executable( visoodometry ${COMMON_SOURCES} ${VISO_SOURCES}
-    src/visoodometry/main.cpp
-)
-
 add_executable( slam ${COMMON_SOURCES} ${RES_SOURCES}
     src/slam/application.h
     src/slam/choicedialog.h
@@ -237,7 +215,6 @@ target_include_directories( slam PRIVATE ${G2O_INCLUDE_DIR} ${CHOLMOD_INCLUDE_DI
 
 target_link_libraries( calibration ${Qt5Widgets_LIBRARIES} ${YAML_CPP_LIBRARIES} )
 target_link_libraries( disparity ${Qt5Widgets_LIBRARIES} ${VTK_LIBRARIES} ${YAML_CPP_LIBRARIES} )
-target_link_libraries( visoodometry ${Qt5Widgets_LIBRARIES} png )
 
 target_link_libraries( slam PRIVATE
                             ${Qt5Widgets_LIBRARIES}

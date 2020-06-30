@@ -14,12 +14,19 @@ class FlowProcessorBase
 public:
     void extractPoints( const CvImage &image, std::vector< cv::Point2f > *points );
 
+    size_t count() const;
+    void setCount( const size_t value );
+
 protected:
-    FlowProcessorBase() = default;
+    FlowProcessorBase();
 
     static const double m_maxDistance;
     static const double m_errorRatio;
 
+    size_t m_count;
+
+private:
+    void initialize();
 };
 
 class GPUFlowProcessor : public FlowProcessorBase
@@ -27,7 +34,7 @@ class GPUFlowProcessor : public FlowProcessorBase
 public:
     GPUFlowProcessor();
 
-    cv::Mat track( const CvImage &sourceImage, const std::vector<cv::Point2f> &sourcePoints, const CvImage &targetImage, std::vector< size_t > *trackedIndexes , std::vector< cv::Point2f > *trackedPoints );
+    cv::Mat track( const CvImage &sourceImage, const std::vector< cv::Point2f > &sourcePoints, const CvImage &targetImage, std::map< size_t, cv::Point2f > *trackedMap );
 
 protected:
     cv::Ptr< cv::cuda::SparsePyrLKOpticalFlow > m_opticalProcessor;
@@ -52,7 +59,7 @@ class CPUFlowProcessor : public FlowProcessorBase
 public:
     CPUFlowProcessor() = default;
 
-    cv::Mat track( const std::vector< cv::Mat > &sourceImagePyramid, const std::vector< cv::Point2f > &sourcePoints, const std::vector< cv::Mat > &targetImagePyramid, std::vector< size_t > *trackedIndexes, std::vector< cv::Point2f > *trackedPoints );
+    cv::Mat track( const std::vector< cv::Mat > &sourceImagePyramid, const std::vector< cv::Point2f > &sourcePoints, const std::vector< cv::Mat > &targetImagePyramid, std::map< size_t, cv::Point2f > *trackedMap );
 
     void buildImagePyramid( const CvImage &image, std::vector< cv::Mat > *imagePyramid );
 
@@ -249,7 +256,7 @@ private:
     void initialize();
 
 };
-
+/*
 class OpticalMatcherBase : public FeatureMatcherBase
 {
 public:
@@ -291,3 +298,4 @@ protected:
     CPUFlowProcessor m_flowProcessor;
 
 };
+*/

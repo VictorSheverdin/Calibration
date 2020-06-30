@@ -6,8 +6,66 @@
 
 namespace slam {
 
+// FlowTracker
+void FlowTracker::prepareStereoPoints( const FlowFramePtr &frame, std::vector< cv::Point2f > *points, std::map< size_t, cv::Point2f > *trackedMap )
+{
+    if ( points && trackedMap ) {
+
+        points->clear();
+        trackedMap->clear();
+
+        auto flowPoints = frame->flowPoints();
+
+        points->reserve( flowPoints.size() );
+
+        for ( auto &i : flowPoints ) {
+            if ( i ) {
+                points->push_back( i->point() );
+                auto stereoPoint = i->stereoPoint();
+                if ( stereoPoint ) {
+                    ( *trackedMap )[ points->size() - 1 ] = stereoPoint->point();
+                }
+
+            }
+
+        }
+
+    }
+
+}
+
+void FlowTracker::prepareConsecutivePoints( const FlowFramePtr &frame, std::vector< cv::Point2f > *points, std::map< size_t, cv::Point2f > *trackedMap )
+{
+    if ( points && trackedMap ) {
+
+        points->clear();
+
+        auto flowPoints = frame->flowPoints();
+
+        points->reserve( flowPoints.size() );
+
+        for ( auto &i : flowPoints ) {
+            if ( i ) {
+                points->push_back( i->point() );
+                auto nextPoint = i->nextPoint();
+                if ( nextPoint ) {
+                    ( *trackedMap )[ points->size() - 1 ] = nextPoint->point();
+                }
+
+            }
+
+        }
+
+    }
+
+}
+
 // GPUFlowTracker
-void GPUFlowTracker::prepareFrame( FlowFrame *frame )
+void GPUFlowTracker::buildPyramid( FlowFrame *frame )
+{
+}
+
+void GPUFlowTracker::extractPoints( FlowFrame *frame )
 {
     if ( frame ) {
 
@@ -21,37 +79,52 @@ void GPUFlowTracker::prepareFrame( FlowFrame *frame )
 
 }
 
-cv::Mat GPUFlowTracker::match( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::vector< size_t > *trackedIndexes, std::vector< cv::Point2f > *trackedPoints )
+cv::Mat GPUFlowTracker::match( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::map< size_t, cv::Point2f > *trackedMap )
 {
-    if ( trackedIndexes && trackedPoints ) {
-
-        auto flowPoints = frame1->flowPoints();
+    if ( trackedMap ) {
 
         std::vector< cv::Point2f > points;
-        points.reserve( flowPoints.size() );
+        prepareStereoPoints( frame1, &points, trackedMap );
 
-        for ( auto &i : flowPoints )
-            if ( i )
-                points.push_back( i->point() );
-
-        auto fmat = m_pointsProcessor.track( frame1->image(), points, frame2->image(), trackedIndexes, trackedPoints );
+        auto fmat = m_pointsProcessor.track( frame1->image(), points, frame2->image(), trackedMap );
 
         return fmat;
     }
 
     return cv::Mat();
+
+}
+
+cv::Mat GPUFlowTracker::track( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::map< size_t, cv::Point2f > *trackedMap )
+{
+    if ( trackedMap ) {
+
+        std::vector< cv::Point2f > points;
+        prepareConsecutivePoints( frame1, &points, trackedMap );
+
+        auto fmat = m_pointsProcessor.track( frame1->image(), points, frame2->image(), trackedMap );
+
+        return fmat;
+    }
+
+    return cv::Mat();
+
+}
+
+size_t GPUFlowTracker::count() const
+{
+    return m_pointsProcessor.count();
+}
+
+void GPUFlowTracker::setCount( const size_t value )
+{
+    m_pointsProcessor.setCount( value );
 }
 
 // CPUFlowTracker
-void CPUFlowTracker::prepareFrame( FlowFrame *frame )
+void CPUFlowTracker::buildPyramid( FlowFrame *frame )
 {
     if ( frame ) {
-
-        std::vector< cv::Point2f > points;
-
-        m_pointsProcessor.extractPoints( frame->image(), &points );
-
-        frame->setExtractedPoints( points );
 
         std::vector< cv::Mat > imagePyramid;
 
@@ -63,20 +136,34 @@ void CPUFlowTracker::prepareFrame( FlowFrame *frame )
 
 }
 
-cv::Mat CPUFlowTracker::match( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::vector<size_t> *trackedIndexes, std::vector<cv::Point2f> *trackedPoints )
+void CPUFlowTracker::extractPoints( FlowFrame *frame )
 {
-    if ( trackedIndexes && trackedPoints ) {
-
-        auto flowPoints = frame1->flowPoints();
+    if ( frame ) {
 
         std::vector< cv::Point2f > points;
-        points.reserve( flowPoints.size() );
 
-        for ( auto &i : flowPoints )
-            if ( i )
-                points.push_back( i->point() );
+        m_pointsProcessor.extractPoints( frame->image(), &points );
 
-        auto fmat = m_pointsProcessor.track( frame1->imagePyramid(), points, frame2->imagePyramid(), trackedIndexes, trackedPoints );
+        frame->setExtractedPoints( points );
+
+    }
+
+}
+
+cv::Mat CPUFlowTracker::match( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::map< size_t, cv::Point2f > *trackedMap )
+{
+    if ( frame1 && frame2 && trackedMap ) {
+
+        if ( frame1->imagePyramid().empty() )
+            frame1->buildPyramid();
+
+        if ( frame2->imagePyramid().empty() )
+            frame2->buildPyramid();
+
+        std::vector< cv::Point2f > points;
+        prepareStereoPoints( frame1, &points, trackedMap );
+
+        auto fmat = m_pointsProcessor.track( frame1->imagePyramid(), points, frame2->imagePyramid(), trackedMap );
 
         return fmat;
     }
@@ -84,6 +171,39 @@ cv::Mat CPUFlowTracker::match( const FlowFramePtr &frame1, const FlowFramePtr &f
     return cv::Mat();
 }
 
+cv::Mat CPUFlowTracker::track( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::map< size_t, cv::Point2f > *trackedMap )
+{
+    if ( frame1 && frame2 && trackedMap ) {
+
+        if ( frame1->imagePyramid().empty() )
+            frame1->buildPyramid();
+
+        if ( frame2->imagePyramid().empty() )
+            frame2->buildPyramid();
+
+        std::vector< cv::Point2f > points;
+        prepareConsecutivePoints( frame1, &points, trackedMap );
+
+        auto fmat = m_pointsProcessor.track( frame1->imagePyramid(), points, frame2->imagePyramid(), trackedMap );
+
+        return fmat;
+    }
+
+    return cv::Mat();
+
+}
+
+size_t CPUFlowTracker::count() const
+{
+    return m_pointsProcessor.count();
+}
+
+void CPUFlowTracker::setCount( const size_t value )
+{
+    m_pointsProcessor.setCount( value );
+}
+
+/*
 // OpticalTrackerBase
 void OpticalTrackerBase::setMaxFeatures( const int value )
 {
@@ -173,7 +293,7 @@ cv::Mat CPUOpticalTracker::match( const FeatureFramePtr &frame1, const FeatureFr
     return cv::Mat();
 
 }
-
+*/
 // DescriptorTracker
 bool DescriptorTracker::selectKeypoints( const FeatureFramePtr &frame1, const FeatureFramePtr &frame2, std::vector< cv::KeyPoint > *keypoints, cv::Mat *descriptors )
 {

@@ -9,9 +9,8 @@
 namespace slam {
 
 const double World::m_maxReprojectionError = 2.;
-const double World::m_minStereoXDisparity = 15.;
-const double World::m_maxStereoYDisparity = 3.;
-const double World::m_minAdjacentPointsDistance = 15.;
+const double World::m_minStereoDisparity = 7.;
+const double World::m_minAdjacentPointsDistance = 7.;
 const double World::m_minAdjacentCameraMultiplier = 2.;
 
 World::World( const StereoCameraMatrix &cameraMatrix )
@@ -36,8 +35,11 @@ void World::initialize( const StereoCameraMatrix &cameraMatrix )
 {
     m_trackType = TrackType::FLOW;
 
-    m_flowTracker = std::unique_ptr< FlowTracker >( new CPUFlowTracker() );
-    m_featureTracker = std::unique_ptr< FeatureTracker >( new CPUOpticalTracker() );
+    auto flowTracker = new CPUFlowTracker();
+    flowTracker->setCount( m_pointsCount );
+    m_flowTracker = std::unique_ptr< FlowTracker >( flowTracker );
+
+    m_featureTracker = std::unique_ptr< FeatureTracker >( new OrbTracker() );
 
     m_startCameraMatrix = cameraMatrix;
 
@@ -122,14 +124,9 @@ double World::maxReprojectionError() const
     return m_maxReprojectionError;
 }
 
-double World::minStereoXDisparity() const
+double World::minStereoDisparity() const
 {
-    return m_minStereoXDisparity;
-}
-
-double World::maxStereoYDisparity() const
-{
-    return m_maxStereoYDisparity;
+    return m_minStereoDisparity;
 }
 
 double World::minAdjacentPointsDistance() const

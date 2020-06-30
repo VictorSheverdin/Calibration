@@ -38,6 +38,7 @@ void ImagesWidget::initialize()
     m_stereoWidget = new ImageWidget( this );
     addWidget( m_stereoWidget );
 
+    m_pointsWidget->hide();
     m_stereoWidget->hide();
 
     int widthDiv3 = width() / 3;
@@ -637,7 +638,7 @@ SlamImageWidget::SlamImageWidget( const QStringList &leftList, const QStringList
 void SlamImageWidget::initialize()
 {
     m_index = 0;
-    startTimer( 50 );
+    startTimer( 30 );
 }
 
 void SlamImageWidget::setImageList( const QStringList &leftList, const QStringList &rightList )

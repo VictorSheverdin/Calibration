@@ -123,6 +123,11 @@ void Map::localAdjustment()
 {
     const std::lock_guard< std::mutex > lock( m_mutex );
 
+    localAdjustmentUnsafe();
+}
+
+void Map::localAdjustmentUnsafe()
+{
     if ( !m_frames.empty() ) {
 
         std::list< FramePtr > list;
@@ -213,46 +218,52 @@ bool FlowMap::track( const CvImage &leftImage, const CvImage &rightImage )
 
             previousLeftFrame->triangulatePoints();
 
-            size_t trackedPointCount;
+            adjacentLeftFrame->track();
+
+            size_t trackedPointCount = adjacentLeftFrame->trackedPointsCount();
 
             double inliersRatio = 0.0;
 
-            auto maxKeypointsCount = previousLeftFrame->extractedPointsCount();
+            size_t createPointsCount = m_goodTrackPoints;
 
-            int triangulatePointsCount = 0;
+            if ( trackedPointCount >= m_goodTrackPoints )
+                inliersRatio = adjacentLeftFrame->recoverPose();
+            else
+                createPointsCount = m_goodTrackPoints - trackedPointCount;
 
-            std::cout << "Prev keypoints count: " << previousLeftFrame->extractedPointsCount() << std::endl;
-            std::cout << "Cur keypoints count: " << leftFrame->extractedPointsCount() << std::endl;
-
-            auto extractPointsCount = m_goodTrackPoints;
-
-            do {
+            if ( inliersRatio < m_goodTrackInliersRatio ) {
 
                 do {
 
-                    adjacentLeftFrame->createFramePoints( extractPointsCount );
+                    do {
 
-                    previousDenseFrame->match();
-                    triangulatePointsCount = previousDenseFrame->triangulatePoints();
+                        createPointsCount *= 2;
 
-                    adjacentLeftFrame->track();
+                        adjacentLeftFrame->createFramePoints( createPointsCount );
 
-                    trackedPointCount = adjacentLeftFrame->posePointsCount();
+                        previousDenseFrame->match();
 
-                    std::cout << "!" << previousLeftFrame->framePoints().size() << " " << maxKeypointsCount << std::endl;
+                        adjacentLeftFrame->track();
 
-                } while( trackedPointCount < m_goodTrackPoints && previousLeftFrame->framePoints().size() < maxKeypointsCount );
+                        trackedPointCount = adjacentLeftFrame->trackedPointsCount();
 
-                inliersRatio = adjacentLeftFrame->recoverPose();
+                        std::cout << "Use points count: " << previousLeftFrame->framePoints().size() << " of " << previousLeftFrame->extractedPointsCount() << std::endl;
 
-                std::cout << "Stereo points count: " << previousDenseFrame->stereoPointsCount() << std::endl;
-                std::cout << "Triangulated points count: " << triangulatePointsCount << std::endl;
-                std::cout << "Adjacent points count: " << adjacentLeftFrame->adjacentPointsCount() << std::endl;
-                std::cout << "Tracked points count: " << trackedPointCount << std::endl;
+                        std::cout << "Stereo points count: " << previousDenseFrame->stereoPointsCount() << std::endl;
+                        std::cout << "Adjacent points count: " << adjacentLeftFrame->adjacentPointsCount() << std::endl;
+                        std::cout << "Tracked points count: " << trackedPointCount << std::endl;
 
-                std::cout << "Inliers: " << inliersRatio << std::endl;
+                    } while( trackedPointCount < m_goodTrackPoints && previousLeftFrame->framePoints().size() < previousLeftFrame->extractedPointsCount() );
 
-            } while ( inliersRatio < m_goodTrackInliersRatio && previousLeftFrame->framePoints().size() < maxKeypointsCount );
+                    previousDenseFrame->triangulatePoints();
+
+                    inliersRatio = adjacentLeftFrame->recoverPose();
+
+                    std::cout << "Inliers: " << inliersRatio << std::endl;
+
+                } while ( inliersRatio < m_goodTrackInliersRatio && previousLeftFrame->framePoints().size() < previousLeftFrame->extractedPointsCount() );
+
+            }
 
             if ( trackedPointCount < m_minTrackPoints || inliersRatio < m_minTrackInliersRatio )
                 return false;
@@ -306,107 +317,7 @@ std::shared_ptr< const FeatureMap > FeatureMap::shared_from_this() const
 
 bool FeatureMap::track( const CvImage &leftImage, const CvImage &rightImage )
 {
-    auto denseFrame = FeatureDenseFrame::create( shared_from_this() );
-
-    denseFrame->load( leftImage, rightImage );
-
-    /*if ( m_frames.size() % 5 == 0 )
-        denseFrame->processDenseCloud();*/
-
-    const std::lock_guard< std::mutex > lock( m_mutex );
-
-    if ( m_frames.empty() ) {
-
-        denseFrame->setProjectionMatrix( m_projectionMatrix );
-        m_frames.push_back( denseFrame );
-
-    }
-    else {
-
-        auto previousDenseFrame = std::dynamic_pointer_cast< FeatureDenseFrame >( m_frames.back() );
-
-        if ( previousDenseFrame ) {
-
-            auto previousLeftFrame = std::dynamic_pointer_cast< FeatureFrame >( previousDenseFrame->leftFrame() );
-            auto previousRightFrame = std::dynamic_pointer_cast< FeatureFrame >( previousDenseFrame->rightFrame() );
-            auto leftFrame = std::dynamic_pointer_cast< FeatureFrame >( denseFrame->leftFrame() );
-            auto rightFrame = std::dynamic_pointer_cast< FeatureFrame >( denseFrame->rightFrame() );
-
-            auto adjacentLeftFrame = FeatureConsecutiveFrame::create( shared_from_this() );
-
-            adjacentLeftFrame->setFrames( previousLeftFrame, leftFrame );
-
-            previousLeftFrame->triangulatePoints();
-
-            size_t trackedPointCount;
-
-            double inliersRatio = 0.0;
-
-            auto maxKeypointsCount = previousLeftFrame->extractedPointsCount();
-
-            int triangulatePointsCount = 0;
-
-            std::cout << "Prev keypoints count: " << previousLeftFrame->extractedPointsCount() << std::endl;
-            std::cout << "Cur keypoints count: " << leftFrame->extractedPointsCount() << std::endl;
-
-            auto extractPointsCount = m_goodTrackPoints;
-
-            do {
-
-                do {
-
-                    extractPointsCount *= 4;
-
-                    adjacentLeftFrame->createFramePoints( extractPointsCount );
-
-                    previousDenseFrame->match();
-                    triangulatePointsCount = previousDenseFrame->triangulatePoints();
-
-                    adjacentLeftFrame->track();
-
-                    trackedPointCount = adjacentLeftFrame->posePointsCount();
-
-                    std::cout << "!" << previousLeftFrame->framePoints().size() << " " << maxKeypointsCount << std::endl;
-
-                } while( trackedPointCount < m_goodTrackPoints && previousLeftFrame->framePoints().size() < maxKeypointsCount );
-
-                inliersRatio = adjacentLeftFrame->recoverPose();
-
-                std::cout << "Stereo points count: " << previousDenseFrame->stereoPointsCount() << std::endl;
-                std::cout << "Triangulated points count: " << triangulatePointsCount << std::endl;
-                std::cout << "Adjacent points count: " << adjacentLeftFrame->adjacentPointsCount() << std::endl;
-                std::cout << "Tracked points count: " << trackedPointCount << std::endl;
-
-                std::cout << "Inliers: " << inliersRatio << std::endl;
-
-            } while ( inliersRatio < m_goodTrackInliersRatio && previousLeftFrame->framePoints().size() < maxKeypointsCount );
-
-            if ( trackedPointCount < m_minTrackPoints || inliersRatio < m_minTrackInliersRatio )
-                return false;
-
-            auto removeCount = static_cast< int >( adjacentLeftFrame->trackedPointsCount() ) - static_cast< int >( m_trackFramePointsCount );
-
-            /* if ( removeCount > 0 )
-                adjacentLeftFrame->removeExtraTrackPoints( removeCount ); */
-
-            rightFrame->setCameraMatrix( previousRightFrame->cameraMatrix() );
-            rightFrame->setRotation( leftFrame->rotation() );
-            rightFrame->setTranslation( leftFrame->translation() + baselineVector() );
-
-            previousDenseFrame->cleanMapPoints();
-
-            auto replacedFrame = DenseFrame::create( shared_from_this() );
-            replacedFrame->replaceAndClean( previousDenseFrame );
-
-            m_frames.back() = replacedFrame;
-
-        }
-
-        m_frames.push_back( denseFrame );
-
-    }
-
-    return true;
+    return false;
 
 }
 

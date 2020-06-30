@@ -123,6 +123,9 @@ public:
 
     void load( const CvImage &image );
 
+    void buildPyramid();
+    void extractPoints();
+
     virtual std::vector< PointPtr > framePoints() const override;
     virtual std::vector< cv::Point2f > extractedPoints() const override;
 
@@ -187,9 +190,6 @@ public:
     const cv::Mat &descriptors() const;
     void setDescriptors( const cv::Mat &value );
 
-    const cv::Mat &searchMatrix() const;
-    void setSearchMatrix( const cv::Mat &value );
-
 protected:
     FeatureFrame( const FeatureMapPtr &parentMap );
 
@@ -198,8 +198,6 @@ protected:
     cv::Mat m_descriptors;
 
     std::map< size_t, FeaturePointPtr > m_points;
-
-    cv::Mat m_searchMatrix;
 
     FeaturePointPtr createFramePoint( const size_t keyPointIndex );
 
@@ -319,9 +317,6 @@ public:
 protected:
     ProcessedStereoFrame( const MapPtr &parentMap );
 
-    static const double m_minXDistasnce;
-    static const double m_maxYDistasnce;
-
 };
 
 class FlowStereoFrame : public ProcessedStereoFrame
@@ -334,6 +329,9 @@ public:
     static ObjectPtr create( const MapPtr &parentMap );
 
     void load( const CvImage &image1, const CvImage &image2 );
+
+    void buildPyramid();
+    void extractPoints();
 
     FlowFramePtr leftFrame() const;
     FlowFramePtr rightFrame() const;
