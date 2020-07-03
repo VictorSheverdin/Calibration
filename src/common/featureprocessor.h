@@ -256,46 +256,4 @@ private:
     void initialize();
 
 };
-/*
-class OpticalMatcherBase : public FeatureMatcherBase
-{
-public:
-protected:
-    OpticalMatcherBase() = default;
 
-    static const double m_maxDistance;
-};
-
-class GPUOpticalMatcher : public OpticalMatcherBase
-{
-public:
-    GPUOpticalMatcher();
-
-    cv::Mat match( const CvImage &sourceImage, const std::vector< cv::KeyPoint > &sourceKeypoints,
-                const CvImage &targetImage, const std::vector< cv::KeyPoint > &targetKeypoints, const cv::Mat &targetSearchMatrix,
-                std::vector< cv::DMatch > *matches );
-
-protected:
-    GPUFlowProcessor m_flowProcessor;
-
-private:
-    void initialize();
-
-};
-
-class CPUOpticalMatcher : public OpticalMatcherBase
-{
-public:
-    CPUOpticalMatcher() = default;
-
-    cv::Mat match( const std::vector< cv::Mat > &sourceImagePyramid, const std::vector< cv::KeyPoint > &sourceKeypoints,
-                const std::vector< cv::Mat > &targetImagePyramid, const std::vector< cv::KeyPoint > &targetKeypoints, const cv::Mat &targetSearchMatrix,
-                std::vector< cv::DMatch > *matches );
-
-    void buildImagePyramid( const CvImage &image, std::vector< cv::Mat > *imagePyramid );
-
-protected:
-    CPUFlowProcessor m_flowProcessor;
-
-};
-*/

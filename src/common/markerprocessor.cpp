@@ -118,6 +118,8 @@ void fit( ArucoMarkerList *list1, ArucoMarkerList *list2 )
 }
 
 // ArucoProcessor
+const double ArucoProcessor::m_intervalMultiplier = 34./177.;
+
 ArucoProcessor::ArucoProcessor()
 {
     initialize();
@@ -131,7 +133,7 @@ void ArucoProcessor::initialize()
     m_dictionary = cv::aruco::getPredefinedDictionary( cv::aruco::DICT_6X6_50 ) ;
     m_parameters = cv::aruco::DetectorParameters::create() ;
 
-    m_parameters->cornerRefinementMethod = cv::aruco::CORNER_REFINE_SUBPIX;
+    m_parameters->cornerRefinementMethod = cv::aruco::CORNER_REFINE_CONTOUR;
 
 }
 
@@ -150,11 +152,6 @@ void ArucoProcessor::setSize( const double value )
     m_size = value;
 }
 
-void ArucoProcessor::setInterval( const double value )
-{
-    m_interval = value;
-}
-
 bool ArucoProcessor::resizeFlag() const
 {
     return m_resizeFlag;
@@ -168,11 +165,6 @@ unsigned int ArucoProcessor::frameMaximumFlag() const
 double ArucoProcessor::size() const
 {
     return m_size;
-}
-
-double ArucoProcessor::interval() const
-{
-    return m_interval;
 }
 
 bool ArucoProcessor::detectMarkers( const CvImage &image, std::vector< int > *markerIds, std::vector< std::vector< cv::Point2f > > *markerCorners ) const
@@ -246,7 +238,7 @@ std::vector< cv::Point3f > ArucoProcessor::calcCorners( const ArucoMarkerList &l
 {
     std::vector< cv::Point3f > ret;
 
-    static const double multiplier = m_size + m_interval;
+    static const double multiplier = m_size * ( 1.0 + m_intervalMultiplier );
 
     for ( auto &i : list ) {
         // Calculate offset index
@@ -271,7 +263,7 @@ std::vector< cv::Point3f > ArucoProcessor::calcCentroids( const ArucoMarkerList 
 {
     std::vector< cv::Point3f > ret;
 
-    static const double multiplier = m_size + m_interval;
+    static const double multiplier = m_size * ( 1.0 + m_intervalMultiplier );
 
     static const double halfSize = m_size / 2.0;
 

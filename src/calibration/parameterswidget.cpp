@@ -73,17 +73,6 @@ void ParametersWidget::initialize()
     m_sizeMeasLabel = new QLabel( tr( "m. " ) );
     sizeLayout->addWidget( m_sizeMeasLabel );
 
-    m_intervalLabel = new QLabel( tr( "Interval:" ) );
-    sizeLayout->addWidget( m_intervalLabel );
-
-    m_intervalSpinBox = new SizeSpinBox( this );
-    m_intervalSpinBox->setValue( 0.05 );
-    m_intervalSpinBox->setDecimals( 3 );
-    sizeLayout->addWidget( m_intervalSpinBox );
-
-    m_intervalMeasLabel = new QLabel( tr( "m. " ) );
-    sizeLayout->addWidget( m_intervalMeasLabel );
-
     m_layout->addLayout( sizeLayout );
 
     m_layout->addStretch();
@@ -119,11 +108,6 @@ double ParametersWidget::templateSize() const
     return m_sizeSpinBox->value();
 }
 
-double ParametersWidget::intervalSize() const
-{
-    return m_intervalSpinBox->value();
-}
-
 void ParametersWidget::updateVisibility()
 {
     auto templateType = this->templateType();
@@ -132,17 +116,11 @@ void ParametersWidget::updateVisibility()
         m_countLabel->setVisible( true );
         m_xCountSpinBox->setVisible( true );
         m_yCountSpinBox->setVisible( true );
-        m_intervalLabel->setVisible( false );
-        m_intervalSpinBox->setVisible( false );
-        m_intervalMeasLabel->setVisible( false );
     }
     else if ( templateType == TypeComboBox::ARUCO_MARKERS ) {
         m_countLabel->setVisible( false );
         m_xCountSpinBox->setVisible( false );
         m_yCountSpinBox->setVisible( false );
-        m_intervalLabel->setVisible( true );
-        m_intervalSpinBox->setVisible( true );
-        m_intervalMeasLabel->setVisible( true );
     }
 
 }

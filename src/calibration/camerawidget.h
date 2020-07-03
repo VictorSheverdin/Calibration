@@ -57,7 +57,6 @@ public:
     void setType(const TypeComboBox::Type type );
     void setCount( const cv::Size &count );
     void setTemplateSize( const double value );
-    void setIntervalSize( const double value );
     void setResizeFlag( const bool value );
     void setFrameMaximumSize( const unsigned int value );
 
@@ -110,7 +109,6 @@ public:
     void setType(const TypeComboBox::Type type );
     void setCount( const cv::Size &count );
     void setTemplateSize( const double value );
-    void setIntervalSize( const double value );
     void setResizeFlag( const bool value );
     void setFrameMaximumSize( const unsigned int value );
 

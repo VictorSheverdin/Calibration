@@ -19,7 +19,6 @@ public:
     TypeComboBox::Type templateType() const;
     const cv::Size templateCount() const;
     double templateSize() const;
-    double intervalSize() const;
     bool resizeFlag() const;
     unsigned int frameMaximumSize() const;
 

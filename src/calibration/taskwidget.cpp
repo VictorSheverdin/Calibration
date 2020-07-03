@@ -39,11 +39,6 @@ double GrabWidgetBase::templateSize() const
     return m_parametersWidget->templateSize();
 }
 
-double GrabWidgetBase::intervalSize() const
-{
-    return m_parametersWidget->intervalSize();
-}
-
 bool GrabWidgetBase::resizeFlag() const
 {
     return m_parametersWidget->rescaleFlag();
@@ -116,7 +111,6 @@ void MonocularGrabWidget::updateParameters()
     cameraWidget()->setType( m_parametersWidget->templateType() );
     cameraWidget()->setCount( m_parametersWidget->templateCount() );
     cameraWidget()->setTemplateSize( m_parametersWidget->templateSize() );
-    cameraWidget()->setIntervalSize( m_parametersWidget->intervalSize() );
 
     cameraWidget()->setAdaptiveThreshold( m_parametersWidget->adaptiveThreshold() );
     cameraWidget()->setNormalizeImage( m_parametersWidget->normalizeImage() );
@@ -195,7 +189,6 @@ void StereoGrabWidget::updateParameters()
     cameraWidget()->setType( m_parametersWidget->templateType() );
     cameraWidget()->setCount( m_parametersWidget->templateCount() );
     cameraWidget()->setTemplateSize( m_parametersWidget->templateSize() );
-    cameraWidget()->setIntervalSize( m_parametersWidget->intervalSize() );
 
     cameraWidget()->setAdaptiveThreshold( m_parametersWidget->adaptiveThreshold() );
     cameraWidget()->setNormalizeImage( m_parametersWidget->normalizeImage() );

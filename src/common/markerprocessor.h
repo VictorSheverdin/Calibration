@@ -51,12 +51,10 @@ public:
     void setResizeFlag( const bool value );
     void setFrameMaximumSize( const unsigned int value );
     void setSize( const double value );
-    void setInterval( const double value );
 
     bool resizeFlag() const;
     unsigned int frameMaximumFlag() const;
     double size() const;
-    double interval() const;
 
     bool processFrame( const CvImage &frame, CvImage *view, std::vector< int > *markerIds, std::vector< std::vector< cv::Point2f > > *markerCorners ) const;
     bool processFrame( const CvImage &frame, CvImage *view = nullptr, ArucoMarkerList *markers = nullptr ) const;
@@ -75,7 +73,7 @@ protected:
     int m_frameMaximumSize;
 
     double m_size;
-    double m_interval;
+    static const double m_intervalMultiplier;
 
     bool detectMarkers( const CvImage &image, std::vector< int > *markerIds, std::vector< std::vector< cv::Point2f > > *markerCorners ) const ;
 

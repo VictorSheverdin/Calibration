@@ -345,7 +345,6 @@ MonocularIcon *MonocularImageCalibrationWidget::createIcon( const CvImage &image
 
     m_processorThread.templateProcessor().setCount( m_parametersWidget->templateCount() );
     m_processorThread.templateProcessor().setSize( m_parametersWidget->templateSize() );
-    m_processorThread.markerProcessor().setInterval( m_parametersWidget->intervalSize() );
 
     MonocularProcessorResult result;
 
@@ -466,7 +465,6 @@ StereoIcon *StereoImageCalibrationWidget::createIcon( const CvImage &leftImage, 
 
     m_processorThread.templateProcessor().setCount( m_parametersWidget->templateCount() );
     m_processorThread.templateProcessor().setSize( m_parametersWidget->templateSize() );
-    m_processorThread.markerProcessor().setInterval( m_parametersWidget->intervalSize() );
 
     StereoProcessorResult result;
 
@@ -572,7 +570,6 @@ void MonocularCameraCalibrationWidget::grabFrame()
 
         m_processorThread.templateProcessor().setCount( m_taskWidget->templateCount() );
         m_processorThread.templateProcessor().setSize( m_taskWidget->templateSize() );
-        m_processorThread.markerProcessor().setInterval( m_taskWidget->intervalSize() );
 
         if ( taskWidget->templateType() == TypeComboBox::CHECKERBOARD || taskWidget->templateType() == TypeComboBox::CIRCLES || taskWidget->templateType() == TypeComboBox::ASYM_CIRCLES  )
             m_processorThread.processFrame( image, MonocularProcessorThread::TEMPLATE );
@@ -596,7 +593,6 @@ MonocularIcon *MonocularCameraCalibrationWidget::createIcon( const CvImage &imag
 
     m_processorThread.templateProcessor().setCount( m_taskWidget->templateCount() );
     m_processorThread.templateProcessor().setSize( m_taskWidget->templateSize() );
-    m_processorThread.markerProcessor().setInterval( m_taskWidget->intervalSize() );
 
     MonocularProcessorResult result;
 
@@ -715,7 +711,6 @@ void StereoCameraCalibrationWidget::grabFrame()
 
         m_processorThread.templateProcessor().setCount( m_taskWidget->templateCount() );
         m_processorThread.templateProcessor().setSize( m_taskWidget->templateSize() );
-        m_processorThread.markerProcessor().setInterval( m_taskWidget->intervalSize() );
 
         if ( taskWidget->templateType() == TypeComboBox::CHECKERBOARD || taskWidget->templateType() == TypeComboBox::CIRCLES || taskWidget->templateType() == TypeComboBox::ASYM_CIRCLES  )
             m_processorThread.processFrame( frame, StereoProcessorThread::TEMPLATE );
@@ -787,7 +782,6 @@ StereoIcon *StereoCameraCalibrationWidget::createIcon( const CvImage &leftImage,
 
     m_processorThread.templateProcessor().setCount( m_taskWidget->templateCount() );
     m_processorThread.templateProcessor().setSize( m_taskWidget->templateSize() );
-    m_processorThread.markerProcessor().setInterval( m_taskWidget->intervalSize() );
 
     StereoProcessorResult result;
 

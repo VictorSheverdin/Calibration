@@ -155,11 +155,6 @@ void MonocularCameraWidget::setTemplateSize( const double value )
     templateProcessor().setSize( value );
 }
 
-void MonocularCameraWidget::setIntervalSize( const double value )
-{
-    markerProcessor().setInterval( value );
-}
-
 void MonocularCameraWidget::setResizeFlag( const bool value )
 {
     templateProcessor().setResizeFlag( value );
@@ -347,11 +342,6 @@ void StereoCameraWidget::setCount( const cv::Size &count )
 void StereoCameraWidget::setTemplateSize( const double value )
 {
     templateProcessor().setSize( value );
-}
-
-void StereoCameraWidget::setIntervalSize( const double value )
-{
-    markerProcessor().setInterval( value );
 }
 
 void StereoCameraWidget::setResizeFlag( const bool value )

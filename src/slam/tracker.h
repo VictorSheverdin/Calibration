@@ -78,46 +78,7 @@ protected:
     FeatureTracker() = default;
 
 };
-/*
-class OpticalTrackerBase : public FeatureTracker
-{
-public:
-    void setMaxFeatures( const int value );
-    int maxFeatures();
 
-    virtual void prepareFrame( FeatureFrame *frame ) override;
-
-protected:
-    GFTTProcessor m_keypointProcessor;
-
-    OpticalTrackerBase() = default;
-};
-
-class GPUOpticalTracker : public OpticalTrackerBase
-{
-public:
-    GPUOpticalTracker() = default;
-
-    virtual cv::Mat match( const FeatureFramePtr &frame1, const FeatureFramePtr &frame2, std::vector< cv::DMatch > *matches ) override;
-
-protected:
-    GPUOpticalMatcher m_opticalMatcher;
-
-};
-
-class CPUOpticalTracker : public OpticalTrackerBase
-{
-public:
-    CPUOpticalTracker() = default;
-
-    virtual void prepareFrame( FeatureFrame *frame ) override;
-    virtual cv::Mat match( const FeatureFramePtr &frame1, const FeatureFramePtr &frame2, std::vector< cv::DMatch > *matches ) override;
-
-protected:
-    CPUOpticalMatcher m_opticalMatcher;
-
-};
-*/
 class DescriptorTracker : public FeatureTracker
 {
 public:

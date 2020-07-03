@@ -21,7 +21,7 @@ SlamThread::SlamThread(const StereoCalibrationDataShort &calibration, QObject *p
 
 void SlamThread::initialize( const StereoCalibrationDataShort &calibration )
 {
-    m_scaleFactor = 1.0;
+    m_scaleFactor = 0.5;
 
     m_rectificationProcessor.setCalibrationData( calibration );
     m_leftUndistortionProcessor.setCalibrationData( calibration.leftCameraResults() );

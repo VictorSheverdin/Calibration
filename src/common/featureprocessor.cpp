@@ -465,7 +465,7 @@ OrbProcessor::OrbProcessor()
 
 void OrbProcessor::initialize()
 {
-    m_processor = cv::ORB::create( 5000, 1.2, 32 );
+    m_processor = cv::ORB::create( 5000 );
 }
 
 // KazeProcessor
@@ -521,7 +521,7 @@ cv::Mat DescriptorMatcherBase::match( const std::vector< cv::KeyPoint > &queryKe
 
         }
 
-        std::vector< cv::DMatch > revMatches;
+/*        std::vector< cv::DMatch > revMatches;
         m_matcher->match( trainDescriptors, queryDescriptors, revMatches );
 
         std::vector< cv::DMatch > symMatches;
@@ -537,27 +537,31 @@ cv::Mat DescriptorMatcherBase::match( const std::vector< cv::KeyPoint > &queryKe
 
             }
 
-        }
+        }*/
 
         std::vector< cv::Point2f > points1, points2;
 
         points1.reserve( queryKeypoints.size() );
         points2.reserve( queryKeypoints.size() );
 
-        for ( auto &i : symMatches ) {
+        for ( auto &i : fwdMatches ) {
             points1.push_back( queryKeypoints[ i.queryIdx ].pt );
             points2.push_back( trainKeypoints[ i.trainIdx ].pt );
         }
 
-        std::vector< uchar > inliers( points1.size(), 0 );
+        if ( points1.size() > MIN_TRACK_POINTS_COUNT ) {
 
-        auto fMat = cv::findFundamentalMat( points1, points2, inliers, cv::FM_RANSAC );
+            std::vector< uchar > inliers( points1.size(), 0 );
 
-        for ( size_t i = 0; i < inliers.size(); ++i )
-            if ( inliers[ i ] )
-                matches->push_back( symMatches[ i ] );
+            auto fMat = cv::findFundamentalMat( points1, points2, inliers, cv::FM_RANSAC );
 
-        return fMat;
+            for ( size_t i = 0; i < inliers.size(); ++i )
+                if ( inliers[ i ] )
+                    matches->push_back( fwdMatches[ i ] );
+
+            return fMat;
+
+        }
 
     }
 
@@ -588,165 +592,4 @@ void FlannMatcher::initialize()
 {
     m_matcher = cv::FlannBasedMatcher::create();
 }
-/*
-// OpticalMatcherBase
-const double OpticalMatcherBase::m_maxDistance = 1.0;
 
-// GPUOpticalMatcher
-GPUOpticalMatcher::GPUOpticalMatcher()
-{
-    initialize();
-}
-
-void GPUOpticalMatcher::initialize()
-{
-}
-
-cv::Mat GPUOpticalMatcher::match( const CvImage &sourceImage, const std::vector< cv::KeyPoint > &sourceKeypoints,
-            const CvImage &targetImage, const std::vector< cv::KeyPoint > &targetKeypoints, const cv::Mat &targetSearchMatrix,
-            std::vector< cv::DMatch > *matches )
-{
-    if ( !matches )
-        return cv::Mat();
-
-    matches->clear();
-
-    std::vector< cv::Point2f > sourcePoints( sourceKeypoints.size() );
-    std::vector< cv::Point2f > trackedPoints;
-    std::vector< size_t > trackedIndexes;
-
-    for ( size_t i = 0; i < sourceKeypoints.size(); ++i )
-        sourcePoints[ i ] = sourceKeypoints[ i ].pt;
-
-    auto fmat = m_flowProcessor.track( sourceImage, sourcePoints, targetImage, &trackedIndexes, &trackedPoints );
-
-    if ( trackedIndexes.size() > MIN_TRACK_POINTS_COUNT ) {
-
-        if ( !targetKeypoints.empty() ) {
-
-            matches->reserve( trackedIndexes.size() );
-
-            for ( size_t i = 0; i < trackedIndexes.size(); ++i ) {
-
-                auto pt = trackedPoints[ i ];
-
-                size_t minIndex = 0;
-                auto minDistance = cv::norm( pt - targetKeypoints.front().pt );
-
-                for ( int j = std::max( 0.0, pt.y - m_maxDistance );
-                                j < std::min( targetSearchMatrix.rows,
-                                              static_cast< int >( pt.y + m_maxDistance + 1 ) ); ++j  ) {
-
-                    for ( int k = std::max( 0.0, pt.x - m_maxDistance );
-                                    k < std::min( targetSearchMatrix.cols,
-                                                  static_cast< int >( pt.x + m_maxDistance + 1 ) ); ++k  ) {
-
-                        auto index = targetSearchMatrix.at< int >( j, k );
-
-                        if ( index != -1 ) {
-
-                            auto distance = cv::norm( pt - targetKeypoints[ index ].pt );
-
-                            if ( distance < minDistance ) {
-                                minDistance = distance;
-                                minIndex = index;
-
-                            }
-
-                        }
-
-                    }
-
-                }
-
-                if ( minDistance <= m_maxDistance )
-                    matches->push_back( cv::DMatch( trackedIndexes[ i ], minIndex, minDistance ) );
-
-
-            }
-
-        }
-
-    }
-
-    return fmat;
-
-}
-
-// CPUOpticalMatcher
-void CPUOpticalMatcher::buildImagePyramid( const CvImage &image, std::vector< cv::Mat > *imagePyramid )
-{
-    m_flowProcessor.buildImagePyramid( image, imagePyramid );
-}
-
-cv::Mat CPUOpticalMatcher::match( const std::vector< cv::Mat > &sourceImagePyramid, const std::vector< cv::KeyPoint > &sourceKeypoints,
-            const std::vector< cv::Mat > &targetImagePyramid, const std::vector< cv::KeyPoint > &targetKeypoints, const cv::Mat &targetSearchMatrix,
-            std::vector< cv::DMatch > *matches )
-{
-    if ( !matches )
-        return cv::Mat();
-
-    matches->clear();
-
-    std::vector< cv::Point2f > sourcePoints( sourceKeypoints.size() );
-    std::vector< cv::Point2f > trackedPoints;
-    std::vector< size_t > trackedIndexes;
-
-    for ( size_t i = 0; i < sourceKeypoints.size(); ++i )
-        sourcePoints[ i ] = sourceKeypoints[ i ].pt;
-
-    auto fmat = m_flowProcessor.track( sourceImagePyramid, sourcePoints, targetImagePyramid, &trackedIndexes, &trackedPoints );
-
-    if ( trackedIndexes.size() > MIN_TRACK_POINTS_COUNT ) {
-
-        if ( !targetKeypoints.empty() ) {
-
-            matches->reserve( trackedIndexes.size() );
-
-            for ( size_t i = 0; i < trackedIndexes.size(); ++i ) {
-
-                auto pt = trackedPoints[ i ];
-
-                size_t minIndex = 0;
-                auto minDistance = cv::norm( pt - targetKeypoints.front().pt );
-
-                for ( int j = std::max( 0.0, pt.y - m_maxDistance );
-                                j < std::min( targetSearchMatrix.rows,
-                                              static_cast< int >( pt.y + m_maxDistance + 1 ) ); ++j  ) {
-
-                    for ( int k = std::max( 0.0, pt.x - m_maxDistance );
-                                    k < std::min( targetSearchMatrix.cols,
-                                                  static_cast< int >( pt.x + m_maxDistance + 1 ) ); ++k  ) {
-
-                        auto index = targetSearchMatrix.at< int >( j, k );
-
-                        if ( index != -1 ) {
-
-                            auto distance = cv::norm( pt - targetKeypoints[ index ].pt );
-
-                            if ( distance < minDistance ) {
-                                minDistance = distance;
-                                minIndex = index;
-
-                            }
-
-                        }
-
-                    }
-
-                }
-
-                if ( minDistance <= m_maxDistance )
-                    matches->push_back( cv::DMatch( trackedIndexes[ i ], minIndex, minDistance ) );
-
-
-            }
-
-        }
-
-    }
-
-    return fmat;
-
-}
-*/

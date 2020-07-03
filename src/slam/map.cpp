@@ -317,7 +317,111 @@ std::shared_ptr< const FeatureMap > FeatureMap::shared_from_this() const
 
 bool FeatureMap::track( const CvImage &leftImage, const CvImage &rightImage )
 {
-    return false;
+    auto denseFrame = FeatureDenseFrame::create( shared_from_this() );
+
+    denseFrame->load( leftImage, rightImage );
+
+    /*if ( m_frames.size() % 5 == 0 )
+        denseFrame->processDenseCloud();*/
+
+    const std::lock_guard< std::mutex > lock( m_mutex );
+
+    if ( m_frames.empty() ) {
+
+        denseFrame->setProjectionMatrix( m_projectionMatrix );
+        m_frames.push_back( denseFrame );
+
+    }
+    else {
+
+        auto previousDenseFrame = std::dynamic_pointer_cast< FeatureDenseFrame >( m_frames.back() );
+
+        if ( previousDenseFrame ) {
+
+            auto previousLeftFrame = std::dynamic_pointer_cast< FeatureFrame >( previousDenseFrame->leftFrame() );
+            auto previousRightFrame = std::dynamic_pointer_cast< FeatureFrame >( previousDenseFrame->rightFrame() );
+            auto leftFrame = std::dynamic_pointer_cast< FeatureFrame >( denseFrame->leftFrame() );
+            auto rightFrame = std::dynamic_pointer_cast< FeatureFrame >( denseFrame->rightFrame() );
+
+            auto adjacentLeftFrame = FeatureConsecutiveFrame::create( shared_from_this() );
+
+            adjacentLeftFrame->setFrames( previousLeftFrame, leftFrame );
+
+            previousLeftFrame->triangulatePoints();
+
+            adjacentLeftFrame->track();
+
+            size_t trackedPointCount = adjacentLeftFrame->trackedPointsCount();
+
+            double inliersRatio = 0.0;
+
+            size_t createPointsCount = m_goodTrackPoints;
+
+            if ( trackedPointCount >= m_goodTrackPoints )
+                inliersRatio = adjacentLeftFrame->recoverPose();
+            else
+                createPointsCount = m_goodTrackPoints - trackedPointCount;
+
+            if ( inliersRatio < m_goodTrackInliersRatio ) {
+
+                do {
+
+                    do {
+
+                        createPointsCount *= 2;
+
+                        adjacentLeftFrame->createFramePoints( createPointsCount );
+
+                        previousDenseFrame->match();
+
+                        adjacentLeftFrame->track();
+
+                        trackedPointCount = adjacentLeftFrame->trackedPointsCount();
+
+                        std::cout << "Use points count: " << previousLeftFrame->framePoints().size() << " of " << previousLeftFrame->extractedPointsCount() << std::endl;
+
+                        std::cout << "Stereo points count: " << previousDenseFrame->stereoPointsCount() << std::endl;
+                        std::cout << "Adjacent points count: " << adjacentLeftFrame->adjacentPointsCount() << std::endl;
+                        std::cout << "Tracked points count: " << trackedPointCount << std::endl;
+
+                    } while( trackedPointCount < m_goodTrackPoints && previousLeftFrame->framePoints().size() < previousLeftFrame->extractedPointsCount() );
+
+                    previousDenseFrame->triangulatePoints();
+
+                    inliersRatio = adjacentLeftFrame->recoverPose();
+
+                    std::cout << "Inliers: " << inliersRatio << std::endl;
+
+                } while ( inliersRatio < m_goodTrackInliersRatio && previousLeftFrame->framePoints().size() < previousLeftFrame->extractedPointsCount() );
+
+            }
+
+            if ( trackedPointCount < m_minTrackPoints || inliersRatio < m_minTrackInliersRatio )
+                return false;
+
+            auto removeCount = static_cast< int >( adjacentLeftFrame->trackedPointsCount() ) - static_cast< int >( m_trackFramePointsCount );
+
+            /* if ( removeCount > 0 )
+                adjacentLeftFrame->removeExtraTrackPoints( removeCount ); */
+
+            rightFrame->setCameraMatrix( previousRightFrame->cameraMatrix() );
+            rightFrame->setRotation( leftFrame->rotation() );
+            rightFrame->setTranslation( leftFrame->translation() + baselineVector() );
+
+            previousDenseFrame->cleanMapPoints();
+
+            auto replacedFrame = DenseFrame::create( shared_from_this() );
+            replacedFrame->replaceAndClean( previousDenseFrame );
+
+            m_frames.back() = replacedFrame;
+
+        }
+
+        m_frames.push_back( denseFrame );
+
+    }
+
+    return true;
 
 }
 

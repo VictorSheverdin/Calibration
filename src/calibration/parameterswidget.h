@@ -40,7 +40,6 @@ public:
 
     const cv::Size templateCount() const;
     double templateSize() const;
-    double intervalSize() const;
 
 signals:
     void parametersChanges();
@@ -58,9 +57,6 @@ protected:
     QPointer< QLabel > m_sizeLabel;
     QPointer< SizeSpinBox > m_sizeSpinBox;
     QPointer< QLabel > m_sizeMeasLabel;
-    QPointer< QLabel > m_intervalLabel;
-    QPointer< SizeSpinBox > m_intervalSpinBox;
-    QPointer< QLabel > m_intervalMeasLabel;
 
 private:
     void initialize();
