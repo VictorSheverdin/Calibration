@@ -19,18 +19,35 @@ public:
     virtual cv::Mat match( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::map< size_t, cv::Point2f > *trackedMap ) = 0;
     virtual cv::Mat track( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::map< size_t, cv::Point2f > *trackedMap ) = 0;
 
+    size_t count() const;
+    void setCount( const size_t value );
+
+    double minDistance() const;
+    void setMinDistance( const double value );
+
+    double extractPrecision() const;
+    void setExtractPrecision( const double value );
+
+    size_t winSize() const;
+    void setWinSize( const size_t value );
+
+    size_t levels() const;
+    void setLevels( const size_t value );
+
 protected:
     FlowTracker() = default;
 
     void prepareStereoPoints( const FlowFramePtr &frame, std::vector< cv::Point2f > *points, std::map< size_t, cv::Point2f > *trackedMap );
     void prepareConsecutivePoints( const FlowFramePtr &frame, std::vector< cv::Point2f > *points, std::map< size_t, cv::Point2f > *trackedMap );
 
+    std::unique_ptr< FlowProcessor > m_pointsProcessor;
+
 };
 
 class GPUFlowTracker : public FlowTracker
 {
 public:
-    GPUFlowTracker() = default;
+    GPUFlowTracker();
 
     virtual void buildPyramid( FlowFrame *frame ) override;
     virtual void extractPoints( FlowFrame *frame ) override;
@@ -38,18 +55,18 @@ public:
     virtual cv::Mat match( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::map<size_t, cv::Point2f> *trackedMap ) override;
     virtual cv::Mat track( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::map< size_t, cv::Point2f > *trackedMap ) override;
 
-    size_t count() const;
-    void setCount( const size_t value );
-
 protected:
-    GPUFlowProcessor m_pointsProcessor;
+    GPUFlowProcessor *processor() const;
+
+private:
+    void initialize();
 
 };
 
 class CPUFlowTracker : public FlowTracker
 {
 public:
-    CPUFlowTracker() = default;
+    CPUFlowTracker();
 
     virtual void buildPyramid( FlowFrame *frame ) override;
     virtual void extractPoints( FlowFrame *frame ) override;
@@ -57,11 +74,11 @@ public:
     virtual cv::Mat match( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::map< size_t, cv::Point2f > *trackedMap ) override;
     virtual cv::Mat track( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::map< size_t, cv::Point2f > *trackedMap ) override;
 
-    size_t count() const;
-    void setCount( const size_t value );
-
 protected:
-    CPUFlowProcessor m_pointsProcessor;
+    CPUFlowProcessor *processor() const;
+
+private:
+    void initialize();
 
 };
 

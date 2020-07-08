@@ -8,10 +8,10 @@
 
 namespace slam {
 
-const double World::m_maxReprojectionError = 2.;
-const double World::m_minStereoDisparity = 7.;
-const double World::m_minAdjacentPointsDistance = 7.;
-const double World::m_minAdjacentCameraMultiplier = 2.;
+const double World::m_maxReprojectionError = 1.;
+const double World::m_minStereoDisparity = 3.;
+const double World::m_minAdjacentPointsDistance = 3.;
+const double World::m_minAdjacentCameraMultiplier = 1.;
 
 World::World( const StereoCameraMatrix &cameraMatrix )
 {
@@ -39,10 +39,9 @@ void World::initialize( const StereoCameraMatrix &cameraMatrix )
     flowTracker->setCount( m_pointsCount );
     m_flowTracker = std::unique_ptr< FlowTracker >( flowTracker );
 
-    m_featureTracker = std::unique_ptr< FeatureTracker >( new OrbTracker() );
+    m_featureTracker = std::unique_ptr< FeatureTracker >( new SiftTracker() );
 
     m_startCameraMatrix = cameraMatrix;
-
 }
 
 World::ObjectPtr World::create( const StereoCameraMatrix &cameraMatrix )
@@ -65,26 +64,79 @@ std::list < World::MapPtr > World::maps() const
 
 bool World::track( const CvImage &leftImage, const CvImage &rightImage )
 {
-    if ( m_maps.empty() )
-        createMap( m_startCameraMatrix );
+    auto restoreRotation = this->restoreRotation();
+    auto restoreTranslation = this->restoreTranslation();
 
-    auto result = m_maps.back()->track( leftImage, rightImage );
+    if ( m_maps.empty() ) {
 
-    if ( !result ) {
+        auto startCameraMatrix = m_startCameraMatrix;
 
-        auto lastProjectionMatrix = m_maps.back()->frames().back()->projectionMatrix();
+        if ( !restoreRotation.empty() && !restoreTranslation.empty() ) {
+            startCameraMatrix.rotate( restoreRotation );
+            startCameraMatrix.translate( restoreTranslation );
 
-        if ( m_maps.back()->isRudimental() )
-            m_maps.pop_back();
+        }
 
-        createMap( lastProjectionMatrix );
-
-        m_maps.back()->track( leftImage, rightImage );
+        createMap( startCameraMatrix );
 
     }
 
-    return result;
+    if ( !m_maps.empty() ) {
 
+        auto result = m_maps.back()->track( leftImage, rightImage );
+
+        if ( !result ) {
+
+            StereoCameraMatrix projectionMatrix;
+
+            if ( m_maps.back()->isRudimental() )
+                m_maps.pop_back();
+
+            if ( !restoreRotation.empty() && !restoreTranslation.empty() ) {
+
+                projectionMatrix = m_startCameraMatrix;
+
+                projectionMatrix.rotate( restoreRotation );
+                projectionMatrix.translate( restoreTranslation );
+
+            }
+            else
+                projectionMatrix = m_maps.back()->frames().back()->projectionMatrix();
+
+            createMap( projectionMatrix );
+
+            m_maps.back()->track( leftImage, rightImage );
+
+        }
+
+        return result;
+
+    }
+
+    return false;
+
+}
+
+void World::setRestoreMatrix( const cv::Mat &rotation, const cv::Mat &translation )
+{
+    m_restoreMatrix = cv::Mat( 3, 4, CV_64F );
+    rotation.copyTo( m_restoreMatrix.rowRange( 0, 3 ).colRange( 0, 3 ) );
+    translation.copyTo( m_restoreMatrix.rowRange( 0, 3 ).col( 3 ) );
+}
+
+const cv::Mat &World::restoreMatrix() const
+{
+    return m_restoreMatrix;
+}
+
+cv::Mat World::restoreRotation() const
+{
+    return m_restoreMatrix.rowRange( 0, 3 ).colRange( 0, 3 );
+}
+
+cv::Mat World::restoreTranslation() const
+{
+    return m_restoreMatrix.rowRange( 0, 3 ).col( 3 );
 }
 
 void World::adjust( const int frames )

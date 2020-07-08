@@ -12,6 +12,14 @@ ProjectionMatrix::ProjectionMatrix()
     initialize();
 }
 
+ProjectionMatrix::ProjectionMatrix( const ProjectionMatrix &other )
+{
+    m_projectionMatrix = cv::Mat();
+    other.m_cameraMatrix.copyTo( m_cameraMatrix );
+    other.m_r.copyTo( m_r );
+    other.m_t.copyTo( m_t );
+}
+
 ProjectionMatrix::ProjectionMatrix( const cv::Mat &projectionMatrix )
 {
     initialize();
@@ -64,6 +72,21 @@ void ProjectionMatrix::movePrincipalPoint(const cv::Vec2d &value )
 
     m_cameraMatrix.at< double >( 0, 2 ) += value[ 0 ];
     m_cameraMatrix.at< double >( 1, 2 ) += value[ 1 ];
+}
+
+void ProjectionMatrix::rotate( const cv::Mat &mat )
+{
+    m_projectionMatrix = cv::Mat();
+
+    m_r *= mat;
+
+}
+
+void ProjectionMatrix::translate( const cv::Mat &vec )
+{
+    m_projectionMatrix = cv::Mat();
+
+    m_t += vec;
 }
 
 void ProjectionMatrix::setRotation( const cv::Mat &value )
@@ -119,17 +142,17 @@ const cv::Mat &ProjectionMatrix::projectionMatrix() const
 
 double ProjectionMatrix::x() const
 {
-    return m_t.at< double >( 0, 0 );
+    return translation().at< double >( 0, 0 );
 }
 
 double ProjectionMatrix::y() const
 {
-    return m_t.at< double >( 1, 0 );
+    return translation().at< double >( 1, 0 );
 }
 
 double ProjectionMatrix::z() const
 {
-    return m_t.at< double >( 2, 0 );
+    return translation().at< double >( 2, 0 );
 }
 
 double ProjectionMatrix::fx() const
@@ -154,7 +177,9 @@ double ProjectionMatrix::cy() const
 
 Plane ProjectionMatrix::zeroPlane() const
 {
-    return Plane( m_r.at< double >( 0, 2 ), m_r.at< double >( 1, 2 ), m_r.at< double >( 2, 2 ), 0.0 );
+    cv::Mat rt = rotation().t();
+
+    return Plane( rt.at< double >( 0, 2 ), rt.at< double >( 1, 2 ), rt.at< double >( 2, 2 ), 0.0 );
 
 }
 
@@ -162,7 +187,7 @@ Plane ProjectionMatrix::plane() const
 {
     auto ret = zeroPlane();
 
-    ret.setD( ret.a() * -x() + ret.b() * -y() + ret.c() * -z() );
+    ret.setD( ret.a() * x() + ret.b() * y() + ret.c() * z() );
 
     return ret;
 }
@@ -232,6 +257,18 @@ bool ProjectionMatrix::operator==( const ProjectionMatrix &other ) const
     return std::abs( cv::norm( projectionMatrix() - other.projectionMatrix() ) ) <= DOUBLE_EPS ;
 }
 
+ProjectionMatrix &ProjectionMatrix::operator=( const ProjectionMatrix &other )
+{
+    if ( this != &other ) {
+        m_projectionMatrix = cv::Mat();
+        other.m_cameraMatrix.copyTo( m_cameraMatrix );
+        other.m_r.copyTo( m_r );
+        other.m_t.copyTo( m_t );
+    }
+
+    return *this;
+}
+
 std::ostream &operator<<( std::ostream& out, const ProjectionMatrix& matrix )
 {
     out << matrix.projectionMatrix() << std::endl;
@@ -289,6 +326,18 @@ void StereoCameraMatrix::movePrincipalPoint( const cv::Vec2f &value )
 {
     m_leftProjectionMatrix.movePrincipalPoint( value );
     m_rightProjectionMatrix.movePrincipalPoint( value );
+}
+
+void StereoCameraMatrix::rotate( const cv::Mat &mat )
+{
+    m_leftProjectionMatrix.rotate( mat );
+    m_rightProjectionMatrix.rotate( mat );
+}
+
+void StereoCameraMatrix::translate( const cv::Mat &vec )
+{
+    m_leftProjectionMatrix.translate( vec );
+    m_rightProjectionMatrix.translate( vec );
 }
 
 const ProjectionMatrix &StereoCameraMatrix::leftProjectionMatrix() const

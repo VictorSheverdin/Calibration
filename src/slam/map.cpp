@@ -279,6 +279,9 @@ bool FlowMap::track( const CvImage &leftImage, const CvImage &rightImage )
 
             previousDenseFrame->cleanMapPoints();
 
+            if ( m_localAdjustmentFlag && m_frames.size() % m_adjustmentStep == 0 )
+                localAdjustmentUnsafe();
+
             auto replacedFrame = DenseFrame::create( shared_from_this() );
             replacedFrame->replaceAndClean( previousDenseFrame );
 
@@ -409,6 +412,9 @@ bool FeatureMap::track( const CvImage &leftImage, const CvImage &rightImage )
             rightFrame->setTranslation( leftFrame->translation() + baselineVector() );
 
             previousDenseFrame->cleanMapPoints();
+
+            if ( m_localAdjustmentFlag && m_frames.size() % m_adjustmentStep == 0 )
+                localAdjustmentUnsafe();
 
             auto replacedFrame = DenseFrame::create( shared_from_this() );
             replacedFrame->replaceAndClean( previousDenseFrame );

@@ -74,6 +74,9 @@ protected:
 
     static const size_t m_trackFramePointsCount = 1 << 7;
 
+    static const bool m_localAdjustmentFlag = false;
+    static const size_t m_adjustmentStep = 10;
+
     static const double m_minTrackInliersRatio;
     static const double m_goodTrackInliersRatio;
 

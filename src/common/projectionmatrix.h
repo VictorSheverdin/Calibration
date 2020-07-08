@@ -8,6 +8,7 @@ class ProjectionMatrix
 {
 public:
     ProjectionMatrix();
+    ProjectionMatrix(const ProjectionMatrix &other );
     ProjectionMatrix( const cv::Mat &projectionMatrix );
     ProjectionMatrix( const std::string &fileName );
 
@@ -16,6 +17,9 @@ public:
 
     void multiplicateCameraMatrix( const double value );
     void movePrincipalPoint( const cv::Vec2d &value );
+
+    void rotate( const cv::Mat &mat );
+    void translate( const cv::Mat &vec );
 
     void setRotation( const cv::Mat &value );
     const cv::Mat &rotation() const;
@@ -45,6 +49,7 @@ public:
     operator cv::Mat() const;
 
     bool operator==( const ProjectionMatrix &other ) const;
+    ProjectionMatrix &operator=( const ProjectionMatrix &other );
 
 private:
     cv::Mat m_cameraMatrix;
@@ -79,6 +84,9 @@ public:
 
     void multiplicateCameraMatrix( const double value );
     void movePrincipalPoint( const cv::Vec2f &value );
+
+    void rotate( const cv::Mat &mat );
+    void translate( const cv::Mat &vec );
 
     const ProjectionMatrix &leftProjectionMatrix() const;
     const ProjectionMatrix &rightProjectionMatrix() const;

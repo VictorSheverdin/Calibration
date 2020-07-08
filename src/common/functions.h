@@ -2,7 +2,7 @@
 
 #include "image.h"
 
-#include <tuple>
+#include <Eigen/Geometry>
 
 void drawTraceLines( CvImage &image, const unsigned int count );
 
@@ -24,7 +24,8 @@ void drawLine( CvImage *target, const cv::Point2f &pt1, const cv::Point2f &pt2, 
 
 void drawLabel( CvImage *target, const std::string text, int height, int fontFace = cv::FONT_HERSHEY_TRIPLEX, const int thickness = 1, const cv::Scalar &color = cv::Scalar( 255, 255, 255, 255 ) );
 
-std::tuple< double, double, double, double > mat2Quaternion( const cv::Mat &R );
+Eigen::Quaterniond mat2Quaternion( const cv::Mat &R );
+cv::Mat quaternion2Mat( const Eigen::Quaterniond &q );
 
 template < class T >
 cv::Mat point3fToMat( const cv::Point3f &point )

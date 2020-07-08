@@ -108,7 +108,7 @@ void Optimizer::adjust( std::list< FramePtr > &frames )
 
                                 optimizer.addEdge( projectEdge.get() );
 
-                                if ( j->stereoPoint() ) {
+                                /*if ( j->stereoPoint() ) {
 
                                     auto stereoEdge = std::shared_ptr< g2o::EdgeStereoSE3ProjectXYZ >( new g2o::EdgeStereoSE3ProjectXYZ() );
                                     stereoEdges.push_back( stereoEdge );
@@ -126,7 +126,7 @@ void Optimizer::adjust( std::list< FramePtr > &frames )
 
                                     optimizer.addEdge( stereoEdge.get() );
 
-                                }
+                                }*/
 
                             }
 

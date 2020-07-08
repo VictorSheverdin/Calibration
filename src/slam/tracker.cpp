@@ -60,7 +60,67 @@ void FlowTracker::prepareConsecutivePoints( const FlowFramePtr &frame, std::vect
 
 }
 
+size_t FlowTracker::count() const
+{
+    return m_pointsProcessor->count();
+}
+
+void FlowTracker::setCount( const size_t value )
+{
+    m_pointsProcessor->setCount( value );
+}
+
+double FlowTracker::minDistance() const
+{
+    return m_pointsProcessor->minDistance();
+}
+
+void FlowTracker::setMinDistance( const double value )
+{
+    m_pointsProcessor->setMinDistance( value );
+}
+
+double FlowTracker::extractPrecision() const
+{
+    return m_pointsProcessor->extractPrecision();
+}
+
+void FlowTracker::setExtractPrecision( const double value )
+{
+    m_pointsProcessor->setExtractPrecision( value );
+}
+
+size_t FlowTracker::winSize() const
+{
+    return m_pointsProcessor->winSize();
+}
+
+void FlowTracker::setWinSize( const size_t value )
+{
+    m_pointsProcessor->setWinSize( value );
+}
+
+size_t FlowTracker::levels() const
+{
+    return m_pointsProcessor->levels();
+}
+
+void FlowTracker::setLevels( const size_t value )
+{
+    m_pointsProcessor->setLevels( value );
+}
+
 // GPUFlowTracker
+GPUFlowTracker::GPUFlowTracker()
+{
+    initialize();
+}
+
+void GPUFlowTracker::initialize()
+{
+    m_pointsProcessor = std::unique_ptr< FlowProcessor >( new GPUFlowProcessor() );
+}
+
 void GPUFlowTracker::buildPyramid( FlowFrame *frame )
 {
 }
@@ -71,7 +131,7 @@ void GPUFlowTracker::extractPoints( FlowFrame *frame )
 
         std::vector< cv::Point2f > points;
 
-        m_pointsProcessor.extractPoints( frame->image(), &points );
+        processor()->extractPoints( frame->image(), &points );
 
         frame->setExtractedPoints( points );
 
@@ -86,7 +146,7 @@ cv::Mat GPUFlowTracker::match( const FlowFramePtr &frame1, const FlowFramePtr &f
         std::vector< cv::Point2f > points;
         prepareStereoPoints( frame1, &points, trackedMap );
 
-        auto fmat = m_pointsProcessor.track( frame1->image(), points, frame2->image(), trackedMap );
+        auto fmat = processor()->track( frame1->image(), points, frame2->image(), trackedMap );
 
         return fmat;
     }
@@ -102,7 +162,7 @@ cv::Mat GPUFlowTracker::track( const FlowFramePtr &frame1, const FlowFramePtr &f
         std::vector< cv::Point2f > points;
         prepareConsecutivePoints( frame1, &points, trackedMap );
 
-        auto fmat = m_pointsProcessor.track( frame1->image(), points, frame2->image(), trackedMap );
+        auto fmat = processor()->track( frame1->image(), points, frame2->image(), trackedMap );
 
         return fmat;
     }
@@ -111,24 +171,29 @@ cv::Mat GPUFlowTracker::track( const FlowFramePtr &frame1, const FlowFramePtr &f
 
 }
 
-size_t GPUFlowTracker::count() const
+GPUFlowProcessor *GPUFlowTracker::processor() const
 {
-    return m_pointsProcessor.count();
-}
-
-void GPUFlowTracker::setCount( const size_t value )
-{
-    m_pointsProcessor.setCount( value );
+    return dynamic_cast< GPUFlowProcessor* >( m_pointsProcessor.get() );
 }
 
 // CPUFlowTracker
+CPUFlowTracker::CPUFlowTracker()
+{
+    initialize();
+}
+
+void CPUFlowTracker::initialize()
+{
+    m_pointsProcessor = std::unique_ptr< FlowProcessor >( new CPUFlowProcessor() );
+}
+
 void CPUFlowTracker::buildPyramid( FlowFrame *frame )
 {
     if ( frame ) {
 
         std::vector< cv::Mat > imagePyramid;
 
-        m_pointsProcessor.buildImagePyramid( frame->image(), &imagePyramid );
+        processor()->buildImagePyramid( frame->image(), &imagePyramid );
 
         frame->setImagePyramid( imagePyramid );
 
@@ -142,7 +207,7 @@ void CPUFlowTracker::extractPoints( FlowFrame *frame )
 
         std::vector< cv::Point2f > points;
 
-        m_pointsProcessor.extractPoints( frame->image(), &points );
+        processor()->extractPoints( frame->image(), &points );
 
         frame->setExtractedPoints( points );
 
@@ -163,7 +228,7 @@ cv::Mat CPUFlowTracker::match( const FlowFramePtr &frame1, const FlowFramePtr &f
         std::vector< cv::Point2f > points;
         prepareStereoPoints( frame1, &points, trackedMap );
 
-        auto fmat = m_pointsProcessor.track( frame1->imagePyramid(), points, frame2->imagePyramid(), trackedMap );
+        auto fmat = processor()->track( frame1->imagePyramid(), points, frame2->imagePyramid(), trackedMap );
 
         return fmat;
     }
@@ -184,7 +249,7 @@ cv::Mat CPUFlowTracker::track( const FlowFramePtr &frame1, const FlowFramePtr &f
         std::vector< cv::Point2f > points;
         prepareConsecutivePoints( frame1, &points, trackedMap );
 
-        auto fmat = m_pointsProcessor.track( frame1->imagePyramid(), points, frame2->imagePyramid(), trackedMap );
+        auto fmat = processor()->track( frame1->imagePyramid(), points, frame2->imagePyramid(), trackedMap );
 
         return fmat;
     }
@@ -193,14 +258,9 @@ cv::Mat CPUFlowTracker::track( const FlowFramePtr &frame1, const FlowFramePtr &f
 
 }
 
-size_t CPUFlowTracker::count() const
+CPUFlowProcessor *CPUFlowTracker::processor() const
 {
-    return m_pointsProcessor.count();
-}
-
-void CPUFlowTracker::setCount( const size_t value )
-{
-    m_pointsProcessor.setCount( value );
+    return dynamic_cast< CPUFlowProcessor* >( m_pointsProcessor.get() );
 }
 
 // DescriptorTracker

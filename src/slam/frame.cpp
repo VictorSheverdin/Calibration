@@ -285,9 +285,6 @@ int ProcessedFrame::triangulatePoints()
             auto prevProjectionMatrix = i.first->projectionMatrix();
             auto nextProjectionMatrix = projectionMatrix();
 
-            // auto prevCameraPlane = i.first->zeroPlane();
-            // auto nextCameraPlane = zeroPlane();
-
             cv::triangulatePoints( prevProjectionMatrix, nextProjectionMatrix, prevPoints, nextPoints, points3d );
 
             for ( size_t j = 0; j < i.second.size(); ++j ) {
@@ -306,60 +303,55 @@ int ProcessedFrame::triangulatePoints()
                         auto y = points3d.at< float >( 1, j ) / w;
                         auto z = points3d.at< float >( 2, j ) / w;
 
-                        // TODO: понять почему проверка не проходит
-                        // if ( prevCameraPlane.value( x - i.first->x(), y - i.first->y(), z - i.first->z() ) > 0 ||
-                        //     nextCameraPlane.value( x - this->x(), y - this->y(), z - this->z() ) > 0 ) {
+                        auto pt = cv::Point3d( x, y, z );
 
-                            auto pt = cv::Point3d( x, y, z );
+                        cv::Mat pt4d( 4, 1, CV_64F );
+                        points3d.col( j ).convertTo( pt4d, CV_64F );
 
-                            cv::Mat pt4d( 4, 1, CV_64F );
-                            points3d.col( j ).convertTo( pt4d, CV_64F );
+                        cv::Mat prevReprojMat = prevProjectionMatrix * pt4d;
+                        cv::Mat nextReprojMat = nextProjectionMatrix * pt4d;
 
-                            cv::Mat prevReprojMat = prevProjectionMatrix * pt4d;
-                            cv::Mat nextReprojMat = nextProjectionMatrix * pt4d;
+                        auto prevW = prevReprojMat.at< double >( 2, 0 );
+                        auto nextW = nextReprojMat.at< double >( 2, 0 );
 
-                            auto prevW = prevReprojMat.at< double >( 2, 0 );
-                            auto nextW = nextReprojMat.at< double >( 2, 0 );
+                        if ( std::abs( prevW ) > DOUBLE_EPS && std::abs( nextW ) > DOUBLE_EPS &&
+                                    prevW / w > 0 && nextW / w > 0 ) {
 
-                            if ( std::abs( prevW ) > DOUBLE_EPS && std::abs( nextW ) > DOUBLE_EPS ) {
+                            cv::Point2d prevReprojPt( prevReprojMat.at< double >( 0, 0 ) / prevW,
+                                                      prevReprojMat.at< double >( 1, 0 ) / prevW );
 
-                                cv::Point2d prevReprojPt( prevReprojMat.at< double >( 0, 0 ) / prevW,
-                                                          prevReprojMat.at< double >( 1, 0 ) / prevW );
+                            cv::Point2d nextReprojPt( nextReprojMat.at< double >( 0, 0 ) / nextW,
+                                                      nextReprojMat.at< double >( 1, 0 ) / nextW );
 
-                                cv::Point2d nextReprojPt( nextReprojMat.at< double >( 0, 0 ) / nextW,
-                                                          nextReprojMat.at< double >( 1, 0 ) / nextW );
+                            auto prevNorm = cv::norm( prevReprojPt - cv::Point2d( sourcePoint->point() ) );
+                            auto nextNorm = cv::norm( nextReprojPt - cv::Point2d( processedPoint->point() ) );
 
-                                auto prevNorm = cv::norm( prevReprojPt - cv::Point2d( sourcePoint->point() ) );
-                                auto nextNorm = cv::norm( nextReprojPt - cv::Point2d( processedPoint->point() ) );
+                            if ( prevNorm < maxReprojectionError && nextNorm < maxReprojectionError ) {
 
-                                if ( prevNorm < maxReprojectionError && nextNorm < maxReprojectionError ) {
+                                ++ret;
 
-                                    ++ret;
+                                auto mapPoint = processedPoint->mapPoint();
 
-                                    auto mapPoint = processedPoint->mapPoint();
+                                if ( !mapPoint ) {
+                                    mapPoint = parentMap()->createMapPoint( pt, sourcePoint->color() );
+                                }
+                                else {
+                                    mapPoint->setPoint( pt );
+                                    mapPoint->setColor( sourcePoint->color() );
 
-                                    if ( !mapPoint ) {
-                                        mapPoint = parentMap()->createMapPoint( pt, sourcePoint->color() );
-                                    }
-                                    else {
-                                        mapPoint->setPoint( pt );
-                                        mapPoint->setColor( sourcePoint->color() );
+                                }
 
-                                    }
-
-                                    for ( PointPtr k = processedPoint; k; k = k->prevPoint() ) {
-                                        k->setMapPoint( mapPoint );
-                                        auto stereoPoint = k->stereoPoint();
-                                        if ( stereoPoint )
-                                            stereoPoint->setMapPoint( mapPoint );
-
-                                    }
+                                for ( PointPtr k = processedPoint; k; k = k->prevPoint() ) {
+                                    k->setMapPoint( mapPoint );
+                                    auto stereoPoint = k->stereoPoint();
+                                    if ( stereoPoint )
+                                        stereoPoint->setMapPoint( mapPoint );
 
                                 }
 
                             }
 
-                        // }
+                        }
 
                     }
 
@@ -1092,9 +1084,6 @@ int ProcessedStereoFrame::triangulatePoints()
             auto leftProjectionMatrix = leftFrame()->projectionMatrix();
             auto rightProjectionMatrix = rightFrame()->projectionMatrix();
 
-            auto leftCameraPlane = leftFrame()->plane();
-            auto rightCameraPlane = rightFrame()->plane();
-
             cv::triangulatePoints( leftProjectionMatrix, rightProjectionMatrix, leftPoints, rightPoints, homogeneousPoints3d );
 
             for ( size_t i = 0; i < stereoPoints.size(); ++i ) {
@@ -1107,78 +1096,74 @@ int ProcessedStereoFrame::triangulatePoints()
                     auto y = homogeneousPoints3d.at< float >( 1, i ) / w;
                     auto z = homogeneousPoints3d.at< float >( 2, i ) / w;
 
-                    // TODO: Понять почему это не работает...
-                    // if ( leftCameraPlane.value( x, y, z ) > 0 && rightCameraPlane.value( x, y, z ) > 0 ) {
+                    auto pt = cv::Point3d( x, y, z );
 
-                        auto pt = cv::Point3d( x, y, z );
+                    cv::Mat pt4d( 4, 1, CV_64F );
+                    homogeneousPoints3d.col( i ).convertTo( pt4d, CV_64F );
 
-                        cv::Mat pt4d( 4, 1, CV_64F );
-                        homogeneousPoints3d.col( i ).convertTo( pt4d, CV_64F );
+                    cv::Mat leftReprojMat = leftProjectionMatrix * pt4d;
+                    cv::Mat rightReprojMat = rightProjectionMatrix * pt4d;
 
-                        cv::Mat leftReprojMat = leftProjectionMatrix * pt4d;
-                        cv::Mat rightReprojMat = rightProjectionMatrix * pt4d;
+                    auto leftW = leftReprojMat.at< double >( 2, 0 );
+                    auto rightW = rightReprojMat.at< double >( 2, 0 );
 
-                        auto leftW = leftReprojMat.at< double >( 2, 0 );
-                        auto rightW = rightReprojMat.at< double >( 2, 0 );
+                    if ( std::abs( leftW ) > DOUBLE_EPS && std::abs( rightW ) > DOUBLE_EPS &&
+                            leftW / w > 0 && rightW / w > 0 ) {
 
-                        if ( std::abs( leftW ) > DOUBLE_EPS && std::abs( rightW ) > DOUBLE_EPS ) {
+                        cv::Point2d leftReprojPt( leftReprojMat.at< double >( 0, 0 ) / leftW,
+                                                  leftReprojMat.at< double >( 1, 0 ) / leftW );
 
-                            cv::Point2d leftReprojPt( leftReprojMat.at< double >( 0, 0 ) / leftW,
-                                                      leftReprojMat.at< double >( 1, 0 ) / leftW );
+                        cv::Point2d rightReprojPt( rightReprojMat.at< double >( 0, 0 ) / rightW,
+                                                  rightReprojMat.at< double >( 1, 0 ) / rightW );
 
-                            cv::Point2d rightReprojPt( rightReprojMat.at< double >( 0, 0 ) / rightW,
-                                                      rightReprojMat.at< double >( 1, 0 ) / rightW );
+                        auto leftNorm = cv::norm( leftReprojPt - cv::Point2d( stereoPoints[i].leftPoint() ) );
+                        auto rightNorm = cv::norm( rightReprojPt - cv::Point2d( stereoPoints[i].rightPoint() ) );
 
-                            auto leftNorm = cv::norm( leftReprojPt - cv::Point2d( stereoPoints[i].leftPoint() ) );
-                            auto rightNorm = cv::norm( rightReprojPt - cv::Point2d( stereoPoints[i].rightPoint() ) );
+                        if ( leftNorm < maxReprojectionError && rightNorm < maxReprojectionError ) {
 
-                            if ( leftNorm < maxReprojectionError && rightNorm < maxReprojectionError ) {
+                            ++ret;
 
-                                ++ret;
+                            auto leftFramePoint = stereoPoints[i].leftFramePoint();
+                            auto rightFramePoint = stereoPoints[i].rightFramePoint();
 
-                                auto leftFramePoint = stereoPoints[i].leftFramePoint();
-                                auto rightFramePoint = stereoPoints[i].rightFramePoint();
+                            MapPointPtr mapPoint;
 
-                                MapPointPtr mapPoint;
+                            if ( !leftFramePoint->mapPoint() && !rightFramePoint->mapPoint() ) {
 
-                                if ( !leftFramePoint->mapPoint() && !rightFramePoint->mapPoint() ) {
+                                mapPoint = map->createMapPoint( pt, leftFramePoint->color() );
 
-                                    mapPoint = map->createMapPoint( pt, leftFramePoint->color() );
+                                leftFramePoint->setMapPoint( mapPoint );
+                                rightFramePoint->setMapPoint( mapPoint );
 
-                                    leftFramePoint->setMapPoint( mapPoint );
-                                    rightFramePoint->setMapPoint( mapPoint );
+                            }
+                            else {
 
-                                }
-                                else {
+                                if ( !stereoPoints[i].leftFramePoint()->mapPoint() )
+                                    leftFramePoint->setMapPoint( rightFramePoint->mapPoint() );
 
-                                    if ( !stereoPoints[i].leftFramePoint()->mapPoint() )
-                                        leftFramePoint->setMapPoint( rightFramePoint->mapPoint() );
+                                else if ( !rightFramePoint->mapPoint() )
+                                    rightFramePoint->setMapPoint( leftFramePoint->mapPoint() );
 
-                                    else if ( !rightFramePoint->mapPoint() )
-                                        rightFramePoint->setMapPoint( leftFramePoint->mapPoint() );
+                                mapPoint = leftFramePoint->mapPoint();
 
-                                    mapPoint = leftFramePoint->mapPoint();
-
-                                    mapPoint->setPoint( pt );
-                                    mapPoint->setColor( leftFramePoint->color() );
-
-                                }
-
-                                auto leftNextPoint = leftFramePoint->nextPoint();
-
-                                if ( leftNextPoint )
-                                    leftNextPoint->setMapPoint( mapPoint );
-
-                                auto rightNextPoint = rightFramePoint->nextPoint();
-
-                                if ( rightNextPoint )
-                                    rightNextPoint->setMapPoint( mapPoint );
+                                mapPoint->setPoint( pt );
+                                mapPoint->setColor( leftFramePoint->color() );
 
                             }
 
+                            auto leftNextPoint = leftFramePoint->nextPoint();
+
+                            if ( leftNextPoint )
+                                leftNextPoint->setMapPoint( mapPoint );
+
+                            auto rightNextPoint = rightFramePoint->nextPoint();
+
+                            if ( rightNextPoint )
+                                rightNextPoint->setMapPoint( mapPoint );
+
                         }
 
-                    // }
+                    }
 
                 }
 

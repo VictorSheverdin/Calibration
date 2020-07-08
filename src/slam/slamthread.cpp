@@ -73,8 +73,8 @@ void SlamThread::run()
 
         }
 
-    } );
-*/
+    } );*/
+
     while( !isInterruptionRequested() )
     {
         if ( m_mutex.tryLock( ) ) {
@@ -135,8 +135,8 @@ void SlamThread::run()
 
     }
 
-    // localOptimizationThread.join();
-    // optimizationThread5s.join();
+    //localOptimizationThread.join();
+    //optimizationThread5s.join();
 
 }
 

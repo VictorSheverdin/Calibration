@@ -9,7 +9,7 @@
 #include <opencv2/optflow.hpp>
 #include <opencv2/cudaoptflow.hpp>
 
-class FlowProcessorBase
+class FlowProcessor
 {
 public:
     void extractPoints( const CvImage &image, std::vector< cv::Point2f > *points );
@@ -17,22 +17,42 @@ public:
     size_t count() const;
     void setCount( const size_t value );
 
-protected:
-    FlowProcessorBase();
+    double minDistance() const;
+    void setMinDistance( const double value );
 
-    static const double m_maxDistance;
+    double extractPrecision() const;
+    void setExtractPrecision( const double value );
+
+    virtual size_t winSize() const = 0;
+    virtual void setWinSize( const size_t value ) = 0;
+
+    virtual size_t levels() const = 0;
+    virtual void setLevels( const size_t value ) = 0;
+
+protected:
+    FlowProcessor();
+
+    static const double m_checkDistance;
     static const double m_errorRatio;
 
     size_t m_count;
+    double m_minDistance;
+    double m_extractPrecision;
 
 private:
     void initialize();
 };
 
-class GPUFlowProcessor : public FlowProcessorBase
+class GPUFlowProcessor : public FlowProcessor
 {
 public:
     GPUFlowProcessor();
+
+    virtual size_t winSize() const override;
+    virtual void setWinSize( const size_t value ) override;
+
+    virtual size_t levels() const override;
+    virtual void setLevels( const size_t value ) override;
 
     cv::Mat track( const CvImage &sourceImage, const std::vector< cv::Point2f > &sourcePoints, const CvImage &targetImage, std::map< size_t, cv::Point2f > *trackedMap );
 
@@ -54,14 +74,27 @@ private:
 
 };
 
-class CPUFlowProcessor : public FlowProcessorBase
+class CPUFlowProcessor : public FlowProcessor
 {
 public:
-    CPUFlowProcessor() = default;
+    CPUFlowProcessor();
 
     cv::Mat track( const std::vector< cv::Mat > &sourceImagePyramid, const std::vector< cv::Point2f > &sourcePoints, const std::vector< cv::Mat > &targetImagePyramid, std::map< size_t, cv::Point2f > *trackedMap );
 
     void buildImagePyramid( const CvImage &image, std::vector< cv::Mat > *imagePyramid );
+
+    virtual size_t winSize() const override;
+    virtual void setWinSize( const size_t value ) override;
+
+    virtual size_t levels() const override;
+    virtual void setLevels( const size_t value ) override;
+
+protected:
+    size_t m_winSize;
+    size_t m_levels;
+
+private:
+    void initialize();
 
 };
 

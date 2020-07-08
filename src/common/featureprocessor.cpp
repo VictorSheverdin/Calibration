@@ -33,42 +33,64 @@ void extractAndCompute( cv::Ptr< cv::Feature2D > processor, const CvImage &image
 
 }
 
-// FlowProcessorBase
-const double FlowProcessorBase::m_maxDistance = 1.0;
-const double FlowProcessorBase::m_errorRatio = 0.3;
+// FlowProcessor
+const double FlowProcessor::m_checkDistance = 1.0;
+const double FlowProcessor::m_errorRatio = 0.3;
 
-// FlowProcessorBase
-FlowProcessorBase::FlowProcessorBase()
+// FlowProcessor
+FlowProcessor::FlowProcessor()
 {
     initialize();
 }
 
-void FlowProcessorBase::initialize()
+void FlowProcessor::initialize()
 {
     m_count = 1000;
+    m_minDistance = 5.0;
+    m_extractPrecision = 1.e-3;
 }
 
-void FlowProcessorBase::extractPoints( const CvImage &image, std::vector< cv::Point2f > *points )
+void FlowProcessor::extractPoints( const CvImage &image, std::vector< cv::Point2f > *points )
 {
     if ( points ) {
 
         cv::Mat gray;
         cv::cvtColor( image, gray, cv::COLOR_BGR2GRAY );
 
-        cv::goodFeaturesToTrack( gray, *points, m_count, 1.e-3, 10. );
+        cv::goodFeaturesToTrack( gray, *points, m_count, m_extractPrecision, m_minDistance );
 
     }
 
 }
 
-size_t FlowProcessorBase::count() const
+size_t FlowProcessor::count() const
 {
     return m_count;
 }
 
-void FlowProcessorBase::setCount( const size_t value )
+void FlowProcessor::setCount( const size_t value )
 {
     m_count = value;
+}
+
+double FlowProcessor::minDistance() const
+{
+    return m_minDistance;
+}
+
+void FlowProcessor::setMinDistance( const double value )
+{
+    m_minDistance = value;
+}
+
+double FlowProcessor::extractPrecision() const
+{
+    return m_extractPrecision;
+}
+
+void FlowProcessor::setExtractPrecision( const double value )
+{
+    m_extractPrecision = value;
 }
 
 // GPUFlowProcessor
@@ -80,6 +102,28 @@ GPUFlowProcessor::GPUFlowProcessor()
 void GPUFlowProcessor::initialize()
 {
     m_opticalProcessor = cv::cuda::SparsePyrLKOpticalFlow::create();
+}
+
+size_t GPUFlowProcessor::winSize() const
+{
+    auto size = m_opticalProcessor->getWinSize();
+
+    return static_cast< size_t >( std::max( 0, std::min( size.width, size.height ) ) );
+}
+
+void GPUFlowProcessor::setWinSize( const size_t value )
+{
+    m_opticalProcessor->setWinSize( cv::Size( value, value ) );
+}
+
+size_t GPUFlowProcessor::levels() const
+{
+    return static_cast< size_t >( std::max( 0, m_opticalProcessor->getMaxLevel() ) );
+}
+
+void GPUFlowProcessor::setLevels( const size_t value )
+{
+    m_opticalProcessor->setMaxLevel( value );
 }
 
 void download( const cv::cuda::GpuMat &d_mat, std::vector< cv::Point2f > &vec )
@@ -169,7 +213,7 @@ cv::Mat GPUFlowProcessor::track( const CvImage &sourceImage, const std::vector< 
 
             for ( size_t i = 0; i < statuses.size(); ++i ) {
 
-                if ( statuses[i] && checkStatuses[i] && err[i] < errThreshold && checkErr[i] < checkErrThreshold && cv::norm( checkPoints[ i ] - sourcePoints[ i ] ) < m_maxDistance
+                if ( statuses[i] && checkStatuses[i] && err[i] < errThreshold && checkErr[i] < checkErrThreshold && cv::norm( checkPoints[ i ] - sourcePoints[ i ] ) < m_checkDistance
                      && opticalPoints[ i ].x >= 0 && opticalPoints[ i ].y >= 0 && opticalPoints[ i ].x < targetImage.cols &&  opticalPoints[ i ].y < targetImage.rows ) {
                     points1.push_back( sourcePoints[ i ] );
                     points2.push_back( opticalPoints[ i ] );
@@ -213,6 +257,17 @@ cv::Mat GPUFlowProcessor::track( const CvImage &sourceImage, const std::vector< 
 }
 
 // CPUFlowProcessor
+CPUFlowProcessor::CPUFlowProcessor()
+{
+    initialize();
+}
+
+void CPUFlowProcessor::initialize()
+{
+    m_winSize = 11;
+    m_levels = 10;
+}
+
 cv::Mat CPUFlowProcessor::track( const std::vector< cv::Mat > &sourceImagePyramid, const std::vector< cv::Point2f > &sourcePoints, const std::vector< cv::Mat > &targetImagePyramid, std::map< size_t, cv::Point2f > *trackedMap )
 {
     if ( trackedMap && !sourcePoints.empty() ) {
@@ -240,8 +295,8 @@ cv::Mat CPUFlowProcessor::track( const std::vector< cv::Mat > &sourceImagePyrami
         std::vector< unsigned char > checkStatuses;
         std::vector< float > checkErr;
 
-        cv::calcOpticalFlowPyrLK( sourceImagePyramid, targetImagePyramid, sourcePoints, opticalPoints, statuses, err, cv::Size( 11, 11 ), 4 );
-        cv::calcOpticalFlowPyrLK( targetImagePyramid, sourceImagePyramid, opticalPoints, checkPoints, checkStatuses, checkErr, cv::Size( 11, 11 ), 4 );
+        cv::calcOpticalFlowPyrLK( sourceImagePyramid, targetImagePyramid, sourcePoints, opticalPoints, statuses, err, cv::Size( m_winSize, m_winSize ), m_levels );
+        cv::calcOpticalFlowPyrLK( targetImagePyramid, sourceImagePyramid, opticalPoints, checkPoints, checkStatuses, checkErr, cv::Size( m_winSize, m_winSize ), m_levels );
 
         if ( !err.empty() && err.size() == checkErr.size() ) {
 
@@ -283,7 +338,7 @@ cv::Mat CPUFlowProcessor::track( const std::vector< cv::Mat > &sourceImagePyrami
 
             for ( size_t i = 0; i < statuses.size(); ++i ) {
 
-                if ( statuses[i] && checkStatuses[i] && err[i] < errThreshold && checkErr[i] < checkErrThreshold && cv::norm( checkPoints[ i ] - sourcePoints[ i ] ) < m_maxDistance
+                if ( statuses[i] && checkStatuses[i] && err[i] < errThreshold && checkErr[i] < checkErrThreshold && cv::norm( checkPoints[ i ] - sourcePoints[ i ] ) < m_checkDistance
                      && opticalPoints[ i ].x >= 0 && opticalPoints[ i ].y >= 0 && opticalPoints[ i ].x < cols &&  opticalPoints[ i ].y < rows ) {
 
                     points1.push_back( sourcePoints[ i ] );
@@ -330,7 +385,27 @@ cv::Mat CPUFlowProcessor::track( const std::vector< cv::Mat > &sourceImagePyrami
 void CPUFlowProcessor::buildImagePyramid( const CvImage &image, std::vector< cv::Mat > *imagePyramid )
 {
     if ( imagePyramid )
-        cv::buildOpticalFlowPyramid( image, *imagePyramid, cv::Size( 11, 11 ), 4 );
+        cv::buildOpticalFlowPyramid( image, *imagePyramid, cv::Size( m_winSize, m_winSize ), m_levels );
+}
+
+size_t CPUFlowProcessor::winSize() const
+{
+    return m_winSize;
+}
+
+void CPUFlowProcessor::setWinSize( const size_t value )
+{
+    m_winSize = value;
+}
+
+size_t CPUFlowProcessor::levels() const
+{
+    return m_levels;
+}
+
+void CPUFlowProcessor::setLevels( const size_t value )
+{
+    m_levels = value;
 }
 
 // KeyPointProcessor

@@ -24,6 +24,11 @@ public:
 
     bool track( const CvImage &leftImage, const CvImage &rightImage );
 
+    void setRestoreMatrix( const cv::Mat &rotation, const cv::Mat &translation );
+    const cv::Mat &restoreMatrix() const;
+    cv::Mat restoreRotation() const;
+    cv::Mat restoreTranslation() const;
+
     void adjust( const int frames );
     void localAdjustment();
 
@@ -51,6 +56,8 @@ protected:
 
     std::unique_ptr< FlowTracker > m_flowTracker;
     std::unique_ptr< FeatureTracker > m_featureTracker;
+
+    cv::Mat m_restoreMatrix;
 
     TrackType m_trackType;
 
