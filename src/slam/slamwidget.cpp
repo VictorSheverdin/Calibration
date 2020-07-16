@@ -622,7 +622,7 @@ void SlamWidgetBase::update3dView()
 {
     updatePath();
     updateSparseCloud();
-    // updateDensePointCloud();
+    updateDensePointCloud();
 }
 
 // SlamImageWidget
@@ -637,6 +637,8 @@ SlamImageWidget::SlamImageWidget( const QStringList &leftList, const QStringList
 void SlamImageWidget::initialize()
 {
     m_index = 0;
+    m_fps = 20;
+
     startTimer( 30 );
 }
 
@@ -652,17 +654,31 @@ void SlamImageWidget::setImageList( const QStringList &leftList, const QStringLi
 
 }
 
+double SlamImageWidget::fps() const
+{
+    return m_fps;
+}
+
+void SlamImageWidget::fps( const double value )
+{
+    m_fps = value;
+}
+
 void SlamImageWidget::timerEvent( QTimerEvent * )
 {
+    static std::chrono::time_point< std::chrono::system_clock > time = std::chrono::system_clock::now();
+
     if ( m_index < m_leftList.size() ) {
 
         std::cout << m_leftList[ m_index ].toStdString() << " " << m_rightList[ m_index ].toStdString() << std::endl;
 
-        CvImage leftImage( m_leftList[ m_index ].toStdString() );
-        CvImage rightImage( m_rightList[ m_index ].toStdString() );
+        StampedImage leftImage( time, m_leftList[ m_index ].toStdString() );
+        StampedImage rightImage( time, m_rightList[ m_index ].toStdString() );
 
         m_slamThread->process( leftImage, rightImage );
         ++m_index;
+
+        time += std::chrono::milliseconds{ static_cast< int64_t >( ( 1.0 / m_fps ) * 1000. ) };
 
     }
 
@@ -685,7 +701,5 @@ void SlamCameraWidget::updateFrame()
     auto frame = m_camera.getFrame();
 
     if ( !frame.empty() )
-        m_slamThread->process( frame.leftFrame(), frame.rightFrame() );
-
+        m_slamThread->process( frame.leftImage(), frame.rightImage() );
 }
-

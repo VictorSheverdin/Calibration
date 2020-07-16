@@ -27,7 +27,7 @@ public:
 
     explicit SlamThread( const StereoCalibrationDataShort &calibration, QObject *parent = nullptr );
 
-    void process( const CvImage leftImage, const CvImage rightImage );
+    void process( const StampedImage leftImage, const StampedImage rightImage );
 
     std::list< MapPtr > maps() const;
 
@@ -39,8 +39,8 @@ signals:
     void updateSignal();
 
 protected:
-    CvImage m_leftFrame;
-    CvImage m_rightFrame;
+    StampedImage m_leftFrame;
+    StampedImage m_rightFrame;
 
     mutable QMutex m_mutex;
 

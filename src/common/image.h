@@ -38,7 +38,6 @@ public:
 
     double aspectRatio() const;
     double revAspectRatio() const;
-
 };
 
 Q_DECLARE_METATYPE( CvImage )
@@ -60,69 +59,57 @@ public:
 protected:
     CvImage m_leftImage;
     CvImage m_rightImage;
-
 };
 
-class FrameBase
+class StampedImageBase
 {
 public:
-    FrameBase();
-    FrameBase( const std::chrono::time_point< std::chrono::system_clock > &time );
+    StampedImageBase( const std::chrono::time_point< std::chrono::system_clock > &time = std::chrono::system_clock::now() );
 
     void setTime( const std::chrono::time_point< std::chrono::system_clock > &time );
     const std::chrono::time_point< std::chrono::system_clock > &time() const;
 
 protected:
     std::chrono::time_point< std::chrono::system_clock > m_time;
-
-private:
-    void initialize();
 };
 
-class Frame : public CvImage, public FrameBase
+class StampedImage : public StampedImageBase, public CvImage
 {
 public:
-    Frame();
-    Frame( const CvImage &mat );
-    Frame( const cv::Mat &mat );
-    Frame( const QtImage &img );
+    StampedImage( const std::chrono::time_point< std::chrono::system_clock > &time = std::chrono::system_clock::now() );
 
-    int64_t timeDiff( const Frame &other ) const;
+    StampedImage( const std::chrono::time_point< std::chrono::system_clock > &time, const CvImage &mat );
+    StampedImage( const std::chrono::time_point< std::chrono::system_clock > &time, const cv::Mat &mat );
+    StampedImage( const std::chrono::time_point< std::chrono::system_clock > &time, const QtImage &img );
 
-private:
-    void initialize();
+    StampedImage( const CvImage &mat );
+    StampedImage( const cv::Mat &mat );
+    StampedImage( const QtImage &img );
 
+    int64_t diffMs( const StampedImage &other ) const;
 };
 
-class StereoFrame : public FrameBase
+class StampedStereoImage
 {
 public:
-    StereoFrame();
-    StereoFrame( const std::chrono::time_point< std::chrono::system_clock > &time );
+    StampedStereoImage();
 
-    StereoFrame( const std::chrono::time_point< std::chrono::system_clock > &time, const Frame &leftFrame, const Frame &rightFrame );
-    StereoFrame( const Frame &leftFrame, const Frame &rightFrame );
+    StampedStereoImage( const StampedImage &leftImage, const StampedImage &rightImage );
+    StampedStereoImage( const StereoImage &image );
 
-    StereoFrame( const std::chrono::time_point< std::chrono::system_clock > &time, const StereoImage &image );
-    StereoFrame( const StereoImage &image );
+    const StampedImage &leftImage() const;
+    void setLeftImage( const StampedImage &image );
 
-    const Frame &leftFrame() const;
-    void setLeftFrame( const Frame &frame );
+    const StampedImage &rightImage() const;
+    void setRightImage( const StampedImage &image );
 
-    const Frame &rightFrame() const;
-    void setRightFrame( const Frame &frame );
-
-    int timeDiff() const;
+    int diffMs() const;
 
     bool empty() const;
 
     operator StereoImage();
 
 protected:
-    Frame m_leftFrame;
-    Frame m_rightFrame;
-
-private:
-    void initialize();
-
+    StampedImage m_leftImage;
+    StampedImage m_rightImage;
 };

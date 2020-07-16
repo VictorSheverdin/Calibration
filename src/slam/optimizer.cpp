@@ -13,11 +13,6 @@ namespace slam {
 
 Optimizer::Optimizer()
 {
-    initialize();
-}
-
-void Optimizer::initialize()
-{
 }
 
 void Optimizer::adjust( std::list< FramePtr > &frames )
@@ -99,7 +94,8 @@ void Optimizer::adjust( std::list< FramePtr > &frames )
                                 projectEdge->setVertex( 0, pointVertex.get() );
                                 projectEdge->setVertex( 1, frameVertex.get() );
                                 projectEdge->setMeasurement( j->eigenPoint() );
-                                projectEdge->setInformation( Eigen::Matrix2d::Identity() );
+
+                                projectEdge->setInformation( Eigen::Matrix2d::Identity() * j->error() );
 
                                 projectEdge->fx = leftFrame->fx();
                                 projectEdge->fy = leftFrame->fy();
@@ -108,7 +104,7 @@ void Optimizer::adjust( std::list< FramePtr > &frames )
 
                                 optimizer.addEdge( projectEdge.get() );
 
-                                /*if ( j->stereoPoint() ) {
+                                if ( j->stereoPoint() ) {
 
                                     auto stereoEdge = std::shared_ptr< g2o::EdgeStereoSE3ProjectXYZ >( new g2o::EdgeStereoSE3ProjectXYZ() );
                                     stereoEdges.push_back( stereoEdge );
@@ -116,8 +112,10 @@ void Optimizer::adjust( std::list< FramePtr > &frames )
                                     stereoEdge->setVertex( 0, pointVertex.get() );
                                     stereoEdge->setVertex( 1, frameVertex.get() );
                                     stereoEdge->setMeasurement( j->eigenStereoPoint() );
-                                    stereoEdge->setInformation( Eigen::Matrix3d::Identity() );
-
+                                    Eigen::Matrix3d covariance = Eigen::Matrix3d::Zero();
+                                    covariance( 0, 0 ) = covariance( 1, 1 ) = j->error();
+                                    covariance( 2, 2 ) = j->stereoPoint()->error();                                    
+                                    stereoEdge->setInformation( covariance );
                                     stereoEdge->fx = leftFrame->fx();
                                     stereoEdge->fy = leftFrame->fy();
                                     stereoEdge->cx = leftFrame->cx();
@@ -126,7 +124,7 @@ void Optimizer::adjust( std::list< FramePtr > &frames )
 
                                     optimizer.addEdge( stereoEdge.get() );
 
-                                }*/
+                                }
 
                             }
 

@@ -60,9 +60,9 @@ void FrameObserver::FrameReceived ( const AVT::VmbAPI::FramePtr pFrame )
 
 }
 
-Frame FrameObserver::getFrame()
+StampedImage FrameObserver::getFrame()
 {
-    Frame res;
+    StampedImage res;
 
     m_framesMutex.lock();
 
@@ -87,9 +87,9 @@ void FrameObserver::unlockMutex()
     m_framesMutex.unlock();
 }
 
-Frame FrameObserver::getFrameUnsafe() const
+StampedImage FrameObserver::getFrameUnsafe() const
 {
-    Frame res;
+    StampedImage res;
 
     if ( !m_sourceMat.empty() ) {
         res.setTime( m_sourceTime );
@@ -116,7 +116,7 @@ void CameraBase::initialize()
 {
 }
 
-Frame CameraBase::getFrame()
+StampedImage CameraBase::getFrame()
 {
     return m_frameObserver->getFrame();
 }
@@ -147,7 +147,7 @@ void CameraBase::unlockMutex()
     m_frameObserver->unlockMutex();
 }
 
-Frame CameraBase::getFrameUnsafe() const
+StampedImage CameraBase::getFrameUnsafe() const
 {
     return m_frameObserver->getFrameUnsafe();
 }
@@ -248,8 +248,8 @@ void StereoCamera::initialize()
 
 void StereoCamera::updateFrame()
 {    
-    Frame leftFrame;
-    Frame rightFrame;
+    StampedImage leftFrame;
+    StampedImage rightFrame;
 
     m_leftCamera.lockMutex();
     m_rightCamera.lockMutex();
@@ -265,7 +265,7 @@ void StereoCamera::updateFrame()
     if ( !leftFrame.empty() && !rightFrame.empty() ) {
 
         m_framesMutex.lock();
-        m_framesQueue.push( StereoFrame( leftFrame, rightFrame ) );
+        m_framesQueue.push( StampedStereoImage( leftFrame, rightFrame ) );
         m_framesMutex.unlock();
 
         emit receivedFrame();
@@ -274,9 +274,9 @@ void StereoCamera::updateFrame()
 
 }
 
-StereoFrame StereoCamera::getFrame()
+StampedStereoImage StereoCamera::getFrame()
 {
-    StereoFrame res;
+    StampedStereoImage res;
 
     m_framesMutex.lock();
 

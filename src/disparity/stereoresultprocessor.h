@@ -18,13 +18,11 @@ public:
     const cv::Mat &points() const;
     pcl::PointCloud< pcl::PointXYZRGB >::Ptr pointCloud() const;
 
-    const std::chrono::time_point< std::chrono::system_clock > &time() const;
+    void setFrame( const StampedStereoImage &frame );
+    const StampedStereoImage &frame() const;
 
-    void setFrame( const StereoFrame &frame );
-    const StereoFrame &frame() const;
-
-    const Frame &leftFrame() const;
-    const Frame &rightFrame() const;
+    const StampedImage &leftFrame() const;
+    const StampedImage &rightFrame() const;
 
 protected:
     CvImage m_previewImage;
@@ -33,7 +31,7 @@ protected:
     cv::Mat m_points;
     pcl::PointCloud< pcl::PointXYZRGB >::Ptr m_pointCloud;
 
-    StereoFrame m_frame;
+    StampedStereoImage m_frame;
 
 private:
     void initialize();
@@ -49,7 +47,7 @@ public:
     void setCalibration( const StereoCalibrationDataShort &data );
     bool loadYaml( const std::string &fileName );
 
-    StereoResult process( const StereoFrame &frame );
+    StereoResult process( const StampedStereoImage &frame );
 
 protected:
     StereoRectificationProcessor m_rectificationProcessor;

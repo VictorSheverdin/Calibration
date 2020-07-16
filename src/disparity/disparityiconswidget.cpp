@@ -50,9 +50,9 @@ CvImage DisparityIcon::loadRightImage() const
     return CvImage( m_rightFileName.toStdString() );
 }
 
-StereoFrame DisparityIcon::stereoFrame() const
+StampedStereoImage DisparityIcon::stereoFrame() const
 {
-    return StereoFrame( m_time, loadLeftImage(), loadRightImage() );
+    return StampedStereoImage( StampedImage( m_time, loadLeftImage() ), StampedImage( m_time, loadRightImage() ) );
 }
 
 void DisparityIcon::setTime( const std::chrono::time_point< std::chrono::system_clock > &time )

@@ -21,7 +21,7 @@ SlamThread::SlamThread(const StereoCalibrationDataShort &calibration, QObject *p
 
 void SlamThread::initialize( const StereoCalibrationDataShort &calibration )
 {
-    m_scaleFactor = 0.5;
+    m_scaleFactor = 1.0;
 
     m_rectificationProcessor.setCalibrationData( calibration );
     m_leftUndistortionProcessor.setCalibrationData( calibration.leftCameraResults() );
@@ -39,7 +39,7 @@ void SlamThread::initialize( const StereoCalibrationDataShort &calibration )
 
 }
 
-void SlamThread::process( const CvImage leftImage, const CvImage rightImage )
+void SlamThread::process( const StampedImage leftImage, const StampedImage rightImage )
 {
     m_mutex.lock();
 
@@ -52,17 +52,7 @@ void SlamThread::process( const CvImage leftImage, const CvImage rightImage )
 
 void SlamThread::run()
 {
-   /*auto localOptimizationThread = std::thread( [ & ] {
-
-        while ( !isInterruptionRequested() ) {
-            m_system->localAdjustment();
-            std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
-
-        }
-
-    } );
-
-    auto optimizationThread5s = std::thread( [ & ] {
+   /*auto optimizationThread = std::thread( [ & ] {
 
         while ( !isInterruptionRequested() ) {
 
@@ -101,8 +91,8 @@ void SlamThread::run()
                     CvImage rightProcImage;
 
                     if ( std::abs( m_scaleFactor - 1.0 ) > DOUBLE_EPS ) {
-                        cv::resize( leftCroppedImage, leftProcImage, cv::Size(), m_scaleFactor, m_scaleFactor, cv::INTER_CUBIC );
-                        cv::resize( rightCroppedImage, rightProcImage, cv::Size(), m_scaleFactor, m_scaleFactor, cv::INTER_CUBIC );
+                        cv::resize( leftCroppedImage, leftProcImage, cv::Size(), m_scaleFactor, m_scaleFactor, cv::INTER_AREA );
+                        cv::resize( rightCroppedImage, rightProcImage, cv::Size(), m_scaleFactor, m_scaleFactor, cv::INTER_AREA );
 
                     }
                     else {
@@ -135,8 +125,7 @@ void SlamThread::run()
 
     }
 
-    //localOptimizationThread.join();
-    //optimizationThread5s.join();
+    // optimizationThread.join();
 
 }
 

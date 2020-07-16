@@ -48,11 +48,13 @@ public:
     void setSe3Pose( const g2o::SE3Quat &pose );
     g2o::SE3Quat se3Pose() const;
 
-protected:
-    MonoFrame();
+    void setTime( const std::chrono::time_point< std::chrono::system_clock > &value );
+    const std::chrono::time_point< std::chrono::system_clock > &time() const;
 
-private:
-    void initialize();
+protected:
+    MonoFrame( const std::chrono::time_point< std::chrono::system_clock > &time );
+
+    std::chrono::time_point< std::chrono::system_clock > m_time;
 
 };
 
@@ -63,13 +65,19 @@ public:
     using WorldPtr = std::shared_ptr< World >;
 
     virtual std::vector< cv::Point2f > extractedPoints() const = 0;
+
     size_t extractedPointsCount() const;
+
+    virtual void removePoint( const PointPtr &point ) = 0;
 
     MapPtr parentMap() const;
     WorldPtr parentWorld() const;
 
     const CvImage &image() const;
+    const cv::Mat &mask() const;
+
     void clearImage();
+    void clearMask();
 
     CvImage drawExtractedPoints() const;
     CvImage drawTracks() const;
@@ -77,6 +85,8 @@ public:
     int triangulatePoints();
 
     void cleanMapPoints();
+
+    void removeExtraPoints( const size_t mapPointsCount, const size_t framePointsCount );
 
     std::vector< PointPtr > posePoints() const;
     size_t posePointsCount() const;
@@ -100,15 +110,20 @@ protected:
 
     CvImage m_image;
 
+    cv::Mat m_mask;
+
     std::vector< cv::Mat > m_imagePyramid;
 
     static const int m_minConnectedPoints = 7;
 
     static const double m_minPointsDistance;
 
-    ProcessedFrame( const MapPtr &parentMap );
+    ProcessedFrame( const MapPtr &parentMap, const std::chrono::time_point< std::chrono::system_clock > &time );
 
-    void load( const CvImage &image );
+    void load( const StampedImage &image );
+
+private:
+    void initialize();
 
 };
 
@@ -119,9 +134,12 @@ public:
     using FlowMapPtr = std::shared_ptr< FlowMap >;
     using FlowPointPtr = std::shared_ptr< FlowPoint >;
 
-    static ObjectPtr create( const FlowMapPtr &parentMap );
+    static ObjectPtr create( const FlowMapPtr &parentMap,
+                             const std::chrono::time_point< std::chrono::system_clock > &time = std::chrono::system_clock::now() );
 
-    void load( const CvImage &image );
+    void load( const StampedImage &image );
+
+    void createMask();
 
     void buildPyramid();
     void extractPoints();
@@ -129,8 +147,9 @@ public:
     virtual std::vector< PointPtr > framePoints() const override;
     virtual std::vector< cv::Point2f > extractedPoints() const override;
 
-    std::vector< FlowPointPtr > &flowPoints();
-    const std::vector< FlowPointPtr > &flowPoints() const;
+    virtual void removePoint( const PointPtr &point ) override;
+
+    std::vector< FlowPointPtr > flowPoints() const;
 
     FlowPointPtr framePoint( const cv::Point2f &point ) const;
 
@@ -139,16 +158,18 @@ public:
 
     void setExtractedPoints( const std::vector< cv::Point2f > &value );
 
+    size_t usePointsCount() const;
+
 protected:
-    FlowFrame( const FlowMapPtr &parentMap );
+    FlowFrame( const FlowMapPtr &parentMap, const std::chrono::time_point<std::chrono::system_clock> &time );
 
     std::vector< cv::Point2f > m_extractedPoints;
 
-    std::vector< FlowPointPtr > m_points;
-
-    size_t m_usePointsCount;
+    std::set< FlowPointPtr > m_points;
 
     matrix< FlowPointPtr > m_searchMatrix;
+
+    size_t m_usePointsCount;
 
     FlowPointPtr createFramePoint( const size_t keyPointIndex );
 
@@ -173,14 +194,21 @@ public:
     virtual std::vector< PointPtr > framePoints() const override;
     virtual std::vector< cv::Point2f > extractedPoints() const override;
 
+    virtual void removePoint( const PointPtr &point ) override;
+
     std::vector< FeaturePointPtr > featurePoints() const;
 
     FeaturePointPtr &featurePoint( const size_t index );
     const FeaturePointPtr &featurePoint( const size_t index ) const;
 
-    static ObjectPtr create( const FeatureMapPtr &parentMap );
+    static ObjectPtr create( const FeatureMapPtr &parentMap,
+                             const std::chrono::time_point< std::chrono::system_clock > &time = std::chrono::system_clock::now() );
 
-    void load( const CvImage &image );
+    void load( const StampedImage &image );
+
+    void extractKeypoints();
+
+    void createMask();
 
     void createFramePoints( const size_t count );
 
@@ -191,7 +219,7 @@ public:
     void setDescriptors( const cv::Mat &value );
 
 protected:
-    FeatureFrame( const FeatureMapPtr &parentMap );
+    FeatureFrame( const FeatureMapPtr &parentMap, const std::chrono::time_point< std::chrono::system_clock > &time );
 
     std::vector< cv::KeyPoint > m_keyPoints;
     std::vector< cv::Scalar > m_colors;
@@ -203,8 +231,6 @@ protected:
 
     bool isFramePointExist( const size_t index ) const;
 
-private:
-    void initialize();
 
 };
 
@@ -218,13 +244,13 @@ public:
 
     virtual std::vector< PointPtr > framePoints() const override;
 
-    static ObjectPtr create();
+    static ObjectPtr create( const std::chrono::time_point<std::chrono::system_clock> time = std::chrono::system_clock::now() );
 
     void replace( const ProcessedFramePtr &frame );
     void replaceAndClean( const ProcessedFramePtr &frame );
 
 protected:
-    Frame();
+    Frame( const std::chrono::time_point< std::chrono::system_clock > &time );
 
     std::list< FramePointPtr > m_points;
 
@@ -244,6 +270,8 @@ public:
     using MonoFramePtr = std::shared_ptr< MonoFrame >;
     using MonoPointPtr = std::shared_ptr< MonoPoint >;
 
+    void setFrame1( const MonoFramePtr &frame );
+    void setFrame2( const MonoFramePtr &frame );
     void setFrames( const MonoFramePtr &frame1, const MonoFramePtr &frame2 );
 
     MonoFramePtr frame1() const;
@@ -266,6 +294,8 @@ class StereoFrameBase : public DoubleFrame
 public:
     using FramePtr = std::shared_ptr< StereoFrameBase >;
 
+    void setLeftFrame( const MonoFramePtr &frame );
+    void setRightFrame( const MonoFramePtr &frame );
     void setFrames( const MonoFramePtr &leftFrame, const MonoFramePtr &rightFrame );
 
     void setProjectionMatrix( const StereoCameraMatrix &matrix );
@@ -314,6 +344,8 @@ public:
 
     void cleanMapPoints();
 
+    void removeExtraPoints( const size_t mapPointsCount, const size_t framePointsCount );
+
 protected:
     ProcessedStereoFrame( const MapPtr &parentMap );
 
@@ -328,7 +360,10 @@ public:
 
     static ObjectPtr create( const MapPtr &parentMap );
 
-    void load( const CvImage &image1, const CvImage &image2 );
+    void loadLeft( const StampedImage &image );
+    void loadRight( const StampedImage &image );
+
+    void load( const StampedImage &leftImage, const StampedImage &rightImage );
 
     void buildPyramid();
     void extractPoints();
@@ -354,7 +389,12 @@ public:
 
     static ObjectPtr create( const MapPtr &parentMap );
 
-    void load( const CvImage &image1, const CvImage &image2 );
+    void loadLeft( const StampedImage &image );
+    void loadRight( const StampedImage &image );
+
+    void load( const StampedImage &leftImage, const StampedImage &rightImage );
+
+    void extractKeypoints();
 
     FeatureFramePtr leftFrame() const;
     FeatureFramePtr rightFrame() const;
@@ -515,9 +555,6 @@ public:
 
 protected:
     StereoFrame( const MapPtr &parentMap );
-
-private:
-    void initialize();
 
 };
 

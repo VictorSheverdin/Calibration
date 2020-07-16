@@ -22,15 +22,12 @@ public:
 
     std::list< MapPtr > maps() const;
 
-    bool track( const CvImage &leftImage, const CvImage &rightImage );
+    bool track( const StampedImage &leftImage, const StampedImage &rightImage );
 
     void setRestoreMatrix( const cv::Mat &rotation, const cv::Mat &translation );
     const cv::Mat &restoreMatrix() const;
     cv::Mat restoreRotation() const;
     cv::Mat restoreTranslation() const;
-
-    void adjust( const int frames );
-    void localAdjustment();
 
     BMStereoProcessor &stereoProcessor();
     const BMStereoProcessor &stereoProcessor() const;
@@ -44,6 +41,11 @@ public:
 
     double minAdjacentPointsDistance() const;
     double minAdjacentCameraMultiplier() const;
+
+    double minTrackInliersRatio() const;
+    double goodTrackInliersRatio() const;
+
+    double pointsMinDistance() const;
 
 protected:
     World( const StereoCameraMatrix &cameraMatrix );
@@ -67,6 +69,11 @@ protected:
 
     static const double m_minAdjacentPointsDistance;
     static const double m_minAdjacentCameraMultiplier;
+
+    static const double m_minTrackInliersRatio;
+    static const double m_goodTrackInliersRatio;
+
+    static const double m_pointsMinDistance;
 
     static const size_t m_pointsCount = 1000;
 

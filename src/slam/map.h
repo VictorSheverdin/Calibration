@@ -41,12 +41,9 @@ public:
     std::list< FramePtr > frames() const;
     const FramePtr &backFrame() const;
 
-    void adjust( const int frames );
-    void localAdjustment();
-
     bool isRudimental() const;
 
-    virtual bool track( const CvImage &leftImage, const CvImage &rightImage ) = 0;
+    virtual bool track( const StampedImage &leftImage, const StampedImage &rightImage ) = 0;
 
 protected:
     using WorldPtrImpl = std::weak_ptr< World >;
@@ -65,22 +62,18 @@ protected:
 
     mutable std::mutex m_mutex;
 
-    static const double m_minTriangulateDistanceMultiplier;
+    static const size_t m_minTrackPoints = 30;
 
-    static const size_t m_minTrackPoints = 1 << 6;
+    static const size_t m_goodTrackPoints = 150;
+    static const size_t m_trackFramePointsCount = 120;
 
-    static const size_t m_goodTrackPoints = 1 << 7;
-    static const size_t m_overTrackPoints = 1 << 8;
+    static const bool m_denseFlag = false;
+    static const size_t m_denseStep = 10;
 
-    static const size_t m_trackFramePointsCount = 1 << 7;
+    static const size_t m_adjustFramesCount = 5;
 
-    static const bool m_localAdjustmentFlag = false;
-    static const size_t m_adjustmentStep = 10;
-
-    static const double m_minTrackInliersRatio;
-    static const double m_goodTrackInliersRatio;
-
-    void localAdjustmentUnsafe();
+    void adjust( const int frames );
+    void adjustLast();
 
 private:
     void initialize();
@@ -97,7 +90,7 @@ public:
     std::shared_ptr< FlowMap > shared_from_this();
     std::shared_ptr< const FlowMap > shared_from_this() const;
 
-    virtual bool track( const CvImage &leftImage, const CvImage &rightImage ) override;
+    virtual bool track( const StampedImage &leftImage, const StampedImage &rightImage ) override;
 
 protected:
     FlowMap( const StereoCameraMatrix &projectionMatrix, const WorldPtr &parentWorld );
@@ -114,7 +107,7 @@ public:
     std::shared_ptr< FeatureMap > shared_from_this();
     std::shared_ptr< const FeatureMap > shared_from_this() const;
 
-    virtual bool track( const CvImage &leftImage, const CvImage &rightImage ) override;
+    virtual bool track( const StampedImage &leftImage, const StampedImage &rightImage ) override;
 
 protected:
     FeatureMap( const StereoCameraMatrix &projectionMatrix, const WorldPtr &parentWorld );

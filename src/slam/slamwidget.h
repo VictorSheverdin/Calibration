@@ -171,11 +171,16 @@ public:
 
     void setImageList(const QStringList &leftList, const QStringList &rightList );
 
+    double fps() const;
+    void fps( const double value );
+
 protected:
     QStringList m_leftList;
     QStringList m_rightList;
 
     int m_index;
+
+    double m_fps;
 
     virtual void timerEvent( QTimerEvent * ) override;
 

@@ -16,8 +16,8 @@ public:
     virtual void buildPyramid( FlowFrame *frame ) = 0;
     virtual void extractPoints( FlowFrame *frame ) = 0;
 
-    virtual cv::Mat match( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::map< size_t, cv::Point2f > *trackedMap ) = 0;
-    virtual cv::Mat track( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::map< size_t, cv::Point2f > *trackedMap ) = 0;
+    virtual cv::Mat match( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::set< PointTrackResult > *trackedPoints ) = 0;
+    virtual cv::Mat track( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::set< PointTrackResult > *trackedPoints ) = 0;
 
     size_t count() const;
     void setCount( const size_t value );
@@ -37,8 +37,8 @@ public:
 protected:
     FlowTracker() = default;
 
-    void prepareStereoPoints( const FlowFramePtr &frame, std::vector< cv::Point2f > *points, std::map< size_t, cv::Point2f > *trackedMap );
-    void prepareConsecutivePoints( const FlowFramePtr &frame, std::vector< cv::Point2f > *points, std::map< size_t, cv::Point2f > *trackedMap );
+    void prepareStereoPoints(const FlowFramePtr &frame, std::vector< cv::Point2f > *points, std::set< PointTrackResult > *trackedPoints );
+    void prepareConsecutivePoints( const FlowFramePtr &frame, std::vector< cv::Point2f > *points, std::set< PointTrackResult > *trackedPoints );
 
     std::unique_ptr< FlowProcessor > m_pointsProcessor;
 
@@ -52,8 +52,8 @@ public:
     virtual void buildPyramid( FlowFrame *frame ) override;
     virtual void extractPoints( FlowFrame *frame ) override;
 
-    virtual cv::Mat match( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::map<size_t, cv::Point2f> *trackedMap ) override;
-    virtual cv::Mat track( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::map< size_t, cv::Point2f > *trackedMap ) override;
+    virtual cv::Mat match( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::set< PointTrackResult > *trackedPoints ) override;
+    virtual cv::Mat track( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::set< PointTrackResult > *trackedPoints ) override;
 
 protected:
     GPUFlowProcessor *processor() const;
@@ -71,8 +71,8 @@ public:
     virtual void buildPyramid( FlowFrame *frame ) override;
     virtual void extractPoints( FlowFrame *frame ) override;
 
-    virtual cv::Mat match( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::map< size_t, cv::Point2f > *trackedMap ) override;
-    virtual cv::Mat track( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::map< size_t, cv::Point2f > *trackedMap ) override;
+    virtual cv::Mat match( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::set< PointTrackResult > *trackedPoints ) override;
+    virtual cv::Mat track( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::set< PointTrackResult > *trackedPoints ) override;
 
 protected:
     CPUFlowProcessor *processor() const;
@@ -88,7 +88,7 @@ public:
     using FeatureFramePtr = std::shared_ptr< FeatureFrame >;
     using FeaturePointPtr = std::shared_ptr< FeaturePoint >;
 
-    virtual void prepareFrame( FeatureFrame *frame ) = 0;
+    virtual void extractKeypoints( FeatureFrame *frame ) = 0;
     virtual cv::Mat match( const FeatureFramePtr &frame1, const FeatureFramePtr &frame2, std::vector< cv::DMatch > *matches ) = 0;
 
 protected:
@@ -110,7 +110,7 @@ protected:
 class FullTracker : public DescriptorTracker
 {
 public:
-    virtual void prepareFrame( FeatureFrame *frame ) override;
+    virtual void extractKeypoints( FeatureFrame *frame ) override;
 
 protected:
     FullTracker() = default;

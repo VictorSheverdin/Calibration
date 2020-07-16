@@ -73,7 +73,7 @@ public:
 
     bool isTemplateExist() const;
 
-    const StereoFrame sourceFrame() const;
+    const StampedStereoImage sourceFrame() const;
 
 public slots:
     void setLeftSourceImage( const CvImage image );

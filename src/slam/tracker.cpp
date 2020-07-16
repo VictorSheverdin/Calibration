@@ -7,12 +7,12 @@
 namespace slam {
 
 // FlowTracker
-void FlowTracker::prepareStereoPoints( const FlowFramePtr &frame, std::vector< cv::Point2f > *points, std::map< size_t, cv::Point2f > *trackedMap )
+void FlowTracker::prepareStereoPoints( const FlowFramePtr &frame, std::vector< cv::Point2f > *points, std::set< PointTrackResult > *trackedPoints )
 {
-    if ( points && trackedMap ) {
+    if ( points && trackedPoints ) {
 
         points->clear();
-        trackedMap->clear();
+        trackedPoints->clear();
 
         auto flowPoints = frame->flowPoints();
 
@@ -23,7 +23,7 @@ void FlowTracker::prepareStereoPoints( const FlowFramePtr &frame, std::vector< c
                 points->push_back( i->point() );
                 auto stereoPoint = i->stereoPoint();
                 if ( stereoPoint ) {
-                    ( *trackedMap )[ points->size() - 1 ] = stereoPoint->point();
+                    trackedPoints->insert( PointTrackResult( points->size() - 1, stereoPoint->point(), stereoPoint->error() ) );
                 }
 
             }
@@ -34,9 +34,9 @@ void FlowTracker::prepareStereoPoints( const FlowFramePtr &frame, std::vector< c
 
 }
 
-void FlowTracker::prepareConsecutivePoints( const FlowFramePtr &frame, std::vector< cv::Point2f > *points, std::map< size_t, cv::Point2f > *trackedMap )
+void FlowTracker::prepareConsecutivePoints( const FlowFramePtr &frame, std::vector< cv::Point2f > *points, std::set< PointTrackResult > *trackedPoints )
 {
-    if ( points && trackedMap ) {
+    if ( points && trackedPoints ) {
 
         points->clear();
 
@@ -49,7 +49,7 @@ void FlowTracker::prepareConsecutivePoints( const FlowFramePtr &frame, std::vect
                 points->push_back( i->point() );
                 auto nextPoint = i->nextPoint();
                 if ( nextPoint ) {
-                    ( *trackedMap )[ points->size() - 1 ] = nextPoint->point();
+                    trackedPoints->insert( PointTrackResult( points->size() - 1, nextPoint->point(), nextPoint->error() ) );
                 }
 
             }
@@ -128,41 +128,37 @@ void GPUFlowTracker::buildPyramid( FlowFrame *frame )
 void GPUFlowTracker::extractPoints( FlowFrame *frame )
 {
     if ( frame ) {
-
         std::vector< cv::Point2f > points;
 
-        processor()->extractPoints( frame->image(), &points );
+        processor()->extractPoints( frame->image(), frame->mask(), &points );
 
         frame->setExtractedPoints( points );
-
     }
 
 }
 
-cv::Mat GPUFlowTracker::match( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::map< size_t, cv::Point2f > *trackedMap )
+cv::Mat GPUFlowTracker::match( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::set< PointTrackResult > *trackedPoints )
 {
-    if ( trackedMap ) {
-
+    if ( trackedPoints ) {
         std::vector< cv::Point2f > points;
-        prepareStereoPoints( frame1, &points, trackedMap );
+        prepareStereoPoints( frame1, &points, trackedPoints );
 
-        auto fmat = processor()->track( frame1->image(), points, frame2->image(), trackedMap );
+        auto fmat = processor()->track( frame1->image(), points, frame2->image(), trackedPoints );
 
-        return fmat;
+        return fmat;        
     }
 
     return cv::Mat();
 
 }
 
-cv::Mat GPUFlowTracker::track( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::map< size_t, cv::Point2f > *trackedMap )
+cv::Mat GPUFlowTracker::track( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::set< PointTrackResult > *trackedPoints )
 {
-    if ( trackedMap ) {
-
+    if ( trackedPoints ) {
         std::vector< cv::Point2f > points;
-        prepareConsecutivePoints( frame1, &points, trackedMap );
+        prepareConsecutivePoints( frame1, &points, trackedPoints );
 
-        auto fmat = processor()->track( frame1->image(), points, frame2->image(), trackedMap );
+        auto fmat = processor()->track( frame1->image(), points, frame2->image(), trackedPoints );
 
         return fmat;
     }
@@ -190,7 +186,6 @@ void CPUFlowTracker::initialize()
 void CPUFlowTracker::buildPyramid( FlowFrame *frame )
 {
     if ( frame ) {
-
         std::vector< cv::Mat > imagePyramid;
 
         processor()->buildImagePyramid( frame->image(), &imagePyramid );
@@ -204,10 +199,9 @@ void CPUFlowTracker::buildPyramid( FlowFrame *frame )
 void CPUFlowTracker::extractPoints( FlowFrame *frame )
 {
     if ( frame ) {
-
         std::vector< cv::Point2f > points;
 
-        processor()->extractPoints( frame->image(), &points );
+        processor()->extractPoints( frame->image(), frame->mask(), &points );
 
         frame->setExtractedPoints( points );
 
@@ -215,9 +209,9 @@ void CPUFlowTracker::extractPoints( FlowFrame *frame )
 
 }
 
-cv::Mat CPUFlowTracker::match( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::map< size_t, cv::Point2f > *trackedMap )
+cv::Mat CPUFlowTracker::match( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::set< PointTrackResult > *trackedPoints )
 {
-    if ( frame1 && frame2 && trackedMap ) {
+    if ( frame1 && frame2 && trackedPoints ) {
 
         if ( frame1->imagePyramid().empty() )
             frame1->buildPyramid();
@@ -226,19 +220,20 @@ cv::Mat CPUFlowTracker::match( const FlowFramePtr &frame1, const FlowFramePtr &f
             frame2->buildPyramid();
 
         std::vector< cv::Point2f > points;
-        prepareStereoPoints( frame1, &points, trackedMap );
+        prepareStereoPoints( frame1, &points, trackedPoints );
 
-        auto fmat = processor()->track( frame1->imagePyramid(), points, frame2->imagePyramid(), trackedMap );
+        auto fmat = processor()->track( frame1->imagePyramid(), points, frame2->imagePyramid(), trackedPoints );
 
         return fmat;
+
     }
 
     return cv::Mat();
 }
 
-cv::Mat CPUFlowTracker::track( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::map< size_t, cv::Point2f > *trackedMap )
+cv::Mat CPUFlowTracker::track( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::set< PointTrackResult > *trackedPoints )
 {
-    if ( frame1 && frame2 && trackedMap ) {
+    if ( frame1 && frame2 && trackedPoints ) {
 
         if ( frame1->imagePyramid().empty() )
             frame1->buildPyramid();
@@ -247,11 +242,12 @@ cv::Mat CPUFlowTracker::track( const FlowFramePtr &frame1, const FlowFramePtr &f
             frame2->buildPyramid();
 
         std::vector< cv::Point2f > points;
-        prepareConsecutivePoints( frame1, &points, trackedMap );
+        prepareConsecutivePoints( frame1, &points, trackedPoints );
 
-        auto fmat = processor()->track( frame1->imagePyramid(), points, frame2->imagePyramid(), trackedMap );
+        auto fmat = processor()->track( frame1->imagePyramid(), points, frame2->imagePyramid(), trackedPoints );
 
         return fmat;
+
     }
 
     return cv::Mat();
@@ -293,13 +289,14 @@ bool DescriptorTracker::selectKeypoints( const FeatureFramePtr &frame1, const Fe
 }
 
 // FullTracker
-void FullTracker::prepareFrame( FeatureFrame *frame )
+void FullTracker::extractKeypoints( FeatureFrame *frame )
 {
     if ( frame ) {
+
         std::vector< cv::KeyPoint > keypoints;
         cv::Mat descriptors;
 
-        m_descriptorProcessor->extractAndCompute( frame->image(), &keypoints, &descriptors );
+        m_descriptorProcessor->extractAndCompute( frame->image(), frame->mask(), &keypoints, &descriptors );
 
         frame->setKeyPoints( keypoints );
         frame->setDescriptors( descriptors );

@@ -19,7 +19,7 @@ public:
     CvImage loadLeftImage() const;
     CvImage loadRightImage() const;
 
-    StereoFrame stereoFrame() const;
+    StampedStereoImage stereoFrame() const;
 
     void setTime( const std::chrono::time_point< std::chrono::system_clock > &time );
     const std::chrono::time_point< std::chrono::system_clock > &time() const;

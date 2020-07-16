@@ -30,7 +30,7 @@ public :
 
     virtual void FrameReceived( const AVT::VmbAPI::FramePtr pFrame ) override;
 
-    Frame getFrame();
+    StampedImage getFrame();
 
 signals:
     void receivedFrame();
@@ -50,7 +50,7 @@ protected:
     void lockMutex();
     void unlockMutex();
 
-    Frame getFrameUnsafe() const;
+    StampedImage getFrameUnsafe() const;
     std::chrono::time_point< std::chrono::system_clock > getTimeUnsafe() const;
 
 private:
@@ -67,7 +67,7 @@ class CameraBase : public QObject
 public:
     CameraBase( QObject *parent = nullptr );
 
-    Frame getFrame();
+    StampedImage getFrame();
 
 signals:
     void receivedFrame();
@@ -83,7 +83,7 @@ protected:
     void lockMutex();
     void unlockMutex();
 
-    Frame getFrameUnsafe() const;
+    StampedImage getFrameUnsafe() const;
 
     std::chrono::time_point< std::chrono::system_clock > getTimeUnsafe() const;
 
@@ -126,7 +126,7 @@ class StereoCamera : public QObject
 public:
     StereoCamera( const std::string &leftIp, const std::string &rightIp, QObject *parent = nullptr );
 
-    StereoFrame getFrame();
+    StampedStereoImage getFrame();
 
     bool empty() const;
 
@@ -142,7 +142,7 @@ protected:
     MasterCamera m_leftCamera;
     SlaveCamera m_rightCamera;
 
-    LimitedQueue< StereoFrame > m_framesQueue;
+    LimitedQueue< StampedStereoImage > m_framesQueue;
     QMutex m_framesMutex;
 
 private:

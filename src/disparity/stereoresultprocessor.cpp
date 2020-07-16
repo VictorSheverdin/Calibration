@@ -60,29 +60,24 @@ pcl::PointCloud< pcl::PointXYZRGB >::Ptr StereoResult::pointCloud() const
     return m_pointCloud;
 }
 
-const std::chrono::time_point< std::chrono::system_clock > &StereoResult::time() const
-{
-    return m_frame.time();
-}
-
-void StereoResult::setFrame( const StereoFrame &frame )
+void StereoResult::setFrame( const StampedStereoImage &frame )
 {
     m_frame = frame;
 }
 
-const StereoFrame &StereoResult::frame() const
+const StampedStereoImage &StereoResult::frame() const
 {
     return m_frame;
 }
 
-const Frame &StereoResult::leftFrame() const
+const StampedImage &StereoResult::leftFrame() const
 {
-    return m_frame.leftFrame();
+    return m_frame.leftImage();
 }
 
-const Frame &StereoResult::rightFrame() const
+const StampedImage &StereoResult::rightFrame() const
 {
-    return m_frame.rightFrame();
+    return m_frame.rightImage();
 }
 
 // StereoResultProcessor
@@ -121,7 +116,7 @@ bool StereoResultProcessor::loadYaml( const std::string &fileName )
     return ret;
 }
 
-StereoResult StereoResultProcessor::process( const StereoFrame &frame )
+StereoResult StereoResultProcessor::process( const StampedStereoImage &frame )
 {
     StereoResult ret;
 
@@ -129,8 +124,8 @@ StereoResult StereoResultProcessor::process( const StereoFrame &frame )
 
     if ( !frame.empty() ) {
 
-        auto leftFrame = frame.leftFrame();
-        auto rightFrame = frame.rightFrame();
+        auto leftFrame = frame.leftImage();
+        auto rightFrame = frame.rightImage();
 
         if ( m_rectificationProcessor.isValid() ) {
 

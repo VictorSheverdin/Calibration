@@ -22,6 +22,7 @@ namespace slam {
 
     void MonoPoint::initialize()
     {
+        m_error = 0.;
     }
 
     MonoPoint::FramePtr MonoPoint::parentFrame() const
@@ -177,6 +178,16 @@ namespace slam {
 
         return ret;
 
+    }
+
+    double MonoPoint::error() const
+    {
+        return m_error;
+    }
+
+    void MonoPoint::setError( const double value )
+    {
+        m_error = value;
     }
 
     void MonoPoint::drawTrack( CvImage *target, const cv::Scalar &color ) const

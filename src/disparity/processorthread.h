@@ -13,7 +13,7 @@ class ProcessorThread : public QThread
 public:
     explicit ProcessorThread( QObject *parent = nullptr );
 
-    bool process( const StereoFrame &frame );
+    bool process( const StampedStereoImage &frame );
 
     void setProcessor( const std::shared_ptr< StereoResultProcessor > processor );
 
@@ -23,7 +23,7 @@ signals:
     void frameProcessed();
 
 protected:
-    StereoFrame m_frame;
+    StampedStereoImage m_frame;
     QMutex m_processMutex;
 
     StereoResult m_result;

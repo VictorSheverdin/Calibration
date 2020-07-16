@@ -72,7 +72,7 @@ signals:
     void valueChanged();
 
 public slots:
-    void processFrame( const StereoFrame &frame );
+    void processFrame( const StampedStereoImage &frame );
 
     void loadCalibrationDialog();
 

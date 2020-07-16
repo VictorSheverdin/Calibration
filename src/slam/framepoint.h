@@ -60,6 +60,9 @@ public:
     Eigen::Matrix< double, 2, 1 > eigenPoint() const;
     Eigen::Matrix< double, 3, 1 > eigenStereoPoint() const;
 
+    double error() const;
+    void setError( const double value );
+
 protected:
     using FramePtrImpl = std::weak_ptr< MonoFrame >;
 
@@ -75,6 +78,8 @@ protected:
     AdjacentPtrImpl m_prevPoint;
 
     MapPointPtrImpl m_mapPoint;
+
+    double m_error;
 
     void drawPrevTrack( CvImage *target , const cv::Scalar &color = cv::Scalar( 0, 255, 0, 100 ) ) const;
     void drawNextTrack( CvImage *target , const cv::Scalar &color = cv::Scalar( 0, 255, 0, 100 ) ) const;

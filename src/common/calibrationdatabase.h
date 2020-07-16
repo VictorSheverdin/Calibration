@@ -151,6 +151,7 @@ class StereoCalibrationDataShort : public StereoCalibrationDataBase
 {
 public:
     StereoCalibrationDataShort();
+    StereoCalibrationDataShort( const StereoCalibrationDataBase &parent );
     StereoCalibrationDataShort( const std::string &fileName );
 
     void setLeftCameraResults( const MonocularCalibrationDataShort &value );

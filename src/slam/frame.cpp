@@ -20,13 +20,9 @@ FrameBase::FrameBase()
 }
 
 // MonoFrame
-MonoFrame::MonoFrame()
+MonoFrame::MonoFrame( const std::chrono::time_point<std::chrono::system_clock> &time )
 {
-    initialize();
-}
-
-void MonoFrame::initialize()
-{
+    setTime( time );
 }
 
 std::vector< cv::Point2f > MonoFrame::points() const
@@ -116,11 +112,26 @@ void MonoFrame::setSe3Pose( const g2o::SE3Quat &pose )
 
 }
 
+void MonoFrame::setTime( const std::chrono::time_point<std::chrono::system_clock> &value )
+{
+    m_time = value;
+}
+
+const std::chrono::time_point<std::chrono::system_clock> &MonoFrame::time() const
+{
+    return m_time;
+}
+
 // ProcessedFrame
 const double ProcessedFrame::m_minPointsDistance = 10.0;
 
-ProcessedFrame::ProcessedFrame( const MapPtr &parentMap )
-    : m_parentMap( parentMap )
+ProcessedFrame::ProcessedFrame( const MapPtr &parentMap , const std::chrono::time_point<std::chrono::system_clock> &time )
+    : MonoFrame( time ), m_parentMap( parentMap )
+{
+    initialize();
+}
+
+void ProcessedFrame::initialize()
 {
 }
 
@@ -139,8 +150,10 @@ ProcessedFrame::WorldPtr ProcessedFrame::parentWorld() const
     return parentMap()->parentWorld();
 }
 
-void ProcessedFrame::load( const CvImage &image )
+void ProcessedFrame::load( const StampedImage &image )
 {
+    setTime( image.time() );
+
     m_image = image;
 }
 
@@ -149,9 +162,19 @@ const CvImage &ProcessedFrame::image() const
     return m_image;
 }
 
+const cv::Mat &ProcessedFrame::mask() const
+{
+    return m_mask;
+}
+
 void ProcessedFrame::clearImage()
 {
     m_image.release();
+}
+
+void ProcessedFrame::clearMask()
+{
+    m_mask.release();
 }
 
 CvImage ProcessedFrame::drawTracks() const
@@ -395,6 +418,27 @@ void ProcessedFrame::cleanMapPoints()
 
 }
 
+void ProcessedFrame::removeExtraPoints( const size_t mapPointsCount, const size_t framePointsCount )
+{
+    size_t curMapPointsCount = 0;
+    size_t curFramePointsCount = 0;
+
+    auto framePoints = this->framePoints();
+
+    for ( auto & i : framePoints ) {
+
+        if ( i->mapPoint() )
+            ++curMapPointsCount;
+        else
+            ++curFramePointsCount;
+
+        if ( ( curMapPointsCount >= mapPointsCount && i->mapPoint() ) || ( curFramePointsCount >= framePointsCount && !i->mapPoint() ) )
+            removePoint( i );
+
+    }
+
+}
+
 std::vector< ProcessedFrame::PointPtr > ProcessedFrame::posePoints() const
 {
     std::vector< PointPtr > ret;
@@ -502,8 +546,8 @@ const std::vector< cv::Mat > &ProcessedFrame::imagePyramid() const
 }
 
 // FlowFrame
-FlowFrame::FlowFrame( const FlowMapPtr &parentMap )
-    : ProcessedFrame( parentMap )
+FlowFrame::FlowFrame( const FlowMapPtr &parentMap, const std::chrono::time_point< std::chrono::system_clock > &time )
+    : ProcessedFrame( parentMap, time )
 {
     initialize();
 }
@@ -513,16 +557,36 @@ void FlowFrame::initialize()
     m_usePointsCount = 0;
 }
 
-FlowFrame::ObjectPtr FlowFrame::create( const FlowMapPtr &parentMap )
+FlowFrame::ObjectPtr FlowFrame::create( const FlowMapPtr &parentMap, const std::chrono::time_point<std::chrono::system_clock> &time )
 {
-    return ObjectPtr( new FlowFrame( parentMap ) );
+    return ObjectPtr( new FlowFrame( parentMap, time ) );
 }
 
-void FlowFrame::load( const CvImage &image )
+void FlowFrame::load( const StampedImage &image )
 {
     ProcessedFrame::load( image );
 
     m_searchMatrix.create( image.rows, image.cols );
+}
+
+void FlowFrame::createMask()
+{
+    if ( !m_image.empty() ) {
+        m_mask = cv::Mat( m_image.rows, m_image.cols, CV_8U, cv::Scalar( 1 ) );
+
+        auto distance = parentWorld()->flowTracker()->minDistance();
+
+        for ( auto &i : m_points ) {
+            if ( i ) {
+                auto pt = i->point();
+                cv::rectangle( m_mask, cv::Rect( pt.x - distance, pt.y - distance, distance * 2, distance * 2 ), cv::Scalar( 0 ) );
+            }
+
+        }
+
+    }
+    else
+        m_mask.release();
 }
 
 void FlowFrame::buildPyramid()
@@ -532,6 +596,8 @@ void FlowFrame::buildPyramid()
 
 void FlowFrame::extractPoints()
 {
+    createMask();
+
     parentWorld()->flowTracker()->extractPoints( this );
 }
 
@@ -545,14 +611,14 @@ std::vector< cv::Point2f > FlowFrame::extractedPoints() const
     return m_extractedPoints;
 }
 
-std::vector< FlowFrame::FlowPointPtr > &FlowFrame::flowPoints()
+void FlowFrame::removePoint( const PointPtr &point )
 {
-    return m_points;
+    m_points.erase( std::dynamic_pointer_cast< FlowPoint >( point ) );
 }
 
-const std::vector< FlowFrame::FlowPointPtr > &FlowFrame::flowPoints() const
+std::vector< FlowFrame::FlowPointPtr > FlowFrame::flowPoints() const
 {
-    return m_points;
+    return std::vector< FlowPointPtr >( m_points.begin(), m_points.end() );
 }
 
 FlowFrame::FlowPointPtr FlowFrame::framePoint( const cv::Point2f &point ) const
@@ -579,7 +645,14 @@ void FlowFrame::createFramePoints( const size_t count )
 
 void FlowFrame::setExtractedPoints( const std::vector< cv::Point2f > &value )
 {
+    m_usePointsCount = 0;
+
     m_extractedPoints = value;
+}
+
+size_t FlowFrame::usePointsCount() const
+{
+    return m_usePointsCount;
 }
 
 FlowFrame::FlowPointPtr FlowFrame::createFramePoint( const size_t keyPointIndex )
@@ -587,7 +660,9 @@ FlowFrame::FlowPointPtr FlowFrame::createFramePoint( const size_t keyPointIndex 
     if ( keyPointIndex >= m_extractedPoints.size() )
         return FlowPointPtr();
 
-    return addFramePoint( m_extractedPoints[ keyPointIndex ] );
+    auto ret = addFramePoint( m_extractedPoints[ keyPointIndex ] );
+
+    return ret;
 }
 
 FlowFrame::FlowPointPtr FlowFrame::addFramePoint( const cv::Point2f &point )
@@ -599,7 +674,9 @@ FlowFrame::FlowPointPtr FlowFrame::addFramePoint( const cv::Point2f &point )
 
     auto flowPoint = FlowPoint::create( shared_from_this(), point, m_image.at< cv::Vec3b >( point ) );
 
-    m_points.push_back( flowPoint );
+    flowPoint->setError( 0. );
+
+    m_points.insert( flowPoint );
 
     m_searchMatrix.at( point.y, point.x ) = flowPoint;
 
@@ -608,13 +685,8 @@ FlowFrame::FlowPointPtr FlowFrame::addFramePoint( const cv::Point2f &point )
 }
 
 // FeatureFrame
-FeatureFrame::FeatureFrame( const FeatureMapPtr &parentMap )
-    : ProcessedFrame( parentMap )
-{
-    initialize();
-}
-
-void FeatureFrame::initialize()
+FeatureFrame::FeatureFrame( const FeatureMapPtr &parentMap, const std::chrono::time_point<std::chrono::system_clock> &time )
+    : ProcessedFrame( parentMap, time )
 {
 }
 
@@ -638,6 +710,13 @@ std::vector< cv::Point2f > FeatureFrame::extractedPoints() const
         ret.push_back( i.pt );
 
     return ret;
+}
+
+void FeatureFrame::removePoint( const PointPtr &point )
+{
+    for ( auto i = m_points.begin(); i != m_points.end(); ++i )
+        if ( i->second == point )
+            i = m_points.erase( i );
 }
 
 std::vector< FeatureFrame::FeaturePointPtr > FeatureFrame::featurePoints() const
@@ -674,22 +753,54 @@ const FeatureFrame::FeaturePointPtr &FeatureFrame::featurePoint( const size_t in
     return m_points.at( index );
 }
 
-FeatureFrame::ObjectPtr FeatureFrame::create( const FeatureMapPtr &parentMap )
+FeatureFrame::ObjectPtr FeatureFrame::create( const FeatureMapPtr &parentMap, const std::chrono::time_point<std::chrono::system_clock> &time )
 {
-    return ObjectPtr( new FeatureFrame( parentMap ) );
+    return ObjectPtr( new FeatureFrame( parentMap, time ) );
 }
 
-void FeatureFrame::load( const CvImage &image )
+void FeatureFrame::load( const StampedImage &image )
 {
     ProcessedFrame::load( image );
 
-    parentWorld()->featureTracker()->prepareFrame( this );
-
+    m_keyPoints.clear();
+    m_descriptors.release();
     m_points.clear();
     m_colors.clear();
 
+    extractKeypoints();
+
+}
+
+void FeatureFrame::extractKeypoints()
+{
+    createMask();
+
+    parentWorld()->featureTracker()->extractKeypoints( this );
+
     for ( size_t i = 0; i < m_keyPoints.size(); ++i )
         m_colors.push_back( m_image.at< cv::Vec3b >( m_keyPoints[ i ].pt ) );
+
+}
+
+void FeatureFrame::createMask()
+{
+    if ( !m_image.empty() ) {
+        m_mask = cv::Mat( m_image.rows, m_image.cols, CV_8U, cv::Scalar( 1 ) );
+
+        auto distance = parentWorld()->pointsMinDistance();
+
+        for ( auto &i : m_points ) {
+            if ( i.second ) {
+                auto pt = i.second->point();
+                cv::rectangle( m_mask, cv::Rect( pt.x - distance, pt.y - distance, distance * 2, distance * 2 ), cv::Scalar( 0 ) );
+            }
+
+        }
+
+    }
+    else
+        m_mask.release();
+
 }
 
 FeatureFrame::FeaturePointPtr FeatureFrame::createFramePoint( const size_t keyPointIndex )
@@ -753,7 +864,8 @@ void FeatureFrame::setDescriptors( const cv::Mat &value )
 }
 
 // Frame
-Frame::Frame()
+Frame::Frame( const std::chrono::time_point<std::chrono::system_clock> &time )
+    : MonoFrame( time )
 {
 }
 
@@ -767,14 +879,16 @@ std::vector< Frame::PointPtr > Frame::framePoints() const
     return ret;
 }
 
-Frame::ObjectPtr Frame::create()
+Frame::ObjectPtr Frame::create( const std::chrono::time_point< std::chrono::system_clock > time )
 {
-    return ObjectPtr( new Frame() );
+    return ObjectPtr( new Frame( time ) );
 }
 
 void Frame::replace( const ProcessedFramePtr &frame )
 {
     if ( frame ) {
+
+        setTime( frame->time() );
 
         setProjectionMatrix( frame->projectionMatrix() );
 
@@ -797,6 +911,8 @@ void Frame::replace( const ProcessedFramePtr &frame )
 void Frame::replaceAndClean( const ProcessedFramePtr &frame )
 {
     if ( frame ) {
+
+        setTime( frame->time() );
 
         setProjectionMatrix( frame->projectionMatrix() );
 
@@ -831,10 +947,20 @@ DoubleFrame::DoubleFrame()
 {
 }
 
+void DoubleFrame::setFrame1( const MonoFramePtr &frame )
+{
+    m_frame1 = frame;
+}
+
+void DoubleFrame::setFrame2( const MonoFramePtr &frame )
+{
+    m_frame2 = frame;
+}
+
 void DoubleFrame::setFrames( const MonoFramePtr &frame1, const MonoFramePtr &frame2 )
 {
-    m_frame1 = frame1;
-    m_frame2 = frame2;
+    setFrame1( frame1 );
+    setFrame2( frame2 );
 }
 
 DoubleFrame::MonoFramePtr DoubleFrame::frame1() const
@@ -865,6 +991,16 @@ cv::Point3f DoubleFrame::center() const
 StereoFrameBase::StereoFrameBase( const MapPtr &parentMap )
     : m_parentMap( parentMap )
 {
+}
+
+void StereoFrameBase::setLeftFrame( const MonoFramePtr &frame )
+{
+    DoubleFrame::setFrame1( frame );
+}
+
+void StereoFrameBase::setRightFrame( const MonoFramePtr &frame )
+{
+    DoubleFrame::setFrame2( frame );
 }
 
 void StereoFrameBase::setFrames( const MonoFramePtr &leftFrame, const MonoFramePtr &rightFrame )
@@ -1179,12 +1315,19 @@ int ProcessedStereoFrame::triangulatePoints()
 
 void ProcessedStereoFrame::cleanMapPoints()
 {
-    auto leftFeatureFrame = this->leftFrame();
+    auto leftFrame = this->leftFrame();
 
-    if ( leftFeatureFrame ) {
-        leftFeatureFrame->cleanMapPoints();
+    if ( leftFrame )
+        leftFrame->cleanMapPoints();
 
-    }
+}
+
+void ProcessedStereoFrame::removeExtraPoints( const size_t mapPointsCount, const size_t framePointsCount )
+{
+    auto leftFrame = this->leftFrame();
+
+    if ( leftFrame )
+        leftFrame->removeExtraPoints( mapPointsCount, framePointsCount );
 
 }
 
@@ -1199,15 +1342,26 @@ FlowStereoFrame::ObjectPtr FlowStereoFrame::create( const MapPtr &parentMap )
     return ObjectPtr( new FlowStereoFrame( parentMap ) );
 }
 
-void FlowStereoFrame::load( const CvImage &image1, const CvImage &image2 )
+void FlowStereoFrame::loadLeft( const StampedImage &image )
 {
-    auto leftFrame = FlowFrame::create( parentMap() );
-    leftFrame->load( image1 );
+    auto frame = FlowFrame::create( parentMap() );
+    frame->load( image );
 
-    auto rightFrame = FlowFrame::create( parentMap() );
-    rightFrame->load( image2 );
+    setLeftFrame( frame );
+}
 
-    setFrames( leftFrame, rightFrame );
+void FlowStereoFrame::loadRight( const StampedImage &image )
+{
+    auto frame = FlowFrame::create( parentMap() );
+    frame->load( image );
+
+    setRightFrame( frame );
+}
+
+void FlowStereoFrame::load( const StampedImage &leftImage, const StampedImage &rightImage )
+{
+    loadLeft( leftImage );
+    loadRight( rightImage );
 }
 
 void FlowStereoFrame::buildPyramid()
@@ -1256,19 +1410,19 @@ cv::Mat FlowStereoFrame::match()
 
     if ( leftFrame && rightFrame ) {
 
-        std::map< size_t, cv::Point2f > trackedMap;
+        std::set< PointTrackResult > trackedSet;
 
-        auto fmat = parentWorld()->flowTracker()->match( leftFrame, rightFrame, &trackedMap );
+        auto fmat = parentWorld()->flowTracker()->match( leftFrame, rightFrame, &trackedSet );
 
         auto trackPoints = leftFrame->flowPoints();
 
         auto minDistance = parentWorld()->minStereoDisparity();
 
-        for ( auto &i : trackedMap ) {
+        for ( auto &i : trackedSet ) {
 
-            auto leftFlowPoint = trackPoints[ i.first ];
+            auto leftFlowPoint = trackPoints[ i.index ];
             auto leftPoint = leftFlowPoint->point();
-            auto rightPoint = i.second;
+            auto rightPoint = i.point;
 
             if ( cv::norm( leftPoint - rightPoint ) > minDistance ) {
 
@@ -1281,6 +1435,8 @@ cv::Mat FlowStereoFrame::match()
 
                 if ( worlPoint )
                     rightFlowPoint->setMapPoint( worlPoint );
+
+                rightFlowPoint->setError( leftFlowPoint->error() + i.error );
 
             }
 
@@ -1305,15 +1461,39 @@ FeatureStereoFrame::ObjectPtr FeatureStereoFrame::create( const MapPtr &parentMa
     return ObjectPtr( new FeatureStereoFrame( parentMap ) );
 }
 
-void FeatureStereoFrame::load( const CvImage &image1, const CvImage &image2 )
+void FeatureStereoFrame::loadLeft( const StampedImage &image )
 {
-    auto leftFrame = FeatureFrame::create( parentMap() );
-    leftFrame->load( image1 );
+    auto frame = FeatureFrame::create( parentMap() );
+    frame->load( image );
 
-    auto rightFrame = FeatureFrame::create( parentMap() );
-    rightFrame->load( image2 );
+    setLeftFrame( frame );
+}
 
-    setFrames( leftFrame, rightFrame );
+void FeatureStereoFrame::loadRight( const StampedImage &image )
+{
+    auto frame = FeatureFrame::create( parentMap() );
+    frame->load( image );
+
+    setRightFrame( frame );
+}
+
+void FeatureStereoFrame::load( const StampedImage &leftImage, const StampedImage &rightImage )
+{
+    loadLeft( leftImage );
+    loadRight( rightImage );
+}
+
+void FeatureStereoFrame::extractKeypoints()
+{
+    auto leftFrame = this->leftFrame();
+    auto rightFrame = this->rightFrame();
+
+    if ( leftFrame )
+        leftFrame->extractKeypoints();
+
+    if ( rightFrame )
+        rightFrame->extractKeypoints();
+
 }
 
 FeatureStereoFrame::FeatureFramePtr FeatureStereoFrame::leftFrame() const
@@ -1451,7 +1631,7 @@ double ConsecutiveFrame::recoverPose()
             points2d.push_back( i->point() );
         }
 
-        if ( points3d.size() < MIN_TRACK_POINTS_COUNT )
+        if ( points3d.size() < MIN_PNP_POINTS_COUNT )
             return 0.;
 
         cv::Mat rvec;
@@ -1459,9 +1639,21 @@ double ConsecutiveFrame::recoverPose()
 
         std::vector< int > inliers;
 
-        if ( !cv::solvePnPRansac( points3d, points2d, prevFrame->cameraMatrix(), cv::noArray(), rvec, tvec, false,
-                                        100, maxReprojectionError, 0.99, inliers, cv::SOLVEPNP_ITERATIVE ) )
+
+        try {
+            
+            if ( !cv::solvePnPRansac( points3d, points2d, prevFrame->cameraMatrix(), cv::noArray(), rvec, tvec, false,
+                                                    500, maxReprojectionError, 1.0 - 1.e-5, inliers, cv::SOLVEPNP_ITERATIVE ) )
+                return 0.;
+            
+
+        }
+        catch( cv::Exception ) {
+
             return 0.;
+
+        }
+
 
         std::set< int > inliersSet;
 
@@ -1582,16 +1774,16 @@ cv::Mat FlowConsecutiveFrame::track()
 
     if ( prevFrame && nextFrame ) {
 
-        std::map< size_t, cv::Point2f > trackedMap;
+        std::set< PointTrackResult > trackedSet;
 
-        auto fmat = parentWorld()->flowTracker()->track( prevFrame, nextFrame, &trackedMap );
+        auto fmat = parentWorld()->flowTracker()->track( prevFrame, nextFrame, &trackedSet );
 
         auto trackPoints = prevFrame->flowPoints();
 
-        for ( auto &i : trackedMap ) {
+        for ( auto &i : trackedSet ) {
 
-            auto prevPoint = trackPoints[ i.first ];
-            auto nextPoint = nextFrame->addFramePoint( i.second );
+            auto prevPoint = trackPoints[ i.index ];
+            auto nextPoint = nextFrame->addFramePoint( i.point );
 
             prevPoint->setNextPoint( nextPoint );
             nextPoint->setPrevPoint( prevPoint );
@@ -1600,6 +1792,8 @@ cv::Mat FlowConsecutiveFrame::track()
 
             if ( worlPoint )
                 nextPoint->setMapPoint( worlPoint );
+
+            nextPoint->setError( prevPoint->error() + i.error );
 
         }
 
@@ -1690,12 +1884,6 @@ void FeatureConsecutiveFrame::createFramePoints( const size_t count )
 StereoFrame::StereoFrame( const MapPtr &parentMap )
     : StereoFrameBase( parentMap )
 {
-    initialize();
-}
-
-void StereoFrame::initialize()
-{
-    setFrames( Frame::create(), Frame::create() );
 }
 
 StereoFrame::ObjectPtr StereoFrame::create( const MapPtr &parentMap )
@@ -1721,9 +1909,20 @@ StereoFrame::FramePtr StereoFrame::rightFrame() const
 void StereoFrame::replace( const ProcessedStereoFramePtr &frame )
 {
     if ( frame ) {
+
         auto leftFrame = this->leftFrame();
-        auto leftProcessedFrame = frame->leftFrame();
+        if ( !leftFrame ) {
+            leftFrame = Frame::create();
+            setLeftFrame( leftFrame );
+        }
+
         auto rightFrame = this->rightFrame();
+        if ( !rightFrame ) {
+            rightFrame = Frame::create();
+            setRightFrame( rightFrame );
+        }
+
+        auto leftProcessedFrame = frame->leftFrame();
         auto rightProcessedFrame = frame->rightFrame();
 
         if ( leftFrame && leftProcessedFrame )
@@ -1739,9 +1938,20 @@ void StereoFrame::replace( const ProcessedStereoFramePtr &frame )
 void StereoFrame::replaceAndClean( const ProcessedStereoFramePtr &frame )
 {
     if ( frame ) {
+
         auto leftFrame = this->leftFrame();
-        auto leftProcessedFrame = frame->leftFrame();
+        if ( !leftFrame ) {
+            leftFrame = Frame::create();
+            setLeftFrame( leftFrame );
+        }
+
         auto rightFrame = this->rightFrame();
+        if ( !rightFrame ) {
+            rightFrame = Frame::create();
+            setRightFrame( rightFrame );
+        }
+
+        auto leftProcessedFrame = frame->leftFrame();
         auto rightProcessedFrame = frame->rightFrame();
 
         if ( leftFrame && leftProcessedFrame )

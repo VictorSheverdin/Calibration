@@ -426,19 +426,16 @@ cv::Rect StereoCalibrationDataBase::cropRect() const
 // StereoCalibrationDataShort
 StereoCalibrationDataShort::StereoCalibrationDataShort()
 {
-    initialize();
+}
+
+StereoCalibrationDataShort::StereoCalibrationDataShort( const StereoCalibrationDataBase &parent )
+    : StereoCalibrationDataBase( parent )
+{
 }
 
 StereoCalibrationDataShort::StereoCalibrationDataShort( const std::string &fileName )
 {
-    initialize();
-
     loadYaml( fileName );
-}
-
-void StereoCalibrationDataShort::initialize()
-{
-
 }
 
 void StereoCalibrationDataShort::setLeftCameraResults(const MonocularCalibrationDataShort &value )

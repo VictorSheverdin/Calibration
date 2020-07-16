@@ -9,9 +9,14 @@
 namespace slam {
 
 const double World::m_maxReprojectionError = 1.;
-const double World::m_minStereoDisparity = 3.;
-const double World::m_minAdjacentPointsDistance = 3.;
-const double World::m_minAdjacentCameraMultiplier = 1.;
+const double World::m_minStereoDisparity = 5.;
+const double World::m_minAdjacentPointsDistance = 7.;
+const double World::m_minAdjacentCameraMultiplier = 3.;
+
+const double World::m_minTrackInliersRatio = 0.6;
+const double World::m_goodTrackInliersRatio = 0.9;
+
+const double World::m_pointsMinDistance = 10.;
 
 World::World( const StereoCameraMatrix &cameraMatrix )
 {
@@ -21,11 +26,11 @@ World::World( const StereoCameraMatrix &cameraMatrix )
 
     m_stereoProcessor.setPreFilterSize( 15 );
     m_stereoProcessor.setPreFilterCap( 12 );
-    m_stereoProcessor.setBlockSize( 17 );
-    m_stereoProcessor.setMinDisparity( 0 );
+    m_stereoProcessor.setBlockSize( 11 );
+    m_stereoProcessor.setMinDisparity( -128 );
     m_stereoProcessor.setNumDisparities( 256 );
     m_stereoProcessor.setTextureThreshold( 50 );
-    m_stereoProcessor.setUniquenessRatio( 20 );
+    m_stereoProcessor.setUniquenessRatio( 100 );
     m_stereoProcessor.setSpeckleWindowSize( 120 );
     m_stereoProcessor.setSpeckleRange( 10 );
     m_stereoProcessor.setDisp12MaxDiff( 0 );
@@ -37,6 +42,7 @@ void World::initialize( const StereoCameraMatrix &cameraMatrix )
 
     auto flowTracker = new CPUFlowTracker();
     flowTracker->setCount( m_pointsCount );
+    flowTracker->setMinDistance( m_pointsMinDistance );
     m_flowTracker = std::unique_ptr< FlowTracker >( flowTracker );
 
     m_featureTracker = std::unique_ptr< FeatureTracker >( new SiftTracker() );
@@ -62,7 +68,7 @@ std::list < World::MapPtr > World::maps() const
     return ret;
 }
 
-bool World::track( const CvImage &leftImage, const CvImage &rightImage )
+bool World::track( const StampedImage &leftImage, const StampedImage &rightImage )
 {
     auto restoreRotation = this->restoreRotation();
     auto restoreTranslation = this->restoreTranslation();
@@ -87,10 +93,14 @@ bool World::track( const CvImage &leftImage, const CvImage &rightImage )
 
         if ( !result ) {
 
-            StereoCameraMatrix projectionMatrix;
+            std::cout << "\nTrack lost!\n" << std::endl ;
 
-            if ( m_maps.back()->isRudimental() )
-                m_maps.pop_back();
+            /*static size_t count = 0;
+            cv::imwrite( "/home/victor/check/" + std::to_string( count ) + "_0_prev.jpg", std::dynamic_pointer_cast< ProcessedStereoFrame >( m_maps.back()->frames().back() )->leftFrame()->image() );
+            cv::imwrite( "/home/victor/check/" + std::to_string( count ) + "_1_next.jpg", leftImage );
+            ++count;*/
+
+            StereoCameraMatrix projectionMatrix;
 
             if ( !restoreRotation.empty() && !restoreTranslation.empty() ) {
 
@@ -102,6 +112,9 @@ bool World::track( const CvImage &leftImage, const CvImage &rightImage )
             }
             else
                 projectionMatrix = m_maps.back()->frames().back()->projectionMatrix();
+
+            if ( m_maps.back()->isRudimental() )
+                m_maps.pop_back();
 
             createMap( projectionMatrix );
 
@@ -131,24 +144,18 @@ const cv::Mat &World::restoreMatrix() const
 
 cv::Mat World::restoreRotation() const
 {
-    return m_restoreMatrix.rowRange( 0, 3 ).colRange( 0, 3 );
+    if ( !m_restoreMatrix.empty() )
+        return m_restoreMatrix.rowRange( 0, 3 ).colRange( 0, 3 );
+    else
+        return cv::Mat();
 }
 
 cv::Mat World::restoreTranslation() const
 {
-    return m_restoreMatrix.rowRange( 0, 3 ).col( 3 );
-}
-
-void World::adjust( const int frames )
-{
-    if ( !m_maps.empty() )
-        m_maps.back()->adjust( frames );
-}
-
-void World::localAdjustment()
-{
-    if ( !m_maps.empty() )
-        m_maps.back()->localAdjustment();
+    if ( !m_restoreMatrix.empty() )
+        return m_restoreMatrix.rowRange( 0, 3 ).col( 3 );
+    else
+        return cv::Mat();
 }
 
 BMStereoProcessor &World::stereoProcessor()
@@ -166,7 +173,7 @@ const std::unique_ptr< FlowTracker > &World::flowTracker() const
     return m_flowTracker;
 }
 
-const std::unique_ptr<FeatureTracker> &World::featureTracker() const
+const std::unique_ptr< FeatureTracker > &World::featureTracker() const
 {
     return m_featureTracker;
 }
@@ -191,13 +198,27 @@ double World::minAdjacentCameraMultiplier() const
     return m_minAdjacentCameraMultiplier;
 }
 
+double World::minTrackInliersRatio() const
+{
+    return m_minTrackInliersRatio;
+}
+
+double World::goodTrackInliersRatio() const
+{
+    return m_goodTrackInliersRatio;
+}
+
+double World::pointsMinDistance() const
+{
+    return m_pointsMinDistance;
+}
+
 void World::createMap( const StereoCameraMatrix &cameraMatrix )
 {
     if ( m_trackType == TrackType::FLOW )
         m_maps.push_back( FlowMap::create( cameraMatrix, shared_from_this() ) );
     else if ( m_trackType == TrackType::FEATURES )
         m_maps.push_back( FeatureMap::create( cameraMatrix, shared_from_this() ) );
-
 }
 
 }

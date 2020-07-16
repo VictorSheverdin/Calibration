@@ -159,7 +159,7 @@ bool StereoGrabWidget::isTemplateExist() const
     return cameraWidget()->isTemplateExist();
 }
 
-const StereoFrame StereoGrabWidget::sourceFrame() const
+const StampedStereoImage StereoGrabWidget::sourceFrame() const
 {
     return cameraWidget()->sourceFrame();
 }

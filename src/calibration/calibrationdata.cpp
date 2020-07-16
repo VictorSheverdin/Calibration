@@ -354,13 +354,12 @@ bool StereoCalibrationData::loadYaml( const std::string &fileName )
 
 StereoCalibrationData::operator StereoCalibrationDataShort() const
 {
-    StereoCalibrationDataShort ret( *this );
+    StereoCalibrationDataShort ret( *static_cast< const StereoCalibrationDataBase * const >( this ) );
 
     ret.setLeftCameraResults( m_leftCameraResults );
     ret.setRightCameraResults( m_rightCameraResults );
 
     return ret;
-
 }
 
 

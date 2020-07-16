@@ -26,9 +26,6 @@ public:
 protected:
     static const int m_optimizationsCount = 10;
 
-private:
-    void initialize();
-
 };
 
 }

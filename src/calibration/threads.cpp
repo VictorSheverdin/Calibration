@@ -46,7 +46,7 @@ void MonocularProcessorThread::initialize()
 {
 }
 
-void MonocularProcessorThread::processFrame( const Frame &frame, Type type )
+void MonocularProcessorThread::processFrame( const StampedImage &frame, Type type )
 {
     m_mutex.lock();
     m_frame = frame;
@@ -55,7 +55,7 @@ void MonocularProcessorThread::processFrame( const Frame &frame, Type type )
 
 }
 
-MonocularProcessorResult MonocularProcessorThread::calculate( const Frame &frame , const Type type ) const
+MonocularProcessorResult MonocularProcessorThread::calculate( const StampedImage &frame , const Type type ) const
 {
     MonocularProcessorResult ret;
 
@@ -131,7 +131,7 @@ void StereoProcessorThread::initialize()
 {
 }
 
-void StereoProcessorThread::processFrame( const StereoFrame &frame, Type type )
+void StereoProcessorThread::processFrame( const StampedStereoImage &frame, Type type )
 {
     m_mutex.lock();
     m_frame = frame;
@@ -140,7 +140,7 @@ void StereoProcessorThread::processFrame( const StereoFrame &frame, Type type )
 
 }
 
-StereoProcessorResult StereoProcessorThread::calculate(const StereoFrame &frame, const Type type ) const
+StereoProcessorResult StereoProcessorThread::calculate( const StampedStereoImage &frame, const Type type ) const
 {
     StereoProcessorResult ret;
 
@@ -148,8 +148,8 @@ StereoProcessorResult StereoProcessorThread::calculate(const StereoFrame &frame,
 
         ret.sourceFrame = frame;
 
-        ret.leftExist = m_templateProcessor.processFrame( frame.leftFrame(), &ret.leftPreview, &ret.leftImagePoints );
-        ret.rightExist = m_templateProcessor.processFrame( frame.rightFrame(), &ret.rightPreview, &ret.rightImagePoints );
+        ret.leftExist = m_templateProcessor.processFrame( frame.leftImage(), &ret.leftPreview, &ret.leftImagePoints );
+        ret.rightExist = m_templateProcessor.processFrame( frame.rightImage(), &ret.rightPreview, &ret.rightImagePoints );
 
         if ( ret.leftExist && ret.rightExist )
             m_templateProcessor.calcCorners( &ret.worldPoints );
@@ -162,8 +162,8 @@ StereoProcessorResult StereoProcessorThread::calculate(const StereoFrame &frame,
         ArucoMarkerList leftList;
         ArucoMarkerList rightList;
 
-        ret.leftExist = m_markerProcessor.processFrame( frame.leftFrame(), &ret.leftPreview, &leftList );
-        ret.rightExist = m_markerProcessor.processFrame( frame.rightFrame(), &ret.rightPreview, &rightList );
+        ret.leftExist = m_markerProcessor.processFrame( frame.leftImage(), &ret.leftPreview, &leftList );
+        ret.rightExist = m_markerProcessor.processFrame( frame.rightImage(), &ret.rightPreview, &rightList );
 
         if ( ret.leftExist && ret.rightExist ) {
 

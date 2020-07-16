@@ -8,7 +8,7 @@
 
 struct MonocularProcessorResult
 {
-    Frame sourceFrame;
+    StampedImage sourceFrame;
     bool exist;
     CvImage preview;
     std::vector< cv::Point2f > imagePoints;
@@ -17,7 +17,7 @@ struct MonocularProcessorResult
 
 struct StereoProcessorResult
 {
-    StereoFrame sourceFrame;
+    StampedStereoImage sourceFrame;
     bool leftExist;
     bool rightExist;
     CvImage leftPreview;
@@ -65,14 +65,14 @@ class MonocularProcessorThread : public ProcessorThreadBase
 public:
     explicit MonocularProcessorThread( QObject *parent = nullptr );
 
-    void processFrame( const Frame &frame, Type type );
+    void processFrame( const StampedImage &frame, Type type );
 
-    MonocularProcessorResult calculate( const Frame &frame, const Type type ) const;
+    MonocularProcessorResult calculate( const StampedImage &frame, const Type type ) const;
 
     MonocularProcessorResult result() const;
 
 protected:
-    Frame m_frame;
+    StampedImage m_frame;
     MonocularProcessorResult m_result;
 
     virtual void run() override;
@@ -89,14 +89,14 @@ class StereoProcessorThread : public ProcessorThreadBase
 public:
     explicit StereoProcessorThread( QObject *parent = nullptr );
 
-    void processFrame( const StereoFrame &frame, Type type );
+    void processFrame( const StampedStereoImage &frame, Type type );
 
-    StereoProcessorResult calculate( const StereoFrame &frame, const Type type ) const;
+    StereoProcessorResult calculate( const StampedStereoImage &frame, const Type type ) const;
 
     StereoProcessorResult result() const;
 
 protected:
-    StereoFrame m_frame;
+    StampedStereoImage m_frame;
     StereoProcessorResult m_result;
 
     virtual void run() override;

@@ -181,152 +181,111 @@ bool StereoImage::empty() const
     return m_leftImage.empty() || m_rightImage.empty();
 }
 
-// FrameBase
-FrameBase::FrameBase()
+// StampedImageBase
+StampedImageBase::StampedImageBase( const std::chrono::time_point< std::chrono::system_clock > &time )
 {
-    initialize();
-}
-
-FrameBase::FrameBase( const std::chrono::time_point< std::chrono::system_clock > &time )
-{
-    initialize();
-
     setTime( time );
 }
 
-void FrameBase::initialize()
-{
-    m_time = std::chrono::system_clock::now();
-}
-
-void FrameBase::setTime( const std::chrono::time_point< std::chrono::system_clock > &time )
+void StampedImageBase::setTime( const std::chrono::time_point< std::chrono::system_clock > &time )
 {
     m_time = time;
 }
 
-const std::chrono::time_point< std::chrono::system_clock > &FrameBase::time() const
+const std::chrono::time_point< std::chrono::system_clock > &StampedImageBase::time() const
 {
     return m_time;
 }
 
-// Frame
-Frame::Frame()
-    : CvImage()
+// StampedImage
+StampedImage::StampedImage( const std::chrono::time_point<std::chrono::system_clock> &time )
+    : StampedImageBase( time )
 {
-    initialize();
 }
 
-Frame::Frame( const CvImage &img )
+StampedImage::StampedImage( const std::chrono::time_point< std::chrono::system_clock > &time, const CvImage &mat )
+    : StampedImageBase( time ), CvImage( mat )
+{
+}
+
+StampedImage::StampedImage( const std::chrono::time_point< std::chrono::system_clock > &time, const cv::Mat &mat )
+    : StampedImageBase( time ), CvImage( mat )
+{
+}
+
+StampedImage::StampedImage( const std::chrono::time_point< std::chrono::system_clock > &time, const QtImage &img )
+    : StampedImageBase( time ), CvImage( img )
+{
+}
+
+StampedImage::StampedImage( const CvImage &img )
     : CvImage( img )
 {
-    initialize();
 }
 
-Frame::Frame( const cv::Mat &mat )
+StampedImage::StampedImage( const cv::Mat &mat )
     : CvImage( mat )
 {
-    initialize();
 }
 
-Frame::Frame( const QtImage &img )
+StampedImage::StampedImage( const QtImage &img )
     : CvImage( img )
 {
-    initialize();
 }
 
-void Frame::initialize()
-{
-}
-
-int64_t Frame::timeDiff( const Frame &other ) const
+int64_t StampedImage::diffMs( const StampedImage &other ) const
 {
     return std::abs( std::chrono::duration_cast< std::chrono::microseconds >( m_time - other.m_time ).count() );
 }
 
-// StereoFrame
-StereoFrame::StereoFrame()
-    : FrameBase()
-{
-    initialize();
-}
-
-StereoFrame::StereoFrame( const std::chrono::time_point< std::chrono::system_clock > &time )
-    : FrameBase( time )
-{
-    initialize();
-}
-
-StereoFrame::StereoFrame( const std::chrono::time_point< std::chrono::system_clock > &time, const Frame &leftFrame, const Frame &rightFrame )
-    : FrameBase( time )
-{
-    initialize();
-
-    setLeftFrame( leftFrame );
-    setRightFrame( rightFrame );
-}
-
-StereoFrame::StereoFrame( const Frame &leftFrame, const Frame &rightFrame )
-    : FrameBase()
-{
-    initialize();
-
-    setLeftFrame( leftFrame );
-    setRightFrame( rightFrame );
-}
-
-StereoFrame::StereoFrame( const std::chrono::time_point< std::chrono::system_clock > &time, const StereoImage &image )
-    : FrameBase( time )
-{
-    initialize();
-
-    setLeftFrame( image.leftImage() );
-    setRightFrame( image.rightImage() );
-}
-
-StereoFrame::StereoFrame( const StereoImage &image )
-    : FrameBase()
-{
-    initialize();
-
-    setLeftFrame( image.leftImage() );
-    setRightFrame( image.rightImage() );
-}
-
-void StereoFrame::initialize()
+// StampedStereoImage
+StampedStereoImage::StampedStereoImage()
 {
 }
 
-const Frame &StereoFrame::leftFrame() const
+StampedStereoImage::StampedStereoImage( const StampedImage &leftImage, const StampedImage &rightImage )
 {
-    return m_leftFrame;
+    setLeftImage( leftImage );
+    setRightImage( rightImage );
 }
 
-void StereoFrame::setLeftFrame( const Frame &frame )
+StampedStereoImage::StampedStereoImage( const StereoImage &image )
 {
-    m_leftFrame = frame;
+    setLeftImage( image.leftImage() );
+    setRightImage( image.rightImage() );
 }
 
-const Frame &StereoFrame::rightFrame() const
+const StampedImage &StampedStereoImage::leftImage() const
 {
-    return m_rightFrame;
+    return m_leftImage;
 }
 
-void StereoFrame::setRightFrame( const Frame &frame )
+void StampedStereoImage::setLeftImage( const StampedImage &image )
 {
-    m_rightFrame = frame;
+    m_leftImage = image;
 }
 
-int StereoFrame::timeDiff() const
+const StampedImage &StampedStereoImage::rightImage() const
 {
-    return m_leftFrame.timeDiff( m_rightFrame );
+    return m_rightImage;
 }
 
-bool StereoFrame::empty() const
+void StampedStereoImage::setRightImage( const StampedImage &image )
 {
-    return m_leftFrame.empty() || m_rightFrame.empty();
+    m_rightImage = image;
 }
 
-StereoFrame::operator StereoImage()
+int StampedStereoImage::diffMs() const
 {
-    return StereoImage( m_leftFrame, m_rightFrame );
+    return m_leftImage.diffMs( m_rightImage );
+}
+
+bool StampedStereoImage::empty() const
+{
+    return m_leftImage.empty() || m_rightImage.empty();
+}
+
+StampedStereoImage::operator StereoImage()
+{
+    return StereoImage( m_leftImage, m_rightImage );
 }

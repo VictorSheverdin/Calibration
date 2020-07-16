@@ -15,7 +15,7 @@ void ProcessorThread::initialize()
 {
 }
 
-bool ProcessorThread::process(const StereoFrame &frame )
+bool ProcessorThread::process( const StampedStereoImage &frame )
 {
     bool res = false;
 

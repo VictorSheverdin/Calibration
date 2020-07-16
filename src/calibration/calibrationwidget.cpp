@@ -454,7 +454,7 @@ void StereoImageCalibrationWidget::loadIcon( const QString &leftFileName, const 
 
 StereoIcon *StereoImageCalibrationWidget::createIcon( const CvImage &leftImage, const CvImage &rightImage )
 {
-   StereoFrame frame( leftImage, rightImage );
+   StampedStereoImage frame( leftImage, rightImage );
 
     if ( m_parametersWidget->templateType() == TypeComboBox::CHECKERBOARD )
         m_processorThread.templateProcessor().setType( TemplateProcessor::CHECKERBOARD );
@@ -476,7 +476,7 @@ StereoIcon *StereoImageCalibrationWidget::createIcon( const CvImage &leftImage, 
     if ( result.leftExist && result.rightExist && result.leftImagePoints.size() == result.rightImagePoints.size()
                 && result.leftImagePoints.size() >= m_minimumCalibrationPoints ) {
         return new StereoIcon( result.leftPreview, result.rightPreview,
-                               result.sourceFrame.leftFrame().size(), result.leftImagePoints, result.rightImagePoints, result.worldPoints,
+                               result.sourceFrame.leftImage().size(), result.leftImagePoints, result.rightImagePoints, result.worldPoints,
                                QObject::tr("Frame") + " " + QString::number( m_iconCount++ ) );
 
     }
@@ -760,7 +760,7 @@ void StereoCameraCalibrationWidget::makeIcon()
     if ( result.leftExist && result.rightExist && result.leftImagePoints.size() == result.rightImagePoints.size()
          && result.leftImagePoints.size() >= m_minimumCalibrationPoints ) {
         m_iconsList->insertIcon( new StereoIcon( result.leftPreview, result.rightPreview,
-                               result.sourceFrame.leftFrame().size(), result.leftImagePoints, result.rightImagePoints, result.worldPoints,
+                               result.sourceFrame.leftImage().size(), result.leftImagePoints, result.rightImagePoints, result.worldPoints,
                                QObject::tr("Frame") + " " + QString::number( m_iconCount++ ) ) );
 
     }
@@ -771,7 +771,7 @@ StereoIcon *StereoCameraCalibrationWidget::createIcon( const CvImage &leftImage,
 {    
     auto taskWidget = this->taskWidget();
 
-   StereoFrame frame( leftImage, rightImage );
+   StampedStereoImage frame( leftImage, rightImage );
 
     if ( m_taskWidget->templateType() == TypeComboBox::CHECKERBOARD )
         m_processorThread.templateProcessor().setType( TemplateProcessor::CHECKERBOARD );
@@ -793,7 +793,7 @@ StereoIcon *StereoCameraCalibrationWidget::createIcon( const CvImage &leftImage,
     if ( result.leftExist && result.rightExist && result.leftImagePoints.size() == result.rightImagePoints.size()
          && result.leftImagePoints.size() >= m_minimumCalibrationPoints ) {
         return new StereoIcon( result.leftPreview, result.rightPreview,
-                               result.sourceFrame.leftFrame().size(), result.leftImagePoints, result.rightImagePoints, result.worldPoints,
+                               result.sourceFrame.leftImage().size(), result.leftImagePoints, result.rightImagePoints, result.worldPoints,
                                QObject::tr("Frame") + " " + QString::number( m_iconCount++ ) );
 
     }

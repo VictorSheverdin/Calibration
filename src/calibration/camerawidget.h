@@ -131,7 +131,7 @@ public:
 
     bool isTemplateExist() const;
 
-    StereoFrame sourceFrame();
+    StampedStereoImage sourceFrame();
 
 public slots:
     void setLeftSourceImage( const CvImage image );
@@ -152,7 +152,7 @@ protected:
 
     StereoCamera m_camera;
 
-    StereoFrame m_sourceFrame;
+    StampedStereoImage m_sourceFrame;
 
     QMutex m_updateMutex;
 

@@ -159,7 +159,7 @@ void DisparityWidgetBase::loadCalibrationDialog()
         loadCalibrationFile( file );
 }
 
-void DisparityWidgetBase::processFrame( const StereoFrame &frame )
+void DisparityWidgetBase::processFrame( const StampedStereoImage &frame )
 {
      if ( !frame.empty() ) {
 

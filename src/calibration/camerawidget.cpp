@@ -254,9 +254,9 @@ bool StereoCameraWidget::isTemplateExist() const
     return m_leftCameraWidget->isTemplateExist() || m_rightCameraWidget->isTemplateExist();
 }
 
-StereoFrame StereoCameraWidget::sourceFrame()
+StampedStereoImage StereoCameraWidget::sourceFrame()
 {
-    StereoFrame ret;
+    StampedStereoImage ret;
 
     m_updateMutex.lock();
     ret = m_sourceFrame;
@@ -287,8 +287,8 @@ void StereoCameraWidget::updateView()
 
         m_sourceFrame = result.sourceFrame;
 
-        m_leftCameraWidget->setSourceImage( result.sourceFrame.leftFrame() );
-        m_rightCameraWidget->setSourceImage( result.sourceFrame.rightFrame() );
+        m_leftCameraWidget->setSourceImage( result.sourceFrame.leftImage() );
+        m_rightCameraWidget->setSourceImage( result.sourceFrame.rightImage() );
 
         m_leftCameraWidget->setPreviewImage( result.leftPreview );
         m_leftCameraWidget->setTemplateExist( result.leftExist );

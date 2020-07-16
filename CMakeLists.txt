@@ -171,6 +171,7 @@ add_executable( slam ${COMMON_SOURCES} ${RES_SOURCES}
     src/slam/mainwindow.h
     src/slam/map.h
     src/slam/mappoint.h
+    src/slam/imudata.h
     src/slam/frame.h
     src/slam/frame.inl
     src/slam/framepoint.h
@@ -187,6 +188,7 @@ add_executable( slam ${COMMON_SOURCES} ${RES_SOURCES}
     src/slam/mainwindow.cpp
     src/slam/map.cpp
     src/slam/mappoint.cpp
+    src/slam/imudata.cpp
     src/slam/frame.cpp
     src/slam/framepoint.cpp
     src/slam/optimizer.cpp
