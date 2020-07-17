@@ -262,7 +262,7 @@ cv::Mat GPUFlowProcessor::track( const CvImage &sourceImage, const std::vector< 
 
             }
 
-            if ( points1.size() > MIN_PNP_POINTS_COUNT ) {
+            if ( points1.size() > MIN_FMAT_POINTS_COUNT ) {
 
                 std::vector< uchar > inliers( points1.size(), 0 );
 
@@ -388,7 +388,7 @@ cv::Mat CPUFlowProcessor::track(const std::vector< cv::Mat > &sourceImagePyramid
 
             }
 
-            if ( points1.size() > MIN_PNP_POINTS_COUNT ) {
+            if ( points1.size() > MIN_FMAT_POINTS_COUNT ) {
 
                 std::vector< uchar > inliers( points1.size(), 0 );
 
@@ -693,7 +693,7 @@ cv::Mat DescriptorMatcherBase::match( const std::vector< cv::KeyPoint > &queryKe
                 points2.push_back( trainKeypoints[ i.trainIdx ].pt );
             }
 
-            if ( points1.size() > MIN_PNP_POINTS_COUNT ) {
+            if ( points1.size() > MIN_FMAT_POINTS_COUNT ) {
 
                 std::vector< uchar > inliers( points1.size(), 0 );
 

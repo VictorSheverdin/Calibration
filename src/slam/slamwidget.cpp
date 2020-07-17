@@ -464,10 +464,7 @@ std::list< StereoCameraMatrix > SlamWidgetBase::path() const
 
         for ( auto &i : frames ) {
 
-            auto stereoFrame = std::dynamic_pointer_cast< slam::StereoFrame >( i );
-
-            if ( stereoFrame )
-                ret.push_back( stereoFrame->projectionMatrix() );
+            ret.push_back( i->projectionMatrix() );
 
         }
 
@@ -621,8 +618,8 @@ void SlamWidgetBase::updateDensePointCloud()
 void SlamWidgetBase::update3dView()
 {
     updatePath();
-    updateSparseCloud();
-    updateDensePointCloud();
+    // updateSparseCloud();
+    // updateDensePointCloud();
 }
 
 // SlamImageWidget
@@ -639,7 +636,7 @@ void SlamImageWidget::initialize()
     m_index = 0;
     m_fps = 20;
 
-    startTimer( 30 );
+    startTimer( 1000. / m_fps );
 }
 
 void SlamImageWidget::setImageList( const QStringList &leftList, const QStringList &rightList )

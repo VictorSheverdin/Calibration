@@ -11,6 +11,8 @@
 namespace slam {
 
 class StereoFrameBase;
+class FlowStereoFrame;
+class FeatureStereoFrame;
 class MapPoint;
 class World;
 
@@ -42,6 +44,8 @@ public:
     const FramePtr &backFrame() const;
 
     bool isRudimental() const;
+
+    virtual StereoCameraMatrix lastProjectionMatrix() const = 0;
 
     virtual bool track( const StampedImage &leftImage, const StampedImage &rightImage ) = 0;
 
@@ -84,11 +88,14 @@ class FlowMap : public Map
 {
 public:
     using ObjectPtr = std::shared_ptr< FlowMap >;
+    using FlowStereoFramePtr = std::shared_ptr< FlowStereoFrame >;
 
     static ObjectPtr create( const StereoCameraMatrix &cameraMatrix, const WorldPtr &parentWorld );
 
     std::shared_ptr< FlowMap > shared_from_this();
     std::shared_ptr< const FlowMap > shared_from_this() const;
+
+    virtual StereoCameraMatrix lastProjectionMatrix() const override;
 
     virtual bool track( const StampedImage &leftImage, const StampedImage &rightImage ) override;
 
@@ -106,6 +113,8 @@ public:
 
     std::shared_ptr< FeatureMap > shared_from_this();
     std::shared_ptr< const FeatureMap > shared_from_this() const;
+
+    virtual StereoCameraMatrix lastProjectionMatrix() const override;
 
     virtual bool track( const StampedImage &leftImage, const StampedImage &rightImage ) override;
 

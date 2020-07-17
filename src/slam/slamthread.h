@@ -42,7 +42,7 @@ protected:
     StampedImage m_leftFrame;
     StampedImage m_rightFrame;
 
-    mutable QMutex m_mutex;
+    std::mutex m_mutex;
 
     double m_scaleFactor;
 

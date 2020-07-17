@@ -176,6 +176,7 @@ add_executable( slam ${COMMON_SOURCES} ${RES_SOURCES}
     src/slam/frame.inl
     src/slam/framepoint.h
     src/slam/optimizer.h
+    src/slam/options.h
     src/slam/world.h
     src/slam/tracker.h
     src/slam/application.cpp
@@ -192,6 +193,7 @@ add_executable( slam ${COMMON_SOURCES} ${RES_SOURCES}
     src/slam/frame.cpp
     src/slam/framepoint.cpp
     src/slam/optimizer.cpp
+    src/slam/options.cpp
     src/slam/world.cpp
     src/slam/tracker.cpp
     src/slam/main.cpp

@@ -269,6 +269,49 @@ ProjectionMatrix &ProjectionMatrix::operator=( const ProjectionMatrix &other )
     return *this;
 }
 
+g2o::SE3Quat ProjectionMatrix::se3Pose() const
+{
+    auto rMat = rotation();
+    auto tMat = translation();
+
+    Eigen::Matrix< double, 3, 3 > r;
+
+    r << rMat.at< double >( 0, 0 ), rMat.at< double >( 0, 1 ), rMat.at< double >( 0, 2 ),
+         rMat.at< double >( 1, 0 ), rMat.at< double >( 1, 1 ), rMat.at< double >( 1, 2 ),
+         rMat.at< double >( 2, 0 ), rMat.at< double >( 2, 1 ), rMat.at< double >( 2, 2 );
+
+    Eigen::Matrix< double, 3, 1 > t( tMat.at< double >( 0, 0 ), tMat.at< double >( 1, 0 ), tMat.at< double >( 2, 0 ) );
+
+    return g2o::SE3Quat( r, t );
+
+}
+
+void ProjectionMatrix::setSe3Pose( const g2o::SE3Quat &pose )
+{
+    auto homogeniousMatrix = pose.to_homogeneous_matrix();
+
+    auto rMat = rotation();
+    auto tMat = translation();
+
+    for ( auto i = 0; i < 3; ++i )
+        for ( auto j = 0; j < 3; ++j )
+            rMat.at< double >( i, j ) = homogeniousMatrix( i, j );
+
+    for ( auto i = 0; i < 3; ++i )
+            tMat.at< double >( i, 0 ) = homogeniousMatrix( i, 3 );
+
+    setRotation( rMat );
+    setTranslation( tMat );
+
+}
+
+ProjectionMatrix::operator cv::Point3d() const
+{
+    auto t = translation();
+
+    return  cv::Point3d( t.at< double >( 0, 0 ), t.at< double >( 1, 0 ), t.at< double >( 2, 0 ) );
+}
+
 std::ostream &operator<<( std::ostream& out, const ProjectionMatrix& matrix )
 {
     out << matrix.projectionMatrix() << std::endl;

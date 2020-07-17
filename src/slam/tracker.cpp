@@ -125,7 +125,7 @@ void GPUFlowTracker::buildPyramid( FlowFrame *frame )
 {
 }
 
-void GPUFlowTracker::extractPoints( FlowFrame *frame )
+void GPUFlowTracker::extractPoints( FlowKeyFrame *frame )
 {
     if ( frame ) {
         std::vector< cv::Point2f > points;
@@ -196,7 +196,7 @@ void CPUFlowTracker::buildPyramid( FlowFrame *frame )
 
 }
 
-void CPUFlowTracker::extractPoints( FlowFrame *frame )
+void CPUFlowTracker::extractPoints( FlowKeyFrame *frame )
 {
     if ( frame ) {
         std::vector< cv::Point2f > points;

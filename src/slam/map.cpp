@@ -11,6 +11,8 @@
 #include "src/common/defs.h"
 #include "src/common/functions.h"
 
+#include <opencv2/sfm.hpp>
+
 namespace slam {
 
 // Map
@@ -170,28 +172,158 @@ std::shared_ptr< const FlowMap > FlowMap::shared_from_this() const
     return std::dynamic_pointer_cast< const FlowMap >( Map::shared_from_this() );
 }
 
+StereoCameraMatrix FlowMap::lastProjectionMatrix() const
+{
+    for ( auto i = m_frames.rbegin(); i != m_frames.rend(); ++i ) {
+        auto keyFrame = std::dynamic_pointer_cast< FlowStereoKeyFrame >( *i );
+        if ( keyFrame )
+            return keyFrame->projectionMatrix();
+    }
+
+    return m_projectionMatrix;
+}
+
 bool FlowMap::track( const StampedImage &leftImage, const StampedImage &rightImage )
 {    
-    auto denseFrame = FlowDenseFrame::create( shared_from_this() );
+    static FlowStereoFramePtr keyFrame;
 
-    denseFrame->load( leftImage, rightImage );
-
-    if ( m_denseFlag && m_frames.size() % m_denseStep == 0 )
-        denseFrame->processDenseCloud();
+    /*if ( m_denseFlag && m_frames.size() % m_denseStep == 0 )
+        denseFrame->processDenseCloud();*/
 
     const std::lock_guard< std::mutex > lock( m_mutex );
 
     if ( m_frames.empty() ) {
 
-        denseFrame->setProjectionMatrix( m_projectionMatrix );
-        m_frames.push_back( denseFrame );
+        auto frame = FlowStereoKeyFrame::create( shared_from_this() );
+
+        keyFrame = frame;
+
+        frame->load( leftImage, rightImage );
+
+        frame->setProjectionMatrix( m_projectionMatrix );
+        m_frames.push_back( frame );
+
+        return true;
 
     }
     else {
 
-        auto previousDenseFrame = std::dynamic_pointer_cast< FlowDenseFrame >( m_frames.back() );
+        auto frame = FlowStereoFrame::create( shared_from_this() );
 
-        if ( previousDenseFrame ) {
+        frame->setImage( leftImage, rightImage );
+
+        auto previousFrame = std::dynamic_pointer_cast< FlowStereoFrame >( m_frames.back() );
+        auto previousKeyFrame = std::dynamic_pointer_cast< FlowStereoKeyFrame >( m_frames.back() );
+
+        auto minTrackPointsCount = m_minTrackPoints;
+
+        if ( previousKeyFrame ) {
+
+            auto previousLeftFrame = previousKeyFrame->leftFrame();
+            auto leftFrame = frame->leftFrame();
+
+            previousLeftFrame->extractPoints();
+
+            size_t trackedPointCount = previousLeftFrame->trackedPointsCount();
+
+            while( trackedPointCount < m_goodTrackPoints ) {
+
+                auto createPointsCount = ( static_cast< int >( m_goodTrackPoints ) - static_cast< int >( trackedPointCount ) ) * 3;
+
+                previousLeftFrame->createFramePoints( createPointsCount );
+
+                previousKeyFrame->match();
+                slam::track( previousLeftFrame, leftFrame );
+
+                trackedPointCount = previousLeftFrame->trackedPointsCount();
+
+            }
+
+            previousKeyFrame->triangulatePoints();
+
+            std::cout << "Tracked points count: " << trackedPointCount << std::endl;
+
+            if ( trackedPointCount < minTrackPointsCount )
+                return false;
+
+        }
+        else if ( previousFrame ) {
+
+            auto previousLeftFrame = previousFrame->leftFrame();
+            auto leftFrame = frame->leftFrame();
+
+            slam::track( previousLeftFrame, leftFrame );
+
+            auto trackedPointsCount = previousLeftFrame->trackedPointsCount();
+
+            if ( trackedPointsCount < minTrackPointsCount )
+                return false;
+
+        }
+
+        if ( keyFrame ) {
+
+            auto previousLeftFrame = keyFrame->leftFrame();
+            auto previousRightFrame = keyFrame->rightFrame();
+            auto leftFrame = frame->leftFrame();
+            auto rightFrame = frame->rightFrame();
+
+            FlowConsecutiveFrame adjacentFrame( previousLeftFrame, leftFrame, shared_from_this() );
+
+            //auto fMat = adjacentFrame.findFundamentalMatrix();
+
+            //if ( !fMat.empty() ) {
+
+                //cv::Mat eMat;
+
+                //cv::sfm::essentialFromFundamental( fMat, previousLeftFrame->cameraMatrix(), previousLeftFrame->cameraMatrix(), eMat );
+
+                //if ( !eMat.empty() ) {
+                    //std::vector< cv::Mat > r;
+                    //std::vector< cv::Mat > t;
+
+                    //cv::sfm::motionFromEssential( eMat, r, t );
+
+                    //if ( !t.empty() ) {
+
+                        //if ( cv::norm( t.front() ) > baselineLenght() ) {
+
+                            auto goodTrackInliersRatio = parentWorld()->goodTrackInliersRatio();
+
+                            auto inliersRatio = adjacentFrame.recoverPose();
+
+                            rightFrame->setCameraMatrix( previousRightFrame->cameraMatrix() );
+                            rightFrame->setRotation( leftFrame->rotation() );
+                            rightFrame->setTranslation( leftFrame->translation() + baselineVector() );
+
+                            std::cout << "Inliers ratio: " << inliersRatio << std::endl;
+
+                            //if ( inliersRatio > goodTrackInliersRatio ) {
+
+                                auto newKeyFrame = FlowStereoKeyFrame::create( shared_from_this() );
+
+                                newKeyFrame->replace( frame );
+
+                                m_frames.push_back( newKeyFrame );
+
+                                keyFrame = newKeyFrame;
+
+                                return true;
+
+                            //}
+
+                        //}
+
+                    //}
+
+                //}
+
+            //}
+
+        }
+
+/*
+        if ( previousFrame ) {
 
             auto goodTrackInliersRatio = parentWorld()->goodTrackInliersRatio();
             auto minTrackInliersRatio = parentWorld()->minTrackInliersRatio();
@@ -201,22 +333,22 @@ bool FlowMap::track( const StampedImage &leftImage, const StampedImage &rightIma
             auto leftFrame = std::dynamic_pointer_cast< FlowFrame >( denseFrame->leftFrame() );
             auto rightFrame = std::dynamic_pointer_cast< FlowFrame >( denseFrame->rightFrame() );
 
-            auto adjacentLeftFrame = FlowConsecutiveFrame::create( shared_from_this() );
+            FlowConsecutiveFrame adjacentLeftFrame( shared_from_this() );
 
-            adjacentLeftFrame->setFrames( previousLeftFrame, leftFrame );
+            adjacentLeftFrame.setFrames( previousLeftFrame, leftFrame );
 
             previousLeftFrame->triangulatePoints();
 
-            adjacentLeftFrame->track();
+            adjacentLeftFrame.track();
 
-            size_t trackedPointCount = adjacentLeftFrame->trackedPointsCount();
+            size_t trackedPointCount = adjacentLeftFrame.trackedPointsCount();
 
             double inliersRatio = 0.;
 
             size_t createPointsCount = m_goodTrackPoints;
 
             if ( trackedPointCount >= m_goodTrackPoints )
-                inliersRatio = adjacentLeftFrame->recoverPose();
+                inliersRatio = adjacentLeftFrame.recoverPose();
             else
                 createPointsCount = m_goodTrackPoints - trackedPointCount;
 
@@ -228,25 +360,25 @@ bool FlowMap::track( const StampedImage &leftImage, const StampedImage &rightIma
 
                         createPointsCount *= 3;
 
-                        adjacentLeftFrame->createFramePoints( createPointsCount );
+                        adjacentLeftFrame.createFramePoints( createPointsCount );
 
                         previousDenseFrame->match();
 
-                        adjacentLeftFrame->track();
+                        adjacentLeftFrame.track();
 
                         trackedPointCount = adjacentLeftFrame->trackedPointsCount();
 
                         std::cout << "Use points count: " << previousLeftFrame->usePointsCount() << " of " << previousLeftFrame->extractedPointsCount() << std::endl;
 
                         std::cout << "Stereo points count: " << previousDenseFrame->stereoPointsCount() << std::endl;
-                        std::cout << "Adjacent points count: " << adjacentLeftFrame->adjacentPointsCount() << std::endl;
+                        std::cout << "Adjacent points count: " << adjacentLeftFrame.adjacentPointsCount() << std::endl;
                         std::cout << "Tracked points count: " << trackedPointCount << std::endl;
 
                     } while( trackedPointCount < m_goodTrackPoints && previousLeftFrame->usePointsCount() < previousLeftFrame->extractedPointsCount() );
 
                     previousDenseFrame->triangulatePoints();
 
-                    inliersRatio = adjacentLeftFrame->recoverPose();
+                    inliersRatio = adjacentLeftFrame.recoverPose();
 
                     std::cout << "Inliers: " << inliersRatio << std::endl;
 
@@ -277,9 +409,15 @@ bool FlowMap::track( const StampedImage &leftImage, const StampedImage &rightIma
         // adjustLast();
         adjust( m_adjustFramesCount );
 
+    }*/
+
+        m_frames.push_back( frame );
+
+        return true;
+
     }
 
-    return true;
+    return false;
 
 }
 
@@ -302,6 +440,17 @@ std::shared_ptr< FeatureMap > FeatureMap::shared_from_this()
 std::shared_ptr< const FeatureMap > FeatureMap::shared_from_this() const
 {
     return std::dynamic_pointer_cast< const FeatureMap >( Map::shared_from_this() );
+}
+
+StereoCameraMatrix FeatureMap::lastProjectionMatrix() const
+{
+    for ( auto i = m_frames.rbegin(); i != m_frames.rend(); ++i ) {
+        auto keyFrame = std::dynamic_pointer_cast< FeatureStereoKeyFrame >( *i );
+        if ( keyFrame )
+            return keyFrame->projectionMatrix();
+    }
+
+    return m_projectionMatrix;
 }
 
 bool FeatureMap::track( const StampedImage &leftImage, const StampedImage &rightImage )

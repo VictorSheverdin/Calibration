@@ -111,7 +111,7 @@ bool World::track( const StampedImage &leftImage, const StampedImage &rightImage
 
             }
             else
-                projectionMatrix = m_maps.back()->frames().back()->projectionMatrix();
+                projectionMatrix = m_maps.back()->lastProjectionMatrix();
 
             if ( m_maps.back()->isRudimental() )
                 m_maps.pop_back();

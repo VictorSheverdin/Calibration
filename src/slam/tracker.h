@@ -4,9 +4,13 @@
 
 namespace slam {
 
-class FeatureFrame;
-class FeaturePoint;
 class FlowFrame;
+class FlowKeyFrame;
+
+class FeatureFrame;
+class FeatureKeyFrame;
+
+class FeaturePoint;
 
 class FlowTracker
 {
@@ -14,7 +18,7 @@ public:
     using FlowFramePtr = std::shared_ptr< FlowFrame >;
 
     virtual void buildPyramid( FlowFrame *frame ) = 0;
-    virtual void extractPoints( FlowFrame *frame ) = 0;
+    virtual void extractPoints( FlowKeyFrame *frame ) = 0;
 
     virtual cv::Mat match( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::set< PointTrackResult > *trackedPoints ) = 0;
     virtual cv::Mat track( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::set< PointTrackResult > *trackedPoints ) = 0;
@@ -50,7 +54,7 @@ public:
     GPUFlowTracker();
 
     virtual void buildPyramid( FlowFrame *frame ) override;
-    virtual void extractPoints( FlowFrame *frame ) override;
+    virtual void extractPoints( FlowKeyFrame *frame ) override;
 
     virtual cv::Mat match( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::set< PointTrackResult > *trackedPoints ) override;
     virtual cv::Mat track( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::set< PointTrackResult > *trackedPoints ) override;
@@ -69,7 +73,7 @@ public:
     CPUFlowTracker();
 
     virtual void buildPyramid( FlowFrame *frame ) override;
-    virtual void extractPoints( FlowFrame *frame ) override;
+    virtual void extractPoints( FlowKeyFrame *frame ) override;
 
     virtual cv::Mat match( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::set< PointTrackResult > *trackedPoints ) override;
     virtual cv::Mat track( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::set< PointTrackResult > *trackedPoints ) override;

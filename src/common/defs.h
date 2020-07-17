@@ -12,4 +12,5 @@ static const auto FLOAT_MAX = std::numeric_limits< float >::max();
 static const auto FLOAT_MIN = std::numeric_limits< float >::min();
 
 static const int MIN_PNP_POINTS_COUNT = 6;
+static const int MIN_FMAT_POINTS_COUNT = 6;
 

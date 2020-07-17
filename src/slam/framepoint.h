@@ -197,16 +197,16 @@ public:
 
 };
 
-class AdjacentPoint : public DoublePoint
+class ConsecutivePoint : public DoublePoint
 {
 public:
-    AdjacentPoint( const MonoPointPtr previousPoint, const MonoPointPtr nextPoint );
+    ConsecutivePoint( const MonoPointPtr previousPoint, const MonoPointPtr nextPoint );
 
-    MonoPointPtr previousFramePoint() const;
-    MonoPointPtr nextFramePoint() const;
+    MonoPointPtr startFramePoint() const;
+    MonoPointPtr endFramePoint() const;
 
-    cv::Point2f previousPoint() const;
-    cv::Point2f nextPoint() const;
+    cv::Point2f startPoint() const;
+    cv::Point2f endPoint() const;
 
 };
 

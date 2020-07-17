@@ -67,61 +67,62 @@ void SlamThread::run()
 
     while( !isInterruptionRequested() )
     {
-        if ( m_mutex.tryLock( ) ) {
+        m_mutex.lock();
 
-            if ( !m_leftFrame.empty() && !m_rightFrame.empty() ) {
+        auto leftFrame = m_leftFrame;
+        auto rightFrame = m_rightFrame;
 
-                CvImage leftRectifiedImage;
-                CvImage rightRectifiedImage;
-                CvImage leftCroppedImage;
-                CvImage rightCroppedImage;
+        m_mutex.unlock();
 
-                // cv::rectangle( m_leftFrame, cv::Point( 0, 1500 ), cv::Point( 2048, 2048 ), cv::Scalar( 0, 0, 0, 255 ), cv::FILLED );
-                // cv::rectangle( m_rightFrame, cv::Point( 0, 1500 ), cv::Point( 2048, 2048 ), cv::Scalar( 0, 0, 0, 255 ), cv::FILLED );
+        if ( !leftFrame.empty() && !rightFrame.empty() ) {
 
-                TicToc time;
+            CvImage leftRectifiedImage;
+            CvImage rightRectifiedImage;
+            CvImage leftCroppedImage;
+            CvImage rightCroppedImage;
 
-                // leftCroppedImage = m_leftUndistortionProcessor.undistort( m_leftFrame );
-                // rightCroppedImage = m_rightUndistortionProcessor.undistort( m_rightFrame );
+            // cv::rectangle( leftFrame, cv::Point( 0, 1500 ), cv::Point( 2048, 2048 ), cv::Scalar( 0, 0, 0, 255 ), cv::FILLED );
+            // cv::rectangle( rightFrame, cv::Point( 0, 1500 ), cv::Point( 2048, 2048 ), cv::Scalar( 0, 0, 0, 255 ), cv::FILLED );
 
-                if ( m_rectificationProcessor.rectify( m_leftFrame, m_rightFrame, &leftRectifiedImage, &rightRectifiedImage )
-                            && m_rectificationProcessor.crop( leftRectifiedImage, rightRectifiedImage, &leftCroppedImage, &rightCroppedImage ) ) {
+            TicToc time;
 
-                    CvImage leftProcImage;
-                    CvImage rightProcImage;
+            // leftCroppedImage = m_leftUndistortionProcessor.undistort( leftFrame );
+            // rightCroppedImage = m_rightUndistortionProcessor.undistort( rightFrame );
 
-                    if ( std::abs( m_scaleFactor - 1.0 ) > DOUBLE_EPS ) {
-                        cv::resize( leftCroppedImage, leftProcImage, cv::Size(), m_scaleFactor, m_scaleFactor, cv::INTER_AREA );
-                        cv::resize( rightCroppedImage, rightProcImage, cv::Size(), m_scaleFactor, m_scaleFactor, cv::INTER_AREA );
+            if ( m_rectificationProcessor.rectify( leftFrame, rightFrame, &leftRectifiedImage, &rightRectifiedImage )
+                        && m_rectificationProcessor.crop( leftRectifiedImage, rightRectifiedImage, &leftCroppedImage, &rightCroppedImage ) ) {
 
-                    }
-                    else {
-                        leftProcImage = leftCroppedImage;
-                        rightProcImage = rightCroppedImage;
+                CvImage leftProcImage;
+                CvImage rightProcImage;
 
-                    }
+                if ( std::abs( m_scaleFactor - 1.0 ) > DOUBLE_EPS ) {
+                    cv::resize( leftCroppedImage, leftProcImage, cv::Size(), m_scaleFactor, m_scaleFactor, cv::INTER_AREA );
+                    cv::resize( rightCroppedImage, rightProcImage, cv::Size(), m_scaleFactor, m_scaleFactor, cv::INTER_AREA );
 
-                    /*cv::GaussianBlur( leftProcImage, leftProcImage, cv::Size( 3, 3 ), 0 );
-                    cv::GaussianBlur( rightProcImage, rightProcImage, cv::Size( 3, 3 ), 0 );*/
-
-                    m_system->track( leftProcImage, rightProcImage );
-
-                    emit updateSignal();
+                }
+                else {
+                    leftProcImage = leftCroppedImage;
+                    rightProcImage = rightCroppedImage;
 
                 }
 
-                time.report();
+                /*cv::GaussianBlur( leftProcImage, leftProcImage, cv::Size( 3, 3 ), 0 );
+                cv::GaussianBlur( rightProcImage, rightProcImage, cv::Size( 3, 3 ), 0 );*/
 
-                m_leftFrame.release();
-                m_rightFrame.release();
+                m_system->track( leftProcImage, rightProcImage );
+
+                emit updateSignal();
 
             }
 
-            m_mutex.unlock();
+            time.report();
+
+            m_leftFrame.release();
+            m_rightFrame.release();
 
         }
 
-        std::this_thread::sleep_for( std::chrono::microseconds( 1 ) );
+        std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
 
     }
 
@@ -144,7 +145,7 @@ CvImage SlamThread::pointsImage() const
 
         if ( !frames.empty() ) {
 
-            auto processedFrame = std::dynamic_pointer_cast< slam::ProcessedStereoFrame >( frames.back() );
+            auto processedFrame = std::dynamic_pointer_cast< slam::ProcessedStereoKeyFrame >( frames.back() );
 
             if ( processedFrame )
                 return processedFrame->drawExtractedPoints();

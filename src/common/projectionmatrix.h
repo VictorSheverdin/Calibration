@@ -4,6 +4,8 @@
 
 #include "plane.h"
 
+#include <g2o/types/slam3d/se3quat.h>
+
 class ProjectionMatrix
 {
 public:
@@ -50,6 +52,11 @@ public:
 
     bool operator==( const ProjectionMatrix &other ) const;
     ProjectionMatrix &operator=( const ProjectionMatrix &other );
+
+    void setSe3Pose( const g2o::SE3Quat &pose );
+    g2o::SE3Quat se3Pose() const;
+
+    operator cv::Point3d() const;
 
 private:
     cv::Mat m_cameraMatrix;

@@ -416,30 +416,30 @@ namespace slam {
         return rightFramePoint()->point();
     }
 
-    // AdjacentPoint
-    AdjacentPoint::AdjacentPoint( const MonoPointPtr previousPoint, const MonoPointPtr nextPoint )
+    // ConsecutivePoint
+    ConsecutivePoint::ConsecutivePoint( const MonoPointPtr previousPoint, const MonoPointPtr nextPoint )
         : DoublePoint( previousPoint, nextPoint )
     {
     }
 
-    AdjacentPoint::MonoPointPtr AdjacentPoint::previousFramePoint() const
+    ConsecutivePoint::MonoPointPtr ConsecutivePoint::startFramePoint() const
     {
         return monoFramePoint1();
     }
 
-    AdjacentPoint::MonoPointPtr AdjacentPoint::nextFramePoint() const
+    ConsecutivePoint::MonoPointPtr ConsecutivePoint::endFramePoint() const
     {
         return monoFramePoint2();
     }
 
-    cv::Point2f AdjacentPoint::previousPoint() const
+    cv::Point2f ConsecutivePoint::startPoint() const
     {
-        return previousFramePoint()->point();
+        return startFramePoint()->point();
     }
 
-    cv::Point2f AdjacentPoint::nextPoint() const
+    cv::Point2f ConsecutivePoint::endPoint() const
     {
-        return nextFramePoint()->point();
+        return endFramePoint()->point();
     }
 
 }
