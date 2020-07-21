@@ -9,18 +9,14 @@ namespace slam {
 class World : public std::enable_shared_from_this< World >
 {
 public:
-    enum class TrackType { FLOW, FEATURES };
-
     using ObjectPtr = std::shared_ptr< World >;
+    using ObjectConstPtr = std::shared_ptr< const World >;
 
-    using FramePtr = FeatureMap::FramePtr;
-
-    using MapPtr = std::shared_ptr< Map >;
-    using MapPointPtr = FeatureMap::MapPointPtr;
+    enum class TrackType { FLOW, FEATURES };
 
     static ObjectPtr create( const StereoCameraMatrix &cameraMatrix );
 
-    std::list< MapPtr > maps() const;
+    const std::list< MapPtr > &maps() const;
 
     bool track( const StampedImage &leftImage, const StampedImage &rightImage );
 
@@ -44,6 +40,13 @@ public:
 
     double minTrackInliersRatio() const;
     double goodTrackInliersRatio() const;
+
+    CvImage pointsImage() const;
+    CvImage tracksImage() const;
+    CvImage stereoImage() const;
+
+    std::list< StereoCameraMatrix > path() const;
+    std::list< ColorPoint3d > sparseCloud() const;
 
     double pointsMinDistance() const;
 
@@ -76,8 +79,6 @@ protected:
     static const double m_pointsMinDistance;
 
     static const size_t m_pointsCount = 1000;
-
-    mutable std::mutex m_mutex;
 
     void createMap( const StereoCameraMatrix &cameraMatrix );
 

@@ -10,7 +10,7 @@ namespace slam {
 
 const double World::m_maxReprojectionError = 1.;
 const double World::m_minStereoDisparity = 5.;
-const double World::m_minAdjacentPointsDistance = 7.;
+const double World::m_minAdjacentPointsDistance = 10.;
 const double World::m_minAdjacentCameraMultiplier = 3.;
 
 const double World::m_minTrackInliersRatio = 0.6;
@@ -55,17 +55,9 @@ World::ObjectPtr World::create( const StereoCameraMatrix &cameraMatrix )
     return ObjectPtr( new World( cameraMatrix ) );
 }
 
-std::list < World::MapPtr > World::maps() const
+const std::list< MapPtr > &World::maps() const
 {
-    std::list < World::MapPtr > ret;
-
-    m_mutex.lock();
-
-    ret = m_maps;
-
-    m_mutex.unlock();
-
-    return ret;
+    return m_maps;
 }
 
 bool World::track( const StampedImage &leftImage, const StampedImage &rightImage )
@@ -111,7 +103,7 @@ bool World::track( const StampedImage &leftImage, const StampedImage &rightImage
 
             }
             else
-                projectionMatrix = m_maps.back()->lastProjectionMatrix();
+                projectionMatrix = m_maps.back()->backProjectionMatrix();
 
             if ( m_maps.back()->isRudimental() )
                 m_maps.pop_back();
@@ -206,6 +198,111 @@ double World::minTrackInliersRatio() const
 double World::goodTrackInliersRatio() const
 {
     return m_goodTrackInliersRatio;
+}
+
+CvImage World::pointsImage() const
+{
+    if ( !m_maps.empty() ) {
+
+        auto frames = m_maps.back()->frames();
+
+        if ( !frames.empty() ) {
+
+            auto processedFrame = std::dynamic_pointer_cast< slam::StereoKeyFrame >( frames.back() );
+
+            // if ( processedFrame )
+                // return processedFrame->drawExtractedPoints();
+
+        }
+
+    }
+
+    return CvImage();
+
+}
+
+CvImage World::tracksImage() const
+{
+    if ( !m_maps.empty() ) {
+
+        auto frames = m_maps.back()->frames();
+
+        if ( !frames.empty() ) {
+
+            auto processedFrame = std::dynamic_pointer_cast< slam::ProcessedStereoFrame >( frames.back() );
+
+            if ( processedFrame )
+                return processedFrame->leftFrame()->drawTracks();
+
+        }
+
+    }
+
+    return CvImage();
+
+}
+
+CvImage World::stereoImage() const
+{
+    if ( !m_maps.empty() ) {
+
+        auto frames = m_maps.back()->frames();
+
+        if ( frames.size() > 1 ) {
+
+            auto processedFrame = std::dynamic_pointer_cast< slam::ProcessedStereoFrame >( *(++frames.rbegin()) );
+
+            if ( processedFrame )
+                return processedFrame->drawStereoCorrespondences();
+
+        }
+
+    }
+
+    return CvImage();
+
+}
+
+std::list< StereoCameraMatrix > World::path() const
+{
+    std::list< StereoCameraMatrix > ret;
+
+    for ( auto &map : m_maps ) {
+
+        auto frames = map->frames();
+
+        for ( auto &i : frames ) {
+
+            auto keyFrame = std::dynamic_pointer_cast< FinishedStereoFrame >( i );
+
+            if ( keyFrame )
+                ret.push_back( keyFrame->projectionMatrix() );
+
+        }
+
+    }
+
+    return ret;
+}
+
+std::list< ColorPoint3d > World::sparseCloud() const
+{
+    std::list< ColorPoint3d > ret;
+
+    for ( auto &map : m_maps ) {
+
+        auto mapPoints = map->mapPoints();
+
+        for ( auto &i : mapPoints ) {
+
+            if ( i )
+                ret.push_back( ColorPoint3d( i->point(), i->color() ) );
+
+        }
+
+    }
+
+    return ret;
 }
 
 double World::pointsMinDistance() const

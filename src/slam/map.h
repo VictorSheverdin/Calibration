@@ -8,20 +8,24 @@
 #include "src/common/calibrationdatabase.h"
 #include "src/common/colorpoint.h"
 
+#include "alias.h"
+
 namespace slam {
 
-class StereoFrameBase;
+class StereoFrame;
+class StereoKeyFrame;
 class FlowStereoFrame;
+class FlowStereoKeyFrame;
 class FeatureStereoFrame;
+class FeatureStereoKeyFrame;
 class MapPoint;
 class World;
 
 class Map : public std::enable_shared_from_this< Map >
 {
 public:
-    using WorldPtr = std::shared_ptr< World >;
-    using FramePtr = std::shared_ptr< StereoFrameBase >;
-    using MapPointPtr = std::shared_ptr< MapPoint >;
+    using ObjectPtr = std::shared_ptr< Map >;
+    using ObjectConstPtr = std::shared_ptr< const Map >;
 
     virtual ~Map() = default;
 
@@ -38,14 +42,14 @@ public:
 
     void addMapPoint( const MapPointPtr &point );
 
-    std::set< MapPointPtr > mapPoints() const;
+    const std::set< MapPointPtr > &mapPoints() const;
 
-    std::list< FramePtr > frames() const;
-    const FramePtr &backFrame() const;
+    const std::list< StereoFramePtr > &frames() const;
+    const StereoFramePtr &backFrame() const;
 
     bool isRudimental() const;
 
-    virtual StereoCameraMatrix lastProjectionMatrix() const = 0;
+    StereoCameraMatrix backProjectionMatrix() const;
 
     virtual bool track( const StampedImage &leftImage, const StampedImage &rightImage ) = 0;
 
@@ -60,11 +64,9 @@ protected:
 
     std::set< MapPointPtr > m_mapPoints;
 
-    std::list< FramePtr > m_frames;
+    std::list< StereoFramePtr > m_frames;
 
     Optimizer m_optimizer;
-
-    mutable std::mutex m_mutex;
 
     static const size_t m_minTrackPoints = 30;
 
@@ -88,14 +90,12 @@ class FlowMap : public Map
 {
 public:
     using ObjectPtr = std::shared_ptr< FlowMap >;
-    using FlowStereoFramePtr = std::shared_ptr< FlowStereoFrame >;
+    using ObjectConstPtr = std::shared_ptr< const FlowMap >;
 
     static ObjectPtr create( const StereoCameraMatrix &cameraMatrix, const WorldPtr &parentWorld );
 
     std::shared_ptr< FlowMap > shared_from_this();
     std::shared_ptr< const FlowMap > shared_from_this() const;
-
-    virtual StereoCameraMatrix lastProjectionMatrix() const override;
 
     virtual bool track( const StampedImage &leftImage, const StampedImage &rightImage ) override;
 
@@ -108,13 +108,12 @@ class FeatureMap : public Map
 {
 public:
     using ObjectPtr = std::shared_ptr< FeatureMap >;
+    using ObjectConstPtr = std::shared_ptr< const FeatureMap >;
 
     static ObjectPtr create( const StereoCameraMatrix &cameraMatrix, const WorldPtr &parentWorld );
 
     std::shared_ptr< FeatureMap > shared_from_this();
     std::shared_ptr< const FeatureMap > shared_from_this() const;
-
-    virtual StereoCameraMatrix lastProjectionMatrix() const override;
 
     virtual bool track( const StampedImage &leftImage, const StampedImage &rightImage ) override;
 

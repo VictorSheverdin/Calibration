@@ -49,13 +49,13 @@ Eigen::Matrix< double, 3, 1 > MapPoint::eigenPoint() const
     return ret;
 }
 
-void MapPoint::addFramePoint( const FramePointPtr &value )
+void MapPoint::addFramePoint( const MonoPointPtr &value )
 {
     if ( !isFramePoint( value ))
         m_framePoints.push_back( value );
 }
 
-void MapPoint::removeFramePoint( const FramePointPtr &value )
+void MapPoint::removeFramePoint( const MonoPointPtr &value )
 {
     for ( auto i = m_framePoints.begin(); i != m_framePoints.end(); ) {
         if ( i->expired() )
@@ -71,7 +71,7 @@ void MapPoint::removeFramePoint( const FramePointPtr &value )
 
 }
 
-bool MapPoint::isFramePoint( const FrameConstPointPtr &value ) const
+bool MapPoint::isFramePoint( const MonoPointPtr &value ) const
 {
     for ( auto &i : m_framePoints )
         if ( !i.expired() && i.lock() == value )
@@ -81,7 +81,7 @@ bool MapPoint::isFramePoint( const FrameConstPointPtr &value ) const
 
 }
 
-bool MapPoint::isLastFramePoint( const FrameConstPointPtr &value ) const
+bool MapPoint::isLastFramePoint( const MonoPointPtr &value ) const
 {
     if ( !m_framePoints.empty() )
         if ( !m_framePoints.back().expired() && m_framePoints.back().lock() == value )

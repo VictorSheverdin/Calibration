@@ -16,6 +16,7 @@ namespace slam {
     class Map;
     class FlowMap;
     class FeatureMap;
+    class StereoFrame;
 }
 
 class SlamThread : public QThread
@@ -24,16 +25,20 @@ class SlamThread : public QThread
 
 public:
     using MapPtr = std::shared_ptr< slam::Map >;
+    using FramePtr = std::shared_ptr< slam::StereoFrame >;
 
     explicit SlamThread( const StereoCalibrationDataShort &calibration, QObject *parent = nullptr );
 
     void process( const StampedImage leftImage, const StampedImage rightImage );
 
-    std::list< MapPtr > maps() const;
+    std::shared_ptr< slam::World > system() const;
 
     CvImage pointsImage() const;
     CvImage tracksImage() const;
     CvImage stereoImage() const;
+
+    std::list< StereoCameraMatrix > path() const;
+    std::list< ColorPoint3d > sparseCloud() const;
 
 signals:
     void updateSignal();
@@ -42,7 +47,8 @@ protected:
     StampedImage m_leftFrame;
     StampedImage m_rightFrame;
 
-    std::mutex m_mutex;
+    std::mutex m_framesMutex;
+    mutable std::mutex m_systemMutex;
 
     double m_scaleFactor;
 

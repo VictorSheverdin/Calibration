@@ -9,19 +9,16 @@
 #include <g2o/core/block_solver.h>
 #include <g2o/core/solver.h>
 
-namespace slam {
+#include "alias.h"
 
-class FeatureMap;
-class StereoFrameBase;
+namespace slam {
 
 class Optimizer
 {
 public:
-    using FramePtr = std::shared_ptr< StereoFrameBase >;
-
     Optimizer();
 
-    void adjust( std::list< FramePtr > &frames );
+    void adjust( std::list< StereoKeyFramePtr > &frames );
 
 protected:
     static const int m_optimizationsCount = 10;

@@ -33,9 +33,20 @@ void extractAndCompute( cv::Ptr< cv::Feature2D > processor, const CvImage &image
 
 }
 
+// TrackPointResult
+PointTrackResult::PointTrackResult( size_t index, cv::Point2f point, float error )
+    : cv::Point2f( point ), index( index ), error( error )
+{
+}
+
+bool PointTrackResult::operator<( const PointTrackResult &other ) const
+{
+    return index < other.index;
+}
+
 // FlowProcessor
 const double FlowProcessor::m_checkDistance = 1.0;
-const double FlowProcessor::m_errorRatio = 0.3;
+const double FlowProcessor::m_errorRatio = 1.0;
 
 // FlowProcessor
 FlowProcessor::FlowProcessor()
@@ -115,15 +126,31 @@ void FlowProcessor::setRansacConfidence( const double &value )
     m_ransacConfidence = value;
 }
 
-// TrackPointResult
-PointTrackResult::PointTrackResult( size_t index, cv::Point2f point, float error )
-    : index( index ), point( point ), error( error )
+cv::Mat FlowProcessor::epiTest( const std::vector< cv::Point2f > &sourcePoints, const std::vector< cv::Point2f > &targetPoints, std::vector< int > *inliers )
 {
-}
+    if ( inliers ) {
 
-bool PointTrackResult::operator<( const PointTrackResult &other ) const
-{
-    return index < other.index;
+        if ( sourcePoints.size() == targetPoints.size() && sourcePoints.size() > MIN_FMAT_POINTS_COUNT ) {
+
+            std::vector< uchar > inlierFlags( sourcePoints.size(), 0 );
+
+            auto fmat = cv::findFundamentalMat( sourcePoints, targetPoints, inlierFlags, cv::FM_RANSAC, m_ransacReprojectionThreshold, m_ransacConfidence );
+
+            inliers->clear();
+            inliers->reserve( inlierFlags.size() );
+
+            for ( size_t i = 0; i < inlierFlags.size(); ++i )
+                if ( inlierFlags[ i ] )
+                    inliers->push_back( i );
+
+            return fmat;
+
+        }
+
+    }
+
+    return cv::Mat();
+
 }
 
 // GPUFlowProcessor
@@ -180,18 +207,15 @@ void download( const cv::cuda::GpuMat &d_mat, std::vector< float > &vec )
     d_mat.download( mat );
 }
 
-cv::Mat GPUFlowProcessor::track( const CvImage &sourceImage, const std::vector< cv::Point2f > &sourcePoints, const CvImage &targetImage, std::set< PointTrackResult > *trackedPoints )
+void GPUFlowProcessor::track( const CvImage &sourceImage, const std::vector< cv::Point2f > &sourcePoints, const CvImage &targetImage, std::vector< PointTrackResult > *trackedPoints )
 {    
     if ( trackedPoints && !sourcePoints.empty() ) {
-
-        trackedPoints->clear();
 
         std::vector< cv::Point2f > opticalPoints;
         std::vector< cv::Point2f > checkPoints;
 
         std::vector< unsigned char > statuses;
         std::vector< float > err;
-        std::vector< float > trackedErr;
 
         std::vector< unsigned char > checkStatuses;
         std::vector< float > checkErr;
@@ -232,18 +256,10 @@ cv::Mat GPUFlowProcessor::track( const CvImage &sourceImage, const std::vector< 
             auto errDiff = maxErr - minErr;
             auto checkErrDiff = maxCheckErr - minCheckErr;
 
-            std::vector< cv::Point2f > points1;
-            std::vector< cv::Point2f > points2;
-
-            std::vector< size_t > primTrackedIndexes;
-
-            primTrackedIndexes.reserve( statuses.size() );
-
-            points1.reserve( statuses.size() );
-            points2.reserve( statuses.size() );
-
             auto errThreshold = minErr + errDiff * m_errorRatio;
             auto checkErrThreshold = minCheckErr + checkErrDiff * m_errorRatio;
+
+            trackedPoints->clear();
 
             for ( size_t i = 0; i < statuses.size(); ++i ) {
 
@@ -251,36 +267,8 @@ cv::Mat GPUFlowProcessor::track( const CvImage &sourceImage, const std::vector< 
 
                 if ( statuses[i] && checkStatuses[i] && err[i] < errThreshold && checkErr[i] < checkErrThreshold && miss < m_checkDistance
                      && opticalPoints[ i ].x >= 0 && opticalPoints[ i ].y >= 0 && opticalPoints[ i ].x < targetImage.cols &&  opticalPoints[ i ].y < targetImage.rows ) {
-                    points1.push_back( sourcePoints[ i ] );
-                    points2.push_back( opticalPoints[ i ] );
 
-                    primTrackedIndexes.push_back( i );
-
-                    trackedErr.push_back( miss );
-
-                }
-
-            }
-
-            if ( points1.size() > MIN_FMAT_POINTS_COUNT ) {
-
-                std::vector< uchar > inliers( points1.size(), 0 );
-
-                auto fmat = cv::findFundamentalMat( points1, points2, inliers, cv::FM_RANSAC, m_ransacReprojectionThreshold, m_ransacConfidence );
-
-                if ( !fmat.empty() ) {
-
-                    for ( size_t i = 0; i < inliers.size(); ++i ) {
-
-                        if ( inliers[ i ] ) {
-
-                            trackedPoints->insert( PointTrackResult( primTrackedIndexes[ i ], points2[ i ], trackedErr[ i ] ) );
-
-                        }
-
-                    }
-
-                    return fmat;
+                    trackedPoints->push_back( PointTrackResult( i, opticalPoints[ i ], miss ) );
 
                 }
 
@@ -289,8 +277,6 @@ cv::Mat GPUFlowProcessor::track( const CvImage &sourceImage, const std::vector< 
         }
 
     }
-
-    return cv::Mat();
 
 }
 
@@ -302,7 +288,7 @@ CPUFlowProcessor::CPUFlowProcessor()
 
 void CPUFlowProcessor::initialize()
 {
-    m_winSize = 15;
+    m_winSize = 21;
     m_levels = 4;
 
      m_termCriteria = cv::TermCriteria( cv::TermCriteria::EPS, 100, 1.e-4 );
@@ -311,18 +297,15 @@ void CPUFlowProcessor::initialize()
 
 }
 
-cv::Mat CPUFlowProcessor::track(const std::vector< cv::Mat > &sourceImagePyramid, const std::vector< cv::Point2f > &sourcePoints, const std::vector< cv::Mat > &targetImagePyramid, std::set< PointTrackResult > *trackedPoints )
+void CPUFlowProcessor::track( const std::vector< cv::Mat > &sourceImagePyramid, const std::vector< cv::Point2f > &sourcePoints, const std::vector< cv::Mat > &targetImagePyramid, std::vector< PointTrackResult > *trackedPoints )
 {
     if ( trackedPoints && !sourcePoints.empty() ) {
-
-        trackedPoints->clear();
 
         std::vector< cv::Point2f > opticalPoints;
         std::vector< cv::Point2f > checkPoints;
 
         std::vector< unsigned char > statuses;
         std::vector< float > err;
-        std::vector< float > trackedErr;
 
         std::vector< unsigned char > checkStatuses;
         std::vector< float > checkErr;
@@ -354,21 +337,13 @@ cv::Mat CPUFlowProcessor::track(const std::vector< cv::Mat > &sourceImagePyramid
             auto errDiff = maxErr - minErr;
             auto checkErrDiff = maxCheckErr - minCheckErr;
 
-            std::vector< cv::Point2f > points1;
-            std::vector< cv::Point2f > points2;
-
-            std::vector< size_t > primTrackedIndexes;
-
-            primTrackedIndexes.reserve( statuses.size() );
-
-            points1.reserve( statuses.size() );
-            points2.reserve( statuses.size() );
-
             auto errThreshold = minErr + errDiff * m_errorRatio;
             auto checkErrThreshold = minCheckErr + checkErrDiff * m_errorRatio;
 
             auto rows = targetImagePyramid.front().rows;
             auto cols = targetImagePyramid.front().cols;
+
+            trackedPoints->clear();
 
             for ( size_t i = 0; i < statuses.size(); ++i ) {
 
@@ -377,35 +352,7 @@ cv::Mat CPUFlowProcessor::track(const std::vector< cv::Mat > &sourceImagePyramid
                 if ( statuses[i] && checkStatuses[i] && err[i] < errThreshold && checkErr[i] < checkErrThreshold && miss < m_checkDistance
                      && opticalPoints[ i ].x >= 0 && opticalPoints[ i ].y >= 0 && opticalPoints[ i ].x < cols &&  opticalPoints[ i ].y < rows ) {
 
-                    points1.push_back( sourcePoints[ i ] );
-                    points2.push_back( opticalPoints[ i ] );
-
-                    primTrackedIndexes.push_back( i );
-
-                    trackedErr.push_back( miss );
-
-                }
-
-            }
-
-            if ( points1.size() > MIN_FMAT_POINTS_COUNT ) {
-
-                std::vector< uchar > inliers( points1.size(), 0 );
-
-                auto fmat = cv::findFundamentalMat( points1, points2, inliers, cv::FM_RANSAC, m_ransacReprojectionThreshold, m_ransacConfidence );
-
-                if ( !fmat.empty() ) {
-
-                    for ( size_t i = 0; i < inliers.size(); ++i ) {
-
-                        if ( inliers[ i ] ) {
-                            trackedPoints->insert( PointTrackResult( primTrackedIndexes[ i ], points2[ i ], trackedErr[ i ] ) );
-
-                        }
-
-                    }
-
-                    return fmat;
+                    trackedPoints->push_back( PointTrackResult( i, opticalPoints[ i ], miss ) );
 
                 }
 
@@ -414,8 +361,6 @@ cv::Mat CPUFlowProcessor::track(const std::vector< cv::Mat > &sourceImagePyramid
         }
 
     }
-
-    return cv::Mat();
 
 }
 

@@ -15,7 +15,7 @@ Optimizer::Optimizer()
 {
 }
 
-void Optimizer::adjust( std::list< FramePtr > &frames )
+void Optimizer::adjust( std::list<StereoKeyFramePtr> &frames )
 {    
     if ( frames.size() > 1 ) {
 
@@ -27,7 +27,7 @@ void Optimizer::adjust( std::list< FramePtr > &frames )
         optimizer.setVerbose( false );
 
         std::map< MapPoint::ObjectPtr, std::shared_ptr< g2o::VertexSBAPointXYZ > > pointsMap;
-        std::map< StereoFrameBase::FramePtr, std::shared_ptr< g2o::VertexSE3Expmap > > framesMap;
+        std::map< StereoKeyFrame::ObjectPtr, std::shared_ptr< g2o::VertexSE3Expmap > > framesMap;
 
         std::list< std::shared_ptr< g2o::EdgeSE3ProjectXYZ > > projectEdges;
         std::list< std::shared_ptr< g2o::EdgeStereoSE3ProjectXYZ > > stereoEdges;
@@ -38,11 +38,9 @@ void Optimizer::adjust( std::list< FramePtr > &frames )
 
         for ( auto &i : frames ) {
 
-            auto stereoFrame = std::dynamic_pointer_cast< StereoFrameBase >( i );
+            if ( i ) {
 
-            if ( stereoFrame ) {
-
-                auto leftFrame = stereoFrame->leftFrame();
+                auto leftFrame = i->leftFrame();
 
                 if ( leftFrame ) {
 
@@ -55,7 +53,7 @@ void Optimizer::adjust( std::list< FramePtr > &frames )
 
                     frameVertex->setEstimate( leftFrame->se3Pose() );
 
-                    framesMap[ stereoFrame ] = frameVertex;
+                    framesMap[ i ] = frameVertex;
 
                     optimizer.addVertex( frameVertex.get() );
 

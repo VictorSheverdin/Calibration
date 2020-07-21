@@ -173,11 +173,12 @@ add_executable( slam ${COMMON_SOURCES} ${RES_SOURCES}
     src/slam/mappoint.h
     src/slam/imudata.h
     src/slam/frame.h
-    src/slam/frame.inl
     src/slam/framepoint.h
     src/slam/optimizer.h
-    src/slam/options.h
     src/slam/world.h
+    src/slam/log.h
+    src/slam/settings.h
+    src/slam/alias.h
     src/slam/tracker.h
     src/slam/application.cpp
     src/slam/choicedialog.cpp
@@ -193,8 +194,9 @@ add_executable( slam ${COMMON_SOURCES} ${RES_SOURCES}
     src/slam/frame.cpp
     src/slam/framepoint.cpp
     src/slam/optimizer.cpp
-    src/slam/options.cpp
     src/slam/world.cpp
+    src/slam/log.cpp
+    src/slam/settings.cpp
     src/slam/tracker.cpp
     src/slam/main.cpp
 )

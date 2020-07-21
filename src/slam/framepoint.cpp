@@ -8,16 +8,12 @@
 
 namespace slam {
 
-    // PointBase
-    PointBase::PointBase()
-    {
-    }
-
     // MonoPoint
-    MonoPoint::MonoPoint( const FramePtr &parentFrame )
-        : m_parentFrame( parentFrame )
+    MonoPoint::MonoPoint( const MonoFramePtr &parentFrame )
     {
         initialize();
+
+        setParentFrame( parentFrame );
     }
 
     void MonoPoint::initialize()
@@ -25,12 +21,17 @@ namespace slam {
         m_error = 0.;
     }
 
-    MonoPoint::FramePtr MonoPoint::parentFrame() const
+    void MonoPoint::setParentFrame( const MonoFramePtr &parent )
+    {
+        m_parentFrame = parent;
+    }
+
+    MonoFramePtr MonoPoint::parentFrame() const
     {
         return m_parentFrame.lock();
     }
 
-    void MonoPoint::setStereoPoint( const AdjacentPtr &point )
+    void MonoPoint::setStereoPoint( const MonoPointPtr &point )
     {
         m_stereoPoint = point;
     }
@@ -40,12 +41,12 @@ namespace slam {
         m_stereoPoint.reset();
     }
 
-    MonoPoint::AdjacentPtr MonoPoint::stereoPoint() const
+    MonoPointPtr MonoPoint::stereoPoint() const
     {
         return m_stereoPoint.lock();
     }
 
-    void MonoPoint::setNextPoint( const AdjacentPtr &point )
+    void MonoPoint::setNextPoint( const MonoPointPtr &point )
     {
         m_nextPoint = point;
     }
@@ -55,12 +56,12 @@ namespace slam {
         m_nextPoint.reset();
     }
 
-    MonoPoint::AdjacentPtr MonoPoint::nextPoint() const
+    MonoPointPtr MonoPoint::nextPoint() const
     {
         return m_nextPoint.lock();
     }
 
-    void MonoPoint::setPrevPoint( const AdjacentPtr &point )
+    void MonoPoint::setPrevPoint( const MonoPointPtr &point )
     {
         m_prevPoint = point;
     }
@@ -70,7 +71,7 @@ namespace slam {
         m_prevPoint.reset();
     }
 
-    MonoPoint::AdjacentPtr MonoPoint::prevPoint() const
+    MonoPointPtr MonoPoint::prevPoint() const
     {
         return m_prevPoint.lock();
     }
@@ -94,7 +95,7 @@ namespace slam {
         m_mapPoint.reset();
     }
 
-    MonoPoint::MapPointPtr MonoPoint::mapPoint() const
+    MapPointPtr MonoPoint::mapPoint() const
     {
         return m_mapPoint.lock();
     }
@@ -190,6 +191,26 @@ namespace slam {
         m_error = value;
     }
 
+    void MonoPoint::dissolve()
+    {
+        auto stereoPoint = this->stereoPoint();
+
+        if ( stereoPoint )
+            stereoPoint->clearStereoPoint();
+
+        clearStereoPoint();
+
+        auto prevPoint = this->prevPoint();
+        auto nextPoint = this->nextPoint();
+
+        if ( prevPoint )
+            prevPoint->setNextPoint( nextPoint );
+
+        if ( nextPoint )
+            nextPoint->setPrevPoint( prevPoint );
+
+    }
+
     void MonoPoint::drawTrack( CvImage *target, const cv::Scalar &color ) const
     {
         drawPrevTrack( target, color );
@@ -226,13 +247,13 @@ namespace slam {
     }
 
     // ProcessedPointBase
-    ProcessedPointBase::ProcessedPointBase( const FramePtr &parentFrame )
+    ProcessedPointBase::ProcessedPointBase( const MonoFramePtr &parentFrame )
         : MonoPoint( parentFrame )
     {
     }
 
     // FlowPoint
-    FlowPoint::FlowPoint( const FramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color )
+    FlowPoint::FlowPoint( const FlowFramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color )
         : ProcessedPointBase( parentFrame ), m_point( point ), m_color( color )
     {
     }
@@ -247,28 +268,28 @@ namespace slam {
         return m_color;
     }
 
-    FlowPoint::ObjectPtr FlowPoint::create( const FramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color )
+    FlowPoint::ObjectPtr FlowPoint::create( const FlowFramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color )
     {
         return ObjectPtr( new FlowPoint( parentFrame, point, color ) );
     }
 
-    FlowPoint::FramePtr FlowPoint::parentFrame() const
+    FlowFramePtr FlowPoint::parentFrame() const
     {
         return std::dynamic_pointer_cast< FlowFrame >( m_parentFrame.lock() );
     }
 
     // FeaturePoint
-    FeaturePoint::FeaturePoint( const FramePtr &parentFrame , const size_t keyPointIndex )
+    FeaturePoint::FeaturePoint( const FeatureFramePtr &parentFrame , const size_t keyPointIndex )
         : ProcessedPointBase( parentFrame ), m_keyPointIndex( keyPointIndex )
     {
     }
 
-    FeaturePoint::ObjectPtr FeaturePoint::create( const FramePtr &parentFrame, const size_t keyPointIndex )
+    FeaturePoint::ObjectPtr FeaturePoint::create( const FeatureFramePtr &parentFrame, const size_t keyPointIndex )
     {
         return ObjectPtr( new FeaturePoint( parentFrame, keyPointIndex ) );
     }
 
-    FeaturePoint::FramePtr FeaturePoint::parentFrame() const
+    FeatureFramePtr FeaturePoint::parentFrame() const
     {
         return std::dynamic_pointer_cast< FeatureFrame >( m_parentFrame.lock() );
     }
@@ -297,12 +318,12 @@ namespace slam {
     }
 
     // FramePoint
-    FramePoint::FramePoint( const FramePtr &parentFrame )
+    FramePoint::FramePoint( const FinishedFramePtr &parentFrame )
         : MonoPoint( parentFrame)
     {
     }
 
-    FramePoint::FramePoint( const FramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color )
+    FramePoint::FramePoint( const FinishedFramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color )
         : MonoPoint( parentFrame), ColorPoint2d( point, color )
     {
     }
@@ -317,19 +338,19 @@ namespace slam {
         return ColorPoint2d::color();
     }
 
-    FramePoint::ObjectPtr FramePoint::create( const FramePtr &parentFrame )
+    FramePoint::ObjectPtr FramePoint::create( const FinishedFramePtr &parentFrame )
     {
         return ObjectPtr( new FramePoint( parentFrame ) );
     }
 
-    FramePoint::ObjectPtr FramePoint::create( const FramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color )
+    FramePoint::ObjectPtr FramePoint::create( const FinishedFramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color )
     {
         return ObjectPtr( new FramePoint( parentFrame, point, color ) );
     }
 
-    FramePoint::FramePtr FramePoint::parentFrame() const
+    FinishedFramePtr FramePoint::parentFrame() const
     {
-        return std::dynamic_pointer_cast< Frame >( m_parentFrame.lock() );
+        return std::dynamic_pointer_cast< FinishedFrame >( m_parentFrame.lock() );
     }
 
     void FramePoint::replace( const MonoPointPtr &point )
@@ -380,12 +401,12 @@ namespace slam {
         m_point2 = point2;
     }
 
-    DoublePoint::MonoPointPtr DoublePoint::monoFramePoint1() const
+    MonoPointPtr DoublePoint::monoFramePoint1() const
     {
         return m_point1;
     }
 
-    DoublePoint::MonoPointPtr DoublePoint::monoFramePoint2() const
+    MonoPointPtr DoublePoint::monoFramePoint2() const
     {
         return m_point2;
     }
@@ -396,12 +417,12 @@ namespace slam {
     {
     }
 
-    StereoPoint::MonoPointPtr StereoPoint::leftFramePoint() const
+    MonoPointPtr StereoPoint::leftFramePoint() const
     {
         return monoFramePoint1();
     }
 
-    StereoPoint::MonoPointPtr StereoPoint::rightFramePoint() const
+    MonoPointPtr StereoPoint::rightFramePoint() const
     {
         return monoFramePoint2();
     }
@@ -422,12 +443,12 @@ namespace slam {
     {
     }
 
-    ConsecutivePoint::MonoPointPtr ConsecutivePoint::startFramePoint() const
+    MonoPointPtr ConsecutivePoint::startFramePoint() const
     {
         return monoFramePoint1();
     }
 
-    ConsecutivePoint::MonoPointPtr ConsecutivePoint::endFramePoint() const
+    MonoPointPtr ConsecutivePoint::endFramePoint() const
     {
         return monoFramePoint2();
     }

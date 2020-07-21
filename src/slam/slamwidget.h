@@ -154,9 +154,6 @@ protected:
 
     QPointer< QTimer > m_updateTimer;
 
-    std::list< StereoCameraMatrix > path() const;
-    std::list< ColorPoint3d > sparseCloud() const;
-
 private:
     void initialize( const QString &calibrationFile );
 

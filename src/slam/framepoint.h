@@ -5,18 +5,25 @@
 
 #include <Eigen/Core>
 
+#include "alias.h"
+
 namespace slam {
 
-class Frame;
 class MonoFrame;
 class FlowFrame;
 class FeatureFrame;
+class FinishedFrame;
 class MapPoint;
 
+// Базовый класс для реализации точек на изображении
 class PointBase
 {
+public:
+    using ObjectPtr = std::shared_ptr< PointBase >;
+    using ObjectConstPtr = std::shared_ptr< const PointBase >;
+
 protected:
-    PointBase();
+    PointBase() = default;
 };
 
 class MonoPoint : public PointBase, public std::enable_shared_from_this< MonoPoint >
@@ -24,27 +31,26 @@ class MonoPoint : public PointBase, public std::enable_shared_from_this< MonoPoi
     friend class MonoFrame;
 
 public:
-    using FramePtr = std::shared_ptr< MonoFrame >;
-
-    using AdjacentPtr = std::shared_ptr< MonoPoint >;
-    using MapPointPtr = std::shared_ptr< MapPoint >;
+    using ObjectPtr = std::shared_ptr< MonoPoint >;
+    using ObjectConstPtr = std::shared_ptr< const MonoPoint >;
 
     virtual const cv::Point2f &point() const = 0;
     virtual const cv::Scalar &color() const = 0;
 
-    FramePtr parentFrame() const;
+    void setParentFrame( const MonoFramePtr &parent );
+    MonoFramePtr parentFrame() const;
 
-    void setStereoPoint( const AdjacentPtr &point );
+    void setStereoPoint( const MonoPointPtr &point );
     void clearStereoPoint();
-    AdjacentPtr stereoPoint() const;
+    MonoPointPtr stereoPoint() const;
 
-    void setNextPoint( const AdjacentPtr &point );
+    void setNextPoint( const MonoPointPtr &point );
     void clearNextPoint();
-    AdjacentPtr nextPoint() const;
+    MonoPointPtr nextPoint() const;
 
-    void setPrevPoint( const AdjacentPtr &point );
+    void setPrevPoint( const MonoPointPtr &point );
     void clearPrevPoint();
-    AdjacentPtr prevPoint() const;
+    MonoPointPtr prevPoint() const;
 
     void setMapPoint( const MapPointPtr &point );
     void clearMapPoint();
@@ -63,15 +69,17 @@ public:
     double error() const;
     void setError( const double value );
 
+    void dissolve();
+
 protected:
     using FramePtrImpl = std::weak_ptr< MonoFrame >;
 
     using AdjacentPtrImpl = std::weak_ptr< MonoPoint >;
     using MapPointPtrImpl = std::weak_ptr< MapPoint >;
 
-    MonoPoint( const FramePtr &parentFrame );
+    MonoPoint( const MonoFramePtr &parentFrame );
 
-    const FramePtrImpl m_parentFrame; // Parent frame
+    FramePtrImpl m_parentFrame; // Parent frame
 
     AdjacentPtrImpl m_stereoPoint;
     AdjacentPtrImpl m_nextPoint;
@@ -91,25 +99,29 @@ protected:
 class ProcessedPointBase : public MonoPoint
 {
 public:
+    using ObjectPtr = std::shared_ptr< ProcessedPointBase >;
+    using ObjectConstPtr = std::shared_ptr< const ProcessedPointBase >;
+
 protected:
-    ProcessedPointBase( const FramePtr &parentFrame );
+    ProcessedPointBase( const MonoFramePtr &parentFrame );
+
 };
 
 class FlowPoint : public ProcessedPointBase
 {
 public:
     using ObjectPtr = std::shared_ptr< FlowPoint >;
-    using FramePtr = std::shared_ptr< FlowFrame >;
+    using ObjectConstPtr = std::shared_ptr< const FlowPoint >;
 
     virtual const cv::Point2f &point() const override;
     virtual const cv::Scalar &color() const override;
 
-    static ObjectPtr create( const FramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color );
+    static ObjectPtr create( const FlowFramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color );
 
-    FramePtr parentFrame() const;
+    FlowFramePtr parentFrame() const;
 
 protected:
-    FlowPoint( const FramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color );
+    FlowPoint( const FlowFramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color );
 
     cv::Point2f m_point;
     cv::Scalar m_color;
@@ -120,7 +132,7 @@ class FeaturePoint : public ProcessedPointBase
 {
 public:
     using ObjectPtr = std::shared_ptr< FeaturePoint >;
-    using FramePtr = std::shared_ptr< FeatureFrame >;
+    using ObjectConstPtr = std::shared_ptr< const FeaturePoint >;
 
     virtual const cv::Point2f &point() const override;
     virtual const cv::Scalar &color() const override;
@@ -128,14 +140,14 @@ public:
     const cv::KeyPoint &keyPoint() const;
     cv::Mat descriptor() const;
 
-    static ObjectPtr create( const FramePtr &parentFrame, const size_t keyPointIndex );
+    static ObjectPtr create( const FeatureFramePtr &parentFrame, const size_t keyPointIndex );
 
-    FramePtr parentFrame() const;
+    FeatureFramePtr parentFrame() const;
 
 protected:
     using FramePtrImpl = std::weak_ptr< FeatureFrame >;
 
-    FeaturePoint( const FramePtr &parentFrame, const size_t keyPointIndex );
+    FeaturePoint( const FeatureFramePtr &parentFrame, const size_t keyPointIndex );
 
     size_t m_keyPointIndex; // Index of keypoint in parent frame
 
@@ -145,30 +157,29 @@ class FramePoint : public MonoPoint, public ColorPoint2d
 {
 public:
     using ObjectPtr = std::shared_ptr< FramePoint >;
-    using FramePtr = std::shared_ptr< Frame >;
-
-    using MonoPointPtr = std::shared_ptr< MonoPoint >;
+    using ObjectConstPtr = std::shared_ptr< const FramePoint >;
 
     virtual const cv::Point2f &point() const override;
     virtual const cv::Scalar &color() const override;
 
-    static ObjectPtr create( const FramePtr &parentFrame );
-    static ObjectPtr create( const FramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color );
+    static ObjectPtr create( const FinishedFramePtr &parentFrame );
+    static ObjectPtr create( const FinishedFramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color );
 
-    FramePtr parentFrame() const;
+    FinishedFramePtr parentFrame() const;
 
     void replace( const MonoPointPtr &point );
 
 protected:
-    FramePoint( const FramePtr &parentFrame );
-    FramePoint( const FramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color );
+    FramePoint( const FinishedFramePtr &parentFrame );
+    FramePoint( const FinishedFramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color );
 
 };
 
 class DoublePoint : public PointBase
 {
 public:
-    using MonoPointPtr = std::shared_ptr< MonoPoint >;
+    using ObjectPtr = std::shared_ptr< DoublePoint >;
+    using ObjectConstPtr = std::shared_ptr< const DoublePoint >;
 
     void setMonoPoints( const MonoPointPtr point1, const MonoPointPtr point2 );
 
@@ -187,6 +198,9 @@ protected:
 class StereoPoint : public DoublePoint
 {
 public:
+    using ObjectPtr = std::shared_ptr< StereoPoint >;
+    using ObjectConstPtr = std::shared_ptr< const StereoPoint >;
+
     StereoPoint( const MonoPointPtr leftPoint, const MonoPointPtr rightPoint );
 
     MonoPointPtr leftFramePoint() const;
@@ -200,6 +214,9 @@ public:
 class ConsecutivePoint : public DoublePoint
 {
 public:
+    using ObjectPtr = std::shared_ptr< ConsecutivePoint >;
+    using ObjectConstPtr = std::shared_ptr< const ConsecutivePoint >;
+
     ConsecutivePoint( const MonoPointPtr previousPoint, const MonoPointPtr nextPoint );
 
     MonoPointPtr startFramePoint() const;

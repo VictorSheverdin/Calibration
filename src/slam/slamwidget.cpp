@@ -452,49 +452,6 @@ void SlamWidgetBase::updateVisibility()
     m_viewWidget->showPath( m_controlWidget->isOdometryChecked() );
 }
 
-std::list< StereoCameraMatrix > SlamWidgetBase::path() const
-{
-    std::list< StereoCameraMatrix > ret;
-
-    auto maps = m_slamThread->maps();
-
-    for ( auto &map : maps ) {
-
-        auto frames = map->frames();
-
-        for ( auto &i : frames ) {
-
-            ret.push_back( i->projectionMatrix() );
-
-        }
-
-    }
-
-    return ret;
-}
-
-std::list< ColorPoint3d > SlamWidgetBase::sparseCloud() const
-{
-    std::list< ColorPoint3d > ret;
-
-    auto maps = m_slamThread->maps();
-
-    for ( auto &map : maps ) {
-
-        auto mapPoints = map->mapPoints();
-
-        for ( auto &i : mapPoints ) {
-
-            if ( i )
-                ret.push_back( ColorPoint3d( i->point(), i->color() ) );
-
-        }
-
-    }
-
-    return ret;
-}
-
 void SlamWidgetBase::updateViews()
 {
     updateImages();
@@ -510,17 +467,17 @@ void SlamWidgetBase::updateImages()
 
 void SlamWidgetBase::updatePath()
 {
-    m_viewWidget->setPath( path() );
+    m_viewWidget->setPath( m_slamThread->path() );
 }
 
 void SlamWidgetBase::updateSparseCloud()
 {
-    m_viewWidget->setSparseCloud( sparseCloud() );
+    m_viewWidget->setSparseCloud( m_slamThread->sparseCloud() );
 }
 
 void SlamWidgetBase::updateDensePointCloud()
 {
-    auto maps = m_slamThread->maps();
+    /*auto maps = m_slamThread->maps();
 
     int counter = 0;
 
@@ -530,7 +487,7 @@ void SlamWidgetBase::updateDensePointCloud()
 
         for ( auto i = frames.begin(); i != frames.end(); ++i ) {
 
-            auto denseFrame = std::dynamic_pointer_cast< slam::DenseFrame >( *i );
+            auto denseFrame = std::dynamic_pointer_cast< slam::FinishedDenseFrame >( *i );
 
             if ( denseFrame ) {
 
@@ -564,11 +521,11 @@ void SlamWidgetBase::updateDensePointCloud()
 
             }
 
-            ++counter;
+            ++counter;*/
 /*
-            auto stereoFrame = std::dynamic_pointer_cast< slam::StereoFrameBase >( *i );
+            auto stereoFrame = std::dynamic_pointer_cast< slam::StereoFrame >( *i );
             auto processedDenseFrame = std::dynamic_pointer_cast< slam::FeatureDenseFrame >( *i );
-            auto denseFrame = std::dynamic_pointer_cast< slam::DenseFrameBase >( *i );
+            auto denseFrame = std::dynamic_pointer_cast< slam::ProcessedDenseFrame >( *i );
 
             if ( denseFrame ) {
 
@@ -609,16 +566,16 @@ void SlamWidgetBase::updateDensePointCloud()
 
             ++counter;*/
 
-        }
+        /*}
 
-    }
+    }*/
 
 }
 
 void SlamWidgetBase::update3dView()
 {
     updatePath();
-    // updateSparseCloud();
+    updateSparseCloud();
     // updateDensePointCloud();
 }
 

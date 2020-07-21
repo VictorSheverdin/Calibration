@@ -41,12 +41,74 @@ void SlamThread::initialize( const StereoCalibrationDataShort &calibration )
 
 void SlamThread::process( const StampedImage leftImage, const StampedImage rightImage )
 {
-    m_mutex.lock();
+    m_framesMutex.lock();
 
     m_leftFrame = leftImage;
     m_rightFrame = rightImage;
 
-    m_mutex.unlock();
+    m_framesMutex.unlock();
+
+}
+
+std::shared_ptr< slam::World > SlamThread::system() const
+{
+    return m_system;
+}
+
+CvImage SlamThread::pointsImage() const
+{
+    m_systemMutex.lock();
+
+    auto ret = m_system->pointsImage();
+
+    m_systemMutex.unlock();
+
+    return ret;
+}
+
+CvImage SlamThread::tracksImage() const
+{
+    m_systemMutex.lock();
+
+    auto ret = m_system->tracksImage();
+
+    m_systemMutex.unlock();
+
+    return ret;
+}
+
+CvImage SlamThread::stereoImage() const
+{
+    m_systemMutex.lock();
+
+    auto ret = m_system->stereoImage();
+
+    m_systemMutex.unlock();
+
+    return ret;
+}
+
+std::list< StereoCameraMatrix > SlamThread::path() const
+{
+    m_systemMutex.lock();
+
+    auto ret = m_system->path();
+
+    m_systemMutex.unlock();
+
+    return ret;
+
+}
+
+std::list< ColorPoint3d > SlamThread::sparseCloud() const
+{
+    m_systemMutex.lock();
+
+    auto ret = m_system->sparseCloud();
+
+    m_systemMutex.unlock();
+
+    return ret;
 
 }
 
@@ -67,12 +129,12 @@ void SlamThread::run()
 
     while( !isInterruptionRequested() )
     {
-        m_mutex.lock();
+        m_framesMutex.lock();
 
         auto leftFrame = m_leftFrame;
         auto rightFrame = m_rightFrame;
 
-        m_mutex.unlock();
+        m_framesMutex.unlock();
 
         if ( !leftFrame.empty() && !rightFrame.empty() ) {
 
@@ -109,7 +171,11 @@ void SlamThread::run()
                 /*cv::GaussianBlur( leftProcImage, leftProcImage, cv::Size( 3, 3 ), 0 );
                 cv::GaussianBlur( rightProcImage, rightProcImage, cv::Size( 3, 3 ), 0 );*/
 
+                m_systemMutex.lock();
+
                 m_system->track( leftProcImage, rightProcImage );
+
+                m_systemMutex.unlock();
 
                 emit updateSignal();
 
@@ -127,79 +193,5 @@ void SlamThread::run()
     }
 
     // optimizationThread.join();
-
-}
-
-std::list< SlamThread::MapPtr > SlamThread::maps() const
-{
-    return m_system->maps();
-}
-
-CvImage SlamThread::pointsImage() const
-{
-    auto maps = m_system->maps();
-
-    if ( !maps.empty() ) {
-
-        auto frames = maps.back()->frames();
-
-        if ( !frames.empty() ) {
-
-            auto processedFrame = std::dynamic_pointer_cast< slam::ProcessedStereoKeyFrame >( frames.back() );
-
-            if ( processedFrame )
-                return processedFrame->drawExtractedPoints();
-
-        }
-
-    }
-
-    return CvImage();
-
-}
-
-CvImage SlamThread::tracksImage() const
-{
-    auto maps = m_system->maps();
-
-    if ( !maps.empty() ) {
-
-        auto frames = maps.back()->frames();
-
-        if ( !frames.empty() ) {
-
-            auto processedFrame = std::dynamic_pointer_cast< slam::ProcessedStereoFrame >( frames.back() );
-
-            if ( processedFrame )
-                return processedFrame->leftFrame()->drawTracks();
-
-        }
-
-    }
-
-    return CvImage();
-
-}
-
-CvImage SlamThread::stereoImage() const
-{
-    auto maps = m_system->maps();
-
-    if ( !maps.empty() ) {
-
-        auto frames = maps.back()->frames();
-
-        if ( frames.size() > 1 ) {
-
-            auto processedFrame = std::dynamic_pointer_cast< slam::ProcessedStereoFrame >( *(++frames.rbegin()) );
-
-            if ( processedFrame )
-                return processedFrame->drawStereoCorrespondences();
-
-        }
-
-    }
-
-    return CvImage();
 
 }

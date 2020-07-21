@@ -20,8 +20,7 @@ public:
     virtual void buildPyramid( FlowFrame *frame ) = 0;
     virtual void extractPoints( FlowKeyFrame *frame ) = 0;
 
-    virtual cv::Mat match( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::set< PointTrackResult > *trackedPoints ) = 0;
-    virtual cv::Mat track( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::set< PointTrackResult > *trackedPoints ) = 0;
+    virtual cv::Mat track( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::vector< PointTrackResult > *trackedPoints ) = 0;
 
     size_t count() const;
     void setCount( const size_t value );
@@ -56,8 +55,7 @@ public:
     virtual void buildPyramid( FlowFrame *frame ) override;
     virtual void extractPoints( FlowKeyFrame *frame ) override;
 
-    virtual cv::Mat match( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::set< PointTrackResult > *trackedPoints ) override;
-    virtual cv::Mat track( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::set< PointTrackResult > *trackedPoints ) override;
+    virtual cv::Mat track( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::vector< PointTrackResult > *trackedPoints ) override;
 
 protected:
     GPUFlowProcessor *processor() const;
@@ -75,8 +73,7 @@ public:
     virtual void buildPyramid( FlowFrame *frame ) override;
     virtual void extractPoints( FlowKeyFrame *frame ) override;
 
-    virtual cv::Mat match( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::set< PointTrackResult > *trackedPoints ) override;
-    virtual cv::Mat track( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::set< PointTrackResult > *trackedPoints ) override;
+    virtual cv::Mat track( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::vector< PointTrackResult > *trackedPoints ) override;
 
 protected:
     CPUFlowProcessor *processor() const;
