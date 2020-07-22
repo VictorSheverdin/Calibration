@@ -51,6 +51,12 @@ const double ProcessedFrame::m_minPointsDistance = 10.0;
 ProcessedFrame::ProcessedFrame( const MapPtr &parentMap )
     : m_parentMap( parentMap )
 {
+    initialize();
+}
+
+void ProcessedFrame::initialize()
+{
+    m_desiredPointsCount = 1000;
 }
 
 MapPtr ProcessedFrame::parentMap() const
@@ -235,6 +241,25 @@ const std::chrono::time_point< std::chrono::system_clock > &ProcessedFrame::time
     return m_image.time();
 }
 
+void ProcessedFrame::setDesiredPointsCount( const size_t value )
+{
+    m_desiredPointsCount = value;
+}
+
+size_t ProcessedFrame::desiredPointsCount() const
+{
+    return m_desiredPointsCount;
+}
+
+double ProcessedFrame::pointsInterval() const
+{
+    if ( m_image.rows > 0 && m_desiredPointsCount > 0 )
+        return m_image.cols / sqrt( static_cast< double >( m_desiredPointsCount * m_image.cols ) / m_image.rows );
+    else
+        return 0.;
+
+}
+
 // ProcessedKeyFrame
 ProcessedKeyFrame::ProcessedKeyFrame( const MapPtr &parentMap )
     : ProcessedFrame( parentMap )
@@ -260,28 +285,6 @@ FlowFrame::ObjectPtr FlowFrame::create( const FlowMapPtr &parentMap )
 void FlowFrame::setImage( const StampedImage &image )
 {
     ProcessedFrame::setImage( image );
-
-    m_searchMatrix.create( image.rows, image.cols );
-}
-
-void FlowFrame::createMask()
-{
-    if ( !m_image.empty() ) {
-        m_mask = cv::Mat( m_image.rows, m_image.cols, CV_8U, cv::Scalar( 1 ) );
-
-        auto distance = parentWorld()->flowTracker()->minDistance();
-
-        for ( auto &i : m_points ) {
-            if ( i ) {
-                auto pt = i->point();
-                cv::rectangle( m_mask, cv::Rect( pt.x - distance, pt.y - distance, distance * 2, distance * 2 ), cv::Scalar( 0 ) );
-            }
-
-        }
-
-    }
-    else
-        m_mask.release();
 }
 
 void FlowFrame::buildPyramid()
@@ -299,17 +302,16 @@ std::vector< MonoPointPtr > FlowFrame::framePoints() const
     return std::vector< MonoPointPtr >( m_points.begin(), m_points.end() );
 }
 
+size_t FlowFrame::framePointsCount() const
+{
+    return m_points.size();
+}
+
 void FlowFrame::removePoint( const MonoPointPtr &point )
 {
-    if ( point ) {
-
+    if ( point )
         m_points.erase( std::dynamic_pointer_cast< FlowPoint >( point ) );
 
-        auto pt =  point->point();
-
-        m_searchMatrix.at( pt.y, pt.x ).reset();
-
-    }
 
 }
 
@@ -318,25 +320,19 @@ std::vector< FlowPointPtr > FlowFrame::flowPoints() const
     return std::vector< FlowPointPtr >( m_points.begin(), m_points.end() );
 }
 
-FlowPointPtr FlowFrame::framePoint( const cv::Point2f &point ) const
+void FlowFrame::addFramePoints( const std::vector< cv::Point2f > &vector )
 {
-    return m_searchMatrix.at( point.y, point.x );
+    for ( auto &i : vector )
+        addFramePoint( i );
 }
 
 FlowPointPtr FlowFrame::addFramePoint( const cv::Point2f &point )
 {
-    auto searchPoint = framePoint( point );
-
-    if ( searchPoint )
-        return searchPoint;
-
     auto flowPoint = FlowPoint::create( shared_from_this(), point, m_image.at< cv::Vec3b >( point ) );
 
     flowPoint->setError( 0. );
 
     m_points.insert( flowPoint );
-
-    m_searchMatrix.at( point.y, point.x ) = flowPoint;
 
     return flowPoint;
 
@@ -356,13 +352,13 @@ cv::Mat track( const std::shared_ptr< FlowFrame > &prevFrame, const std::shared_
 {
     if ( prevFrame && nextFrame ) {
 
-        std::vector< PointTrackResult > trackedSet;
+        std::vector< FlowTrackResult > trackedPoints;
 
-        auto fmat = prevFrame->parentWorld()->flowTracker()->track( prevFrame, nextFrame, &trackedSet );
+        auto fmat = prevFrame->parentWorld()->flowTracker()->track( prevFrame, nextFrame, &trackedPoints );
 
         auto trackPoints = prevFrame->flowPoints();
 
-        for ( auto &i : trackedSet ) {
+        for ( auto &i : trackedPoints ) {
 
             auto prevPoint = trackPoints[ i.index ];
             auto nextPoint = nextFrame->addFramePoint( i );
@@ -376,6 +372,7 @@ cv::Mat track( const std::shared_ptr< FlowFrame > &prevFrame, const std::shared_
                 nextPoint->setMapPoint( worlPoint );
 
             nextPoint->setError( prevPoint->error() + i.error );
+            nextPoint->setCheckError( prevPoint->checkError() + i.checkError );
 
         }
 
@@ -396,7 +393,6 @@ FlowKeyFrame::FlowKeyFrame( const FlowMapPtr &parentMap )
 
 void FlowKeyFrame::initialize()
 {
-    m_usePointsCount = 0;
 }
 
 FlowKeyFrame::ObjectPtr FlowKeyFrame::create( const FlowMapPtr &parentMap )
@@ -404,81 +400,34 @@ FlowKeyFrame::ObjectPtr FlowKeyFrame::create( const FlowMapPtr &parentMap )
     return ObjectPtr( new FlowKeyFrame( parentMap ) );
 }
 
-std::vector< cv::Point2f > FlowKeyFrame::extractedPoints() const
-{
-    return m_extractedPoints;
-}
-
-size_t FlowKeyFrame::extractedPointsCount() const
-{
-    return m_extractedPoints.size();
-}
-
 void FlowKeyFrame::setImage( const StampedImage &image )
 {
     FlowFrame::setImage( image );
-
-    m_extractedPoints.clear();
-    m_usePointsCount = 0;
 }
 
 void FlowKeyFrame::extractPoints()
 {
-    createMask();
-
     parentWorld()->flowTracker()->extractPoints( this );
 }
 
-CvImage FlowKeyFrame::drawExtractedPoints() const
+void FlowKeyFrame::createMask()
 {
     if ( !m_image.empty() ) {
+        m_mask = cv::Mat( m_image.rows, m_image.cols, CV_8U, cv::Scalar( 1 ) );
 
-        int radius = std::max( std::min( m_image.width(), m_image.height() ) / 300.0, 1.0 );
+        auto distance = pointsInterval();
 
-        CvImage ret;
-        m_image.copyTo( ret );
+        for ( auto &i : m_points ) {
+            if ( i ) {
+                auto pt = i->point();
+                cv::rectangle( m_mask, cv::Rect( pt.x - distance, pt.y - distance, distance * 2, distance * 2 ), cv::Scalar( 0 ) );
+            }
 
-        auto points = extractedPoints();
-
-        drawFeaturePoints( &ret, points, radius );
-
-        drawLabel( &ret, "Extracted points count: " + std::to_string( points.size() ), ret.height() / 70 );
-
-        return ret;
+        }
 
     }
-
-    return CvImage();
-
-}
-
-void FlowKeyFrame::setExtractedPoints( const std::vector< cv::Point2f > &value )
-{
-    m_usePointsCount = 0;
-
-    m_extractedPoints = value;
-}
-
-size_t FlowKeyFrame::usePointsCount() const
-{
-    return m_usePointsCount;
-}
-
-void FlowKeyFrame::createFramePoints( const size_t count )
-{
-    if ( m_extractedPoints.empty() )
-        extractPoints();
-
-    for ( size_t i = 0; i < count; ++i ) {
-
-        if ( m_usePointsCount >= m_extractedPoints.size() )
-            return;
-
-        createFramePoint( m_usePointsCount );
-
-        ++m_usePointsCount;
-    }
-
+    else
+        m_mask.release();
 }
 
 void FlowKeyFrame::replace( const FlowFramePtr &frame )
@@ -488,12 +437,40 @@ void FlowKeyFrame::replace( const FlowFramePtr &frame )
         setImage( frame->image() );
         setImagePyramid( frame->imagePyramid() );
 
-        m_points = frame->m_points;
+        auto points = frame->framePoints();
 
-        frame->m_points.clear();
+        for ( auto &i : points ) {
 
-        for ( auto &i : m_points )
-            i->setParentFrame( shared_from_this() );
+            if ( i ) {
+                auto point = addFramePoint( i->point() );
+                point->replace( i );
+
+            }
+
+        }
+
+    }
+
+}
+
+void FlowKeyFrame::replaceAndClean( const FlowFramePtr &frame )
+{
+    if ( frame ) {
+
+        setImage( frame->image() );
+        setImagePyramid( frame->imagePyramid() );
+
+        auto points = frame->framePoints();
+
+        for ( auto &i : points ) {
+
+            if ( i && ( i->mapPoint() || i->nextPoint() ) ) {
+                auto point = addFramePoint( i->point() );
+                point->replace( i );
+
+            }
+
+        }
 
     }
 
@@ -507,16 +484,6 @@ FlowKeyFrame::ObjectPtr FlowKeyFrame::shared_from_this()
 FlowKeyFrame::ObjectConstPtr FlowKeyFrame::shared_from_this() const
 {
     return std::dynamic_pointer_cast< const FlowKeyFrame >( MonoFrame::shared_from_this() );
-}
-
-FlowPointPtr FlowKeyFrame::createFramePoint( const size_t keyPointIndex )
-{
-    if ( keyPointIndex >= m_extractedPoints.size() )
-        return FlowPointPtr();
-
-    auto ret = addFramePoint( m_extractedPoints[ keyPointIndex ] );
-
-    return ret;
 }
 
 // FeatureFrame
@@ -536,20 +503,9 @@ std::vector< MonoPointPtr > FeatureFrame::framePoints() const
 
 }
 
-std::vector< cv::Point2f > FeatureFrame::extractedPoints() const
+size_t FeatureFrame::framePointsCount() const
 {
-    std::vector< cv::Point2f > ret;
-    ret.reserve( m_keyPoints.size() );
-
-    for ( auto &i : m_keyPoints )
-        ret.push_back( i.pt );
-
-    return ret;
-}
-
-size_t FeatureFrame::extractedPointsCount() const
-{
-    return m_keyPoints.size();
+    return m_points.size();
 }
 
 void FeatureFrame::removePoint( const MonoPointPtr &point )
@@ -613,35 +569,10 @@ void FeatureFrame::setImage( const StampedImage &image )
 
 void FeatureFrame::extractKeypoints()
 {
-    createMask();
-
     parentWorld()->featureTracker()->extractKeypoints( this );
 
     for ( size_t i = 0; i < m_keyPoints.size(); ++i )
         m_colors.push_back( m_image.at< cv::Vec3b >( m_keyPoints[ i ].pt ) );
-
-}
-
-CvImage FeatureFrame::drawExtractedKeypoints() const
-{
-    if ( !m_image.empty() ) {
-
-        int radius = std::max( std::min( m_image.width(), m_image.height() ) / 300.0, 1.0 );
-
-        CvImage ret;
-        m_image.copyTo( ret );
-
-        auto points = extractedPoints();
-
-        drawFeaturePoints( &ret, points, radius );
-
-        drawLabel( &ret, "Extracted points count: " + std::to_string( points.size() ), ret.height() / 70 );
-
-        return ret;
-
-    }
-
-    return CvImage();
 
 }
 
@@ -650,7 +581,7 @@ void FeatureFrame::createMask()
     if ( !m_image.empty() ) {
         m_mask = cv::Mat( m_image.rows, m_image.cols, CV_8U, cv::Scalar( 1 ) );
 
-        auto distance = parentWorld()->pointsMinDistance();
+        auto distance = pointsInterval();
 
         for ( auto &i : m_points ) {
             if ( i.second ) {
@@ -787,6 +718,11 @@ FinishedFrame::FinishedFrame( const std::chrono::time_point< std::chrono::system
     setTime( time );
 }
 
+FinishedFrame::ObjectPtr FinishedFrame::create( const std::chrono::time_point< std::chrono::system_clock > time )
+{
+    return ObjectPtr( new FinishedFrame( time ) );
+}
+
 void FinishedFrame::setTime( const std::chrono::time_point<std::chrono::system_clock> &value )
 {
     m_time = value;
@@ -807,19 +743,14 @@ std::vector< MonoPointPtr > FinishedFrame::framePoints() const
     return ret;
 }
 
-std::shared_ptr< FinishedFrame > FinishedFrame::shared_from_this()
+size_t FinishedFrame::framePointsCount() const
 {
-    return std::dynamic_pointer_cast< FinishedFrame >( MonoFrame::shared_from_this() );
+    return m_points.size();
 }
 
-std::shared_ptr< const FinishedFrame > FinishedFrame::shared_from_this() const
+FinishedFramePointPtr FinishedFrame::createFramePoint( const cv::Point2f &point, const cv::Scalar &color )
 {
-    return std::dynamic_pointer_cast< const FinishedFrame >( MonoFrame::shared_from_this() );
-}
-
-FramePointPtr FinishedFrame::createFramePoint( const cv::Point2f &point, const cv::Scalar &color )
-{
-    auto ret = FramePoint::create( shared_from_this(), point, color );
+    auto ret = FinishedFramePoint::create( shared_from_this(), point, color );
 
     m_points.push_back( ret );
 
@@ -827,13 +758,74 @@ FramePointPtr FinishedFrame::createFramePoint( const cv::Point2f &point, const c
 
 }
 
-FinishedFrame::ObjectPtr FinishedFrame::create( const std::chrono::time_point< std::chrono::system_clock > time )
+FinishedFrame::ObjectPtr FinishedFrame::shared_from_this()
 {
-    return ObjectPtr( new FinishedFrame( time ) );
+    return std::dynamic_pointer_cast< FinishedFrame >( MonoFrame::shared_from_this() );
+}
+
+FinishedFrame::ObjectConstPtr FinishedFrame::shared_from_this() const
+{
+    return std::dynamic_pointer_cast< const FinishedFrame >( MonoFrame::shared_from_this() );
+}
+
+void FinishedFrame::replace( const ProcessedFramePtr &frame )
+{
+    if ( frame ) {
+
+        setTime( frame->time() );
+
+        auto points = frame->framePoints();
+
+        for ( auto &i : points ) {
+
+            if ( i ) {
+                auto point = createFramePoint( i->point(), i->color() );
+                point->replace( i );
+
+            }
+
+        }
+
+    }
+
+}
+
+void FinishedFrame::replaceAndClean( const ProcessedFramePtr &frame )
+{
+    if ( frame ) {
+
+        setTime( frame->time() );
+
+        auto points = frame->framePoints();
+
+        for ( auto &i : points ) {
+
+            if ( i && ( i->mapPoint() || i->nextPoint() ) ) {
+                auto point = createFramePoint( i->point(), i->color() );
+                point->replace( i );
+
+            }
+
+        }
+
+    }
+
 }
 
 
-void FinishedFrame::replace( const ProcessedKeyFramePtr &frame )
+// FinishedKeyFrame
+FinishedKeyFrame::FinishedKeyFrame( const std::chrono::time_point< std::chrono::system_clock > &time )
+    : FinishedFrame( time )
+{
+}
+
+FinishedKeyFrame::ObjectPtr FinishedKeyFrame::create( const std::chrono::time_point< std::chrono::system_clock > time )
+{
+    return ObjectPtr( new FinishedKeyFrame( time ) );
+}
+
+
+void FinishedKeyFrame::replace( const ProcessedKeyFramePtr &frame )
 {
     if ( frame ) {
 
@@ -857,7 +849,7 @@ void FinishedFrame::replace( const ProcessedKeyFramePtr &frame )
 
 }
 
-void FinishedFrame::replaceAndClean( const ProcessedKeyFramePtr &frame )
+void FinishedKeyFrame::replaceAndClean( const ProcessedKeyFramePtr &frame )
 {
     if ( frame ) {
 
@@ -977,12 +969,12 @@ ProcessedStereoFrame::ProcessedStereoFrame( const MapPtr &parentMap )
 
 ProcessedFramePtr ProcessedStereoFrame::leftFrame() const
 {
-    return std::dynamic_pointer_cast< ProcessedFrame >( frame1() );
+    return std::dynamic_pointer_cast< ProcessedFrame >( StereoFrame::leftFrame() );
 }
 
 ProcessedFramePtr ProcessedStereoFrame::rightFrame() const
 {
-    return std::dynamic_pointer_cast< ProcessedFrame >( frame2() );
+    return std::dynamic_pointer_cast< ProcessedFrame >( StereoFrame::rightFrame() );
 }
 
 void ProcessedStereoFrame::clearImages()
@@ -1291,12 +1283,12 @@ ProcessedStereoKeyFrame::ProcessedStereoKeyFrame( const MapPtr &parentMap )
 
 ProcessedKeyFramePtr ProcessedStereoKeyFrame::leftFrame() const
 {
-    return std::dynamic_pointer_cast< ProcessedKeyFrame >( ProcessedStereoFrame::leftFrame() );
+    return std::dynamic_pointer_cast< ProcessedKeyFrame >( StereoFrame::leftFrame() );
 }
 
 ProcessedKeyFramePtr ProcessedStereoKeyFrame::rightFrame() const
 {
-    return std::dynamic_pointer_cast< ProcessedKeyFrame >( ProcessedStereoFrame::rightFrame() );
+    return std::dynamic_pointer_cast< ProcessedKeyFrame >( StereoFrame::rightFrame() );
 }
 
 // FlowStereoFrame
@@ -1359,17 +1351,17 @@ void FlowStereoFrame::clearPyramid()
 
 FlowFramePtr FlowStereoFrame::leftFrame() const
 {
-    return std::dynamic_pointer_cast< FlowFrame >( ProcessedStereoFrame::leftFrame() );
+    return std::dynamic_pointer_cast< FlowFrame >( StereoFrame::leftFrame() );
 }
 
 FlowFramePtr FlowStereoFrame::rightFrame() const
 {
-    return std::dynamic_pointer_cast< FlowFrame >( ProcessedStereoFrame::rightFrame() );
+    return std::dynamic_pointer_cast< FlowFrame >( StereoFrame::rightFrame() );
 }
 
 FlowMapPtr FlowStereoFrame::parentMap() const
 {
-    return std::dynamic_pointer_cast< FlowMap >( ProcessedStereoFrame::parentMap() );
+    return std::dynamic_pointer_cast< FlowMap >( StereoFrame::parentMap() );
 }
 
 cv::Mat FlowStereoFrame::match()
@@ -1379,15 +1371,15 @@ cv::Mat FlowStereoFrame::match()
 
     if ( leftFrame && rightFrame ) {
 
-        std::vector< PointTrackResult > trackedSet;
+        std::vector< FlowTrackResult > trackedPoints;
 
-        auto fmat = parentWorld()->flowTracker()->track( leftFrame, rightFrame, &trackedSet );
+        auto fmat = parentWorld()->flowTracker()->track( leftFrame, rightFrame, &trackedPoints );
 
         auto trackPoints = leftFrame->flowPoints();
 
         auto minDistance = parentWorld()->minStereoDisparity();
 
-        for ( auto &i : trackedSet ) {
+        for ( auto &i : trackedPoints ) {
 
             auto leftFlowPoint = trackPoints[ i.index ];
             auto leftPoint = leftFlowPoint->point();
@@ -1406,6 +1398,7 @@ cv::Mat FlowStereoFrame::match()
                     rightFlowPoint->setMapPoint( worlPoint );
 
                 rightFlowPoint->setError( leftFlowPoint->error() + i.error );
+                rightFlowPoint->setCheckError( leftFlowPoint->checkError() + i.checkError );
 
             }
 
@@ -1445,24 +1438,12 @@ void FlowStereoKeyFrame::extractPoints()
 
 FlowKeyFramePtr FlowStereoKeyFrame::leftFrame() const
 {
-    return std::dynamic_pointer_cast< FlowKeyFrame >( ProcessedStereoFrame::leftFrame() );
+    return std::dynamic_pointer_cast< FlowKeyFrame >( StereoFrame::leftFrame() );
 }
 
 FlowKeyFramePtr FlowStereoKeyFrame::rightFrame() const
 {
-    return std::dynamic_pointer_cast< FlowKeyFrame >( ProcessedStereoFrame::rightFrame() );
-}
-
-CvImage FlowStereoKeyFrame::drawExtractedPoints() const
-{
-    CvImage leftImage;
-
-    auto leftFeatureFrame = this->leftFrame();
-
-    if ( leftFeatureFrame )
-        leftImage = leftFeatureFrame->drawExtractedPoints();
-
-    return leftImage;
+    return std::dynamic_pointer_cast< FlowKeyFrame >( StereoFrame::rightFrame() );
 }
 
 void FlowStereoKeyFrame::replace( const FlowStereoFramePtr &frame )
@@ -1493,6 +1474,39 @@ void FlowStereoKeyFrame::replace( const FlowStereoFramePtr &frame )
 
         if ( rightFrame && rightSourceFrame )
             rightFrame->replace( rightSourceFrame );
+
+    }
+
+}
+
+void FlowStereoKeyFrame::replaceAndClean( const FlowStereoFramePtr &frame )
+{
+    if ( frame ) {
+
+        auto parentMap = this->parentMap();
+
+        auto leftFrame = this->leftFrame();
+
+        if ( !leftFrame ) {
+            leftFrame = FlowKeyFrame::create( parentMap );
+            setLeftFrame( leftFrame );
+        }
+
+        auto rightFrame = this->rightFrame();
+
+        if ( !rightFrame ) {
+            rightFrame = FlowKeyFrame::create( parentMap);
+            setRightFrame( rightFrame );
+        }
+
+        auto leftSourceFrame = frame->leftFrame();
+        auto rightSourceFrame = frame->rightFrame();
+
+        if ( leftFrame && leftSourceFrame )
+            leftFrame->replaceAndClean( leftSourceFrame );
+
+        if ( rightFrame && rightSourceFrame )
+            rightFrame->replaceAndClean( rightSourceFrame );
 
     }
 
@@ -1534,17 +1548,17 @@ void FeatureStereoFrame::load( const StampedImage &leftImage, const StampedImage
 
 FeatureFramePtr FeatureStereoFrame::leftFrame() const
 {
-    return std::dynamic_pointer_cast< FeatureFrame >( ProcessedStereoFrame::leftFrame() );
+    return std::dynamic_pointer_cast< FeatureFrame >( StereoFrame::leftFrame() );
 }
 
 FeatureFramePtr FeatureStereoFrame::rightFrame() const
 {
-    return std::dynamic_pointer_cast< FeatureFrame >( ProcessedStereoFrame::rightFrame() );
+    return std::dynamic_pointer_cast< FeatureFrame >( StereoFrame::rightFrame() );
 }
 
 FeatureMapPtr FeatureStereoFrame::parentMap() const
 {
-    return std::dynamic_pointer_cast< FeatureMap >( ProcessedStereoFrame::parentMap() );
+    return std::dynamic_pointer_cast< FeatureMap >( StereoFrame::parentMap() );
 }
 
 cv::Mat FeatureStereoFrame::match()
@@ -1616,24 +1630,12 @@ void FeatureStereoKeyFrame::extractKeypoints()
 
 FeatureKeyFramePtr FeatureStereoKeyFrame::leftFrame() const
 {
-    return std::dynamic_pointer_cast< FeatureKeyFrame >( ProcessedStereoFrame::leftFrame() );
+    return std::dynamic_pointer_cast< FeatureKeyFrame >( StereoFrame::leftFrame() );
 }
 
 FeatureKeyFramePtr FeatureStereoKeyFrame::rightFrame() const
 {
-    return std::dynamic_pointer_cast< FeatureKeyFrame >( ProcessedStereoFrame::rightFrame() );
-}
-
-CvImage FeatureStereoKeyFrame::drawExtractedPoints() const
-{
-    CvImage leftImage;
-
-    auto leftFrame = this->leftFrame();
-
-    if ( leftFrame )
-        leftImage = leftFrame->drawExtractedKeypoints();
-
-    return leftImage;
+    return std::dynamic_pointer_cast< FeatureKeyFrame >( StereoFrame::rightFrame() );
 }
 
 // DenseFrame
@@ -1693,7 +1695,6 @@ void ProcessedDenseFrame::processDenseCloud()
 FlowDenseFrame::FlowDenseFrame( const FlowMapPtr &parentMap )
     : StereoFrame( parentMap ), ProcessedStereoFrame( parentMap ), StereoKeyFrame( parentMap ), ProcessedStereoKeyFrame( parentMap ), FlowStereoKeyFrame( parentMap ), ProcessedDenseFrame( parentMap )
 {
-
 }
 
 FlowDenseFrame::ObjectPtr FlowDenseFrame::create( const FlowMapPtr &parentMap )
@@ -1713,8 +1714,7 @@ FeatureDenseFrame::ObjectPtr FeatureDenseFrame::create( const FeatureMapPtr &par
 }
 
 // ConsecutiveFrame
-ConsecutiveFrame::ConsecutiveFrame( const MonoFramePtr &startFrame, const MonoFramePtr &endFrame, const MapPtr &parentMap )
-    : m_parentMap( parentMap )
+ConsecutiveFrame::ConsecutiveFrame( const MonoFramePtr &startFrame, const MonoFramePtr &endFrame)
 {
     setFrames( startFrame, endFrame );
 }
@@ -1747,6 +1747,7 @@ std::vector< ConsecutivePoint > ConsecutiveFrame::points() const
                 for ( auto j = i->nextPoint(); j; j = j->nextPoint() ) {
 
                     if ( j->parentFrame() == endFrame ) {
+
                         ret.push_back( ConsecutivePoint( i, j ) );
                         break;
 
@@ -1809,19 +1810,9 @@ double ConsecutiveFrame::averageMapPointsDisplacement() const
     return disp / static_cast< double >( points.size() );
 }
 
-MapPtr ConsecutiveFrame::parentMap() const
-{
-    return m_parentMap.lock();
-}
-
-WorldPtr ConsecutiveFrame::parentWorld() const
-{
-    return parentMap()->parentWorld();
-}
-
 // FlowConsecutiveFrame
-FlowConsecutiveFrame::FlowConsecutiveFrame( const FlowFramePtr &startFrame, const FlowFramePtr &endFrame , const MapPtr &parentMap )
-    : ConsecutiveFrame( startFrame, endFrame, parentMap )
+FlowConsecutiveFrame::FlowConsecutiveFrame( const FlowFramePtr &startFrame, const FlowFramePtr &endFrame )
+    : ConsecutiveFrame( startFrame, endFrame )
 {
 }
 
@@ -1836,8 +1827,8 @@ FlowFramePtr FlowConsecutiveFrame::endFrame() const
 }
 
 // FeatureConsecutiveFrame
-FeatureConsecutiveFrame::FeatureConsecutiveFrame( const FeatureFramePtr &startFrame, const FeatureFramePtr &endFrame , const MapPtr &parentMap )
-    : ConsecutiveFrame( startFrame, endFrame, parentMap )
+FeatureConsecutiveFrame::FeatureConsecutiveFrame( const FeatureFramePtr &startFrame, const FeatureFramePtr &endFrame )
+    : ConsecutiveFrame( startFrame, endFrame )
 {
 }
 
@@ -1852,19 +1843,19 @@ FeatureFramePtr FeatureConsecutiveFrame::endFrame() const
 }
 
 // RecoverPoseFrame
-RecoverPoseFrame::RecoverPoseFrame( const MonoKeyFramePtr &startFrame, const MonoFramePtr &endFrame, const MapPtr &parentMap )
-    : ConsecutiveFrame( startFrame, endFrame, parentMap )
+RecoverPoseFrame::RecoverPoseFrame( const ProcessedKeyFramePtr &startFrame, const ProcessedFramePtr &endFrame)
+    : ConsecutiveFrame( startFrame, endFrame )
 {
 }
 
-MonoKeyFramePtr RecoverPoseFrame::startFrame() const
+ProcessedKeyFramePtr RecoverPoseFrame::startFrame() const
 {
-    return std::dynamic_pointer_cast< MonoKeyFrame >( ConsecutiveFrame::startFrame() );
+    return std::dynamic_pointer_cast< ProcessedKeyFrame >( ConsecutiveFrame::startFrame() );
 }
 
-MonoFramePtr RecoverPoseFrame::endFrame() const
+ProcessedFramePtr RecoverPoseFrame::endFrame() const
 {
-    return std::dynamic_pointer_cast< MonoFrame >( ConsecutiveFrame::endFrame() );
+    return std::dynamic_pointer_cast< ProcessedFrame >( ConsecutiveFrame::endFrame() );
 }
 
 double RecoverPoseFrame::recoverPose( ProjectionMatrix *result )
@@ -1879,7 +1870,7 @@ double RecoverPoseFrame::recoverPose( ProjectionMatrix *result )
 
         if ( startFrame && endFrame ) {
 
-            auto parentWorld = this->parentWorld();
+            auto parentWorld = startFrame->parentWorld();
 
             auto maxReprojectionError = parentWorld->maxReprojectionError();
 
@@ -1948,162 +1939,116 @@ double RecoverPoseFrame::recoverPose( ProjectionMatrix *result )
 }
 
 // TriangulateFrame
-TriangulateFrame::TriangulateFrame( const MonoKeyFramePtr &startFrame, const MonoKeyFramePtr &endFrame, const MapPtr &parentMap )
-    : ConsecutiveFrame( startFrame, endFrame, parentMap )
+TriangulateFrame::TriangulateFrame(const ProcessedKeyFramePtr &startFrame, const ProcessedKeyFramePtr &endFrame )
+    : ConsecutiveFrame( startFrame, endFrame )
 {
 }
 
-MonoKeyFramePtr TriangulateFrame::startFrame() const
+ProcessedKeyFramePtr TriangulateFrame::startFrame() const
 {
-    return std::dynamic_pointer_cast< MonoKeyFrame >( ConsecutiveFrame::startFrame() );
+    return std::dynamic_pointer_cast< ProcessedKeyFrame >( ConsecutiveFrame::startFrame() );
 }
 
-MonoKeyFramePtr TriangulateFrame::endFrame() const
+ProcessedKeyFramePtr TriangulateFrame::endFrame() const
 {
-    return std::dynamic_pointer_cast< MonoKeyFrame >( ConsecutiveFrame::endFrame() );
+    return std::dynamic_pointer_cast< ProcessedKeyFrame >( ConsecutiveFrame::endFrame() );
 }
 
 int TriangulateFrame::triangulatePoints()
 {
     int ret = 0;
 
-    auto maxReprojectionError = parentWorld()->maxReprojectionError();
+    auto startFrame = this->startFrame();
+    auto endFrame = this->endFrame();
 
-    auto points = this->points();
+    if ( startFrame && endFrame ) {
 
-    for ( auto &i : points ) {
+        auto maxReprojectionError = startFrame->parentWorld()->maxReprojectionError();
+        auto minAdjacentPointsDistance = startFrame->parentWorld()->minAdjacentPointsDistance();
 
-    }
+        auto points = this->points();
 
-/*
-    std::map< FramePtr, std::vector< PointPtr > > frames;
-    std::map< PointPtr, PointPtr > points;
+        if ( !points.empty() ) {
 
-    auto framePoints = this->framePoints();
+            cv::Mat_< float > startPoints( 2, points.size() ),
+                              endPoints( 2, points.size() );
 
-    auto maxReprojectionError = parentWorld()->maxReprojectionError();
+            for ( size_t i = 0; i < points.size(); ++i ) {
 
-    for ( auto &i : framePoints ) {
+                auto startPoint = points[i].startPoint();
+                startPoints.row( 0 ).col( i ) = startPoint.x;
+                startPoints.row( 1 ).col( i ) = startPoint.y;
 
-        if ( i ) {
-
-            auto prevPtr = i->prevPoint();
-
-            if ( prevPtr ) {
-
-                PointPtr j;
-
-                for ( j = prevPtr; j->prevPoint(); j = j->prevPoint() );
-
-                if ( j ) {
-
-                    auto parentFrame = j->parentFrame();
-
-                    if ( parentFrame ) {
-
-                        auto cameraDistance = cv::norm( static_cast< cv::Point3d >( *this ) - static_cast< cv::Point3d >( *parentFrame ) );
-                        auto pointsDistance = cv::norm( j->point() - i->point() );
-
-                        if ( cameraDistance > parentMap()->minTriangulateCameraDistance() && pointsDistance > m_minPointsDistance ) {
-                            frames[ parentFrame ].push_back( j );
-                            points[ j ] = i;
-
-                        }
-
-                    }
-
-                }
+                auto endPoint = points[ i ].endPoint();
+                endPoints.row( 0 ).col( i ) = endPoint.x;
+                endPoints.row( 1 ).col( i ) = endPoint.y;
 
             }
 
-        }
+            cv::Mat points3d;
 
-    }
+            auto startProjectionMatrix = startFrame->projectionMatrix();
+            auto endProjectionMatrix = endFrame->projectionMatrix();
 
-    for ( auto &i : frames ) {
+            cv::triangulatePoints( startProjectionMatrix, endProjectionMatrix, startPoints, endPoints, points3d );
 
-        cv::Mat points3d;
+            for ( size_t i = 0; i < points.size(); ++i ) {
 
-        cv::Mat_< float > prevPoints( 2, i.second.size() ),
-                          nextPoints( 2, i.second.size() );
+                if ( points[ i ].distance() > minAdjacentPointsDistance ) {
 
-        for ( size_t j = 0; j < i.second.size(); ++j ) {
-            auto sourcePoint = i.second[ j ];
-
-            auto prevPoint = sourcePoint->point();
-            prevPoints.row( 0 ).col( j ) = prevPoint.x;
-            prevPoints.row( 1 ).col( j ) = prevPoint.y;
-
-            auto nextPoint = points[ sourcePoint ]->point();
-            nextPoints.row( 0 ).col( j ) = nextPoint.x;
-            nextPoints.row( 1 ).col( j ) = nextPoint.y;
-
-        }
-
-        if ( !prevPoints.empty() && prevPoints.size() == nextPoints.size() ) {
-
-            auto prevProjectionMatrix = i.first->projectionMatrix();
-            auto nextProjectionMatrix = projectionMatrix();
-
-            cv::triangulatePoints( prevProjectionMatrix, nextProjectionMatrix, prevPoints, nextPoints, points3d );
-
-            for ( size_t j = 0; j < i.second.size(); ++j ) {
-
-                auto sourcePoint = i.second[ j ];
-
-                auto processedPoint = points[ sourcePoint ];
-
-                if ( processedPoint ) {
-
-                    auto w = points3d.at< float >( 3, j );
+                    auto w = points3d.at< float >( 3, i );
 
                     if ( std::abs( w ) > FLOAT_EPS ) {
 
-                        auto x = points3d.at< float >( 0, j ) / w;
-                        auto y = points3d.at< float >( 1, j ) / w;
-                        auto z = points3d.at< float >( 2, j ) / w;
+                        auto x = points3d.at< float >( 0, i ) / w;
+                        auto y = points3d.at< float >( 1, i ) / w;
+                        auto z = points3d.at< float >( 2, i ) / w;
 
                         auto pt = cv::Point3d( x, y, z );
 
                         cv::Mat pt4d( 4, 1, CV_64F );
-                        points3d.col( j ).convertTo( pt4d, CV_64F );
+                        points3d.col( i ).convertTo( pt4d, CV_64F );
 
-                        cv::Mat prevReprojMat = prevProjectionMatrix * pt4d;
-                        cv::Mat nextReprojMat = nextProjectionMatrix * pt4d;
+                        cv::Mat startReprojMat = startProjectionMatrix * pt4d;
+                        cv::Mat endReprojMat = endProjectionMatrix * pt4d;
 
-                        auto prevW = prevReprojMat.at< double >( 2, 0 );
-                        auto nextW = nextReprojMat.at< double >( 2, 0 );
+                        auto startW = startReprojMat.at< double >( 2, 0 );
+                        auto endW = endReprojMat.at< double >( 2, 0 );
 
-                        if ( std::abs( prevW ) > DOUBLE_EPS && std::abs( nextW ) > DOUBLE_EPS &&
-                                    prevW / w > 0 && nextW / w > 0 ) {
+                        if ( std::abs( startW ) > DOUBLE_EPS && std::abs( endW ) > DOUBLE_EPS &&
+                                    startW / w > 0 && endW / w > 0 ) {
 
-                            cv::Point2d prevReprojPt( prevReprojMat.at< double >( 0, 0 ) / prevW,
-                                                      prevReprojMat.at< double >( 1, 0 ) / prevW );
+                            cv::Point2d startReprojPt( startReprojMat.at< double >( 0, 0 ) / startW,
+                                                      startReprojMat.at< double >( 1, 0 ) / startW );
 
-                            cv::Point2d nextReprojPt( nextReprojMat.at< double >( 0, 0 ) / nextW,
-                                                      nextReprojMat.at< double >( 1, 0 ) / nextW );
+                            cv::Point2d endReprojPt( endReprojMat.at< double >( 0, 0 ) / endW,
+                                                      endReprojMat.at< double >( 1, 0 ) / endW );
 
-                            auto prevNorm = cv::norm( prevReprojPt - cv::Point2d( sourcePoint->point() ) );
-                            auto nextNorm = cv::norm( nextReprojPt - cv::Point2d( processedPoint->point() ) );
+                            auto startNorm = cv::norm( startReprojPt - cv::Point2d( points[ i ].startPoint() ) );
+                            auto endNorm = cv::norm( endReprojPt - cv::Point2d( points[ i ].endPoint() ) );
 
-                            if ( prevNorm < maxReprojectionError && nextNorm < maxReprojectionError ) {
+                            if ( startNorm < maxReprojectionError && endNorm < maxReprojectionError ) {
 
                                 ++ret;
 
-                                auto mapPoint = processedPoint->mapPoint();
+                                auto startFramePoint = points[ i ].startFramePoint();
+                                auto endFramePoint = points[ i ].endFramePoint();
+
+                                auto mapPoint = startFramePoint->mapPoint();
 
                                 if ( !mapPoint ) {
-                                    mapPoint = parentMap()->createMapPoint( pt, sourcePoint->color() );
+                                    mapPoint = endFrame->parentMap()->createMapPoint( pt, startFramePoint->color() );
                                 }
                                 else {
                                     mapPoint->setPoint( pt );
-                                    mapPoint->setColor( sourcePoint->color() );
-
                                 }
 
-                                for ( PointPtr k = processedPoint; k; k = k->prevPoint() ) {
-                                    k->setMapPoint( mapPoint );
-                                    auto stereoPoint = k->stereoPoint();
+                                for ( auto j = endFramePoint; j; j = j->prevPoint() ) {
+
+                                    j->setMapPoint( mapPoint );
+
+                                    auto stereoPoint = j->stereoPoint();
+
                                     if ( stereoPoint )
                                         stereoPoint->setMapPoint( mapPoint );
 
@@ -2121,7 +2066,7 @@ int TriangulateFrame::triangulatePoints()
 
         }
 
-    }*/
+    }
 
     return ret;
 
@@ -2134,7 +2079,7 @@ double TriangulateFrame::distance() const
 
 // FinishedStereoFrame
 FinishedStereoFrame::FinishedStereoFrame( const MapPtr &parentMap )
-    : StereoFrame( parentMap ), StereoKeyFrame( parentMap )
+    : StereoFrame( parentMap )
 {
 }
 
@@ -2150,15 +2095,15 @@ void FinishedStereoFrame::setFrames( const FinishedFramePtr &leftFrame, const Fi
 
 FinishedFramePtr FinishedStereoFrame::leftFrame() const
 {
-    return std::dynamic_pointer_cast< FinishedFrame >( DoubleFrame::frame1() );
+    return std::dynamic_pointer_cast< FinishedFrame >( StereoFrame::leftFrame() );
 }
 
 FinishedFramePtr FinishedStereoFrame::rightFrame() const
 {
-    return std::dynamic_pointer_cast< FinishedFrame >( DoubleFrame::frame2() );
+    return std::dynamic_pointer_cast< FinishedFrame >( StereoFrame::rightFrame() );
 }
 
-void FinishedStereoFrame::replace( const ProcessedStereoKeyFramePtr &frame )
+void FinishedStereoFrame::replace( const ProcessedStereoFramePtr &frame )
 {
     if ( frame ) {
 
@@ -2187,7 +2132,7 @@ void FinishedStereoFrame::replace( const ProcessedStereoKeyFramePtr &frame )
 
 }
 
-void FinishedStereoFrame::replaceAndClean( const ProcessedStereoKeyFramePtr &frame )
+void FinishedStereoFrame::replaceAndClean( const ProcessedStereoFramePtr &frame )
 {
     if ( frame ) {
 
@@ -2216,11 +2161,95 @@ void FinishedStereoFrame::replaceAndClean( const ProcessedStereoKeyFramePtr &fra
 
 }
 
+// FinishedStereoKeyFrame
+FinishedStereoKeyFrame::FinishedStereoKeyFrame( const MapPtr &parentMap )
+    : StereoFrame( parentMap ), StereoKeyFrame( parentMap )
+{
+}
+
+FinishedStereoKeyFrame::ObjectPtr FinishedStereoKeyFrame::create( const MapPtr &parentMap )
+{
+    return ObjectPtr( new FinishedStereoKeyFrame( parentMap ) );
+}
+
+void FinishedStereoKeyFrame::setFrames( const FinishedKeyFramePtr &leftFrame, const FinishedKeyFramePtr &rightFrame )
+{
+    DoubleFrame::setFrames( leftFrame, rightFrame );
+}
+
+FinishedKeyFramePtr FinishedStereoKeyFrame::leftFrame() const
+{
+    return std::dynamic_pointer_cast< FinishedKeyFrame >( StereoFrame::leftFrame() );
+}
+
+FinishedKeyFramePtr FinishedStereoKeyFrame::rightFrame() const
+{
+    return std::dynamic_pointer_cast< FinishedKeyFrame >( StereoFrame::rightFrame() );
+}
+
+void FinishedStereoKeyFrame::replace( const ProcessedStereoKeyFramePtr &frame )
+{
+    if ( frame ) {
+
+        auto leftFrame = this->leftFrame();
+        if ( !leftFrame ) {
+            leftFrame = FinishedKeyFrame::create();
+            setLeftFrame( leftFrame );
+        }
+
+        auto rightFrame = this->rightFrame();
+        if ( !rightFrame ) {
+            rightFrame = FinishedKeyFrame::create();
+            setRightFrame( rightFrame );
+        }
+
+        auto leftProcessedFrame = frame->leftFrame();
+        auto rightProcessedFrame = frame->rightFrame();
+
+        if ( leftFrame && leftProcessedFrame )
+            leftFrame->replace( leftProcessedFrame );
+
+        if ( rightFrame && rightProcessedFrame )
+            rightFrame->replace( rightProcessedFrame );
+
+    }
+
+}
+
+void FinishedStereoKeyFrame::replaceAndClean( const ProcessedStereoKeyFramePtr &frame )
+{
+    if ( frame ) {
+
+        auto leftFrame = this->leftFrame();
+        if ( !leftFrame ) {
+            leftFrame = FinishedKeyFrame::create();
+            setLeftFrame( leftFrame );
+        }
+
+        auto rightFrame = this->rightFrame();
+        if ( !rightFrame ) {
+            rightFrame = FinishedKeyFrame::create();
+            setRightFrame( rightFrame );
+        }
+
+        auto leftProcessedFrame = frame->leftFrame();
+        auto rightProcessedFrame = frame->rightFrame();
+
+        if ( leftFrame && leftProcessedFrame )
+            leftFrame->replaceAndClean( leftProcessedFrame );
+
+        if ( rightFrame && rightProcessedFrame )
+            rightFrame->replaceAndClean( rightProcessedFrame );
+
+    }
+
+}
+
 // FinishedDenseFrame
 const double FinishedDenseFrame::m_maximumLenght = 40;
 
 FinishedDenseFrame::FinishedDenseFrame( const MapPtr &parentMap )
-    : StereoFrame( parentMap ), StereoKeyFrame( parentMap ), FinishedStereoFrame( parentMap ), DenseFrame( parentMap )
+    : StereoFrame( parentMap ), StereoKeyFrame( parentMap ), FinishedStereoKeyFrame( parentMap ), DenseFrame( parentMap )
 {
 }
 
@@ -2254,7 +2283,7 @@ std::list< ColorPoint3d > FinishedDenseFrame::translatedPoints() const
 
 void FinishedDenseFrame::replace( const ProcessedDenseFramePtr &frame )
 {
-    FinishedStereoFrame::replace( frame );
+    FinishedStereoKeyFrame::replace( frame );
 
     replaceProcedure( frame );
 
@@ -2262,7 +2291,7 @@ void FinishedDenseFrame::replace( const ProcessedDenseFramePtr &frame )
 
 void FinishedDenseFrame::replaceAndClean( const ProcessedDenseFramePtr &frame )
 {
-    FinishedStereoFrame::replaceAndClean( frame );
+    FinishedStereoKeyFrame::replaceAndClean( frame );
 
     replaceProcedure( frame );
 

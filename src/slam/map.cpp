@@ -220,20 +220,10 @@ bool FlowMap::track( const StampedImage &leftImage, const StampedImage &rightIma
 
             previousLeftFrame->extractPoints();
 
-            size_t trackedPointCount = previousLeftFrame->trackedPointsCount();
+            previousKeyFrame->match();
+            slam::track( previousLeftFrame, leftFrame );
 
-            while( trackedPointCount < m_goodTrackPoints && previousLeftFrame->usePointsCount() < previousLeftFrame->extractedPointsCount() ) {
-
-                auto createPointsCount = ( static_cast< int >( m_goodTrackPoints ) - static_cast< int >( trackedPointCount ) ) * 3;
-
-                previousLeftFrame->createFramePoints( createPointsCount );
-
-                previousKeyFrame->match();
-                slam::track( previousLeftFrame, leftFrame );
-
-                trackedPointCount = previousLeftFrame->trackedPointsCount();
-
-            }
+            auto trackedPointCount = previousLeftFrame->trackedPointsCount();
 
             previousKeyFrame->triangulatePoints();
 
@@ -254,16 +244,12 @@ bool FlowMap::track( const StampedImage &leftImage, const StampedImage &rightIma
 
             auto trackedPointsCount = previousLeftFrame->trackedPointsCount();
 
-            /*auto replacedFrame = FinishedStereoFrame::create( shared_from_this() );
-            replacedFrame->replaceAndClean( previousFrame );
-
-            m_frames.back() = replacedFrame;*/
-
             previousFrame->cleanMapPoints();
 
-            // TEMPORARY
-            previousFrame->clearImages();
-            previousFrame->clearPyramid();
+            auto replacedFrame = FinishedStereoFrame::create( shared_from_this() );
+            replacedFrame->replaceAndClean( previousFrame );
+
+            m_frames.back() = replacedFrame;
 
             if ( trackedPointsCount < m_minTrackPoints )
                 return false;
@@ -276,15 +262,15 @@ bool FlowMap::track( const StampedImage &leftImage, const StampedImage &rightIma
             auto previousRightFrame = keyFrame->rightFrame();
             auto leftFrame = frame->leftFrame();
 
-            FlowConsecutiveFrame adjacentFrame( previousLeftFrame, leftFrame, shared_from_this() );
+            FlowConsecutiveFrame adjacentFrame( previousLeftFrame, leftFrame );
 
             auto avgDisp = adjacentFrame.averageMapPointsDisplacement();
 
             auto minTrackInliersRatio = parentWorld()->minTrackInliersRatio();
 
-            if ( avgDisp > parentWorld()->minAdjacentPointsDistance() || adjacentFrame.mapPoints().size() < m_trackFramePointsCount ) {
+            if ( avgDisp > parentWorld()->minAdjacentPointsDistance() || adjacentFrame.mapPoints().size() < m_minTrackPoints ) {
 
-                RecoverPoseFrame recoverFrame( previousLeftFrame, leftFrame, shared_from_this() );
+                RecoverPoseFrame recoverFrame( previousLeftFrame, leftFrame );
 
                 ProjectionMatrix recoveredPose;
 
@@ -292,15 +278,7 @@ bool FlowMap::track( const StampedImage &leftImage, const StampedImage &rightIma
 
                 std::cout << "Inliers ratio: " << inliersRatio << std::endl;
 
-                auto replacedFrame = FinishedStereoFrame::create( shared_from_this() );
-                replacedFrame->replaceAndClean( keyFrame );
-
-                auto it = std::find( m_frames.begin(), m_frames.end(), keyFrame );
-
-                if ( it != m_frames.end() )
-                    *it = replacedFrame;
-
-                if ( inliersRatio > minTrackInliersRatio || adjacentFrame.mapPoints().size() < m_trackFramePointsCount ) {
+                if ( inliersRatio > minTrackInliersRatio /*|| adjacentFrame.mapPoints().size() < m_minTrackPoints*/ ) {
 
                     auto newKeyFrame = FlowDenseFrame::create( shared_from_this() );
 
@@ -315,9 +293,20 @@ bool FlowMap::track( const StampedImage &leftImage, const StampedImage &rightIma
                     rightFrame->setRotation( recoveredPose.rotation() );
                     rightFrame->setTranslation( recoveredPose.translation() + baselineVector() );
 
-                    TriangulateFrame triangulateFrame( previousLeftFrame, leftFrame, shared_from_this() );
+                    TriangulateFrame triangulateFrame( previousLeftFrame, leftFrame );
+
+                    if ( triangulateFrame.distance() > baselineLenght() )
+                        triangulateFrame.triangulatePoints();
 
                     m_frames.push_back( newKeyFrame );
+
+                    auto replacedFrame = FinishedStereoKeyFrame::create( shared_from_this() );
+                    replacedFrame->replaceAndClean( keyFrame );
+
+                    auto it = std::find( m_frames.begin(), m_frames.end(), keyFrame );
+
+                    if ( it != m_frames.end() )
+                        *it = replacedFrame;
 
                     keyFrame = newKeyFrame;
 

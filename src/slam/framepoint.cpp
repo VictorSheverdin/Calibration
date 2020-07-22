@@ -191,6 +191,42 @@ namespace slam {
         m_error = value;
     }
 
+    void MonoPoint::replace( const MonoPointPtr &point )
+    {
+        if ( point ) {
+
+            auto stereoPoint = point->stereoPoint();
+
+            setStereoPoint( stereoPoint );
+
+            if ( stereoPoint )
+                stereoPoint->setStereoPoint( shared_from_this() );
+
+            auto nextPoint = point->nextPoint();
+
+            setNextPoint( nextPoint );
+
+            if ( nextPoint )
+                nextPoint->setPrevPoint( shared_from_this() );
+
+            auto prevPoint = point->prevPoint();
+
+            setPrevPoint( prevPoint );
+
+            if ( prevPoint )
+                prevPoint->setNextPoint( shared_from_this() );
+
+            setMapPoint( point->mapPoint() );
+
+            point->clearMapPoint();
+            point->clearNextPoint();
+            point->clearPrevPoint();
+            point->clearStereoPoint();
+
+        }
+
+    }
+
     void MonoPoint::dissolve()
     {
         auto stereoPoint = this->stereoPoint();
@@ -278,6 +314,16 @@ namespace slam {
         return std::dynamic_pointer_cast< FlowFrame >( m_parentFrame.lock() );
     }
 
+    double FlowPoint::checkError() const
+    {
+        return m_checkError;
+    }
+
+    void FlowPoint::setCheckError( const double value )
+    {
+        m_checkError = value;
+    }
+
     // FeaturePoint
     FeaturePoint::FeaturePoint( const FeatureFramePtr &parentFrame , const size_t keyPointIndex )
         : ProcessedPointBase( parentFrame ), m_keyPointIndex( keyPointIndex )
@@ -317,76 +363,40 @@ namespace slam {
             return cv::Mat();
     }
 
-    // FramePoint
-    FramePoint::FramePoint( const FinishedFramePtr &parentFrame )
+    // FinishedFramePoint
+    FinishedFramePoint::FinishedFramePoint( const FinishedFramePtr &parentFrame )
         : MonoPoint( parentFrame)
     {
     }
 
-    FramePoint::FramePoint( const FinishedFramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color )
+    FinishedFramePoint::FinishedFramePoint( const FinishedFramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color )
         : MonoPoint( parentFrame), ColorPoint2d( point, color )
     {
     }
 
-    const cv::Point2f &FramePoint::point() const
+    const cv::Point2f &FinishedFramePoint::point() const
     {
         return ColorPoint2d::point();
     }
 
-    const cv::Scalar &FramePoint::color() const
+    const cv::Scalar &FinishedFramePoint::color() const
     {
         return ColorPoint2d::color();
     }
 
-    FramePoint::ObjectPtr FramePoint::create( const FinishedFramePtr &parentFrame )
+    FinishedFramePoint::ObjectPtr FinishedFramePoint::create( const FinishedFramePtr &parentFrame )
     {
-        return ObjectPtr( new FramePoint( parentFrame ) );
+        return ObjectPtr( new FinishedFramePoint( parentFrame ) );
     }
 
-    FramePoint::ObjectPtr FramePoint::create( const FinishedFramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color )
+    FinishedFramePoint::ObjectPtr FinishedFramePoint::create( const FinishedFramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color )
     {
-        return ObjectPtr( new FramePoint( parentFrame, point, color ) );
+        return ObjectPtr( new FinishedFramePoint( parentFrame, point, color ) );
     }
 
-    FinishedFramePtr FramePoint::parentFrame() const
+    FinishedFramePtr FinishedFramePoint::parentFrame() const
     {
         return std::dynamic_pointer_cast< FinishedFrame >( m_parentFrame.lock() );
-    }
-
-    void FramePoint::replace( const MonoPointPtr &point )
-    {
-        if ( point ) {
-
-            auto stereoPoint = point->stereoPoint();
-
-            setStereoPoint( stereoPoint );
-
-            if ( stereoPoint )
-                stereoPoint->setStereoPoint( shared_from_this() );
-
-            auto nextPoint = point->nextPoint();
-
-            setNextPoint( nextPoint );
-
-            if ( nextPoint )
-                nextPoint->setPrevPoint( shared_from_this() );
-
-            auto prevPoint = point->prevPoint();
-
-            setPrevPoint( prevPoint );
-
-            if ( prevPoint )
-                prevPoint->setNextPoint( shared_from_this() );
-
-            setMapPoint( point->mapPoint() );
-
-            point->clearMapPoint();
-            point->clearNextPoint();
-            point->clearPrevPoint();
-            point->clearStereoPoint();
-
-        }
-
     }
 
     // DoublePoint
@@ -411,6 +421,21 @@ namespace slam {
         return m_point2;
     }
 
+    cv::Point2f DoublePoint::point1() const
+    {
+        return monoFramePoint1()->point();
+    }
+
+    cv::Point2f DoublePoint::point2() const
+    {
+        return monoFramePoint2()->point();
+    }
+
+    double DoublePoint::distance() const
+    {
+        return cv::norm( point2() - point1() );
+    }
+
     // StereoPoint
     StereoPoint::StereoPoint( const MonoPointPtr leftPoint, const MonoPointPtr rightPoint )
         : DoublePoint( leftPoint, rightPoint )
@@ -429,12 +454,12 @@ namespace slam {
 
     cv::Point2f StereoPoint::leftPoint() const
     {
-        return leftFramePoint()->point();
+        return point1();
     }
 
     cv::Point2f StereoPoint::rightPoint() const
     {
-        return rightFramePoint()->point();
+        return point2();
     }
 
     // ConsecutivePoint
@@ -455,12 +480,12 @@ namespace slam {
 
     cv::Point2f ConsecutivePoint::startPoint() const
     {
-        return startFramePoint()->point();
+        return point1();
     }
 
     cv::Point2f ConsecutivePoint::endPoint() const
     {
-        return endFramePoint()->point();
+        return point2();
     }
 
 }

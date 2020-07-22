@@ -48,8 +48,6 @@ public:
     std::list< StereoCameraMatrix > path() const;
     std::list< ColorPoint3d > sparseCloud() const;
 
-    double pointsMinDistance() const;
-
 protected:
     World( const StereoCameraMatrix &cameraMatrix );
 
@@ -75,10 +73,6 @@ protected:
 
     static const double m_minTrackInliersRatio;
     static const double m_goodTrackInliersRatio;
-
-    static const double m_pointsMinDistance;
-
-    static const size_t m_pointsCount = 1000;
 
     void createMap( const StereoCameraMatrix &cameraMatrix );
 

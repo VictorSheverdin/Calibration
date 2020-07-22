@@ -34,12 +34,12 @@ void extractAndCompute( cv::Ptr< cv::Feature2D > processor, const CvImage &image
 }
 
 // TrackPointResult
-PointTrackResult::PointTrackResult( size_t index, cv::Point2f point, float error )
-    : cv::Point2f( point ), index( index ), error( error )
+FlowTrackResult::FlowTrackResult( size_t index, cv::Point2f point, float error , float checkError )
+    : cv::Point2f( point ), index( index ), error( error ), checkError( checkError )
 {
 }
 
-bool PointTrackResult::operator<( const PointTrackResult &other ) const
+bool FlowTrackResult::operator<( const FlowTrackResult &other ) const
 {
     return index < other.index;
 }
@@ -56,44 +56,22 @@ FlowProcessor::FlowProcessor()
 
 void FlowProcessor::initialize()
 {
-    m_count = 1000;
-    m_minDistance = 10.0;
     m_extractPrecision = 1.e-12;
     m_ransacReprojectionThreshold = 1.0;
     m_ransacConfidence = 1.0 - 1.e-3;
 }
 
-void FlowProcessor::extractPoints( const CvImage &image, const cv::Mat &mask, std::vector< cv::Point2f > *points )
+void FlowProcessor::extractPoints( const CvImage &image, const cv::Mat &mask, std::vector< cv::Point2f > *points , const size_t count, const double distance)
 {
     if ( points ) {
 
         cv::Mat gray;
         cv::cvtColor( image, gray, cv::COLOR_BGR2GRAY );
 
-        cv::goodFeaturesToTrack( gray, *points, m_count, m_extractPrecision, m_minDistance, mask );
+        cv::goodFeaturesToTrack( gray, *points, count, m_extractPrecision, distance, mask );
 
     }
 
-}
-
-size_t FlowProcessor::count() const
-{
-    return m_count;
-}
-
-void FlowProcessor::setCount( const size_t value )
-{
-    m_count = value;
-}
-
-double FlowProcessor::minDistance() const
-{
-    return m_minDistance;
-}
-
-void FlowProcessor::setMinDistance( const double value )
-{
-    m_minDistance = value;
 }
 
 double FlowProcessor::extractPrecision() const
@@ -207,7 +185,7 @@ void download( const cv::cuda::GpuMat &d_mat, std::vector< float > &vec )
     d_mat.download( mat );
 }
 
-void GPUFlowProcessor::track( const CvImage &sourceImage, const std::vector< cv::Point2f > &sourcePoints, const CvImage &targetImage, std::vector< PointTrackResult > *trackedPoints )
+void GPUFlowProcessor::track( const CvImage &sourceImage, const std::vector< cv::Point2f > &sourcePoints, const CvImage &targetImage, std::vector< FlowTrackResult > *trackedPoints )
 {    
     if ( trackedPoints && !sourcePoints.empty() ) {
 
@@ -268,7 +246,7 @@ void GPUFlowProcessor::track( const CvImage &sourceImage, const std::vector< cv:
                 if ( statuses[i] && checkStatuses[i] && err[i] < errThreshold && checkErr[i] < checkErrThreshold && miss < m_checkDistance
                      && opticalPoints[ i ].x >= 0 && opticalPoints[ i ].y >= 0 && opticalPoints[ i ].x < targetImage.cols &&  opticalPoints[ i ].y < targetImage.rows ) {
 
-                    trackedPoints->push_back( PointTrackResult( i, opticalPoints[ i ], miss ) );
+                    trackedPoints->push_back( FlowTrackResult( i, opticalPoints[ i ], err[i], miss ) );
 
                 }
 
@@ -289,15 +267,15 @@ CPUFlowProcessor::CPUFlowProcessor()
 void CPUFlowProcessor::initialize()
 {
     m_winSize = 21;
-    m_levels = 4;
+    m_levels = 5;
 
-     m_termCriteria = cv::TermCriteria( cv::TermCriteria::EPS, 100, 1.e-4 );
+     m_termCriteria = cv::TermCriteria( cv::TermCriteria::EPS, 100, 1.e-2 );
 
-     m_minEigenValue = 1.e-10;
+     m_minEigenValue = 1.e-4;
 
 }
 
-void CPUFlowProcessor::track( const std::vector< cv::Mat > &sourceImagePyramid, const std::vector< cv::Point2f > &sourcePoints, const std::vector< cv::Mat > &targetImagePyramid, std::vector< PointTrackResult > *trackedPoints )
+void CPUFlowProcessor::track( const std::vector< cv::Mat > &sourceImagePyramid, const std::vector< cv::Point2f > &sourcePoints, const std::vector< cv::Mat > &targetImagePyramid, std::vector< FlowTrackResult > *trackedPoints )
 {
     if ( trackedPoints && !sourcePoints.empty() ) {
 
@@ -352,7 +330,7 @@ void CPUFlowProcessor::track( const std::vector< cv::Mat > &sourceImagePyramid, 
                 if ( statuses[i] && checkStatuses[i] && err[i] < errThreshold && checkErr[i] < checkErrThreshold && miss < m_checkDistance
                      && opticalPoints[ i ].x >= 0 && opticalPoints[ i ].y >= 0 && opticalPoints[ i ].x < cols &&  opticalPoints[ i ].y < rows ) {
 
-                    trackedPoints->push_back( PointTrackResult( i, opticalPoints[ i ], miss ) );
+                    trackedPoints->push_back( FlowTrackResult( i, opticalPoints[ i ], err[ i ], miss ) );
 
                 }
 

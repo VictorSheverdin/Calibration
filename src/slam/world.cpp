@@ -16,8 +16,6 @@ const double World::m_minAdjacentCameraMultiplier = 3.;
 const double World::m_minTrackInliersRatio = 0.6;
 const double World::m_goodTrackInliersRatio = 0.9;
 
-const double World::m_pointsMinDistance = 10.;
-
 World::World( const StereoCameraMatrix &cameraMatrix )
 {
     initialize( cameraMatrix );
@@ -41,8 +39,6 @@ void World::initialize( const StereoCameraMatrix &cameraMatrix )
     m_trackType = TrackType::FLOW;
 
     auto flowTracker = new CPUFlowTracker();
-    flowTracker->setCount( m_pointsCount );
-    flowTracker->setMinDistance( m_pointsMinDistance );
     m_flowTracker = std::unique_ptr< FlowTracker >( flowTracker );
 
     m_featureTracker = std::unique_ptr< FeatureTracker >( new SiftTracker() );
@@ -273,7 +269,7 @@ std::list< StereoCameraMatrix > World::path() const
 
         for ( auto &i : frames ) {
 
-            auto keyFrame = std::dynamic_pointer_cast< FinishedStereoFrame >( i );
+            auto keyFrame = std::dynamic_pointer_cast< FinishedStereoKeyFrame >( i );
 
             if ( keyFrame )
                 ret.push_back( keyFrame->projectionMatrix() );
@@ -303,11 +299,6 @@ std::list< ColorPoint3d > World::sparseCloud() const
     }
 
     return ret;
-}
-
-double World::pointsMinDistance() const
-{
-    return m_pointsMinDistance;
 }
 
 void World::createMap( const StereoCameraMatrix &cameraMatrix )

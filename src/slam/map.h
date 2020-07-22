@@ -68,13 +68,11 @@ protected:
 
     Optimizer m_optimizer;
 
-    static const size_t m_minTrackPoints = 30;
+    static const size_t m_minTrackPoints = 70;
 
     static const size_t m_goodTrackPoints = 150;
-    static const size_t m_trackFramePointsCount = 120;
 
     static const bool m_denseFlag = false;
-    static const size_t m_denseStep = 10;
 
     static const size_t m_adjustFramesCount = 5;
 

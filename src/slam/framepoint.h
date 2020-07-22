@@ -12,7 +12,7 @@ namespace slam {
 class MonoFrame;
 class FlowFrame;
 class FeatureFrame;
-class FinishedFrame;
+class FinishedKeyFrame;
 class MapPoint;
 
 // Базовый класс для реализации точек на изображении
@@ -69,6 +69,8 @@ public:
     double error() const;
     void setError( const double value );
 
+    void replace( const MonoPointPtr &point );
+
     void dissolve();
 
 protected:
@@ -120,11 +122,16 @@ public:
 
     FlowFramePtr parentFrame() const;
 
+    double checkError() const;
+    void setCheckError( const double value );
+
 protected:
     FlowPoint( const FlowFramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color );
 
     cv::Point2f m_point;
     cv::Scalar m_color;
+
+    double m_checkError;
 
 };
 
@@ -153,11 +160,11 @@ protected:
 
 };
 
-class FramePoint : public MonoPoint, public ColorPoint2d
+class FinishedFramePoint : public MonoPoint, public ColorPoint2d
 {
 public:
-    using ObjectPtr = std::shared_ptr< FramePoint >;
-    using ObjectConstPtr = std::shared_ptr< const FramePoint >;
+    using ObjectPtr = std::shared_ptr< FinishedFramePoint >;
+    using ObjectConstPtr = std::shared_ptr< const FinishedFramePoint >;
 
     virtual const cv::Point2f &point() const override;
     virtual const cv::Scalar &color() const override;
@@ -167,11 +174,9 @@ public:
 
     FinishedFramePtr parentFrame() const;
 
-    void replace( const MonoPointPtr &point );
-
 protected:
-    FramePoint( const FinishedFramePtr &parentFrame );
-    FramePoint( const FinishedFramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color );
+    FinishedFramePoint( const FinishedFramePtr &parentFrame );
+    FinishedFramePoint( const FinishedFramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color );
 
 };
 
@@ -185,6 +190,11 @@ public:
 
     MonoPointPtr monoFramePoint1() const;
     MonoPointPtr monoFramePoint2() const;
+
+    cv::Point2f point1() const;
+    cv::Point2f point2() const;
+
+    double distance() const;
 
 protected:
     DoublePoint( const MonoPointPtr point1, const MonoPointPtr point2 );

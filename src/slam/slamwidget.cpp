@@ -437,7 +437,7 @@ void SlamWidgetBase::initialize( const QString &calibrationFile )
     m_slamThread = new SlamThread( calibration, this );
 
     m_updateTimer = new QTimer( this );
-    m_updateTimer->start( 1000 / 5 );
+    m_updateTimer->start( 1000 / 10 );
 
     connect( m_updateTimer, &QTimer::timeout, this, &SlamWidgetBase::updateViews );
 

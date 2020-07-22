@@ -20,13 +20,7 @@ public:
     virtual void buildPyramid( FlowFrame *frame ) = 0;
     virtual void extractPoints( FlowKeyFrame *frame ) = 0;
 
-    virtual cv::Mat track( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::vector< PointTrackResult > *trackedPoints ) = 0;
-
-    size_t count() const;
-    void setCount( const size_t value );
-
-    double minDistance() const;
-    void setMinDistance( const double value );
+    virtual cv::Mat track( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::vector< FlowTrackResult > *trackedPoints ) = 0;
 
     double extractPrecision() const;
     void setExtractPrecision( const double value );
@@ -40,8 +34,8 @@ public:
 protected:
     FlowTracker() = default;
 
-    void prepareStereoPoints(const FlowFramePtr &frame, std::vector< cv::Point2f > *points, std::set< PointTrackResult > *trackedPoints );
-    void prepareConsecutivePoints( const FlowFramePtr &frame, std::vector< cv::Point2f > *points, std::set< PointTrackResult > *trackedPoints );
+    void prepareStereoPoints(const FlowFramePtr &frame, std::vector< cv::Point2f > *points, std::set< FlowTrackResult > *trackedPoints );
+    void prepareConsecutivePoints( const FlowFramePtr &frame, std::vector< cv::Point2f > *points, std::set< FlowTrackResult > *trackedPoints );
 
     std::unique_ptr< FlowProcessor > m_pointsProcessor;
 
@@ -55,7 +49,7 @@ public:
     virtual void buildPyramid( FlowFrame *frame ) override;
     virtual void extractPoints( FlowKeyFrame *frame ) override;
 
-    virtual cv::Mat track( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::vector< PointTrackResult > *trackedPoints ) override;
+    virtual cv::Mat track( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::vector< FlowTrackResult > *trackedPoints ) override;
 
 protected:
     GPUFlowProcessor *processor() const;
@@ -73,7 +67,7 @@ public:
     virtual void buildPyramid( FlowFrame *frame ) override;
     virtual void extractPoints( FlowKeyFrame *frame ) override;
 
-    virtual cv::Mat track( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::vector< PointTrackResult > *trackedPoints ) override;
+    virtual cv::Mat track( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::vector< FlowTrackResult > *trackedPoints ) override;
 
 protected:
     CPUFlowProcessor *processor() const;

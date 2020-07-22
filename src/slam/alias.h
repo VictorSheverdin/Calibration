@@ -5,7 +5,7 @@ namespace slam {
 class MonoPoint;
 class FlowPoint;
 class FeaturePoint;
-class FramePoint;
+class FinishedFramePoint;
 
 class MapPoint;
 
@@ -20,6 +20,7 @@ class FlowKeyFrame;
 class FeatureKeyFrame;
 class StereoFrame;
 class StereoKeyFrame;
+class ProcessedStereoFrame;
 class ProcessedStereoKeyFrame;
 class FlowStereoFrame;
 class FeatureStereoFrame;
@@ -29,6 +30,7 @@ class ProcessedDenseFrame;
 class FlowDenseFrame;
 class FeatureDenseFrame;
 class FinishedFrame;
+class FinishedKeyFrame;
 
 class Map;
 class FlowMap;
@@ -39,7 +41,7 @@ class World;
 using MonoPointPtr = std::shared_ptr< MonoPoint >;
 using FlowPointPtr = std::shared_ptr< FlowPoint >;
 using FeaturePointPtr = std::shared_ptr< FeaturePoint >;
-using FramePointPtr = std::shared_ptr< FramePoint >;
+using FinishedFramePointPtr = std::shared_ptr< FinishedFramePoint >;
 
 using MapPointPtr = std::shared_ptr< MapPoint >;
 
@@ -54,6 +56,7 @@ using FlowKeyFramePtr = std::shared_ptr< FlowKeyFrame >;
 using FeatureKeyFramePtr = std::shared_ptr< FeatureKeyFrame >;
 using StereoFramePtr = std::shared_ptr< StereoFrame >;
 using StereoKeyFramePtr = std::shared_ptr< StereoKeyFrame >;
+using ProcessedStereoFramePtr = std::shared_ptr< ProcessedStereoFrame >;
 using ProcessedStereoKeyFramePtr = std::shared_ptr< ProcessedStereoKeyFrame >;
 using FlowStereoFramePtr = std::shared_ptr< FlowStereoFrame >;
 using FeatureStereoFramePtr = std::shared_ptr< FeatureStereoFrame >;
@@ -63,6 +66,7 @@ using ProcessedDenseFramePtr = std::shared_ptr< ProcessedDenseFrame >;
 using FlowDenseFramePtr = std::shared_ptr< FlowDenseFrame >;
 using FeatureDenseFramePtr = std::shared_ptr< FeatureDenseFrame >;
 using FinishedFramePtr = std::shared_ptr< FinishedFrame >;
+using FinishedKeyFramePtr = std::shared_ptr< FinishedKeyFrame >;
 
 using MapPtr = std::shared_ptr< Map >;
 using FlowMapPtr = std::shared_ptr< FlowMap >;

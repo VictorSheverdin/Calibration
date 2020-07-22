@@ -168,9 +168,6 @@ void SlamThread::run()
 
                 }
 
-                /*cv::GaussianBlur( leftProcImage, leftProcImage, cv::Size( 3, 3 ), 0 );
-                cv::GaussianBlur( rightProcImage, rightProcImage, cv::Size( 3, 3 ), 0 );*/
-
                 m_systemMutex.lock();
 
                 m_system->track( leftProcImage, rightProcImage );

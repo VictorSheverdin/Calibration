@@ -9,28 +9,23 @@
 #include <opencv2/optflow.hpp>
 #include <opencv2/cudaoptflow.hpp>
 
-struct PointTrackResult : public cv::Point2f
+struct FlowTrackResult : public cv::Point2f
 {
 public:
-    PointTrackResult( size_t index, cv::Point2f point, float error );
+    FlowTrackResult( size_t index, cv::Point2f point, float error, float checkError );
 
     size_t index;
     float error;
+    float checkError;
 
-    bool operator<( const PointTrackResult &other ) const;
+    bool operator<( const FlowTrackResult &other ) const;
 
 };
 
 class FlowProcessor
 {
 public:
-    void extractPoints( const CvImage &image, const cv::Mat &mask, std::vector< cv::Point2f > *points );
-
-    size_t count() const;
-    void setCount( const size_t value );
-
-    double minDistance() const;
-    void setMinDistance( const double value );
+    void extractPoints( const CvImage &image, const cv::Mat &mask, std::vector< cv::Point2f > *points, const size_t count, const double distance );
 
     double extractPrecision() const;
     void setExtractPrecision( const double value );
@@ -55,8 +50,6 @@ protected:
     static const double m_checkDistance;
     static const double m_errorRatio;
 
-    size_t m_count;
-    double m_minDistance;
     double m_extractPrecision;
 
     double m_ransacReprojectionThreshold;
@@ -77,7 +70,7 @@ public:
     virtual size_t levels() const override;
     virtual void setLevels( const size_t value ) override;
 
-    void track( const CvImage &sourceImage, const std::vector< cv::Point2f > &sourcePoints, const CvImage &targetImage, std::vector< PointTrackResult > *trackedPoints );
+    void track( const CvImage &sourceImage, const std::vector< cv::Point2f > &sourcePoints, const CvImage &targetImage, std::vector< FlowTrackResult > *trackedPoints );
 
 protected:
     cv::Ptr< cv::cuda::SparsePyrLKOpticalFlow > m_opticalProcessor;
@@ -102,7 +95,7 @@ class CPUFlowProcessor : public FlowProcessor
 public:
     CPUFlowProcessor();
 
-    void track( const std::vector< cv::Mat > &sourceImagePyramid, const std::vector< cv::Point2f > &sourcePoints, const std::vector< cv::Mat > &targetImagePyramid, std::vector< PointTrackResult > *trackedPoints );
+    void track( const std::vector< cv::Mat > &sourceImagePyramid, const std::vector< cv::Point2f > &sourcePoints, const std::vector< cv::Mat > &targetImagePyramid, std::vector< FlowTrackResult > *trackedPoints );
 
     void buildImagePyramid( const CvImage &image, std::vector< cv::Mat > *imagePyramid );
 

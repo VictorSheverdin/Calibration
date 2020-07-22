@@ -6,26 +6,6 @@
 
 namespace slam {
 
-size_t FlowTracker::count() const
-{
-    return m_pointsProcessor->count();
-}
-
-void FlowTracker::setCount( const size_t value )
-{
-    m_pointsProcessor->setCount( value );
-}
-
-double FlowTracker::minDistance() const
-{
-    return m_pointsProcessor->minDistance();
-}
-
-void FlowTracker::setMinDistance( const double value )
-{
-    m_pointsProcessor->setMinDistance( value );
-}
-
 double FlowTracker::extractPrecision() const
 {
     return m_pointsProcessor->extractPrecision();
@@ -76,14 +56,23 @@ void GPUFlowTracker::extractPoints( FlowKeyFrame *frame )
     if ( frame ) {
         std::vector< cv::Point2f > points;
 
-        processor()->extractPoints( frame->image(), frame->mask(), &points );
+        auto extractPointsCount = static_cast< int >( frame->desiredPointsCount() ) - static_cast< int >( frame->framePointsCount() );
 
-        frame->setExtractedPoints( points );
+        if ( extractPointsCount > 0 ) {
+
+            frame->createMask();
+
+            processor()->extractPoints( frame->image(), frame->mask(), &points, extractPointsCount, frame->pointsInterval() );
+
+            frame->addFramePoints( points );
+
+        }
+
     }
 
 }
 
-cv::Mat GPUFlowTracker::track( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::vector< PointTrackResult > *trackedPoints )
+cv::Mat GPUFlowTracker::track( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::vector< FlowTrackResult > *trackedPoints )
 {
     if ( frame1 && frame2 && trackedPoints ) {
 
@@ -97,7 +86,7 @@ cv::Mat GPUFlowTracker::track( const FlowFramePtr &frame1, const FlowFramePtr &f
             if ( i )
                 points.push_back( i->point() );
 
-        std::vector< PointTrackResult > flowResults;
+        std::vector< FlowTrackResult > flowResults;
 
         processor()->track( frame1->image(), points, frame2->image(), &flowResults );
 
@@ -161,15 +150,23 @@ void CPUFlowTracker::extractPoints( FlowKeyFrame *frame )
     if ( frame ) {
         std::vector< cv::Point2f > points;
 
-        processor()->extractPoints( frame->image(), frame->mask(), &points );
+        auto extractPointsCount = static_cast< int >( frame->desiredPointsCount() ) - static_cast< int >( frame->framePointsCount() );
 
-        frame->setExtractedPoints( points );
+        if ( extractPointsCount > 0 ) {
+
+            frame->createMask();
+
+            processor()->extractPoints( frame->image(), frame->mask(), &points, extractPointsCount, frame->pointsInterval() );
+
+            frame->addFramePoints( points );
+
+        }
 
     }
 
 }
 
-cv::Mat CPUFlowTracker::track( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::vector< PointTrackResult > *trackedPoints )
+cv::Mat CPUFlowTracker::track( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::vector< FlowTrackResult > *trackedPoints )
 {
     if ( frame1 && frame2 && trackedPoints ) {
 
@@ -189,7 +186,7 @@ cv::Mat CPUFlowTracker::track( const FlowFramePtr &frame1, const FlowFramePtr &f
             if ( i )
                 points.push_back( i->point() );
 
-        std::vector< PointTrackResult > flowResults;
+        std::vector< FlowTrackResult > flowResults;
 
         processor()->track( frame1->imagePyramid(), points, frame2->imagePyramid(), &flowResults );
 
@@ -260,6 +257,8 @@ void FullTracker::extractKeypoints( FeatureFrame *frame )
 
         std::vector< cv::KeyPoint > keypoints;
         cv::Mat descriptors;
+
+        frame->createMask();
 
         m_descriptorProcessor->extractAndCompute( frame->image(), frame->mask(), &keypoints, &descriptors );
 
