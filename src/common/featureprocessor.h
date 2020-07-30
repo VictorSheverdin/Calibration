@@ -12,11 +12,11 @@
 struct FlowTrackResult : public cv::Point2f
 {
 public:
-    FlowTrackResult( size_t index, cv::Point2f point, float error, float checkError );
+    FlowTrackResult( size_t index, cv::Point2f point, float error, float miss );
 
     size_t index;
     float error;
-    float checkError;
+    float miss;
 
     bool operator<( const FlowTrackResult &other ) const;
 
@@ -48,9 +48,9 @@ protected:
     FlowProcessor();
 
     static const double m_checkDistance;
-    static const double m_errorRatio;
 
     double m_extractPrecision;
+    double m_blockSize;
 
     double m_ransacReprojectionThreshold;
     double m_ransacConfidence;

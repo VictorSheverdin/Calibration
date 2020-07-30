@@ -43,19 +43,23 @@ ImageWidget *DisparityPreviewWidget::disparityView() const
     return m_disparityView;
 }
 
-// View3DWidget
-View3DWidget::View3DWidget( QWidget* parent )
+// ReconstructionViewWidget
+ReconstructionViewWidget::ReconstructionViewWidget( QWidget* parent )
     : PCLWidget( parent )
 {
     initialize();
 }
 
-void View3DWidget::initialize()
+void ReconstructionViewWidget::initialize()
 {
-    m_pclViewer->registerPointPickingCallback( View3DWidget::pickingEventHandler, m_pclViewer.get() );
+    m_pclViewer->setCameraPosition( 0, 0, -10, 0, -1, 0 );
+    m_pclViewer->setCameraClipDistances( 0.1, 10000 );
+
+    m_pclViewer->registerPointPickingCallback( ReconstructionViewWidget::pickingEventHandler, m_pclViewer.get() );
+
 }
 
-void View3DWidget::pickingEventHandler( const pcl::visualization::PointPickingEvent &event, void *viewer_void )
+void ReconstructionViewWidget::pickingEventHandler( const pcl::visualization::PointPickingEvent &event, void *viewer_void )
 {
     float x, y, z;
 
@@ -94,7 +98,7 @@ void DisparityWidgetBase::initialize()
 
     m_view = new DisparityPreviewWidget( this );
     tabWidget->resize(1200, 800);
-    m_3dWidget = new View3DWidget( this );
+    m_3dWidget = new ReconstructionViewWidget( this );
 
     tabWidget->addTab( m_view, tr( "Disparity" ) );
     tabWidget->addTab( m_3dWidget, tr( "3D priview" ) );

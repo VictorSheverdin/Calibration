@@ -7,6 +7,8 @@
 
 #include <QVTKOpenGLNativeWidget.h>
 
+#include <xsensdeviceapi.h>
+
 int main(int argc, char** argv)
 {
     QSurfaceFormat::setDefaultFormat( QVTKOpenGLNativeWidget::defaultFormat() );

@@ -32,11 +32,6 @@ void PCLWidget::initialize()
 
     m_pclViewer->initCameraParameters();
 
-    m_pclViewer->setPointCloudRenderingProperties( pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2 );
-
-    m_pclViewer->setCameraPosition( 0, 0, -10, 0, -1, 0 );
-    m_pclViewer->setCameraClipDistances( 0.1, 10000 );
-
     m_pclViewer->setShowFPS( true );
 
     m_pclViewer->getInteractorStyle()->SetAutoAdjustCameraClippingRange( false );

@@ -41,11 +41,11 @@ private:
 
 };
 
-class View3DWidget : public PCLWidget
+class ReconstructionViewWidget : public PCLWidget
 {
 
 public:
-    View3DWidget( QWidget* parent = nullptr );
+    ReconstructionViewWidget( QWidget* parent = nullptr );
 
 private:
     void initialize();
@@ -82,7 +82,7 @@ private slots:
 protected:
     QPointer< DisparityPreviewWidget > m_view;
     QPointer< DisparityControlWidget > m_controlWidget;
-    QPointer< View3DWidget > m_3dWidget;
+    QPointer< ReconstructionViewWidget > m_3dWidget;
 
     QMutex m_updateMutex;
 

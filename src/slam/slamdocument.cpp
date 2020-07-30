@@ -49,4 +49,19 @@ SlamCameraWidget *CameraSlamDocument::widget() const
     return dynamic_cast< SlamCameraWidget * >( m_widget );
 }
 
+// ImuDocument
+ImuDocument::ImuDocument( const QString &portName, QWidget* parent )
+    : SlamDocumentBase( parent )
+{
+    initialize( portName );
+}
 
+ImuViewWidget *ImuDocument::widget() const
+{
+    return dynamic_cast< ImuViewWidget * >( m_widget );
+}
+
+void ImuDocument::initialize( const QString &portName )
+{
+    setWidget( new ImuViewWidget( portName, this ) );
+}

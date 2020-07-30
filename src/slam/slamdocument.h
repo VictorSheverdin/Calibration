@@ -8,6 +8,7 @@ class QVBoxLayout;
 
 class SlamCameraWidget;
 class SlamImageWidget;
+class ImuViewWidget;
 
 class SlamDocumentBase : public DocumentBase
 {
@@ -47,5 +48,19 @@ public:
 
 private:
     void initialize( const QString &leftCameraIp, const QString &rightCameraIp , const QString &calibrationFile );
+
+};
+
+class ImuDocument : public SlamDocumentBase
+{
+    Q_OBJECT
+
+public:
+    explicit ImuDocument( const QString &portName, QWidget* parent = nullptr );
+
+    ImuViewWidget *widget() const;
+
+private:
+    void initialize( const QString &portName );
 
 };

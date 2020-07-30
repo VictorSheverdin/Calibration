@@ -47,7 +47,7 @@ void GPUFlowTracker::initialize()
     m_pointsProcessor = std::unique_ptr< FlowProcessor >( new GPUFlowProcessor() );
 }
 
-void GPUFlowTracker::buildPyramid( FlowFrame *frame )
+void GPUFlowTracker::buildPyramid( FlowFrame * )
 {
 }
 

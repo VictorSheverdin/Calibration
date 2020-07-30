@@ -372,7 +372,7 @@ cv::Mat track( const std::shared_ptr< FlowFrame > &prevFrame, const std::shared_
                 nextPoint->setMapPoint( worlPoint );
 
             nextPoint->setError( prevPoint->error() + i.error );
-            nextPoint->setCheckError( prevPoint->checkError() + i.checkError );
+            nextPoint->setMisstake( prevPoint->misstake() + i.miss );
 
         }
 
@@ -1398,7 +1398,7 @@ cv::Mat FlowStereoFrame::match()
                     rightFlowPoint->setMapPoint( worlPoint );
 
                 rightFlowPoint->setError( leftFlowPoint->error() + i.error );
-                rightFlowPoint->setCheckError( leftFlowPoint->checkError() + i.checkError );
+                rightFlowPoint->setMisstake( leftFlowPoint->misstake() + i.miss );
 
             }
 
@@ -1938,23 +1938,23 @@ double RecoverPoseFrame::recoverPose( ProjectionMatrix *result )
     return 0.;
 }
 
-// TriangulateFrame
-TriangulateFrame::TriangulateFrame(const ProcessedKeyFramePtr &startFrame, const ProcessedKeyFramePtr &endFrame )
+// ConsecutiveKeyFrame
+ConsecutiveKeyFrame::ConsecutiveKeyFrame(const ProcessedKeyFramePtr &startFrame, const ProcessedKeyFramePtr &endFrame )
     : ConsecutiveFrame( startFrame, endFrame )
 {
 }
 
-ProcessedKeyFramePtr TriangulateFrame::startFrame() const
+ProcessedKeyFramePtr ConsecutiveKeyFrame::startFrame() const
 {
     return std::dynamic_pointer_cast< ProcessedKeyFrame >( ConsecutiveFrame::startFrame() );
 }
 
-ProcessedKeyFramePtr TriangulateFrame::endFrame() const
+ProcessedKeyFramePtr ConsecutiveKeyFrame::endFrame() const
 {
     return std::dynamic_pointer_cast< ProcessedKeyFrame >( ConsecutiveFrame::endFrame() );
 }
 
-int TriangulateFrame::triangulatePoints()
+int ConsecutiveKeyFrame::triangulatePoints()
 {
     int ret = 0;
 
@@ -2072,7 +2072,7 @@ int TriangulateFrame::triangulatePoints()
 
 }
 
-double TriangulateFrame::distance() const
+double ConsecutiveKeyFrame::distance() const
 {
     return cv::norm( endFrame()->translationVector() - startFrame()->translationVector() );
 }

@@ -63,17 +63,20 @@ void ImagesWidget::setStereoImage( const CvImage &image )
 }
 
 // PCLWidget
-View3DWidget::View3DWidget( QWidget* parent )
+ReconstructionViewWidget::ReconstructionViewWidget( QWidget* parent )
     : PCLWidget( parent )
 {
     initialize();
 }
 
-void View3DWidget::initialize()
+void ReconstructionViewWidget::initialize()
 {
+    m_pclViewer->setCameraPosition( 0, 0, -10, 0, -1, 0 );
+    m_pclViewer->setCameraClipDistances( 0.1, 10000 );
+
     m_pclViewer->addCoordinateSystem( 0.5 );
 
-    m_pclViewer->registerPointPickingCallback( View3DWidget::pickingEventHandler, m_pclViewer.get() );
+    m_pclViewer->registerPointPickingCallback( ReconstructionViewWidget::pickingEventHandler, m_pclViewer.get() );
 }
 
 vtkSmartPointer< vtkPolyDataMapper > polyLineMapper( std::list< cv::Vec3d > &points )
@@ -101,7 +104,7 @@ vtkSmartPointer< vtkPolyDataMapper > polyLineMapper( std::list< cv::Vec3d > &poi
      return mapper;
 }
 
-void View3DWidget::setLeftPath( std::list< cv::Vec3d > &points )
+void ReconstructionViewWidget::setLeftPath( std::list< cv::Vec3d > &points )
 {
     auto mapper = polyLineMapper( points );
 
@@ -115,7 +118,7 @@ void View3DWidget::setLeftPath( std::list< cv::Vec3d > &points )
 
 }
 
-void View3DWidget::setRightPath( std::list< cv::Vec3d > &points )
+void ReconstructionViewWidget::setRightPath( std::list< cv::Vec3d > &points )
 {
     auto mapper = polyLineMapper( points );
 
@@ -129,7 +132,7 @@ void View3DWidget::setRightPath( std::list< cv::Vec3d > &points )
 
 }
 
-void View3DWidget::setPath( const std::list< StereoCameraMatrix > &path )
+void ReconstructionViewWidget::setPath( const std::list< StereoCameraMatrix > &path )
 {
     std::list< cv::Vec3d > leftPoints;
     std::list< cv::Vec3d > rightPoints;
@@ -157,7 +160,7 @@ void View3DWidget::setPath( const std::list< StereoCameraMatrix > &path )
 
 }
 
-void View3DWidget::showPath( const bool value )
+void ReconstructionViewWidget::showPath( const bool value )
 {
     if ( m_leftTrajectoryActor )
         m_leftTrajectoryActor->SetVisibility( value );
@@ -173,7 +176,7 @@ void View3DWidget::showPath( const bool value )
 
 }
 
-void View3DWidget::setFrustum( const StereoCameraMatrix &cameraMatrix )
+void ReconstructionViewWidget::setFrustum( const StereoCameraMatrix &cameraMatrix )
 {
     setLeftFrustum( cameraMatrix.leftProjectionMatrix() );
     setRightFrustum( cameraMatrix.rightProjectionMatrix() );
@@ -229,7 +232,7 @@ vtkSmartPointer< vtkPolyDataMapper > cameraMapper( const ProjectionMatrix &camer
     return mapper;
 }
 
-void View3DWidget::setLeftFrustum( const ProjectionMatrix &cameraMatrix )
+void ReconstructionViewWidget::setLeftFrustum( const ProjectionMatrix &cameraMatrix )
 {
     auto mapper = cameraMapper( cameraMatrix );
 
@@ -245,7 +248,7 @@ void View3DWidget::setLeftFrustum( const ProjectionMatrix &cameraMatrix )
 
 }
 
-void View3DWidget::setRightFrustum( const ProjectionMatrix &cameraMatrix )
+void ReconstructionViewWidget::setRightFrustum( const ProjectionMatrix &cameraMatrix )
 {
     auto mapper = cameraMapper( cameraMatrix );
 
@@ -261,7 +264,7 @@ void View3DWidget::setRightFrustum( const ProjectionMatrix &cameraMatrix )
 
 }
 
-void View3DWidget::pickingEventHandler( const pcl::visualization::PointPickingEvent &event, void *viewer_void )
+void ReconstructionViewWidget::pickingEventHandler( const pcl::visualization::PointPickingEvent &event, void *viewer_void )
 {
     float x, y, z;
 
@@ -283,6 +286,124 @@ void View3DWidget::pickingEventHandler( const pcl::visualization::PointPickingEv
 
 }
 
+// ImuViewWidget
+ImuViewWidget::ImuViewWidget( const QString &portName, QWidget* parent )
+    : PCLWidget( parent )
+{
+    initialize( portName );
+}
+
+void ImuViewWidget::initialize( const QString &portName )
+{
+    m_rotation = Eigen::Quaterniond::Identity();
+
+    m_pclViewer->setCameraPosition( 10, 10, 0, 0, 0, 1 );
+    m_pclViewer->setCameraClipDistances( 0.1, 10000 );
+
+    m_pclViewer->addCoordinateSystem( 2.0, "world" );
+    m_pclViewer->addCoordinateSystem( 1.0, "imu" );
+    m_pclViewer->addCube( -.2, .2, -.8, .8, -.1, .1, 0.5, 0.5, 0.5, "beam" );
+
+    m_xsensInterface.connectDevice( portName.toStdString() );
+    m_xsensInterface.prepare();
+
+    startTimer( 1./20. );
+}
+
+Eigen::Quaterniond ImuViewWidget::alignQuaternion( const Eigen::Vector3d &value )
+{
+    auto norm = value.normalized();
+
+    if ( ! norm.isZero() ) {
+
+        auto xCos = sqrt( 1. - norm.y() * norm.y() );
+        auto yCos = sqrt( 1. - norm.x() * norm.x() );
+
+        return Eigen::Quaterniond( sqrt( 0.5 * ( 1. + xCos ) ), sqrt( 0.5 * ( 1. - xCos ) ), 0, 0 ) * Eigen::Quaterniond( sqrt( 0.5 * ( 1. + yCos ) ), 0, -sqrt( 0.5 * ( 1. - yCos ) ), 0 );
+
+    }
+
+    return Eigen::Quaterniond();
+
+}
+
+void ImuViewWidget::setRotation( const Eigen::Quaterniond &value )
+{
+    m_rotation = value;
+
+    Eigen::Affine3f pose( value.cast< float >() );
+
+    m_pclViewer->updateShapePose( "beam", pose );
+    m_pclViewer->updateCoordinateSystemPose( "imu", pose );
+
+    update();
+}
+
+const Eigen::Quaterniond &ImuViewWidget::rotation() const
+{
+    return m_rotation;
+}
+
+Eigen::Quaterniond quaternion( const Eigen::Vector3d &theta )
+{
+    return Eigen::Quaterniond( std::cos( 0.5 * theta.x() ), std::sin( 0.5 * theta.x() ), 0, 0 )
+                * Eigen::Quaterniond( std::cos( 0.5 * theta.y() ), 0, std::sin( 0.5 * theta.y() ), 0 )
+                * Eigen::Quaterniond( std::cos( 0.5 * theta.z() ), 0, 0, std::sin( 0.5 * theta.z() ) );
+
+}
+
+void ImuViewWidget::timerEvent( QTimerEvent * )
+{
+    auto measures = m_xsensInterface.getAllPackets( std::chrono::milliseconds( static_cast< int >( 1./40. ) ) );
+
+    for ( auto &i : measures ) {
+
+        if ( i.valid() ) {
+
+            if ( m_prevPacket.valid() ) {
+
+                double dt = i.xsensTime() - m_prevPacket.xsensTime();
+
+                if ( dt > DBL_EPSILON ) {
+
+                    auto gyro = i.gyro();
+                    auto accel = -i.acceleration();
+                    auto mag = i.magnitometer();
+
+                    double accScale = .05;
+                    double magScale = .15;
+
+                    auto globalAccel = m_rotation * accel;
+                    auto globalMag = m_rotation * mag;
+
+                    auto normalAccel = ( globalAccel ).normalized();
+                    auto normalMag = ( globalMag ).normalized();
+
+                    setRotation( m_rotation * quaternion( gyro * dt * ( 1. - accScale - magScale ) )
+                                 * quaternion( Eigen::Vector3d( std::asin( -normalAccel.y() ), std::asin( normalAccel.x() ), 0. ) * accScale )
+                                 * quaternion( Eigen::Vector3d( 0., 0., std::asin( -normalMag.y() ) ) * magScale ) );
+
+                    if ( m_pclViewer->contains( "gravity") )
+                        m_pclViewer->removeShape( "gravity" );
+
+                    if ( m_pclViewer->contains( "magnitometer") )
+                        m_pclViewer->removeShape( "magnitometer" );
+
+                    m_pclViewer->addArrow( pcl::PointXYZ( globalAccel.x(), globalAccel.y(), globalAccel.z() ), pcl::PointXYZ( 0., 0., 0. ), 0., 1., 0., true, "gravity" );
+                    m_pclViewer->addArrow( pcl::PointXYZ( globalMag.x(), globalMag.y(), globalMag.z() ), pcl::PointXYZ( 0., 0., 0. ), 0., 0., 1., true, "magnitometer" );
+
+                }
+
+            }
+
+            m_prevPacket = i;
+
+        }
+
+    }
+
+}
+
 // SlamViewWidget
 SlamViewWidget::SlamViewWidget( QWidget* parent )
     : QSplitter( Qt::Horizontal, parent )
@@ -297,8 +418,8 @@ void SlamViewWidget::initialize()
     m_imagesWidget = new ImagesWidget( this );
     addWidget( m_imagesWidget );
 
-    m_pclWidget = new View3DWidget( this );
-    addWidget( m_pclWidget );
+    _view3dWidget = new ReconstructionViewWidget( this );
+    addWidget( _view3dWidget );
 
     int widthDiv2 = width() / 2;
 
@@ -308,7 +429,7 @@ void SlamViewWidget::initialize()
 
 void SlamViewWidget::setPath( const std::list< StereoCameraMatrix > &path )
 {
-    m_pclWidget->setPath( path );
+    _view3dWidget->setPath( path );
 }
 
 void SlamViewWidget::setSparseCloud( const std::list< ColorPoint3d > &points )
@@ -318,22 +439,22 @@ void SlamViewWidget::setSparseCloud( const std::list< ColorPoint3d > &points )
 
 void SlamViewWidget::setPointCloud( const std::list< ColorPoint3d > &points, const std::string &id, const Eigen::Vector4f &origin, const Eigen::Quaternionf &orientation )
 {
-    m_pclWidget->setPointCloud( points, id, origin, orientation );
+    _view3dWidget->setPointCloud( points, id, origin, orientation );
 }
 
 void SlamViewWidget::setPointCloudPose( const std::string &id, const Eigen::Vector4f &origin, const Eigen::Quaternionf &orientation )
 {
-    m_pclWidget->setPointCloudPose( id, origin, orientation );
+    _view3dWidget->setPointCloudPose( id, origin, orientation );
 }
 
 void SlamViewWidget::showPath( const bool flag )
 {
-    m_pclWidget->showPath( flag );
+    _view3dWidget->showPath( flag );
 }
 
 bool SlamViewWidget::contains( const std::string &id ) const
 {
-    return m_pclWidget->contains( id );
+    return _view3dWidget->contains( id );
 }
 
 void SlamViewWidget::setPointsImage( const CvImage &image )

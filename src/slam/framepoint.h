@@ -122,8 +122,8 @@ public:
 
     FlowFramePtr parentFrame() const;
 
-    double checkError() const;
-    void setCheckError( const double value );
+    double misstake() const;
+    void setMisstake( const double value );
 
 protected:
     FlowPoint( const FlowFramePtr &parentFrame, const cv::Point2f &point, const cv::Scalar &color );
@@ -131,7 +131,7 @@ protected:
     cv::Point2f m_point;
     cv::Scalar m_color;
 
-    double m_checkError;
+    double m_misstake;
 
 };
 

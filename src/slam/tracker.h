@@ -46,7 +46,7 @@ class GPUFlowTracker : public FlowTracker
 public:
     GPUFlowTracker();
 
-    virtual void buildPyramid( FlowFrame *frame ) override;
+    virtual void buildPyramid( FlowFrame *) override;
     virtual void extractPoints( FlowKeyFrame *frame ) override;
 
     virtual cv::Mat track( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::vector< FlowTrackResult > *trackedPoints ) override;

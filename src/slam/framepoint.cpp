@@ -314,14 +314,14 @@ namespace slam {
         return std::dynamic_pointer_cast< FlowFrame >( m_parentFrame.lock() );
     }
 
-    double FlowPoint::checkError() const
+    double FlowPoint::misstake() const
     {
-        return m_checkError;
+        return m_misstake;
     }
 
-    void FlowPoint::setCheckError( const double value )
+    void FlowPoint::setMisstake( const double value )
     {
-        m_checkError = value;
+        m_misstake = value;
     }
 
     // FeaturePoint

@@ -633,13 +633,13 @@ public:
     double recoverPose( ProjectionMatrix *result );
 };
 
-class TriangulateFrame : public ConsecutiveFrame
+class ConsecutiveKeyFrame : public ConsecutiveFrame
 {
 public:
-    using ObjectPtr = std::shared_ptr< TriangulateFrame >;
-    using ObjectConstPtr = std::shared_ptr< const TriangulateFrame >;
+    using ObjectPtr = std::shared_ptr< ConsecutiveKeyFrame >;
+    using ObjectConstPtr = std::shared_ptr< const ConsecutiveKeyFrame >;
 
-    TriangulateFrame( const ProcessedKeyFramePtr &startFrame, const ProcessedKeyFramePtr &endFrame );
+    ConsecutiveKeyFrame( const ProcessedKeyFramePtr &startFrame, const ProcessedKeyFramePtr &endFrame );
 
     ProcessedKeyFramePtr startFrame() const;
     ProcessedKeyFramePtr endFrame() const;

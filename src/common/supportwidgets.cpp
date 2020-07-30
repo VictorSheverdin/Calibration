@@ -85,7 +85,7 @@ void FilesListWidget::removeSelected()
 }
 
 // DocumentBase
-DocumentBase::DocumentBase( QWidget *widget, QWidget* parent )
+DocumentBase::DocumentBase( QWidget *parent )
     : QWidget( parent )
 {
     initialize();

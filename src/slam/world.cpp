@@ -9,7 +9,7 @@
 namespace slam {
 
 const double World::m_maxReprojectionError = 1.;
-const double World::m_minStereoDisparity = 5.;
+const double World::m_minStereoDisparity = 7.;
 const double World::m_minAdjacentPointsDistance = 10.;
 const double World::m_minAdjacentCameraMultiplier = 3.;
 

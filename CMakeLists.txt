@@ -51,6 +51,8 @@ set ( COMMON_SOURCES
     src/common/pclwidget.cpp
     src/common/matrix.h
     src/common/matrix.inl
+    src/common/xsens.h
+    src/common/xsens.cpp
     src/common/tictoc.h
     src/common/tictoc.cpp
 )
@@ -90,18 +92,40 @@ find_package( PCL 1.9 REQUIRED )
 find_package( SuiteSparse REQUIRED )
 find_package( G2O REQUIRED )
 
+set( XSENS_DIR "/usr/local/xsens" )
+
 set( CMAKE_CXX_STANDARD 17 )
 set( CMAKE_CXX_STANDARD_REQUIRED ON )
 set( CMAKE_CXX_EXTENSIONS ON )
 
-set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O3 -march=native ${OpenMP_C_FLAGS}" )
-set ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O3 -march=native ${OpenMP_CXX_FLAGS}" )
-set ( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}" )
+if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options ( -Wall -Wextra -O3 -march=native )
+endif ()
 
 add_definitions( ${QT_DEFINITIONS} )
-include_directories( ${Qt5Widgets_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR} ${PCL_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR}/src/vimba/include )
-link_directories( ${PCL_LIBRARY_DIRS} )
-link_libraries( ${OpenCV_LIBS} ${PCL_LIBRARIES} ${EIGEN3_LIBS} ${CMAKE_CURRENT_SOURCE_DIR}/src/vimba/lib/libVimbaCPP.so )
+include_directories( ${Qt5Widgets_INCLUDE_DIRS}
+    ${OpenCV_INCLUDE_DIRS}
+    ${EIGEN3_INCLUDE_DIR}
+    ${PCL_INCLUDE_DIRS}
+    ${PROJECT_SOURCE_DIR}/src/vimba/include
+    ${XSENS_DIR}/include )
+
+link_directories( ${PCL_LIBRARY_DIRS}
+    ${XSENS_DIR}/public/xcommunication
+    ${XSENS_DIR}/public/xspublic/xscommon
+    ${XSENS_DIR}/public/xspublic/xscontroller
+    ${XSENS_DIR}/public/xspublic/xstypes
+)
+
+link_libraries( ${OpenCV_LIBS}
+    ${PCL_LIBRARIES} ${EIGEN3_LIBS}
+    OpenMP::OpenMP_CXX
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/vimba/lib/libVimbaCPP.so
+    xscontroller
+    xscommon
+    xstypes
+)
+
 add_definitions( ${PCL_DEFINITIONS} )
 
 QT5_ADD_RESOURCES( RES_SOURCES ${RESOURCES} )

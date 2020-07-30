@@ -72,7 +72,7 @@ class DocumentBase : public QWidget
     Q_OBJECT
 
 public:
-    explicit DocumentBase( QWidget *widget, QWidget* parent = nullptr );
+    explicit DocumentBase( QWidget *parent );
 
     void setWidget( QWidget *widget );
     QWidget *widget() const;

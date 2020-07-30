@@ -26,6 +26,8 @@ public:
     size_t size() const;
     bool empty() const;
 
+    void clear();
+
     typename std::list<T>::iterator begin();
     typename std::list<T>::const_iterator begin() const;
 

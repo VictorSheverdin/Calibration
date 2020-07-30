@@ -293,7 +293,7 @@ bool FlowMap::track( const StampedImage &leftImage, const StampedImage &rightIma
                     rightFrame->setRotation( recoveredPose.rotation() );
                     rightFrame->setTranslation( recoveredPose.translation() + baselineVector() );
 
-                    TriangulateFrame triangulateFrame( previousLeftFrame, leftFrame );
+                    ConsecutiveKeyFrame triangulateFrame( previousLeftFrame, leftFrame );
 
                     if ( triangulateFrame.distance() > baselineLenght() )
                         triangulateFrame.triangulatePoints();

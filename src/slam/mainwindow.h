@@ -19,6 +19,7 @@ public slots:
 
 protected:
     QPointer< QAction > m_newSlamDocumentAction;
+    QPointer< QAction > m_newImuDocumentAction;
     QPointer< QAction > m_exitAction;
     QPointer< QAction > m_aboutAction;
 
@@ -28,6 +29,7 @@ protected:
 
     void addImagesDocument( const QStringList &leftList, const QStringList &rightList, const QString &calibrationFile );
     void addCamerasDocument( const QString &leftCameraIp, const QString &rightCameraIp, const QString &calibrationFile );
+    void addImuDocument();
 
     void setupActions();
     void setupMenus();

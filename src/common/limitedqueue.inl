@@ -88,6 +88,12 @@ bool LimitedQueue<T>::empty() const
 }
 
 template < typename T >
+void LimitedQueue<T>::clear()
+{
+    return m_list.clear();
+}
+
+template < typename T >
 typename std::list<T>::iterator LimitedQueue<T>::begin()
 {
     return m_list.begin();

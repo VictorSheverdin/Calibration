@@ -15,5 +15,5 @@ class TicToc
     void report();
 
   protected:
-    std::chrono::time_point<std::chrono::system_clock> m_start;
+    std::chrono::time_point< std::chrono::steady_clock > m_start;
 };

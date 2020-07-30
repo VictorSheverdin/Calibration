@@ -12,6 +12,8 @@
 
 #include "src/common/vimbacamera.h"
 
+#include "src/common/xsens.h"
+
 class QCheckBox;
 
 class ImagesWidget : public QSplitter
@@ -36,12 +38,12 @@ private:
 
 };
 
-class View3DWidget : public PCLWidget
+class ReconstructionViewWidget : public PCLWidget
 {
     Q_OBJECT
 
 public:
-    View3DWidget( QWidget* parent = nullptr );
+    explicit ReconstructionViewWidget( QWidget* parent = nullptr );
 
     void setPath( const std::list< StereoCameraMatrix > &path );
 
@@ -65,6 +67,32 @@ protected:
 
 private:
     void initialize();
+
+};
+
+class ImuViewWidget : public PCLWidget
+{
+    Q_OBJECT
+
+public:
+    explicit ImuViewWidget( const QString &portName, QWidget* parent = nullptr );
+
+    static Eigen::Quaterniond alignQuaternion( const Eigen::Vector3d &value );
+
+    void setRotation( const Eigen::Quaterniond &value );
+    const Eigen::Quaterniond &rotation() const;
+
+protected:
+    XsensInterface m_xsensInterface;
+
+    Eigen::Quaterniond m_rotation;
+
+    XsensData m_prevPacket;
+
+    virtual void timerEvent( QTimerEvent * ) override;
+
+private:
+    void initialize( const QString &portName );
 
 };
 
@@ -94,7 +122,7 @@ public:
 
 protected:
     QPointer< ImagesWidget > m_imagesWidget;
-    QPointer< View3DWidget > m_pclWidget;
+    QPointer< ReconstructionViewWidget > _view3dWidget;
 
 private:
     void initialize();

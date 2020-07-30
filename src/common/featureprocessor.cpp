@@ -34,8 +34,8 @@ void extractAndCompute( cv::Ptr< cv::Feature2D > processor, const CvImage &image
 }
 
 // TrackPointResult
-FlowTrackResult::FlowTrackResult( size_t index, cv::Point2f point, float error , float checkError )
-    : cv::Point2f( point ), index( index ), error( error ), checkError( checkError )
+FlowTrackResult::FlowTrackResult( size_t index, cv::Point2f point, float error , float miss )
+    : cv::Point2f( point ), index( index ), error( error ), miss( miss )
 {
 }
 
@@ -46,7 +46,6 @@ bool FlowTrackResult::operator<( const FlowTrackResult &other ) const
 
 // FlowProcessor
 const double FlowProcessor::m_checkDistance = 1.0;
-const double FlowProcessor::m_errorRatio = 1.0;
 
 // FlowProcessor
 FlowProcessor::FlowProcessor()
@@ -56,7 +55,8 @@ FlowProcessor::FlowProcessor()
 
 void FlowProcessor::initialize()
 {
-    m_extractPrecision = 1.e-12;
+    m_extractPrecision = 1.e-2;
+    m_blockSize = 5;
     m_ransacReprojectionThreshold = 1.0;
     m_ransacConfidence = 1.0 - 1.e-3;
 }
@@ -68,7 +68,7 @@ void FlowProcessor::extractPoints( const CvImage &image, const cv::Mat &mask, st
         cv::Mat gray;
         cv::cvtColor( image, gray, cv::COLOR_BGR2GRAY );
 
-        cv::goodFeaturesToTrack( gray, *points, count, m_extractPrecision, distance, mask );
+        cv::goodFeaturesToTrack( gray, *points, count, m_extractPrecision, distance, mask, m_blockSize );
 
     }
 
@@ -212,43 +212,17 @@ void GPUFlowProcessor::track( const CvImage &sourceImage, const std::vector< cv:
         download( m_gpuErr, err );
         download( m_gpuCheckErr, checkErr );
 
-        if ( !err.empty() && err.size() == checkErr.size() ) {
+        trackedPoints->clear();
 
-            float minErr;
-            float maxErr;
-            float minCheckErr;
-            float maxCheckErr;
+        for ( size_t i = 0; i < statuses.size(); ++i ) {
 
-            minErr = err.front();
-            maxErr = err.front();
-            minCheckErr = checkErr.front();
-            maxCheckErr = checkErr.front();
+            auto miss = cv::norm( checkPoints[ i ] - sourcePoints[ i ] );
 
-            for ( size_t i = 1; i < err.size(); ++i ) {
-                minErr = std::min( minErr, err[ i ] );
-                maxErr = std::max( maxErr, err[ i ] );
-                minCheckErr = std::min( minCheckErr, checkErr[ i ] );
-                maxCheckErr = std::max( maxCheckErr, checkErr[ i ] );
-            }
+            if ( statuses[i] && checkStatuses[i] && miss < m_checkDistance
+                 && opticalPoints[ i ].x >= 0 && opticalPoints[ i ].y >= 0
+                 && opticalPoints[ i ].x < targetImage.cols &&  opticalPoints[ i ].y < targetImage.rows ) {
 
-            auto errDiff = maxErr - minErr;
-            auto checkErrDiff = maxCheckErr - minCheckErr;
-
-            auto errThreshold = minErr + errDiff * m_errorRatio;
-            auto checkErrThreshold = minCheckErr + checkErrDiff * m_errorRatio;
-
-            trackedPoints->clear();
-
-            for ( size_t i = 0; i < statuses.size(); ++i ) {
-
-                auto miss = cv::norm( checkPoints[ i ] - sourcePoints[ i ] );
-
-                if ( statuses[i] && checkStatuses[i] && err[i] < errThreshold && checkErr[i] < checkErrThreshold && miss < m_checkDistance
-                     && opticalPoints[ i ].x >= 0 && opticalPoints[ i ].y >= 0 && opticalPoints[ i ].x < targetImage.cols &&  opticalPoints[ i ].y < targetImage.rows ) {
-
-                    trackedPoints->push_back( FlowTrackResult( i, opticalPoints[ i ], err[i], miss ) );
-
-                }
+                trackedPoints->push_back( FlowTrackResult( i, opticalPoints[ i ], err[i], miss ) );
 
             }
 
@@ -267,9 +241,9 @@ CPUFlowProcessor::CPUFlowProcessor()
 void CPUFlowProcessor::initialize()
 {
     m_winSize = 21;
-    m_levels = 5;
+    m_levels = 6;
 
-     m_termCriteria = cv::TermCriteria( cv::TermCriteria::EPS, 100, 1.e-2 );
+     m_termCriteria = cv::TermCriteria( cv::TermCriteria::EPS, 1000, 1.e-4 );
 
      m_minEigenValue = 1.e-4;
 
@@ -289,50 +263,25 @@ void CPUFlowProcessor::track( const std::vector< cv::Mat > &sourceImagePyramid, 
         std::vector< float > checkErr;
 
         cv::calcOpticalFlowPyrLK( sourceImagePyramid, targetImagePyramid, sourcePoints, opticalPoints, statuses, err, cv::Size( m_winSize, m_winSize ),
-                                  m_levels, m_termCriteria, cv::OPTFLOW_LK_GET_MIN_EIGENVALS, m_minEigenValue );
+                                            m_levels, m_termCriteria, cv::OPTFLOW_LK_GET_MIN_EIGENVALS, m_minEigenValue );
+
         cv::calcOpticalFlowPyrLK( targetImagePyramid, sourceImagePyramid, opticalPoints, checkPoints, checkStatuses, checkErr, cv::Size( m_winSize, m_winSize ),
-                                  m_levels, m_termCriteria, cv::OPTFLOW_LK_GET_MIN_EIGENVALS, m_minEigenValue );
+                                            m_levels, m_termCriteria, cv::OPTFLOW_LK_GET_MIN_EIGENVALS, m_minEigenValue );
 
-        if ( !err.empty() && err.size() == checkErr.size() ) {
+        auto rows = targetImagePyramid.front().rows;
+        auto cols = targetImagePyramid.front().cols;
 
-            float minErr;
-            float maxErr;
-            float minCheckErr;
-            float maxCheckErr;
+        trackedPoints->clear();
 
-            minErr = err.front();
-            maxErr = err.front();
-            minCheckErr = checkErr.front();
-            maxCheckErr = checkErr.front();
+        for ( size_t i = 0; i < statuses.size(); ++i ) {
 
-            for ( size_t i = 1; i < err.size(); ++i ) {
-                minErr = std::min( minErr, err[ i ] );
-                maxErr = std::max( maxErr, err[ i ] );
-                minCheckErr = std::min( minCheckErr, checkErr[ i ] );
-                maxCheckErr = std::max( maxCheckErr, checkErr[ i ] );
-            }
+            auto miss = cv::norm( checkPoints[ i ] - sourcePoints[ i ] );
 
-            auto errDiff = maxErr - minErr;
-            auto checkErrDiff = maxCheckErr - minCheckErr;
+            if ( statuses[i] && checkStatuses[i] && miss < m_checkDistance
+                 && opticalPoints[ i ].x >= 0 && opticalPoints[ i ].y >= 0
+                 && opticalPoints[ i ].x < cols &&  opticalPoints[ i ].y < rows ) {
 
-            auto errThreshold = minErr + errDiff * m_errorRatio;
-            auto checkErrThreshold = minCheckErr + checkErrDiff * m_errorRatio;
-
-            auto rows = targetImagePyramid.front().rows;
-            auto cols = targetImagePyramid.front().cols;
-
-            trackedPoints->clear();
-
-            for ( size_t i = 0; i < statuses.size(); ++i ) {
-
-                auto miss = cv::norm( checkPoints[ i ] - sourcePoints[ i ] );
-
-                if ( statuses[i] && checkStatuses[i] && err[i] < errThreshold && checkErr[i] < checkErrThreshold && miss < m_checkDistance
-                     && opticalPoints[ i ].x >= 0 && opticalPoints[ i ].y >= 0 && opticalPoints[ i ].x < cols &&  opticalPoints[ i ].y < rows ) {
-
-                    trackedPoints->push_back( FlowTrackResult( i, opticalPoints[ i ], err[ i ], miss ) );
-
-                }
+                trackedPoints->push_back( FlowTrackResult( i, opticalPoints[ i ], err[ i ], miss ) );
 
             }
 
