@@ -13,7 +13,7 @@ class PCLWidget : public QVTKOpenGLNativeWidget
 public:
     PCLWidget( QWidget* parent = nullptr );
 
-    void setPointCloud(const pcl::PointCloud< pcl::PointXYZRGB >::Ptr cloud, const std::string &id = "cloud" );
+    void setPointCloud( const pcl::PointCloud< pcl::PointXYZRGB >::Ptr &cloud, const std::string &id = "cloud" );
 
     void setPointCloud( const std::list< ColorPoint3d > &points,
                         const std::string &id = "cloud",

@@ -85,48 +85,45 @@ set ( RESOURCES
 
 find_package( OpenMP REQUIRED )
 find_package( Qt5Widgets REQUIRED )
-find_package( OpenCV 4 REQUIRED )
-find_package( Eigen3 3.1.0 REQUIRED )
-find_package( VTK 8.2 REQUIRED )
-find_package( PCL 1.9 REQUIRED )
+find_package( OpenCV 4.4 REQUIRED )
+find_package( Eigen3 3.1 REQUIRED )
+find_package( PCL 1.11 REQUIRED )
 find_package( SuiteSparse REQUIRED )
 find_package( G2O REQUIRED )
-
-set( XSENS_DIR "/usr/local/xsens" )
 
 set( CMAKE_CXX_STANDARD 17 )
 set( CMAKE_CXX_STANDARD_REQUIRED ON )
 set( CMAKE_CXX_EXTENSIONS ON )
 
-if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options ( -Wall -Wextra -O3 -march=native )
+if ( CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang" )
+    add_compile_options( -Wall -O3 -march=native )
 endif ()
 
 add_definitions( ${QT_DEFINITIONS} )
+add_definitions( ${PCL_DEFINITIONS} )
+
+set( XSENS_DIR "/usr/local/xsens" )
+
 include_directories( ${Qt5Widgets_INCLUDE_DIRS}
     ${OpenCV_INCLUDE_DIRS}
-    ${EIGEN3_INCLUDE_DIR}
     ${PCL_INCLUDE_DIRS}
+    ${EIGEN3_INCLUDE_DIR}
     ${PROJECT_SOURCE_DIR}/src/vimba/include
     ${XSENS_DIR}/include )
 
-link_directories( ${PCL_LIBRARY_DIRS}
-    ${XSENS_DIR}/public/xcommunication
-    ${XSENS_DIR}/public/xspublic/xscommon
-    ${XSENS_DIR}/public/xspublic/xscontroller
-    ${XSENS_DIR}/public/xspublic/xstypes
-)
+link_directories( ${PCL_LIBRARY_DIRS} ${XSENS_DIR}/lib )
 
-link_libraries( ${OpenCV_LIBS}
-    ${PCL_LIBRARIES} ${EIGEN3_LIBS}
+link_libraries(
+    ${OpenCV_LIBS}
+    ${Qt5Widgets_LIBRARIES}
+    ${PCL_LIBRARIES}
+    ${EIGEN3_LIBS}
     OpenMP::OpenMP_CXX
     ${CMAKE_CURRENT_SOURCE_DIR}/src/vimba/lib/libVimbaCPP.so
     xscontroller
     xscommon
     xstypes
 )
-
-add_definitions( ${PCL_DEFINITIONS} )
 
 QT5_ADD_RESOURCES( RES_SOURCES ${RESOURCES} )
 
@@ -243,12 +240,10 @@ add_executable( lidar ${COMMON_SOURCES} ${RES_SOURCES}
 
 target_include_directories( slam PRIVATE ${G2O_INCLUDE_DIR} ${CHOLMOD_INCLUDE_DIR} )
 
-target_link_libraries( calibration ${Qt5Widgets_LIBRARIES} ${YAML_CPP_LIBRARIES} )
-target_link_libraries( disparity ${Qt5Widgets_LIBRARIES} ${VTK_LIBRARIES} ${YAML_CPP_LIBRARIES} )
+target_link_libraries( calibration ${YAML_CPP_LIBRARIES} )
+target_link_libraries( disparity ${YAML_CPP_LIBRARIES} )
 
 target_link_libraries( slam PRIVATE
-                            ${Qt5Widgets_LIBRARIES}
-                            ${VTK_LIBRARIES}
                             ${G2O_CORE_LIBRARY}
                             ${G2O_STUFF_LIBRARY}
                             ${G2O_CLI_LIBRARY}
@@ -257,7 +252,3 @@ target_link_libraries( slam PRIVATE
                             ${G2O_SOLVER_EIGEN}
                             ${CHOLMOD_LIBRARIES}
 )
-
-target_link_libraries( exposure PRIVATE ${Qt5Widgets_LIBRARIES} ${VTK_LIBRARIES} )
-
-target_link_libraries( lidar PRIVATE ${Qt5Widgets_LIBRARIES} ${VTK_LIBRARIES} )

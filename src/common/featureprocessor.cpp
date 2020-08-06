@@ -447,7 +447,7 @@ SiftProcessor::SiftProcessor()
 
 void SiftProcessor::initialize()
 {
-    m_processor = cv::xfeatures2d::SIFT::create( 5000 );
+    m_processor = cv::SIFT::create( 5000 );
 }
 
 // SurfProcessor

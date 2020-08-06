@@ -44,7 +44,7 @@ void PCLWidget::initialize()
 
 }
 
-void PCLWidget::setPointCloud( const pcl::PointCloud< pcl::PointXYZRGB >::Ptr cloud, const std::string &id )
+void PCLWidget::setPointCloud( const pcl::PointCloud< pcl::PointXYZRGB >::Ptr &cloud, const std::string &id )
 {
     if( !m_pclViewer->updatePointCloud( cloud, id ) ) {
         m_pclViewer->addPointCloud( cloud, id );
