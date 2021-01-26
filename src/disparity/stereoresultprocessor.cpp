@@ -116,6 +116,20 @@ bool StereoResultProcessor::loadYaml( const std::string &fileName )
     return ret;
 }
 
+pcl::PointCloud< pcl::PointXYZRGB >::Ptr StereoResultProcessor::process( const CvImage &color, const CvImage &disparity )
+{
+    pcl::PointCloud< pcl::PointXYZRGB >::Ptr ret;
+
+    if ( !disparity.empty() ) {
+
+        cv::Mat points = reprojectPoints( disparity );
+        ret = producePointCloud( points, color );
+    }
+
+    return ret;
+
+}
+
 StereoResult StereoResultProcessor::process( const StampedStereoImage &frame )
 {
     StereoResult ret;
@@ -146,6 +160,7 @@ StereoResult StereoResultProcessor::process( const StampedStereoImage &frame )
             if ( m_disparityProcessor ) {
 
                 auto disparity = processDisparity( leftCroppedFrame, rightCroppedFrame );
+
                 ret.setDisparity( disparity );
 
                 cv::Mat points = reprojectPoints( disparity );
@@ -163,4 +178,3 @@ StereoResult StereoResultProcessor::process( const StampedStereoImage &frame )
     return ret;
 
 }
-

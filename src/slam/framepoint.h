@@ -11,7 +11,6 @@ namespace slam {
 
 class MonoFrame;
 class FlowFrame;
-class FeatureFrame;
 class FinishedKeyFrame;
 class MapPoint;
 
@@ -147,14 +146,14 @@ public:
     const cv::KeyPoint &keyPoint() const;
     cv::Mat descriptor() const;
 
-    static ObjectPtr create( const FeatureFramePtr &parentFrame, const size_t keyPointIndex );
+    static ObjectPtr create( const FlowFramePtr &parentFrame, const size_t keyPointIndex );
 
-    FeatureFramePtr parentFrame() const;
+    FlowFramePtr parentFrame() const;
 
 protected:
-    using FramePtrImpl = std::weak_ptr< FeatureFrame >;
+    using FramePtrImpl = std::weak_ptr< FlowFrame >;
 
-    FeaturePoint( const FeatureFramePtr &parentFrame, const size_t keyPointIndex );
+    FeaturePoint( const FlowFramePtr &parentFrame, const size_t keyPointIndex );
 
     size_t m_keyPointIndex; // Index of keypoint in parent frame
 

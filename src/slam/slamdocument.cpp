@@ -5,7 +5,7 @@
 #include "slamwidget.h"
 
 // DisparityDocumentBase
-SlamDocumentBase::SlamDocumentBase( QWidget* parent )
+SlamDocumentBase::SlamDocumentBase( QWidget *parent )
     : DocumentBase( parent )
 {
     initialize();
@@ -16,7 +16,7 @@ void SlamDocumentBase::initialize()
 }
 
 // ImageSlamDocument
-ImageSlamDocument::ImageSlamDocument( const QStringList &leftList, const QStringList &rightList, const QString &calibrationFile, QWidget* parent )
+ImageSlamDocument::ImageSlamDocument( const QStringList &leftList, const QStringList &rightList, const QString &calibrationFile, QWidget *parent )
     : SlamDocumentBase( parent )
 {
     initialize( leftList, rightList, calibrationFile );
@@ -33,7 +33,7 @@ SlamImageWidget *ImageSlamDocument::widget() const
 }
 
 // CameraSlamDocument
-CameraSlamDocument::CameraSlamDocument( const QString &leftCameraIp, const QString &rightCameraIp, const QString &calibrationFile, QWidget* parent )
+CameraSlamDocument::CameraSlamDocument( const QString &leftCameraIp, const QString &rightCameraIp, const QString &calibrationFile, QWidget *parent )
     : SlamDocumentBase( parent )
 {
     initialize( leftCameraIp, rightCameraIp, calibrationFile );
@@ -50,18 +50,35 @@ SlamCameraWidget *CameraSlamDocument::widget() const
 }
 
 // ImuDocument
-ImuDocument::ImuDocument( const QString &portName, QWidget* parent )
+ImuDocument::ImuDocument( const QString &portName, QWidget *parent )
     : SlamDocumentBase( parent )
 {
     initialize( portName );
 }
 
-ImuViewWidget *ImuDocument::widget() const
-{
-    return dynamic_cast< ImuViewWidget * >( m_widget );
-}
-
 void ImuDocument::initialize( const QString &portName )
 {
-    setWidget( new ImuViewWidget( portName, this ) );
+    setWidget( new ImuWidget( portName, this ) );
+}
+
+ImuWidget *ImuDocument::widget() const
+{
+    return dynamic_cast< ImuWidget * >( m_widget );
+}
+
+// ImuCalibrationDocument
+ImuCalibrationDocument::ImuCalibrationDocument( const QString &portName, QWidget *parent )
+    : SlamDocumentBase( parent )
+{
+    initialize( portName );
+}
+
+void ImuCalibrationDocument::initialize( const QString &portName )
+{
+    setWidget( new ImuCalibrationWidget( portName, this ) );
+}
+
+ImuCalibrationWidget *ImuCalibrationDocument::widget() const
+{
+    return dynamic_cast< ImuCalibrationWidget * >( m_widget );
 }

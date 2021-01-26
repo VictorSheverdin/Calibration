@@ -2,6 +2,7 @@
 
 #include <QWidget>
 #include <QPointer>
+#include <QScrollArea>
 
 #include "image.h"
 
@@ -33,6 +34,37 @@ protected:
 
     virtual void paintEvent( QPaintEvent *event ) override;
     virtual void resizeEvent( QResizeEvent *event ) override;
+
+private:
+    void initialize();
+
+};
+
+class ImageViewer : public QScrollArea
+{
+    Q_OBJECT
+
+ public:
+     ImageViewer( QWidget* parent = nullptr );
+
+public slots:
+     void setImage( const CvImage &image );
+
+     void setScale( const double value );
+
+     void zoomIn();
+     void zoomOut();
+     void normalSize();
+
+protected:
+    QPointer< ImageWidget > m_image;
+    double m_scaleFactor;
+
+    void wheelEvent( QWheelEvent *event ) override;
+
+    void scaleImage( double factor );
+
+    void updateScale();
 
 private:
     void initialize();

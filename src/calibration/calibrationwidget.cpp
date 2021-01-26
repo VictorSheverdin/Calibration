@@ -313,7 +313,7 @@ void MonocularImageCalibrationWidget::importDialog()
                             this,
                             tr( "Select images for calibration" ),
                             QString(),
-                            "Image files (*.png *.xpm *.jpg)" );
+                            "Image files (*.png *.xpm *.jpg *.tiff *.exr)" );
 
     for ( auto &i : files )
         loadIcon( i );
@@ -531,7 +531,7 @@ void MonocularCameraCalibrationWidget::importDialog()
                             this,
                             tr( "Select images for calibration" ),
                             QString(),
-                            "Image files (*.png *.xpm *.jpg)" );
+                            "Image files (*.png *.xpm *.jpg *.tiff *.exr)" );
 
     for ( auto &i : files )
         loadIcon( i );

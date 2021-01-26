@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QApplication>
+#include <QGuiApplication>
 #include <QtWidgets>
 #include <QStackedWidget>
 #include <QLabel>
@@ -27,3 +28,4 @@
 #include <set>
 #include <vector>
 #include <array>
+#include <cmath>

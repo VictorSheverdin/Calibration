@@ -19,8 +19,8 @@ void PCLWidget::initialize()
 {
     m_renderer = vtkSmartPointer< vtkRenderer >::New();
 
-    m_renderer->SetBackground( 127, 127, 127 );
-    m_renderer->SetBackground2( 1, 1, 1 );
+    m_renderer->SetBackground( 10, 10, 10 );
+    m_renderer->SetBackground2( 64, 64, 64 );
     m_renderer->SetGradientBackground( true );
 
     vtkNew< vtkGenericOpenGLRenderWindow > renderWindow;
@@ -35,12 +35,6 @@ void PCLWidget::initialize()
     m_pclViewer->setShowFPS( true );
 
     m_pclViewer->getInteractorStyle()->SetAutoAdjustCameraClippingRange( false );
-
-    /*vtkSmartPointer< vtkInteractorStyleTrackballCamera > style = vtkSmartPointer< vtkInteractorStyleTrackballCamera >::New();
-
-    style->SetAutoAdjustCameraClippingRange( false );
-
-    renderWindow->GetInteractor()->SetInteractorStyle( style );*/
 
 }
 

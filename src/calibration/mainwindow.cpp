@@ -145,8 +145,8 @@ void MainWindow::setupActions()
     m_openAction = new QAction( QIcon( ":/resources/images/open.ico" ), tr( "Open" ), this );
     m_saveAction = new QAction( QIcon( ":/resources/images/save.ico" ), tr( "Save" ), this );
 
-    m_importAction = new QAction( QIcon( ":/resources/images/export.ico" ), tr( "Import" ), this );
-    m_exportAction = new QAction( QIcon( ":/resources/images/import.ico" ), tr( "Export" ), this );
+    m_importAction = new QAction( QIcon( ":/resources/images/import.ico" ), tr( "Import" ), this );
+    m_exportAction = new QAction( QIcon( ":/resources/images/export.ico" ), tr( "Export" ), this );
 
     m_grabAction = new QAction( QIcon( ":/resources/images/grab.ico" ), tr( "Grab" ), this );
 

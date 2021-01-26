@@ -16,8 +16,6 @@ class StereoFrame;
 class StereoKeyFrame;
 class FlowStereoFrame;
 class FlowStereoKeyFrame;
-class FeatureStereoFrame;
-class FeatureStereoKeyFrame;
 class MapPoint;
 class World;
 
@@ -28,6 +26,8 @@ public:
     using ObjectConstPtr = std::shared_ptr< const Map >;
 
     virtual ~Map() = default;
+
+    static ObjectPtr create( const StereoCameraMatrix &cameraMatrix, const WorldPtr &parentWorld );
 
     WorldPtr parentWorld() const;
 
@@ -51,7 +51,8 @@ public:
 
     StereoCameraMatrix backProjectionMatrix() const;
 
-    virtual bool track( const StampedImage &leftImage, const StampedImage &rightImage ) = 0;
+    bool track( const StampedImage &leftImage, const StampedImage &rightImage );
+
 
 protected:
     using WorldPtrImpl = std::weak_ptr< World >;
@@ -81,42 +82,6 @@ protected:
 
 private:
     void initialize();
-
-};
-
-class FlowMap : public Map
-{
-public:
-    using ObjectPtr = std::shared_ptr< FlowMap >;
-    using ObjectConstPtr = std::shared_ptr< const FlowMap >;
-
-    static ObjectPtr create( const StereoCameraMatrix &cameraMatrix, const WorldPtr &parentWorld );
-
-    std::shared_ptr< FlowMap > shared_from_this();
-    std::shared_ptr< const FlowMap > shared_from_this() const;
-
-    virtual bool track( const StampedImage &leftImage, const StampedImage &rightImage ) override;
-
-protected:
-    FlowMap( const StereoCameraMatrix &projectionMatrix, const WorldPtr &parentWorld );
-
-};
-
-class FeatureMap : public Map
-{
-public:
-    using ObjectPtr = std::shared_ptr< FeatureMap >;
-    using ObjectConstPtr = std::shared_ptr< const FeatureMap >;
-
-    static ObjectPtr create( const StereoCameraMatrix &cameraMatrix, const WorldPtr &parentWorld );
-
-    std::shared_ptr< FeatureMap > shared_from_this();
-    std::shared_ptr< const FeatureMap > shared_from_this() const;
-
-    virtual bool track( const StampedImage &leftImage, const StampedImage &rightImage ) override;
-
-protected:
-    FeatureMap( const StereoCameraMatrix &projectionMatrix, const WorldPtr &parentWorld );
 
 };
 

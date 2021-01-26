@@ -8,14 +8,6 @@
 
 namespace slam {
 
-const double World::m_maxReprojectionError = 1.;
-const double World::m_minStereoDisparity = 7.;
-const double World::m_minAdjacentPointsDistance = 10.;
-const double World::m_minAdjacentCameraMultiplier = 3.;
-
-const double World::m_minTrackInliersRatio = 0.6;
-const double World::m_goodTrackInliersRatio = 0.9;
-
 World::World( const StereoCameraMatrix &cameraMatrix )
 {
     initialize( cameraMatrix );
@@ -36,12 +28,10 @@ World::World( const StereoCameraMatrix &cameraMatrix )
 
 void World::initialize( const StereoCameraMatrix &cameraMatrix )
 {
-    m_trackType = TrackType::FLOW;
-
     auto flowTracker = new CPUFlowTracker();
     m_flowTracker = std::unique_ptr< FlowTracker >( flowTracker );
 
-    m_featureTracker = std::unique_ptr< FeatureTracker >( new SiftTracker() );
+    // m_featureTracker = std::unique_ptr< FeatureTracker >( new SiftTracker() );
 
     m_startCameraMatrix = cameraMatrix;
 }
@@ -82,11 +72,6 @@ bool World::track( const StampedImage &leftImage, const StampedImage &rightImage
         if ( !result ) {
 
             std::cout << "\nTrack lost!\n" << std::endl ;
-
-            /*static size_t count = 0;
-            cv::imwrite( "/home/victor/check/" + std::to_string( count ) + "_0_prev.jpg", std::dynamic_pointer_cast< ProcessedStereoFrame >( m_maps.back()->frames().back() )->leftFrame()->image() );
-            cv::imwrite( "/home/victor/check/" + std::to_string( count ) + "_1_next.jpg", leftImage );
-            ++count;*/
 
             StereoCameraMatrix projectionMatrix;
 
@@ -166,34 +151,39 @@ const std::unique_ptr< FeatureTracker > &World::featureTracker() const
     return m_featureTracker;
 }
 
+const Settings &World::settings() const
+{
+    return m_settings;
+}
+
 double World::maxReprojectionError() const
 {
-    return m_maxReprojectionError;
+    return m_settings.maxReprojectionError();
 }
 
 double World::minStereoDisparity() const
 {
-    return m_minStereoDisparity;
+    return m_settings.minStereoDisparity();
 }
 
 double World::minAdjacentPointsDistance() const
 {
-    return m_minAdjacentPointsDistance;
+    return m_settings.minAdjacentPointsDistance();
 }
 
 double World::minAdjacentCameraMultiplier() const
 {
-    return m_minAdjacentCameraMultiplier;
+    return m_settings.minAdjacentCameraMultiplier();
 }
 
 double World::minTrackInliersRatio() const
 {
-    return m_minTrackInliersRatio;
+    return m_settings.minTrackInliersRatio();
 }
 
 double World::goodTrackInliersRatio() const
 {
-    return m_goodTrackInliersRatio;
+    return m_settings.goodTrackInliersRatio();
 }
 
 CvImage World::pointsImage() const
@@ -303,10 +293,7 @@ std::list< ColorPoint3d > World::sparseCloud() const
 
 void World::createMap( const StereoCameraMatrix &cameraMatrix )
 {
-    if ( m_trackType == TrackType::FLOW )
-        m_maps.push_back( FlowMap::create( cameraMatrix, shared_from_this() ) );
-    else if ( m_trackType == TrackType::FEATURES )
-        m_maps.push_back( FeatureMap::create( cameraMatrix, shared_from_this() ) );
+    m_maps.push_back( Map::create( cameraMatrix, shared_from_this() ) );
 }
 
 }

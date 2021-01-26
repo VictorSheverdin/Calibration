@@ -26,7 +26,7 @@ int64_t FrameObserver::timeFromStart()
     return std::chrono::duration_cast< std::chrono::microseconds >( std::chrono::system_clock::now() - m_startTime ).count();
 }
 
-void FrameObserver::FrameReceived ( const AVT::VmbAPI::FramePtr pFrame )
+void FrameObserver::FrameReceived( const AVT::VmbAPI::FramePtr pFrame )
 {
     VmbFrameStatusType eReceiveStatus ;
 
@@ -297,7 +297,7 @@ bool StereoCamera::empty() const
 
 void checkVimbaStatus( VmbErrorType status, std::string message )
 {
-    if (status != VmbErrorSuccess)
+    if( status != VmbErrorSuccess )
     {
         throw std::runtime_error(
             message + "; status = " + std::to_string(status) );

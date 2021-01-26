@@ -97,11 +97,14 @@ public:
     StampedStereoImage( const StampedImage &leftImage, const StampedImage &rightImage );
     StampedStereoImage( const StereoImage &image );
 
-    const StampedImage &leftImage() const;
-    void setLeftImage( const StampedImage &image );
+    void set( const StampedImage &leftImage, const StampedImage &rightImage );
+    void set( const StereoImage &image );
 
-    const StampedImage &rightImage() const;
+    void setLeftImage( const StampedImage &image );
     void setRightImage( const StampedImage &image );
+
+    const StampedImage &leftImage() const;
+    const StampedImage &rightImage() const;
 
     int diffMs() const;
 

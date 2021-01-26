@@ -5,9 +5,15 @@
 #include "src/common/defs.h"
 #include "src/common/functions.h"
 
+// DisparityIconBase
+DisparityIconBase::DisparityIconBase( const CvImage image, const QString &text )
+    : IconBase( image, text )
+{
+}
+
 // StereoIcon
 DisparityIcon::DisparityIcon( const CvImage &preivewImage, const QString &leftFileName, const QString &rightFileName, const QString &text )
-    : IconBase( resizeTo( preivewImage, IconsListWidget::m_iconSize.width() ), text )
+    : DisparityIconBase( resizeTo( preivewImage, IconsListWidget::m_iconSize.width() ), text )
 {
     setLeftFileName( leftFileName );
     setRightFileName( rightFileName );
@@ -17,7 +23,7 @@ DisparityIcon::DisparityIcon( const CvImage &preivewImage, const QString &leftFi
 
 void DisparityIcon::initialize()
 {
-    m_time = std::chrono::system_clock::now();
+    setTime( std::chrono::system_clock::now() );
 }
 
 void DisparityIcon::setLeftFileName( const QString &fileName )
@@ -65,6 +71,61 @@ const std::chrono::time_point< std::chrono::system_clock > &DisparityIcon::time(
     return m_time;
 }
 
+// DisparityResultIcon
+DisparityResultIcon::DisparityResultIcon( const CvImage &preivewImage, const QString &colorFileName, const QString &disparityFileName, const QString &text )
+    : DisparityIconBase( resizeTo( preivewImage, IconsListWidget::m_iconSize.width() ), text )
+{
+    setColorFileName( colorFileName );
+    setDisparityFileName( disparityFileName );
+
+    initialize();
+}
+
+void DisparityResultIcon::initialize()
+{
+    setTime( std::chrono::system_clock::now() );
+}
+
+void DisparityResultIcon::setColorFileName( const QString &fileName )
+{
+    m_colorFileName = fileName;
+}
+
+void DisparityResultIcon::setDisparityFileName( const QString &fileName )
+{
+    m_disparityFileName = fileName;
+}
+
+const QString &DisparityResultIcon::colorFileName() const
+{
+    return m_colorFileName;
+}
+
+const QString &DisparityResultIcon::disparityFileName() const
+{
+    return m_disparityFileName;
+}
+
+CvImage DisparityResultIcon::colorImage() const
+{
+    return CvImage( m_colorFileName.toStdString() );
+}
+
+CvImage DisparityResultIcon::disparityImage() const
+{
+    return CvImage( m_disparityFileName.toStdString() );
+}
+
+void DisparityResultIcon::setTime( const std::chrono::time_point< std::chrono::system_clock > &time )
+{
+    m_time = time;
+}
+
+const std::chrono::time_point< std::chrono::system_clock > &DisparityResultIcon::time() const
+{
+    return m_time;
+}
+
 // IconsListWidget
 DisparityIconsWidget::DisparityIconsWidget( QWidget *parent )
     : SuperClass( parent )
@@ -78,7 +139,7 @@ void DisparityIconsWidget::initialize()
 
     connect( this, &DisparityIconsWidget::itemDoubleClicked,
                 [&]( QListWidgetItem *item ) {
-                    auto itemCast = dynamic_cast< DisparityIcon * >( item );
+                    auto itemCast = dynamic_cast< DisparityIconBase * >( item );
 
                     if ( itemCast )
                         emit iconActivated( itemCast );
@@ -89,24 +150,24 @@ void DisparityIconsWidget::initialize()
 
 }
 
-void DisparityIconsWidget::addIcon( DisparityIcon *icon )
+void DisparityIconsWidget::addIcon( DisparityIconBase *icon )
 {
     SuperClass::addIcon( icon );
 }
 
-void DisparityIconsWidget::insertIcon( DisparityIcon *icon )
+void DisparityIconsWidget::insertIcon( DisparityIconBase *icon )
 {
     SuperClass::insertIcon( icon );
 }
 
-QList< DisparityIcon* > DisparityIconsWidget::icons() const
+QList< DisparityIconBase * > DisparityIconsWidget::icons() const
 {
-    QList< DisparityIcon* > ret;
+    QList< DisparityIconBase* > ret;
 
     auto list = SuperClass::icons();
 
     for ( auto &i : list ) {
-        auto itemCast = dynamic_cast< DisparityIcon* >( i );
+        auto itemCast = dynamic_cast< DisparityIconBase* >( i );
         if ( itemCast )
             ret.push_back( itemCast );
     }
@@ -115,7 +176,7 @@ QList< DisparityIcon* > DisparityIconsWidget::icons() const
 
 }
 
-DisparityIcon *DisparityIconsWidget::currentIcon() const
+DisparityIconBase *DisparityIconsWidget::currentIcon() const
 {
-    return dynamic_cast< DisparityIcon * >( currentItem() );
+    return dynamic_cast< DisparityIconBase * >( currentItem() );
 }

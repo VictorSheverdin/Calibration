@@ -16,10 +16,10 @@ Journaller *gJournal = 0;
 XsensData::XsensData()
     : _valid( false )
 {
-    setUtcTime( std::chrono::steady_clock::now() );
+    setUtcTime( std::chrono::high_resolution_clock::now() );
 }
 
-XsensData::XsensData( const std::chrono::time_point<std::chrono::steady_clock> &time, const XsDataPacket &packet )
+XsensData::XsensData( const std::chrono::time_point< std::chrono::high_resolution_clock > &time, const XsDataPacket &packet )
     : XsDataPacket( packet )
 {
     setUtcTime( time );
@@ -53,12 +53,12 @@ void XsensData::setValues( const XsDataPacket &packet )
 
 }
 
-void XsensData::setUtcTime( const std::chrono::time_point< std::chrono::steady_clock > &value )
+void XsensData::setUtcTime( const std::chrono::time_point< std::chrono::high_resolution_clock > &value )
 {
     _time = value;
 }
 
-const std::chrono::time_point< std::chrono::steady_clock > &XsensData::utcTime() const
+const std::chrono::time_point< std::chrono::high_resolution_clock > &XsensData::utcTime() const
 {
     return _time;
 }
@@ -137,7 +137,7 @@ std::vector< XsensData > XsensCallback::all( const std::chrono::milliseconds &ti
 
 void XsensCallback::onLiveDataAvailable( XsDevice *, const XsDataPacket *packet )
 {
-    auto now = std::chrono::steady_clock::now();
+    auto now = std::chrono::high_resolution_clock::now();
 
     std::unique_lock< std::mutex > lock( _mutex );
 

@@ -76,16 +76,23 @@ void MainWindow::addImuDocument()
     addDocument( new ImuDocument( "/dev/ttyUSB0", this ) );
 }
 
+void MainWindow::addImuCalibrationDocument()
+{
+    addDocument( new ImuCalibrationDocument( "/dev/ttyUSB0", this ) );
+}
+
 void MainWindow::setupActions()
 {
     m_newSlamDocumentAction = new QAction( QIcon( ":/resources/images/new.ico" ), tr( "New SLAM document" ), this );
     m_newImuDocumentAction = new QAction( QIcon( ":/resources/images/map.ico" ), tr( "New IMU document" ), this );
+    m_newImuCalibrationDocumentAction = new QAction( QIcon( ":/resources/images/calibration.ico" ), tr( "New IMU calibration document" ), this );
 
     m_exitAction = new QAction( QIcon( ":/resources/images/power.ico" ), tr( "Exit" ), this );
     m_aboutAction = new QAction( QIcon( ":/resources/images/help.ico" ), tr( "About" ), this );
 
     connect( m_newSlamDocumentAction, &QAction::triggered, this, &MainWindow::choiceDialog );
     connect( m_newImuDocumentAction, &QAction::triggered, this, &MainWindow::addImuDocument );
+    connect( m_newImuCalibrationDocumentAction, &QAction::triggered, this, &MainWindow::addImuCalibrationDocument );
     connect( m_exitAction, &QAction::triggered, this, &MainWindow::close );
 }
 
@@ -96,6 +103,7 @@ void MainWindow::setupMenus()
     auto fileMenu = m_menuBar->addMenu( tr( "File" ) );
     fileMenu->addAction( m_newSlamDocumentAction );
     fileMenu->addAction( m_newImuDocumentAction );
+    fileMenu->addAction( m_newImuCalibrationDocumentAction );
     fileMenu->addSeparator();
     fileMenu->addAction( m_exitAction );
 
@@ -111,6 +119,7 @@ void MainWindow::setupToolBars()
     m_toolBar = new QToolBar( tr( "Project tool bar" ), this );
     m_toolBar->addAction( m_newSlamDocumentAction );
     m_toolBar->addAction( m_newImuDocumentAction );
+    m_toolBar->addAction( m_newImuCalibrationDocumentAction );
     m_toolBar->addSeparator();
 
     addToolBar( m_toolBar );

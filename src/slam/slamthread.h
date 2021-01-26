@@ -14,8 +14,6 @@
 namespace slam {
     class World;
     class Map;
-    class FlowMap;
-    class FeatureMap;
     class StereoFrame;
 }
 

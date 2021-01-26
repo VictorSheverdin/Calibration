@@ -16,7 +16,7 @@ void DisparityDocumentBase::initialize()
 
 }
 
-// CalibrationDocumentBase
+// CameraDisparityDocument
 CameraDisparityDocument::CameraDisparityDocument( const QString &leftCameraIp, const QString &rightCameraIp, QWidget* parent )
     : DisparityDocumentBase( parent )
 {
@@ -43,39 +43,87 @@ void CameraDisparityDocument::loadCalibrationDialog()
     widget()->loadCalibrationDialog();
 }
 
-// ImageDisparityDocument
-ImageDisparityDocument::ImageDisparityDocument( QWidget* parent )
+// DiskDisparityDocument
+DiskDisparityDocument::DiskDisparityDocument( QWidget* parent )
     : DisparityDocumentBase( parent )
 {
     initialize();
 }
 
-void ImageDisparityDocument::initialize()
+void DiskDisparityDocument::initialize()
 {
-    setWidget( new ImageDisparityWidget( this ) );
 }
 
-ImageDisparityWidget *ImageDisparityDocument::widget() const
+DiskDisparityWidget *DiskDisparityDocument::widget() const
 {
-    return dynamic_cast< ImageDisparityWidget * >( m_widget );
+    return dynamic_cast< DiskDisparityWidget * >( m_widget );
 }
 
-void ImageDisparityDocument::loadCalibrationFile( const QString &fileName )
+void DiskDisparityDocument::clearIcons()
+{
+    widget()->clearIcons();
+}
+
+// StereoDisparityDocument
+StereoDisparityDocument::StereoDisparityDocument( QWidget* parent )
+    : DiskDisparityDocument( parent )
+{
+    initialize();
+}
+
+void StereoDisparityDocument::initialize()
+{
+    setWidget( new StereoDisparityWidget( this ) );
+}
+
+StereoDisparityWidget *StereoDisparityDocument::widget() const
+{
+    return dynamic_cast< StereoDisparityWidget * >( m_widget );
+}
+
+void StereoDisparityDocument::loadCalibrationFile( const QString &fileName )
 {
     widget()->loadCalibrationFile( fileName );
 }
 
-void ImageDisparityDocument::loadCalibrationDialog()
+void StereoDisparityDocument::loadCalibrationDialog()
 {
     widget()->loadCalibrationDialog();
 }
 
-void ImageDisparityDocument::importDialog()
+void StereoDisparityDocument::importDialog()
 {
-    widget()->importDialog();
+    widget()->importStereoDialog();
 }
 
-void ImageDisparityDocument::clearIcons()
+// FileDisparityDocument
+FileDisparityDocument::FileDisparityDocument( QWidget* parent )
+    : DiskDisparityDocument( parent )
 {
-    widget()->clearIcons();
+    initialize();
+}
+
+void FileDisparityDocument::initialize()
+{
+    setWidget( new FileDisparityWidget( this ) );
+}
+
+FileDisparityWidget *FileDisparityDocument::widget() const
+{
+    return dynamic_cast< FileDisparityWidget * >( m_widget );
+}
+
+void FileDisparityDocument::loadCalibrationFile( const QString &fileName )
+{
+    widget()->loadCalibrationFile( fileName );
+}
+
+void FileDisparityDocument::loadCalibrationDialog()
+{
+    widget()->loadCalibrationDialog();
+}
+
+void FileDisparityDocument::importDialog()
+{
+    widget()->importDisparityDialog();
 }

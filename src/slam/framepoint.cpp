@@ -325,19 +325,19 @@ namespace slam {
     }
 
     // FeaturePoint
-    FeaturePoint::FeaturePoint( const FeatureFramePtr &parentFrame , const size_t keyPointIndex )
+    FeaturePoint::FeaturePoint( const FlowFramePtr &parentFrame , const size_t keyPointIndex )
         : ProcessedPointBase( parentFrame ), m_keyPointIndex( keyPointIndex )
     {
     }
 
-    FeaturePoint::ObjectPtr FeaturePoint::create( const FeatureFramePtr &parentFrame, const size_t keyPointIndex )
+    FeaturePoint::ObjectPtr FeaturePoint::create( const FlowFramePtr &parentFrame, const size_t keyPointIndex )
     {
         return ObjectPtr( new FeaturePoint( parentFrame, keyPointIndex ) );
     }
 
-    FeatureFramePtr FeaturePoint::parentFrame() const
+    FlowFramePtr FeaturePoint::parentFrame() const
     {
-        return std::dynamic_pointer_cast< FeatureFrame >( m_parentFrame.lock() );
+        return std::dynamic_pointer_cast< FlowFrame >( m_parentFrame.lock() );
     }
 
     const cv::Point2f &FeaturePoint::point() const

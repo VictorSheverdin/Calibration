@@ -31,6 +31,8 @@ class IconsListWidget : public QListWidget
     Q_OBJECT
 
     friend class DisparityIcon;
+    friend class DisparityResultIcon;
+    friend class FeaturesIcon;
 
 public:
     using SuperClass = QListWidget;

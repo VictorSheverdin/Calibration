@@ -54,7 +54,7 @@ CvImage::CvImage()
 }
 
 CvImage::CvImage( const std::string &fileName )
-    : cv::Mat( cv::imread( fileName ) )
+    : cv::Mat( cv::imread( fileName, cv::IMREAD_UNCHANGED ) )
 {
 }
 
@@ -245,19 +245,24 @@ StampedStereoImage::StampedStereoImage()
 
 StampedStereoImage::StampedStereoImage( const StampedImage &leftImage, const StampedImage &rightImage )
 {
-    setLeftImage( leftImage );
-    setRightImage( rightImage );
+    set( leftImage, rightImage );
 }
 
 StampedStereoImage::StampedStereoImage( const StereoImage &image )
 {
-    setLeftImage( image.leftImage() );
-    setRightImage( image.rightImage() );
+    set( image );
 }
 
-const StampedImage &StampedStereoImage::leftImage() const
+void StampedStereoImage::set( const StampedImage &leftImage, const StampedImage &rightImage )
 {
-    return m_leftImage;
+    setLeftImage( leftImage );
+    setRightImage( rightImage );
+}
+
+void StampedStereoImage::set( const StereoImage &image )
+{
+    setLeftImage( image.leftImage() );
+    setRightImage( image.rightImage() );
 }
 
 void StampedStereoImage::setLeftImage( const StampedImage &image )
@@ -265,14 +270,19 @@ void StampedStereoImage::setLeftImage( const StampedImage &image )
     m_leftImage = image;
 }
 
-const StampedImage &StampedStereoImage::rightImage() const
-{
-    return m_rightImage;
-}
-
 void StampedStereoImage::setRightImage( const StampedImage &image )
 {
     m_rightImage = image;
+}
+
+const StampedImage &StampedStereoImage::leftImage() const
+{
+    return m_leftImage;
+}
+
+const StampedImage &StampedStereoImage::rightImage() const
+{
+    return m_rightImage;
 }
 
 int StampedStereoImage::diffMs() const

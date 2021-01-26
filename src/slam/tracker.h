@@ -2,21 +2,18 @@
 
 #include "src/common/featureprocessor.h"
 
+#include "alias.h"
+
 namespace slam {
 
 class FlowFrame;
 class FlowKeyFrame;
-
-class FeatureFrame;
-class FeatureKeyFrame;
 
 class FeaturePoint;
 
 class FlowTracker
 {
 public:
-    using FlowFramePtr = std::shared_ptr< FlowFrame >;
-
     virtual void buildPyramid( FlowFrame *frame ) = 0;
     virtual void extractPoints( FlowKeyFrame *frame ) = 0;
 
@@ -80,17 +77,14 @@ private:
 class FeatureTracker
 {
 public:
-    using FeatureFramePtr = std::shared_ptr< FeatureFrame >;
-    using FeaturePointPtr = std::shared_ptr< FeaturePoint >;
-
-    virtual void extractKeypoints( FeatureFrame *frame ) = 0;
-    virtual cv::Mat match( const FeatureFramePtr &frame1, const FeatureFramePtr &frame2, std::vector< cv::DMatch > *matches ) = 0;
+    virtual void extractKeypoints( FlowFrame *frame ) = 0;
+    virtual cv::Mat match( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::vector< cv::DMatch > *matches ) = 0;
 
 protected:
     FeatureTracker() = default;
 
 };
-
+/*
 class DescriptorTracker : public FeatureTracker
 {
 public:
@@ -98,14 +92,14 @@ public:
 protected:
     DescriptorTracker() = default;
 
-    bool selectKeypoints( const FeatureFramePtr &frame1, const FeatureFramePtr &frame2, std::vector< cv::KeyPoint > *keypoints, cv::Mat *descriptors );
+    bool selectKeypoints( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::vector< cv::KeyPoint > *keypoints, cv::Mat *descriptors );
 
 };
 
 class FullTracker : public DescriptorTracker
 {
 public:
-    virtual void extractKeypoints( FeatureFrame *frame ) override;
+    virtual void extractKeypoints( FlowFrame *frame ) override;
 
 protected:
     FullTracker() = default;
@@ -118,7 +112,7 @@ class SiftTracker : public FullTracker
 public:
     SiftTracker();
 
-    virtual cv::Mat match( const FeatureFramePtr &frame1, const FeatureFramePtr &frame2, std::vector< cv::DMatch > *matches ) override;
+    virtual cv::Mat match( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::vector< cv::DMatch > *matches ) override;
 
 protected:
     FlannMatcher m_featuresMatcher;
@@ -133,7 +127,7 @@ class OrbTracker : public FullTracker
 public:
     OrbTracker();
 
-    virtual cv::Mat match( const FeatureFramePtr &frame1, const FeatureFramePtr &frame2, std::vector< cv::DMatch > *matches ) override;
+    virtual cv::Mat match( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::vector< cv::DMatch > *matches ) override;
 
 protected:
     BFMatcher m_featuresMatcher;
@@ -142,6 +136,6 @@ private:
     void initialize();
 
 };
-
+*/
 
 }

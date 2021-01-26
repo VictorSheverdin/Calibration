@@ -17,8 +17,6 @@ namespace slam {
 
 class World;
 class Map;
-class FlowMap;
-class FeatureMap;
 class MapPoint;
 
 // Базовый класс для всех классов кадра
@@ -116,8 +114,7 @@ protected:
     std::vector< cv::Mat > m_imagePyramid;
 
     static const int m_minConnectedPoints = 7;
-
-    static const double m_minPointsDistance;
+    static const double m_densityFactor;
 
     size_t m_desiredPointsCount;
 
@@ -139,13 +136,14 @@ protected:
 
 class FlowFrame : public virtual ProcessedFrame
 {    
+    friend class FeaturePoint;
     friend class FlowKeyFrame;
 
 public:
     using ObjectPtr = std::shared_ptr< FlowFrame >;
     using ObjectConstPtr = std::shared_ptr< const FlowFrame >;
 
-    static ObjectPtr create( const FlowMapPtr &parentMap );
+    static ObjectPtr create( const MapPtr &parentMap );
 
     void setImage( const StampedImage &image );
 
@@ -158,18 +156,24 @@ public:
     virtual void removePoint( const MonoPointPtr &point ) override;
 
     std::vector< FlowPointPtr > flowPoints() const;
+    size_t flowPointsCount() const;
 
-    void addFramePoints( const std::vector< cv::Point2f > &vector );
-
-    FlowPointPtr addFramePoint( const cv::Point2f &point );
+    void addFlowPoints( const std::vector< cv::Point2f > &vector );
+    FlowPointPtr addFlowPoint( const cv::Point2f &point );
 
     ObjectPtr shared_from_this();
     ObjectConstPtr shared_from_this() const;
 
 protected:
-    FlowFrame( const FlowMapPtr &parentMap );
+    FlowFrame( const MapPtr &parentMap );
 
-    std::set< FlowPointPtr > m_points;
+    std::set< FlowPointPtr > m_flowPoints;
+
+    std::vector< cv::KeyPoint > m_keyPoints;
+    std::vector< cv::Scalar > m_colors;
+    cv::Mat m_descriptors;
+
+    std::map< size_t, FeaturePointPtr > m_featurePoints;
 
 private:
     void initialize();
@@ -183,7 +187,7 @@ public:
     using ObjectPtr = std::shared_ptr< FlowKeyFrame >;
     using ObjectConstPtr = std::shared_ptr< const FlowKeyFrame >;
 
-    static ObjectPtr create( const FlowMapPtr &parentMap );
+    static ObjectPtr create( const MapPtr &parentMap );
 
     void setImage( const StampedImage &image );
 
@@ -198,12 +202,13 @@ public:
     ObjectConstPtr shared_from_this() const;
 
 protected:
-    FlowKeyFrame( const FlowMapPtr &parentMap );
+    FlowKeyFrame( const MapPtr &parentMap );
 
 private:
     void initialize();
 };
 
+/*
 class FeatureFrame : public virtual ProcessedFrame
 {
     friend class FeatureStereoFrame;
@@ -256,21 +261,7 @@ protected:
 
     bool isFramePointExist( const size_t index ) const;
 };
-
-cv::Mat track( const std::shared_ptr< FeatureFrame > &prevFrame, const std::shared_ptr< FeatureFrame > &nextFrame );
-
-class FeatureKeyFrame : public FeatureFrame, public ProcessedKeyFrame
-{
-public:
-    using ObjectPtr = std::shared_ptr< FeatureKeyFrame >;
-    using ObjectConstPtr = std::shared_ptr< const FeatureKeyFrame >;
-
-    static ObjectPtr create( const FeatureMapPtr &parentMap );
-
-protected:
-    FeatureKeyFrame( const FeatureMapPtr &parentMap );
-};
-
+*/
 class FinishedFrame : public virtual MonoFrame
 {
 public:
@@ -320,8 +311,6 @@ protected:
 
 class DoubleFrame : public FrameBase
 {
-    friend class FeatureMap;
-
 public:
     using ObjectPtr = std::shared_ptr< DoubleFrame >;
     using ObjectConstPtr = std::shared_ptr< const DoubleFrame >;
@@ -434,7 +423,7 @@ public:
     using ObjectPtr = std::shared_ptr< FlowStereoFrame >;
     using ObjectConstPtr = std::shared_ptr< const FlowStereoFrame >;
 
-    static ObjectPtr create( const FlowMapPtr &parentMap );
+    static ObjectPtr create( const MapPtr &parentMap );
 
     void setLeftImage( const StampedImage &image );
     void setRightImage( const StampedImage &image );
@@ -447,12 +436,10 @@ public:
     FlowFramePtr leftFrame() const;
     FlowFramePtr rightFrame() const;
 
-    FlowMapPtr parentMap() const;
-
     cv::Mat match();
 
 protected:
-    FlowStereoFrame( const FlowMapPtr &parentMap );
+    FlowStereoFrame( const MapPtr &parentMap );
 
 };
 
@@ -462,7 +449,7 @@ public:
     using ObjectPtr = std::shared_ptr< FlowStereoKeyFrame >;
     using ObjectConstPtr = std::shared_ptr< const FlowStereoKeyFrame >;
 
-    static ObjectPtr create( const FlowMapPtr &parentMap );
+    static ObjectPtr create( const MapPtr &parentMap );
 
     void extractPoints();
 
@@ -473,48 +460,7 @@ public:
     void replaceAndClean( const FlowStereoFramePtr &frame );
 
 protected:
-    FlowStereoKeyFrame( const FlowMapPtr &parentMap );
-};
-
-class FeatureStereoFrame : public virtual ProcessedStereoFrame
-{
-public:
-    using ObjectPtr = std::shared_ptr< FeatureStereoFrame >;
-    using ObjectConstPtr = std::shared_ptr< const FeatureStereoFrame >;
-
-    static ObjectPtr create( const FeatureMapPtr &parentMap );
-
-    void loadLeft( const StampedImage &image );
-    void loadRight( const StampedImage &image );
-
-    void load( const StampedImage &leftImage, const StampedImage &rightImage );
-
-    FeatureFramePtr leftFrame() const;
-    FeatureFramePtr rightFrame() const;
-
-    FeatureMapPtr parentMap() const;
-
-    cv::Mat match();
-
-protected:
-    FeatureStereoFrame( const FeatureMapPtr &parentMap );
-};
-
-class FeatureStereoKeyFrame : public virtual ProcessedStereoKeyFrame, public FeatureStereoFrame
-{
-public:
-    using ObjectPtr = std::shared_ptr< FeatureStereoKeyFrame >;
-    using ObjectConstPtr = std::shared_ptr< const FeatureStereoKeyFrame >;
-
-    static ObjectPtr create( const FeatureMapPtr &parentMap );
-
-    void extractKeypoints();
-
-    FeatureKeyFramePtr leftFrame() const;
-    FeatureKeyFramePtr rightFrame() const;
-
-protected:
-    FeatureStereoKeyFrame( const FeatureMapPtr &parentMap );
+    FlowStereoKeyFrame( const MapPtr &parentMap );
 };
 
 class DenseFrame : public virtual StereoKeyFrame
@@ -557,23 +503,11 @@ public:
     using ObjectPtr = std::shared_ptr< FlowDenseFrame >;
     using ObjectConstPtr = std::shared_ptr< const FlowDenseFrame >;
 
-    static ObjectPtr create( const FlowMapPtr &parentMap );
+    static ObjectPtr create( const MapPtr &parentMap );
 
 protected:
-    FlowDenseFrame( const FlowMapPtr &parentMap );
+    FlowDenseFrame( const MapPtr &parentMap );
 
-};
-
-class FeatureDenseFrame : public FeatureStereoKeyFrame, public ProcessedDenseFrame
-{
-public:
-    using ObjectPtr = std::shared_ptr< FeatureDenseFrame >;
-    using ObjectConstPtr = std::shared_ptr< const FeatureDenseFrame >;
-
-    static ObjectPtr create( const FeatureMapPtr &parentMap );
-
-protected:
-    FeatureDenseFrame( const FeatureMapPtr &parentMap );
 };
 
 class ConsecutiveFrame : public DoubleFrame
@@ -605,18 +539,6 @@ public:
 
     FlowFramePtr startFrame() const;
     FlowFramePtr endFrame() const;
-};
-
-class FeatureConsecutiveFrame : public ConsecutiveFrame
-{
-public:
-    using ObjectPtr = std::shared_ptr< FeatureConsecutiveFrame >;
-    using ObjectConstPtr = std::shared_ptr< const FeatureConsecutiveFrame >;
-
-    FeatureConsecutiveFrame( const FeatureFramePtr &startFrame, const FeatureFramePtr &endFrame );
-
-    FeatureFramePtr startFrame() const;
-    FeatureFramePtr endFrame() const;
 };
 
 class RecoverPoseFrame : public ConsecutiveFrame

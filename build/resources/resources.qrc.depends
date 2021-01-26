@@ -1,0 +1,42 @@
+<RCC>
+    <qresource prefix="/resources">
+        <file>images/settings.ico</file>
+        <file>images/grab.ico</file>
+        <file>images/power.ico</file>
+        <file>images/checkerflag.ico</file>
+        <file>images/checkerboard.ico</file>
+        <file>images/camera.ico</file>
+        <file>images/help.ico</file>
+        <file>images/save.ico</file>
+        <file>images/open.ico</file>
+        <file>images/export.ico</file>
+        <file>images/new.ico</file>
+        <file>images/opencv.ico</file>
+        <file>images/xml.ico</file>
+        <file>images/trash.ico</file>
+        <file>images/import.ico</file>
+        <file>images/plus.ico</file>
+        <file>images/remove.ico</file>
+        <file>images/BottomScrollBarArrow.png</file>
+        <file>images/doubleLayout.ico</file>
+        <file>images/HorisontalScrollBarHandle.png</file>
+        <file>images/HorisontalToolBarHandle.png</file>
+        <file>images/LeftScrollBarArrow.png</file>
+        <file>images/quadLayout.ico</file>
+        <file>images/RightScrollBarArrow.png</file>
+        <file>images/SeparatorHorisontal.png</file>
+        <file>images/SeparatorVertical.png</file>
+        <file>images/splitter_horizontal.png</file>
+        <file>images/splitter_vertical.png</file>
+        <file>images/ToolBarButtonChecked.png</file>
+        <file>images/ToolBarButtonHover.png</file>
+        <file>images/ToolBarGlare.png</file>
+        <file>images/TopScrollBarArrow.png</file>
+        <file>images/VerticalScrollBarHandle.png</file>
+        <file>images/VerticalToolBarHandle.png</file>
+        <file>qss/style.css</file>
+        <file>images/folder.ico</file>
+        <file>images/slam.ico</file>
+        <file>images/map.ico</file>
+    </qresource>
+</RCC>

@@ -175,9 +175,13 @@ cv::Mat BMDisparityProcessor::processDisparity( const CvImage &left, const CvIma
 
     m_leftMatcher->compute( leftGray, rightGray, leftDisp );
 
+    cv::Mat disparity32F;
+
+    leftDisp.convertTo( disparity32F, CV_32F, 1./16 );
+
     // cv::normalize( leftDisp, leftDisp, 0, 255, cv::NORM_MINMAX, CV_8U );
 
-    return leftDisp;
+    return disparity32F;
 
 //    cv::Mat rightDisp;
 
@@ -297,8 +301,6 @@ cv::Mat BMGPUDisparityProcessor::processDisparity( const CvImage &left, const Cv
     cv::Mat floatRes;
 
     res.convertTo( floatRes, CV_32F );
-
-    // std::cout << floatRes;
 
     return floatRes;
 
@@ -657,6 +659,7 @@ pcl::PointCloud< pcl::PointXYZRGB >::Ptr StereoProcessor::processPointCloud( con
     auto disparity = processDisparity( left, right );
 
     if ( !disparity.empty() ) {
+
         auto points = reprojectPoints( disparity );
 
         if ( !points.empty() )
@@ -673,6 +676,7 @@ std::list< ColorPoint3d > StereoProcessor::processPointList( const CvImage &left
     auto disparity = processDisparity( left, right );
 
     if ( !disparity.empty() ) {
+
         auto points = reprojectPoints( disparity );
 
         if ( !points.empty() )
@@ -688,11 +692,7 @@ cv::Mat StereoProcessor::reprojectPoints( const cv::Mat &disparity )
 {
     cv::Mat points;
 
-    cv::Mat disparity32F;
-
-    disparity.convertTo( disparity32F, CV_32F, 1./16 );
-
-    cv::reprojectImageTo3D( disparity32F, points, m_disparityToDepthMatrix );
+    cv::reprojectImageTo3D( disparity, points, m_disparityToDepthMatrix );
 
     return points;
 }

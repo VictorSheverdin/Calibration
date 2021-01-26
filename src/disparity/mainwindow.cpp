@@ -29,9 +29,14 @@ void MainWindow::initialize()
     setupToolBars();
 }
 
-void MainWindow::addImageDisparityDocument()
+void MainWindow::addStereoDisparityDocument()
 {
-    addDocument( new ImageDisparityDocument( this ) );
+    addDocument( new StereoDisparityDocument( this ) );
+}
+
+void MainWindow::addFileDisparityDocument()
+{
+    addDocument( new FileDisparityDocument( this ) );
 }
 
 void MainWindow::addCameraDisparityDocument( const QString &leftCameraIp, const QString &rightCameraIp )
@@ -44,14 +49,24 @@ DisparityDocumentBase *MainWindow::currentDisparityDocument() const
     return getCurrentDocument< DisparityDocumentBase >();
 }
 
+DiskDisparityDocument *MainWindow::currentDiskDisparityDocument() const
+{
+    return getCurrentDocument< DiskDisparityDocument >();
+}
+
 CameraDisparityDocument *MainWindow::currentCameraDisparityDocument() const
 {
     return getCurrentDocument< CameraDisparityDocument >();
 }
 
-ImageDisparityDocument *MainWindow::currentImageDisparityDocument() const
+StereoDisparityDocument *MainWindow::currentStereoDisparityDocument() const
 {
-    return getCurrentDocument< ImageDisparityDocument >();
+    return getCurrentDocument< StereoDisparityDocument >();
+}
+
+FileDisparityDocument *MainWindow::currentFileDisparityDocument() const
+{
+    return getCurrentDocument< FileDisparityDocument >();
 }
 
 void MainWindow::choiceDisparityDialog()
@@ -60,8 +75,11 @@ void MainWindow::choiceDisparityDialog()
 
      if ( dlg.exec() == DialogBase::Accepted ) {
          switch ( dlg.selectedType() ) {
-         case DisparityChoiceDialog::IMAGES:
-             addImageDisparity();
+         case DisparityChoiceDialog::STEREO:
+             addStereoDisparity();
+             break;
+         case DisparityChoiceDialog::FILE:
+             addFileDisparity();
              break;
          case DisparityChoiceDialog::CAMERA:
              addCameraDisparityDialog();
@@ -73,9 +91,14 @@ void MainWindow::choiceDisparityDialog()
 
 }
 
-void MainWindow::addImageDisparity()
+void MainWindow::addStereoDisparity()
 {
-    addImageDisparityDocument();
+    addStereoDisparityDocument();
+}
+
+void MainWindow::addFileDisparity()
+{
+    addFileDisparityDocument();
 }
 
 void MainWindow::addCameraDisparityDialog()
@@ -100,7 +123,7 @@ void MainWindow::loadCalibrationDialog()
 
 void MainWindow::importDialog()
 {
-    auto doc = currentImageDisparityDocument();
+    auto doc = currentDiskDisparityDocument();
 
     if ( doc )
         doc->importDialog();
@@ -113,7 +136,7 @@ void MainWindow::exportDialog()
 
 void MainWindow::clearIcons()
 {
-    auto doc = currentImageDisparityDocument();
+    auto doc = currentDiskDisparityDocument();
 
     if ( doc )
         doc->clearIcons();
@@ -134,8 +157,8 @@ void MainWindow::setupActions()
     m_newDisparityDocumentAction = new QAction( QIcon( ":/resources/images/new.ico" ), tr( "New disparity document" ), this );
     m_loadCalibrationAction = new QAction( QIcon( ":/resources/images/open.ico" ), tr( "Load calibration file" ), this );
 
-    m_importAction = new QAction( QIcon( ":/resources/images/export.ico" ), tr( "Import" ), this );
-    m_exportAction = new QAction( QIcon( ":/resources/images/import.ico" ), tr( "Export" ), this );
+    m_importAction = new QAction( QIcon( ":/resources/images/import.ico" ), tr( "Import" ), this );
+    m_exportAction = new QAction( QIcon( ":/resources/images/export.ico" ), tr( "Export" ), this );
 
     m_clearIconsAction = new QAction( QIcon( ":/resources/images/trash.ico" ), tr( "Clear" ), this );
 

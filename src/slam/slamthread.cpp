@@ -157,9 +157,12 @@ void SlamThread::run()
                 CvImage leftProcImage;
                 CvImage rightProcImage;
 
+                //cv::GaussianBlur( leftCroppedImage, leftCroppedImage, cv::Size( 3, 3 ), 0 );
+                //cv::GaussianBlur( rightCroppedImage, rightCroppedImage, cv::Size( 3, 3 ), 0 );
+
                 if ( std::abs( m_scaleFactor - 1.0 ) > DOUBLE_EPS ) {
-                    cv::resize( leftCroppedImage, leftProcImage, cv::Size(), m_scaleFactor, m_scaleFactor, cv::INTER_AREA );
-                    cv::resize( rightCroppedImage, rightProcImage, cv::Size(), m_scaleFactor, m_scaleFactor, cv::INTER_AREA );
+                    cv::resize( leftCroppedImage, leftProcImage, cv::Size(), m_scaleFactor, m_scaleFactor, cv::INTER_LANCZOS4 );
+                    cv::resize( rightCroppedImage, rightProcImage, cv::Size(), m_scaleFactor, m_scaleFactor, cv::INTER_LANCZOS4 );
 
                 }
                 else {

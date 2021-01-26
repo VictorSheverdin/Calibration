@@ -22,7 +22,13 @@ Map::Map( const StereoCameraMatrix &projectionMatrix, const WorldPtr &parentWorl
     initialize();
 }
 
-void Map::initialize() {
+void Map::initialize()
+{
+}
+
+Map::ObjectPtr Map::create( const StereoCameraMatrix &cameraMatrix , const WorldPtr &parentWorld )
+{
+    return ObjectPtr( new Map( cameraMatrix, parentWorld ) );
 }
 
 WorldPtr Map::parentWorld() const
@@ -162,28 +168,8 @@ StereoCameraMatrix Map::backProjectionMatrix() const
     return m_projectionMatrix;
 }
 
-// FlowMap
-FlowMap::FlowMap( const StereoCameraMatrix &projectionMatrix, const WorldPtr &parentWorld )
-    : Map( projectionMatrix, parentWorld )
-{
-}
 
-FlowMap::ObjectPtr FlowMap::create( const StereoCameraMatrix &cameraMatrix , const WorldPtr &parentWorld )
-{
-    return ObjectPtr( new FlowMap( cameraMatrix, parentWorld ) );
-}
-
-std::shared_ptr< FlowMap > FlowMap::shared_from_this()
-{
-    return std::dynamic_pointer_cast< FlowMap >( Map::shared_from_this() );
-}
-
-std::shared_ptr< const FlowMap > FlowMap::shared_from_this() const
-{
-    return std::dynamic_pointer_cast< const FlowMap >( Map::shared_from_this() );
-}
-
-bool FlowMap::track( const StampedImage &leftImage, const StampedImage &rightImage )
+bool Map::track( const StampedImage &leftImage, const StampedImage &rightImage )
 {    
     static FlowDenseFramePtr keyFrame;
 
@@ -220,8 +206,12 @@ bool FlowMap::track( const StampedImage &leftImage, const StampedImage &rightIma
 
             previousLeftFrame->extractPoints();
 
+            std::cout << "Extracted points count: " << previousLeftFrame->flowPointsCount() << std::endl;
+
             previousKeyFrame->match();
             slam::track( previousLeftFrame, leftFrame );
+
+            std::cout << "Stereo points count: " << previousKeyFrame->stereoPointsCount() << std::endl;
 
             auto trackedPointCount = previousLeftFrame->trackedPointsCount();
 
@@ -326,32 +316,6 @@ bool FlowMap::track( const StampedImage &leftImage, const StampedImage &rightIma
 
     return false;
 
-}
-
-// FeatureMap
-FeatureMap::FeatureMap( const StereoCameraMatrix &projectionMatrix, const WorldPtr &parentWorld )
-    :  Map( projectionMatrix, parentWorld )
-{
-}
-
-FeatureMap::ObjectPtr FeatureMap::create( const StereoCameraMatrix &cameraMatrix , const WorldPtr &parentWorld )
-{
-    return ObjectPtr( new FeatureMap( cameraMatrix, parentWorld ) );
-}
-
-std::shared_ptr< FeatureMap > FeatureMap::shared_from_this()
-{
-    return std::dynamic_pointer_cast< FeatureMap >( Map::shared_from_this() );
-}
-
-std::shared_ptr< const FeatureMap > FeatureMap::shared_from_this() const
-{
-    return std::dynamic_pointer_cast< const FeatureMap >( Map::shared_from_this() );
-}
-
-bool FeatureMap::track( const StampedImage &leftImage, const StampedImage &rightImage )
-{
-    return false;
 }
 
 }

@@ -83,21 +83,21 @@ void ReconstructionViewWidget::pickingEventHandler( const pcl::visualization::Po
 
 }
 
-// DisparityWidgetBase
-DisparityWidgetBase::DisparityWidgetBase( QWidget* parent )
+// ControlDisparityWidget
+ControlDisparityWidget::ControlDisparityWidget( QWidget* parent )
     : QSplitter( Qt::Horizontal, parent )
 {
     initialize();
 }
 
-void DisparityWidgetBase::initialize()
+void ControlDisparityWidget::initialize()
 {
     setAttribute( Qt::WA_DeleteOnClose );
 
     auto tabWidget = new QTabWidget( this );
 
     m_view = new DisparityPreviewWidget( this );
-    tabWidget->resize(1200, 800);
+    tabWidget->resize( 1200, 800 );
     m_3dWidget = new ReconstructionViewWidget( this );
 
     tabWidget->addTab( m_view, tr( "Disparity" ) );
@@ -108,7 +108,7 @@ void DisparityWidgetBase::initialize()
     addWidget( tabWidget );
     addWidget( m_controlWidget );
 
-    connect( m_controlWidget, &DisparityControlWidget::valueChanged, this, &DisparityWidgetBase::valueChanged );
+    connect( m_controlWidget, &DisparityControlWidget::valueChanged, this, &ControlDisparityWidget::valueChanged );
 
     m_bmProcessor = std::shared_ptr< BMDisparityProcessor >( new BMDisparityProcessor );
     m_gmProcessor = std::shared_ptr< GMDisparityProcessor >( new GMDisparityProcessor );
@@ -121,36 +121,36 @@ void DisparityWidgetBase::initialize()
 
     m_processorThread.setProcessor( m_processor );
 
-    connect( &m_processorThread, &ProcessorThread::frameProcessed, this, &DisparityWidgetBase::updateFrame );
+    connect( &m_processorThread, &ProcessorThread::frameProcessed, this, &ControlDisparityWidget::updateFrame );
 
 }
 
-BMControlWidget *DisparityWidgetBase::bmControlWidget() const
+BMControlWidget *ControlDisparityWidget::bmControlWidget() const
 {
     return m_controlWidget->bmControlWidget();
 }
 
-GMControlWidget *DisparityWidgetBase::gmControlWidget() const
+GMControlWidget *ControlDisparityWidget::gmControlWidget() const
 {
     return m_controlWidget->gmControlWidget();
 }
 
-BMGPUControlWidget *DisparityWidgetBase::bmGpuControlWidget() const
+BMGPUControlWidget *ControlDisparityWidget::bmGpuControlWidget() const
 {
     return m_controlWidget->bmGpuControlWidget();
 }
 
-BPControlWidget *DisparityWidgetBase::bpControlWidget() const
+BPControlWidget *ControlDisparityWidget::bpControlWidget() const
 {
     return m_controlWidget->bpControlWidget();
 }
 
-void DisparityWidgetBase::loadCalibrationFile( const QString &fileName )
+void ControlDisparityWidget::loadCalibrationFile( const QString &fileName )
 {
     m_processor->loadYaml( fileName.toStdString() );
 }
 
-void DisparityWidgetBase::loadCalibrationDialog()
+void ControlDisparityWidget::loadCalibrationDialog()
 {
     auto file = QFileDialog::getOpenFileName(
                         this,
@@ -163,7 +163,7 @@ void DisparityWidgetBase::loadCalibrationDialog()
         loadCalibrationFile( file );
 }
 
-void DisparityWidgetBase::processFrame( const StampedStereoImage &frame )
+void ControlDisparityWidget::processFrame( const StampedStereoImage &frame )
 {
      if ( !frame.empty() ) {
 
@@ -234,7 +234,19 @@ void DisparityWidgetBase::processFrame( const StampedStereoImage &frame )
 
 }
 
-void DisparityWidgetBase::updateFrame()
+void ControlDisparityWidget::processDisparity( const CvImage &color, const CvImage &disparity )
+{
+    auto cloud = m_processor->process( color, disparity );
+
+    if ( cloud ) {
+        m_3dWidget->setPointCloud( cloud );
+        m_3dWidget->update();
+
+    }
+
+}
+
+void ControlDisparityWidget::updateFrame()
 {
     auto result = m_processorThread.result();
 
@@ -248,12 +260,65 @@ void DisparityWidgetBase::updateFrame()
 
     }
 
+}
+
+// ViewDisparityWidget
+ViewDisparityWidget::ViewDisparityWidget( QWidget* parent )
+    : QSplitter( Qt::Horizontal, parent )
+{
+    initialize();
+}
+
+void ViewDisparityWidget::initialize()
+{
+    setAttribute( Qt::WA_DeleteOnClose );
+
+    m_view = new DisparityPreviewWidget( this );
+    m_3dWidget = new ReconstructionViewWidget( this );
+
+    addWidget( m_view );
+    addWidget( m_3dWidget );
+
+    m_processor = std::shared_ptr< StereoResultProcessor >( new StereoResultProcessor );
+}
+
+void ViewDisparityWidget::loadCalibrationFile( const QString &fileName )
+{
+    m_processor->loadYaml( fileName.toStdString() );
+}
+
+void ViewDisparityWidget::loadCalibrationDialog()
+{
+    auto file = QFileDialog::getOpenFileName(
+                        this,
+                        tr( "Select calibration file" ),
+                        QString(),
+                        tr( "Calibration files (*.yaml)" )
+                );
+
+    if ( !file.isEmpty() )
+        loadCalibrationFile( file );
+}
+
+void ViewDisparityWidget::processDisparity( const CvImage &color, const CvImage &disparity )
+{
+    auto cloud = m_processor->process( color, disparity );
+
+    m_view->rectifyView()->setImage( color );
+
+    m_view->disparityView()->setImage( colorizeDisparity( disparity ) );
+
+    if ( cloud ) {
+        m_3dWidget->setPointCloud( cloud );
+        m_3dWidget->update();
+
+    }
 
 }
 
 // CameraDisparityWidget
 CameraDisparityWidget::CameraDisparityWidget( const QString &leftCameraIp, const QString &rightCameraIp, QWidget* parent )
-    : DisparityWidgetBase( parent ), m_camera( leftCameraIp.toStdString(), rightCameraIp.toStdString(), parent )
+    : ControlDisparityWidget( parent ), m_camera( leftCameraIp.toStdString(), rightCameraIp.toStdString(), parent )
 {
     initialize();
 }
@@ -269,7 +334,7 @@ void CameraDisparityWidget::updateFrame()
 
         auto frame = m_camera.getFrame();
 
-        DisparityWidgetBase::processFrame( frame );
+        ControlDisparityWidget::processFrame( frame );
 
         m_updateMutex.unlock();
 
@@ -277,67 +342,85 @@ void CameraDisparityWidget::updateFrame()
 
 }
 
-// ImageDisparityWidget
-ImageDisparityWidget::ImageDisparityWidget( QWidget* parent )
+// DiskDisparityWidget
+DiskDisparityWidget::DiskDisparityWidget( QWidget* parent )
     : QSplitter( Qt::Vertical, parent )
 {
     initialize();
 }
 
-void ImageDisparityWidget::initialize()
+void DiskDisparityWidget::initialize()
 {
-    m_disparityWidget = new DisparityWidgetBase( this );
     m_iconsWidget = new DisparityIconsWidget( this );
-
-    addWidget( m_disparityWidget );
-    addWidget( m_iconsWidget );
-
-    connect( m_iconsWidget, SIGNAL( iconActivated( DisparityIcon* ) ), this, SLOT( updateFrame( DisparityIcon* ) ) );
-
-    connect( m_disparityWidget, &DisparityWidgetBase::valueChanged, this, static_cast< void ( ImageDisparityWidget::* )() >( &ImageDisparityWidget::updateFrame ) );
 
     dropIconCount();
 }
 
-void ImageDisparityWidget::dropIconCount()
+void DiskDisparityWidget::dropIconCount()
 {
     m_iconCount = 0;
 }
 
-BMControlWidget *ImageDisparityWidget::bmControlWidget() const
+void DiskDisparityWidget::clearIcons()
+{
+    m_iconsWidget->clear();
+
+    dropIconCount();
+}
+
+// StereoDisparityWidget
+StereoDisparityWidget::StereoDisparityWidget( QWidget* parent )
+    : DiskDisparityWidget( parent )
+{
+    initialize();
+}
+
+void StereoDisparityWidget::initialize()
+{
+    m_disparityWidget = new ControlDisparityWidget( this );
+
+    addWidget( m_disparityWidget );
+    addWidget( m_iconsWidget );
+
+    connect( m_iconsWidget, SIGNAL( iconActivated( DisparityIconBase* ) ), this, SLOT( updateFrame() ) );
+
+    connect( m_disparityWidget, &ControlDisparityWidget::valueChanged, this, static_cast< void ( StereoDisparityWidget::* )() >( &StereoDisparityWidget::updateFrame ) );
+}
+
+
+BMControlWidget *StereoDisparityWidget::bmControlWidget() const
 {
     return m_disparityWidget->bmControlWidget();
 }
 
-GMControlWidget *ImageDisparityWidget::gmControlWidget() const
+GMControlWidget *StereoDisparityWidget::gmControlWidget() const
 {
     return m_disparityWidget->gmControlWidget();
 }
 
-void ImageDisparityWidget::loadCalibrationFile( const QString &fileName )
+void StereoDisparityWidget::loadCalibrationFile( const QString &fileName )
 {
     m_disparityWidget->loadCalibrationFile( fileName );
 }
 
-void ImageDisparityWidget::addIcon( const QString &leftFileName, const QString &rightFileName )
+void StereoDisparityWidget::addStereoIcon( const QString &leftFileName, const QString &rightFileName )
 {
     CvImage leftImg = cv::imread( leftFileName.toStdString() );
     CvImage rightImg = cv::imread( rightFileName.toStdString() );
 
-    if ( !leftImg.empty() && !rightImg.empty() ) {
+    if ( !leftImg.empty() && !rightImg.empty() )
         m_iconsWidget->addIcon( new DisparityIcon( makeOverlappedPreview( leftImg, rightImg ) , leftFileName, rightFileName, QObject::tr("Frame") + " " + QString::number( m_iconCount++ ) ) );
-    }
 
 }
 
-void ImageDisparityWidget::loadCalibrationDialog()
+void StereoDisparityWidget::loadCalibrationDialog()
 {
     m_disparityWidget->loadCalibrationDialog();
 
     updateFrame();
 }
 
-void ImageDisparityWidget::importDialog()
+void StereoDisparityWidget::importStereoDialog()
 {
     StereoFilesListDialog dlg( this );
 
@@ -345,9 +428,9 @@ void ImageDisparityWidget::importDialog()
         auto leftFileNames = dlg.leftFileNames();
         auto rightFileNames = dlg.rightFileNames();
 
-        for ( auto i = 0; i < leftFileNames.size(); ++i ) {
-            addIcon( leftFileNames[i], rightFileNames[i] );
-        }
+        for ( auto i = 0; i < leftFileNames.size(); ++i )
+            addStereoIcon( leftFileNames[i], rightFileNames[i] );
+
 
     }
 
@@ -355,24 +438,89 @@ void ImageDisparityWidget::importDialog()
 
 }
 
-void ImageDisparityWidget::clearIcons()
-{
-    m_iconsWidget->clear();
-
-    dropIconCount();
-}
-
-void ImageDisparityWidget::updateFrame()
+void StereoDisparityWidget::updateFrame()
 {
     auto icon = m_iconsWidget->currentIcon();
 
-    if ( icon )
-        updateFrame( icon );
+    auto disparityIcon = dynamic_cast< DisparityIcon * >( icon );
+
+    if ( disparityIcon )
+        updateFrame( disparityIcon );
 
 }
 
-void ImageDisparityWidget::updateFrame( DisparityIcon* icon )
+void StereoDisparityWidget::updateFrame( DisparityIcon* icon )
 {
     m_disparityWidget->processFrame( icon->stereoFrame() );
+}
+
+// FileDisparityWidget
+FileDisparityWidget::FileDisparityWidget( QWidget* parent )
+    : DiskDisparityWidget( parent )
+{
+    initialize();
+}
+
+void FileDisparityWidget::initialize()
+{
+    m_disparityWidget = new ViewDisparityWidget( this );
+
+    addWidget( m_disparityWidget );
+    addWidget( m_iconsWidget );
+
+    connect( m_iconsWidget, SIGNAL( iconActivated( DisparityIconBase* ) ), this, SLOT( updateFrame() ) );
+
+}
+
+void FileDisparityWidget::loadCalibrationFile( const QString &fileName )
+{
+    m_disparityWidget->loadCalibrationFile( fileName );
+}
+
+void FileDisparityWidget::addDisparityIcon( const QString &colorFileName , const QString &disparityFileName)
+{
+    CvImage img = cv::imread( colorFileName.toStdString() );
+
+    if ( !img.empty() )
+        m_iconsWidget->addIcon( new DisparityResultIcon( img, colorFileName, disparityFileName, QObject::tr("Frame") + " " + QString::number( m_iconCount++ ) ) );
+
+}
+
+void FileDisparityWidget::loadCalibrationDialog()
+{
+    m_disparityWidget->loadCalibrationDialog();
+}
+
+void FileDisparityWidget::importDisparityDialog()
+{
+    StereoFilesListDialog dlg( this );
+
+    if ( dlg.exec() == StereoFilesListDialog::Accepted ) {
+        auto leftFileNames = dlg.leftFileNames();
+        auto rightFileNames = dlg.rightFileNames();
+
+        for ( auto i = 0; i < leftFileNames.size(); ++i )
+            addDisparityIcon( leftFileNames[i], rightFileNames[i] );
+
+    }
+
+    updateFrame();
+
+}
+
+void FileDisparityWidget::updateFrame()
+{
+    auto icon = m_iconsWidget->currentIcon();
+
+    auto disparityIcon = dynamic_cast< DisparityResultIcon * >( icon );
+
+    if ( disparityIcon )
+        updateFrame( disparityIcon );
+
+}
+
+void FileDisparityWidget::updateFrame( DisparityResultIcon* icon )
+{
+    m_disparityWidget->processDisparity( icon->colorImage(), icon->disparityImage() );
 }
 

@@ -62,9 +62,11 @@ void GPUFlowTracker::extractPoints( FlowKeyFrame *frame )
 
             frame->createMask();
 
-            processor()->extractPoints( frame->image(), frame->mask(), &points, extractPointsCount, frame->pointsInterval() );
+            processor()->setExtractionDistance( frame->pointsInterval() );
 
-            frame->addFramePoints( points );
+            processor()->extractPoints( frame->image(), frame->mask(), &points, extractPointsCount );
+
+            frame->addFlowPoints( points );
 
         }
 
@@ -156,9 +158,11 @@ void CPUFlowTracker::extractPoints( FlowKeyFrame *frame )
 
             frame->createMask();
 
-            processor()->extractPoints( frame->image(), frame->mask(), &points, extractPointsCount, frame->pointsInterval() );
+            processor()->setExtractionDistance( frame->pointsInterval() );
 
-            frame->addFramePoints( points );
+            processor()->extractPoints( frame->image(), frame->mask(), &points, extractPointsCount );
+
+            frame->addFlowPoints( points );
 
         }
 
@@ -220,9 +224,9 @@ CPUFlowProcessor *CPUFlowTracker::processor() const
 {
     return dynamic_cast< CPUFlowProcessor* >( m_pointsProcessor.get() );
 }
-
+/*
 // DescriptorTracker
-bool DescriptorTracker::selectKeypoints( const FeatureFramePtr &frame1, const FeatureFramePtr &frame2, std::vector< cv::KeyPoint > *keypoints, cv::Mat *descriptors )
+bool DescriptorTracker::selectKeypoints( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::vector< cv::KeyPoint > *keypoints, cv::Mat *descriptors )
 {
     if ( frame1 && frame2 && keypoints && descriptors ) {
 
@@ -251,7 +255,7 @@ bool DescriptorTracker::selectKeypoints( const FeatureFramePtr &frame1, const Fe
 }
 
 // FullTracker
-void FullTracker::extractKeypoints( FeatureFrame *frame )
+void FullTracker::extractKeypoints( FlowFrame *frame )
 {
     if ( frame ) {
 
@@ -280,7 +284,7 @@ void SiftTracker::initialize()
     m_descriptorProcessor = std::unique_ptr< FullProcessor >( new SiftProcessor() );
 }
 
-cv::Mat SiftTracker::match( const FeatureFramePtr &frame1, const FeatureFramePtr &frame2, std::vector< cv::DMatch > *matches )
+cv::Mat SiftTracker::match( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::vector< cv::DMatch > *matches )
 {
     if ( frame1 && frame2 ) {
 
@@ -307,7 +311,7 @@ void OrbTracker::initialize()
     m_descriptorProcessor = std::unique_ptr< FullProcessor >( new OrbProcessor() );
 }
 
-cv::Mat OrbTracker::match( const FeatureFramePtr &frame1, const FeatureFramePtr &frame2, std::vector< cv::DMatch > *matches )
+cv::Mat OrbTracker::match( const FlowFramePtr &frame1, const FlowFramePtr &frame2, std::vector< cv::DMatch > *matches )
 {
     if ( frame1 && frame2 ) {
 
@@ -322,5 +326,5 @@ cv::Mat OrbTracker::match( const FeatureFramePtr &frame1, const FeatureFramePtr 
     return cv::Mat();
 
 }
-
+*/
 }

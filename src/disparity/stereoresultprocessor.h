@@ -47,6 +47,8 @@ public:
     void setCalibration( const StereoCalibrationDataShort &data );
     bool loadYaml( const std::string &fileName );
 
+    pcl::PointCloud< pcl::PointXYZRGB >::Ptr process( const CvImage &color, const CvImage &disparity );
+
     StereoResult process( const StampedStereoImage &frame );
 
 protected:

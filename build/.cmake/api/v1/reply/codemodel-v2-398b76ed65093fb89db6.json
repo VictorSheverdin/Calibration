@@ -1,0 +1,140 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.10"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8,
+						9
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "Calibration",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8,
+						9
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "calibration::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-calibration-Debug-a4764c8771ce1612a389.json",
+					"name" : "calibration",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "calibration_autogen::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-calibration_autogen-Debug-2ea53cd0434f23d568ee.json",
+					"name" : "calibration_autogen",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "disparity::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-disparity-Debug-0d90e50d6050712a1746.json",
+					"name" : "disparity",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "disparity_autogen::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-disparity_autogen-Debug-472b8e4001490227b2bf.json",
+					"name" : "disparity_autogen",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "exposure::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-exposure-Debug-b4aa3117831af8af9606.json",
+					"name" : "exposure",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "exposure_autogen::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-exposure_autogen-Debug-3df762f45b5539915881.json",
+					"name" : "exposure_autogen",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "lidar::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-lidar-Debug-502dffe113eb7a37343e.json",
+					"name" : "lidar",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "lidar_autogen::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-lidar_autogen-Debug-88b86a9fd43c3271fe1a.json",
+					"name" : "lidar_autogen",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "slam::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-slam-Debug-fb1fe5038074f66f38e7.json",
+					"name" : "slam",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "slam_autogen::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-slam_autogen-Debug-2ced312a937e7701d448.json",
+					"name" : "slam_autogen",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/home/victor/workspace/cpp/projects/Calibration/build",
+		"source" : "/home/victor/workspace/cpp/projects/Calibration"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 0
+	}
+}

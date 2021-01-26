@@ -11,14 +11,10 @@
 namespace slam {
 
 class Map;
-class FlowMap;
-class FeatureMap;
 class MonoPoint;
 
 class MapPoint : public ColorPoint3d, public std::enable_shared_from_this< MapPoint >
 {
-    friend class FeatureMap;
-
 public:
     using ObjectPtr = std::shared_ptr< MapPoint >;
     using ObjectConstPtr = std::shared_ptr< const MapPoint >;

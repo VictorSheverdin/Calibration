@@ -7,7 +7,7 @@ class DisparityChoiceDialog : public DialogBase
     Q_OBJECT
 
 public:
-    enum DocumentType { NONE, IMAGES, CAMERA };
+    enum DocumentType { NONE, STEREO, FILE, CAMERA };
 
     explicit DisparityChoiceDialog( QWidget* parent = nullptr );
 

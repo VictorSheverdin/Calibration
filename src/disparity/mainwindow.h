@@ -10,7 +10,9 @@
 class CameraDisparityWidget;
 class DisparityDocumentBase;
 class CameraDisparityDocument;
-class ImageDisparityDocument;
+class DiskDisparityDocument;
+class StereoDisparityDocument;
+class FileDisparityDocument;
 
 class MainWindow : public DocumentMainWindow
 {
@@ -20,17 +22,21 @@ public:
     explicit MainWindow( QWidget *parent = nullptr );
     explicit MainWindow( const QString &leftCameraIp, const QString &rightCameraIp, QWidget *parent = nullptr );
 
-    void addImageDisparityDocument();
+    void addStereoDisparityDocument();
+    void addFileDisparityDocument();
     void addCameraDisparityDocument( const QString &leftCameraIp, const QString &rightCameraIp );
 
     DisparityDocumentBase *currentDisparityDocument() const;
+    DiskDisparityDocument *currentDiskDisparityDocument() const;
     CameraDisparityDocument *currentCameraDisparityDocument() const;
-    ImageDisparityDocument *currentImageDisparityDocument() const;
+    StereoDisparityDocument *currentStereoDisparityDocument() const;
+    FileDisparityDocument *currentFileDisparityDocument() const;
 
 public slots:
     void choiceDisparityDialog();
 
-    void addImageDisparity();
+    void addStereoDisparity();
+    void addFileDisparity();
     void addCameraDisparityDialog();
 
     void loadCalibrationDialog();

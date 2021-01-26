@@ -4,6 +4,8 @@
 
 #include "defs.h"
 
+#include "src/superglue/super_match_includes.hpp"
+
 void extractKeypoints( cv::Ptr< cv::Feature2D > processor, const CvImage &image, const cv::Mat &mask, std::vector< cv::KeyPoint > *keypoints )
 {
     if ( processor && keypoints ) {
@@ -45,9 +47,6 @@ bool FlowTrackResult::operator<( const FlowTrackResult &other ) const
 }
 
 // FlowProcessor
-const double FlowProcessor::m_checkDistance = 1.0;
-
-// FlowProcessor
 FlowProcessor::FlowProcessor()
 {
     initialize();
@@ -55,20 +54,23 @@ FlowProcessor::FlowProcessor()
 
 void FlowProcessor::initialize()
 {
+    m_checkDistance = 1.0;
     m_extractPrecision = 1.e-2;
-    m_blockSize = 5;
+    m_extractDistance = 10.;
+    m_blockSize = 3;
     m_ransacReprojectionThreshold = 1.0;
-    m_ransacConfidence = 1.0 - 1.e-3;
+    m_ransacConfidence = 1.0 - 1.e-2;
+
 }
 
-void FlowProcessor::extractPoints( const CvImage &image, const cv::Mat &mask, std::vector< cv::Point2f > *points , const size_t count, const double distance)
+void FlowProcessor::extractPoints( const CvImage &image, const cv::Mat &mask, std::vector< cv::Point2f > *points , const size_t count )
 {
     if ( points ) {
 
         cv::Mat gray;
         cv::cvtColor( image, gray, cv::COLOR_BGR2GRAY );
 
-        cv::goodFeaturesToTrack( gray, *points, count, m_extractPrecision, distance, mask, m_blockSize );
+        cv::goodFeaturesToTrack( gray, *points, count, m_extractPrecision, m_extractDistance, mask, m_blockSize );
 
     }
 
@@ -82,6 +84,26 @@ double FlowProcessor::extractPrecision() const
 void FlowProcessor::setExtractPrecision( const double value )
 {
     m_extractPrecision = value;
+}
+
+double FlowProcessor::checkDistance() const
+{
+    return m_checkDistance;
+}
+
+void FlowProcessor::setCheckDistance( const double value )
+{
+    m_checkDistance = value;
+}
+
+void FlowProcessor::setExtractionDistance( const double value )
+{
+    m_extractDistance = value;
+}
+
+double FlowProcessor::extractionDistance() const
+{
+    return m_extractDistance;
 }
 
 double FlowProcessor::ransacReprojectionThreshold() const
@@ -240,12 +262,12 @@ CPUFlowProcessor::CPUFlowProcessor()
 
 void CPUFlowProcessor::initialize()
 {
-    m_winSize = 21;
-    m_levels = 6;
+    m_winSize = 17;
+    m_levels = 3;
 
-     m_termCriteria = cv::TermCriteria( cv::TermCriteria::EPS, 1000, 1.e-4 );
+    m_termCriteria = cv::TermCriteria( cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 50, 1.e-2 );
 
-     m_minEigenValue = 1.e-4;
+    m_minEigenValue = 1.e-2;
 
 }
 
@@ -350,16 +372,6 @@ void DescriptorProcessor::extractDescriptors( const CvImage &image, std::vector<
 }
 
 // FullProcessor
-void FullProcessor::extractKeypoints( const CvImage &image, const cv::Mat &mask, std::vector< cv::KeyPoint > *keypoints )
-{
-    ::extractKeypoints( m_processor, image, mask, keypoints );
-}
-
-void FullProcessor::extractDescriptors( const CvImage &image, std::vector< cv::KeyPoint > &keypoints, cv::Mat *descriptors )
-{
-    ::extractDescriptors( m_processor, image, keypoints, descriptors );
-}
-
 void FullProcessor::extractAndCompute( const CvImage &image, const cv::Mat &mask, std::vector< cv::KeyPoint > *keypoints, cv::Mat *descriptors )
 {
     ::extractAndCompute( m_processor, image, mask, keypoints, descriptors );
@@ -391,6 +403,56 @@ int GFTTProcessor::maxFeatures() const
     return processor()->getMaxFeatures();
 }
 
+void GFTTProcessor::setQualityLevel( double value )
+{
+    processor()->setQualityLevel( value );
+}
+
+double GFTTProcessor::qualityLevel() const
+{
+    return processor()->getQualityLevel();
+}
+
+void GFTTProcessor::setMinDistance( double value )
+{
+    processor()->setMinDistance( value );
+}
+
+double GFTTProcessor::minDistance() const
+{
+    return processor()->getMinDistance();
+}
+
+void GFTTProcessor::setBlockSize( int value )
+{
+    processor()->setBlockSize( value );
+}
+
+int GFTTProcessor::blockSize() const
+{
+    return processor()->getBlockSize();
+}
+
+void GFTTProcessor::setHarrisDetector( bool value )
+{
+    processor()->setHarrisDetector( value );
+}
+
+bool GFTTProcessor::harrisDetector() const
+{
+    return processor()->getHarrisDetector();
+}
+
+void GFTTProcessor::setK( double value )
+{
+    processor()->setK( value );
+}
+
+double GFTTProcessor::k() const
+{
+    return processor()->getK();
+}
+
 // FastProcessor
 FastProcessor::FastProcessor()
 {
@@ -415,6 +477,106 @@ void FastProcessor::setThreshold( const int value )
 int FastProcessor::threshold() const
 {
     return processor()->getThreshold();
+}
+
+void FastProcessor::setNonmaxSuppression( bool value )
+{
+    processor()->setNonmaxSuppression( value );
+}
+
+bool FastProcessor::nonmaxSuppression()
+{
+    return processor()->getNonmaxSuppression();
+}
+
+void FastProcessor::setType( cv::FastFeatureDetector::DetectorType value )
+{
+    processor()->setType( value );
+}
+
+cv::FastFeatureDetector::DetectorType FastProcessor::type()
+{
+    return processor()->getType();
+}
+
+// SuperGlueProcessor
+SuperGlueProcessor::SuperGlueProcessor( const std::string &detectorModelFile, const std::string &matcherModelFile )
+{
+    initialize( detectorModelFile, matcherModelFile );
+}
+
+void SuperGlueProcessor::initialize( const std::string &detectorModelFile, const std::string &matcherModelFile )
+{
+    marker::StreamLogger logger( std::cout, marker::StreamLogger::Severity::kWARNING );
+
+    marker::SuperPointDetector::Config cfg;
+
+    cfg.border = 10;
+    cfg.score_threshold = .3;
+
+    _detector = std::make_shared< marker::SuperPointDetector >( detectorModelFile, cfg, logger );
+    _matcher = std::make_shared< marker::SuperGlueMatcher >( matcherModelFile, logger );
+
+}
+
+void SuperGlueProcessor::setMatchingThreshold( const double value )
+{
+    _matcherThreshold = value;
+}
+
+int SuperGlueProcessor::matchingThreshold() const
+{
+    return _matcherThreshold;
+}
+
+void SuperGlueProcessor::extractKeypoints( const CvImage &image1, const cv::Mat &mask1, const CvImage &image2, const cv::Mat &mask2,
+                                            std::vector<cv::KeyPoint> *keypoints1, std::vector<cv::KeyPoint> *keypoints2 )
+{
+    CV_Assert( image1.channels() == 1 && image2.channels() == 1 );
+
+    auto input_shape = _detector->input_shape();
+
+    CvImage resizedImage1, resizedImage2;
+
+    if ( image1.rows != input_shape.rows || image2.cols != input_shape.cols )
+        cv::resize( image1, resizedImage1, cv::Size(input_shape.cols, input_shape.rows) );
+    if ( image2.rows != input_shape.rows || image2.cols != input_shape.cols )
+        cv::resize( image1, resizedImage2, cv::Size( input_shape.cols, input_shape.rows ) );
+
+    _detector->detect( resizedImage1, mask1, resizedImage2, mask2 );
+    auto& kpts = _detector->output();
+
+    kpts[0].get_keypoints( *keypoints1 );
+    kpts[1].get_keypoints( *keypoints2 );
+}
+
+void SuperGlueProcessor::match( const std::vector<cv::KeyPoint> &queryKeypoints, const std::vector<cv::KeyPoint> &trainKeypoints, std::vector< cv::DMatch > *matches )
+{
+    marker::KeypointSetArray kpts;
+
+    kpts[ 0 ].set_keypoints( queryKeypoints );
+    kpts[ 1 ].set_keypoints( trainKeypoints );
+
+    _matcher->match( kpts );
+    auto& match_table = _matcher->output();
+
+    cv::Mat scores;
+
+    match_table.get_scores( scores );
+
+    for( int i = 0; i < scores.rows - 1; ++i ) {
+        auto row_begin = scores.ptr< float >( i );
+        auto row_end = row_begin + scores.cols;
+        auto max_score = std::max_element( row_begin, row_end );
+        if ( max_score < row_end - 1 && *max_score > _matcherThreshold ) {
+            int j = max_score - row_begin;
+            float d = 1.f - *max_score;
+            matches->emplace_back( i, j, d );
+
+        }
+
+    }
+
 }
 
 // DaisyProcessor
@@ -499,15 +661,15 @@ FeatureMatcherBase::FeatureMatcherBase()
 {
 }
 
-// DescriptorMatcherBase
-double DescriptorMatcherBase::m_threshold = 0.8;
+// DescriptorMatcher
+double DescriptorMatcher::m_threshold = 0.8;
 
-DescriptorMatcherBase::DescriptorMatcherBase()
+DescriptorMatcher::DescriptorMatcher()
     : FeatureMatcherBase()
 {
 }
 
-cv::Mat DescriptorMatcherBase::match( const std::vector< cv::KeyPoint > &queryKeypoints, const cv::Mat &queryDescriptors,
+cv::Mat DescriptorMatcher::match( const std::vector< cv::KeyPoint > &queryKeypoints, const cv::Mat &queryDescriptors,
                               const std::vector< cv::KeyPoint > &trainKeypoints, const cv::Mat &trainDescriptors, std::vector< cv::DMatch > *matches )
 {
     if ( matches ) {
@@ -589,7 +751,7 @@ cv::Mat DescriptorMatcherBase::match( const std::vector< cv::KeyPoint > &queryKe
 
 // FlannMatcher
 BFMatcher::BFMatcher()
-    : DescriptorMatcherBase()
+    : DescriptorMatcher()
 {
     initialize();
 }
@@ -601,7 +763,7 @@ void BFMatcher::initialize()
 
 // FlannMatcher
 FlannMatcher::FlannMatcher()
-    : DescriptorMatcherBase()
+    : DescriptorMatcher()
 {
     initialize();
 }

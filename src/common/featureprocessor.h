@@ -22,13 +22,26 @@ public:
 
 };
 
-class FlowProcessor
+class FeatureProcessorBase
+{
+protected:
+    FeatureProcessorBase() = default;
+    virtual ~FeatureProcessorBase() = default;
+};
+
+class FlowProcessor : public FeatureProcessorBase
 {
 public:
-    void extractPoints( const CvImage &image, const cv::Mat &mask, std::vector< cv::Point2f > *points, const size_t count, const double distance );
+    void extractPoints( const CvImage &image, const cv::Mat &mask, std::vector< cv::Point2f > *points, const size_t count );
 
     double extractPrecision() const;
     void setExtractPrecision( const double value );
+
+    double checkDistance() const;
+    void setCheckDistance( const double value );
+
+    void setExtractionDistance( const double value );
+    double extractionDistance() const;
 
     virtual size_t winSize() const = 0;
     virtual void setWinSize( const size_t value ) = 0;
@@ -47,9 +60,10 @@ public:
 protected:
     FlowProcessor();
 
-    static const double m_checkDistance;
+    double m_checkDistance;
 
     double m_extractPrecision;
+    double m_extractDistance;
     double m_blockSize;
 
     double m_ransacReprojectionThreshold;
@@ -124,19 +138,18 @@ private:
 
 };
 
-class FeatureProcessorBase
+class FeatureProcessor : public FeatureProcessorBase
 {
 public:
-    virtual ~FeatureProcessorBase() = default;
 
 protected:
-    FeatureProcessorBase() = default;
+    FeatureProcessor() = default;
 
     cv::Ptr< cv::Feature2D > m_processor;
 
 };
 
-class KeyPointProcessor : public FeatureProcessorBase
+class KeyPointProcessor : public virtual FeatureProcessor
 {
 public:
     void extractKeypoints( const CvImage &image, const cv::Mat &mask, std::vector< cv::KeyPoint > *keypoints );
@@ -146,7 +159,7 @@ protected:
 
 };
 
-class DescriptorProcessor : public FeatureProcessorBase
+class DescriptorProcessor : public virtual FeatureProcessor
 {
 public:
     void extractDescriptors( const CvImage &image, std::vector< cv::KeyPoint > &keypoints, cv::Mat *descriptors );
@@ -156,12 +169,9 @@ protected:
 
 };
 
-class FullProcessor : public FeatureProcessorBase
+class FullProcessor : public KeyPointProcessor, public DescriptorProcessor
 {
 public:
-    void extractKeypoints( const CvImage &image, const cv::Mat &mask, std::vector< cv::KeyPoint > *keypoints );
-    void extractDescriptors( const CvImage &image, std::vector< cv::KeyPoint > &keypoints, cv::Mat *descriptors );
-
     void extractAndCompute( const CvImage &image, const cv::Mat &mask, std::vector< cv::KeyPoint > *keypoints, cv::Mat *descriptors );
 
 protected:
@@ -179,6 +189,22 @@ public:
     void setMaxFeatures( const int value );
     int maxFeatures() const;
 
+    void setQualityLevel( double value );
+    double qualityLevel() const;
+
+    void setMinDistance( double value );
+    double minDistance() const;
+
+    void setBlockSize( int value );
+    int blockSize() const;
+
+    void setHarrisDetector( bool value );
+    bool harrisDetector() const;
+
+    void setK(double value );
+    double k() const;
+
+
 private:
     void initialize();
 
@@ -194,8 +220,44 @@ public:
     void setThreshold( const int value );
     int threshold() const;
 
+    void setNonmaxSuppression( bool value );
+    bool nonmaxSuppression();
+
+    void setType( cv::FastFeatureDetector::DetectorType value );
+    cv::FastFeatureDetector::DetectorType type();
+
 private:
     void initialize();
+
+};
+
+namespace marker
+{
+    class SuperPointDetector;
+    class SuperGlueMatcher;
+}
+
+class SuperGlueProcessor : public FeatureProcessorBase
+{
+public:
+    SuperGlueProcessor( const std::string &detectorModelFile, const std::string &matcherModelFile );
+
+    void setMatchingThreshold( const double value );
+    int matchingThreshold() const;
+
+    void extractKeypoints( const CvImage &image1, const cv::Mat &mask1, const CvImage &image2, const cv::Mat &mask2,
+                           std::vector< cv::KeyPoint > *keypoints1, std::vector< cv::KeyPoint > *keypoints2 );
+
+    void match( const std::vector<cv::KeyPoint> &queryKeypoints, const std::vector<cv::KeyPoint> &trainKeypoints, std::vector< cv::DMatch > *matches );
+
+protected:
+    std::shared_ptr< marker::SuperPointDetector > _detector;
+    std::shared_ptr< marker::SuperGlueMatcher > _matcher;
+
+    double _matcherThreshold;
+
+private:
+    void initialize( const std::string &detectorModelFile, const std::string &matcherModelFile );
 
 };
 
@@ -279,10 +341,10 @@ protected:
 private:
 };
 
-class DescriptorMatcherBase : public FeatureMatcherBase
+class DescriptorMatcher : public FeatureMatcherBase
 {
 public:
-    DescriptorMatcherBase();
+    DescriptorMatcher();
 
     cv::Mat match( const std::vector<cv::KeyPoint> &queryKeypoints, const cv::Mat &queryDescriptors,
                 const std::vector<cv::KeyPoint> &trainKeypoints, const cv::Mat &trainDescriptors,
@@ -296,7 +358,7 @@ protected:
 private:
 };
 
-class BFMatcher : public DescriptorMatcherBase
+class BFMatcher : public DescriptorMatcher
 {
 public:
     BFMatcher();
@@ -306,7 +368,7 @@ private:
 
 };
 
-class FlannMatcher : public DescriptorMatcherBase
+class FlannMatcher : public DescriptorMatcher
 {
 public:
     FlannMatcher();

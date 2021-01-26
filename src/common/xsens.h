@@ -15,12 +15,12 @@ class XsensData : public XsDataPacket
 {
 public:
     XsensData();
-    XsensData( const std::chrono::time_point< std::chrono::steady_clock > &time, const XsDataPacket &packet );
+    XsensData( const std::chrono::time_point< std::chrono::high_resolution_clock > &time, const XsDataPacket &packet );
 
     void setValues( const XsDataPacket &packet );
 
-    void setUtcTime( const std::chrono::time_point< std::chrono::steady_clock > &value );
-    const std::chrono::time_point< std::chrono::steady_clock > &utcTime() const;
+    void setUtcTime( const std::chrono::time_point< std::chrono::high_resolution_clock > &value );
+    const std::chrono::time_point< std::chrono::high_resolution_clock > &utcTime() const;
 
     double xsensTime() const;
 
@@ -31,7 +31,7 @@ public:
     bool valid() const;
 
 protected:
-    std::chrono::time_point< std::chrono::steady_clock > _time ;
+    std::chrono::time_point< std::chrono::high_resolution_clock > _time ;
 
     double _xsensTime;
 

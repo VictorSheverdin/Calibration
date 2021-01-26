@@ -7,7 +7,9 @@
 class QVBoxLayout;
 
 class CameraDisparityWidget;
-class ImageDisparityWidget;
+class DiskDisparityWidget;
+class StereoDisparityWidget;
+class FileDisparityWidget;
 
 class DisparityDocumentBase : public DocumentBase
 {
@@ -44,22 +46,59 @@ private:
 
 };
 
-class ImageDisparityDocument : public DisparityDocumentBase
+class DiskDisparityDocument : public DisparityDocumentBase
 {
     Q_OBJECT
 
 public:
-    explicit ImageDisparityDocument( QWidget* parent = nullptr );
+    explicit DiskDisparityDocument( QWidget* parent = nullptr );
 
-    ImageDisparityWidget *widget() const;
+    DiskDisparityWidget *widget() const;
+
+public slots:
+    void clearIcons();
+
+    virtual void importDialog() = 0;
+
+private:
+    void initialize();
+
+};
+
+class StereoDisparityDocument : public DiskDisparityDocument
+{
+    Q_OBJECT
+
+public:
+    explicit StereoDisparityDocument( QWidget* parent = nullptr );
+
+    StereoDisparityWidget *widget() const;
 
     void loadCalibrationFile( const QString &fileName );
 
 public slots:
     virtual void loadCalibrationDialog() override;
-    void importDialog();
+    void importDialog() override;
 
-    void clearIcons();
+private:
+    void initialize();
+
+};
+
+class FileDisparityDocument : public DiskDisparityDocument
+{
+    Q_OBJECT
+
+public:
+    explicit FileDisparityDocument( QWidget* parent = nullptr );
+
+    FileDisparityWidget *widget() const;
+
+    void loadCalibrationFile( const QString &fileName );
+
+public slots:
+    virtual void loadCalibrationDialog() override;
+    void importDialog() override;
 
 private:
     void initialize();

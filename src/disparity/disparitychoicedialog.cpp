@@ -15,18 +15,22 @@ void DisparityChoiceDialog::initialize()
 
     m_listWidget = new QListWidget( this );
 
-    auto imagesDocument = new QListWidgetItem( tr("Disparity from images") );
-    imagesDocument->setData( Qt::UserRole, IMAGES );
+    auto stereoDocument = new QListWidgetItem( tr("Disparity from stereo") );
+    stereoDocument->setData( Qt::UserRole, STEREO );
+
+    auto fileDocument = new QListWidgetItem( tr("Disparity from file") );
+    fileDocument->setData( Qt::UserRole, FILE );
 
     auto cameraDocument = new QListWidgetItem( tr("Disparity from camera") );
     cameraDocument->setData( Qt::UserRole, CAMERA );
 
-    m_listWidget->addItem( imagesDocument );
+    m_listWidget->addItem( stereoDocument );
+    m_listWidget->addItem( fileDocument );
     m_listWidget->addItem( cameraDocument );
 
     m_listWidget->setSelectionMode( QListWidget::SingleSelection );
 
-    imagesDocument->setSelected( true );
+    stereoDocument->setSelected( true );
 
     setWidget( m_listWidget );
 

@@ -52,3 +52,8 @@ Application *application()
 {
     return dynamic_cast< Application * >( qApp );
 }
+
+MainWindow *mainWindow()
+{
+    return application()->mainWindow();
+}

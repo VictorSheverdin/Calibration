@@ -4,6 +4,8 @@
 #include "tracker.h"
 #include "src/common/stereoprocessor.h"
 
+#include "settings.h"
+
 namespace slam {
 
 class World : public std::enable_shared_from_this< World >
@@ -11,8 +13,6 @@ class World : public std::enable_shared_from_this< World >
 public:
     using ObjectPtr = std::shared_ptr< World >;
     using ObjectConstPtr = std::shared_ptr< const World >;
-
-    enum class TrackType { FLOW, FEATURES };
 
     static ObjectPtr create( const StereoCameraMatrix &cameraMatrix );
 
@@ -30,6 +30,8 @@ public:
 
     const std::unique_ptr< FlowTracker > &flowTracker() const;
     const std::unique_ptr< FeatureTracker > &featureTracker() const;
+
+    const Settings &settings() const;
 
     double maxReprojectionError() const;
 
@@ -62,17 +64,7 @@ protected:
 
     cv::Mat m_restoreMatrix;
 
-    TrackType m_trackType;
-
-    static const double m_maxReprojectionError;
-
-    static const double m_minStereoDisparity;
-
-    static const double m_minAdjacentPointsDistance;
-    static const double m_minAdjacentCameraMultiplier;
-
-    static const double m_minTrackInliersRatio;
-    static const double m_goodTrackInliersRatio;
+    Settings m_settings;
 
     void createMap( const StereoCameraMatrix &cameraMatrix );
 

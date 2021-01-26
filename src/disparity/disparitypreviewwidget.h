@@ -20,6 +20,7 @@ class BMGPUControlWidget;
 class GMControlWidget;
 class BPControlWidget;
 class DisparityIcon;
+class DisparityResultIcon;
 class DisparityIconsWidget;
 
 class DisparityPreviewWidget : public QSplitter
@@ -54,12 +55,12 @@ private:
 
 };
 
-class DisparityWidgetBase : public QSplitter
+class ControlDisparityWidget : public QSplitter
 {
     Q_OBJECT
 
 public:
-    explicit DisparityWidgetBase( QWidget* parent = nullptr );
+    explicit ControlDisparityWidget( QWidget* parent = nullptr );
 
     BMControlWidget *bmControlWidget() const;
     GMControlWidget *gmControlWidget() const;
@@ -73,6 +74,7 @@ signals:
 
 public slots:
     void processFrame( const StampedStereoImage &frame );
+    void processDisparity( const CvImage &color, const CvImage &disparity );
 
     void loadCalibrationDialog();
 
@@ -104,7 +106,32 @@ private:
 
 };
 
-class CameraDisparityWidget : public DisparityWidgetBase
+class ViewDisparityWidget : public QSplitter
+{
+    Q_OBJECT
+
+public:
+    explicit ViewDisparityWidget( QWidget* parent = nullptr );
+
+    void loadCalibrationFile( const QString &fileName );
+
+public slots:
+    void processDisparity( const CvImage &color, const CvImage &disparity );
+
+    void loadCalibrationDialog();
+
+protected:
+    QPointer< DisparityPreviewWidget > m_view;
+    QPointer< ReconstructionViewWidget > m_3dWidget;
+
+    std::shared_ptr< StereoResultProcessor > m_processor;
+
+private:
+    void initialize();
+
+};
+
+class CameraDisparityWidget : public ControlDisparityWidget
 {
     Q_OBJECT
 
@@ -124,39 +151,80 @@ private:
 
 };
 
-class ImageDisparityWidget : public QSplitter
+class DiskDisparityWidget : public QSplitter
 {
     Q_OBJECT
 
 public:
-    explicit ImageDisparityWidget( QWidget* parent = nullptr );
+    explicit DiskDisparityWidget( QWidget* parent = nullptr );
+
+public slots:
+    void clearIcons();
+
+protected:
+    QPointer< DisparityIconsWidget > m_iconsWidget;
+
+    int m_iconCount;
+
+    void dropIconCount();
+
+private:
+    void initialize();
+
+};
+
+class StereoDisparityWidget : public DiskDisparityWidget
+{
+    Q_OBJECT
+
+public:
+    explicit StereoDisparityWidget( QWidget* parent = nullptr );
 
     BMControlWidget *bmControlWidget() const;
     GMControlWidget *gmControlWidget() const;
 
     void loadCalibrationFile( const QString &fileName );
-    void addIcon( const QString &leftFileName, const QString &rightFileName );
-
-    int m_iconCount;
+    void addStereoIcon( const QString &leftFileName, const QString &rightFileName );
 
 public slots:
     void loadCalibrationDialog();
-    void importDialog();
-
-    void clearIcons();
+    void importStereoDialog();
 
 protected slots:
     void updateFrame();
     void updateFrame( DisparityIcon* icon );
 
 protected:
-    QPointer< DisparityWidgetBase > m_disparityWidget;
-    QPointer< DisparityIconsWidget > m_iconsWidget;
+    QPointer< ControlDisparityWidget > m_disparityWidget;
 
 private:
     void initialize();
 
-    void dropIconCount();
+};
+
+class FileDisparityWidget : public DiskDisparityWidget
+{
+    Q_OBJECT
+
+public:
+    explicit FileDisparityWidget( QWidget* parent = nullptr );
+
+    void loadCalibrationFile( const QString &fileName );
+    void addDisparityIcon( const QString &colorFileName , const QString &disparityFileName);
+
+public slots:
+    void loadCalibrationDialog();
+    void importDisparityDialog();
+
+protected slots:
+    void updateFrame();
+    void updateFrame( DisparityResultIcon* icon );
+
+protected:
+    QPointer< ViewDisparityWidget > m_disparityWidget;
+
+private:
+    void initialize();
 
 };
 

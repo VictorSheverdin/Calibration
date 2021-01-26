@@ -50,7 +50,7 @@ void MonocularFilesListWidget::addDialog()
                             this,
                             tr( "Select images for calibration" ),
                             QString(),
-                            "Image files (*.png *.xpm *.jpg)" );
+                            "Image files (*.png *.xpm *.jpg *.tiff *.exr)" );
 
     m_list->addItems( files );
 

@@ -38,5 +38,6 @@
         <file>images/folder.ico</file>
         <file>images/slam.ico</file>
         <file>images/map.ico</file>
+        <file>images/calibration.ico</file>
     </qresource>
 </RCC>
