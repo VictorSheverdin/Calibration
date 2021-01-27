@@ -82,8 +82,7 @@ void Parameters::initialize()
 {
     _cornerExtractionCount = 5e2;
 
-    setFlowTracker( std::make_shared< CPUFlowTracker >() );
-    setFeatureTracker( std::make_shared< SiftTracker >() );
+    setTracker( std::make_shared< CPUFlowTracker >() );
 }
 
 void Parameters::setProcessRect( const StereoRect &rect )
@@ -116,24 +115,14 @@ const StereoDistorsionCoefficients &Parameters::distorsionCoefficients() const
     return _distorsionCoefficients;
 }
 
-void Parameters::setFlowTracker( const std::shared_ptr< FlowTracker > &value )
+void Parameters::setTracker( const std::shared_ptr< Tracker > &value )
 {
-    _flowTracker = value;
+    _tracker = value;
 }
 
-void Parameters::setFeatureTracker( const std::shared_ptr< FeatureTracker > &value )
+const std::shared_ptr< Tracker > &Parameters::tracker() const
 {
-    _featureTracker = value;
-}
-
-const std::shared_ptr< FlowTracker > &Parameters::flowTracker() const
-{
-    return _flowTracker;
-}
-
-const std::shared_ptr< FeatureTracker > &Parameters::featureTracker() const
-{
-    return _featureTracker;
+    return _tracker;
 }
 
 void Parameters::setCornerExtractionCount( const size_t value )

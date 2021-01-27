@@ -11,9 +11,9 @@
 
 namespace slam2 {
 
-class StereoFrame;
 class StereoCameraMatrix;
 class StereoDistorsionCoefficients;
+
 
 class Frame : public std::enable_shared_from_this< Frame >, protected Parent_Shared_Ptr< StereoFrame >
 {
@@ -64,6 +64,8 @@ protected:
 class ProcFrame : public FinalFrame
 {
     friend class ProcStereoFrame;
+    friend class CPUFlowTracker;
+    friend class SiftTracker;
 public:
     using ObjectClass = ProcFrame;
     using ParentClass = Frame;
@@ -74,10 +76,6 @@ public:
 
     void load( const StampedImage &image );
 
-    void buildPyramid();
-
-    void extractCorners();
-
     const cv::Point2f &cornerPoint( const size_t index ) const;
 
     ObjectPtr shared_from_this();
@@ -85,6 +83,12 @@ public:
 
     void setDistorsionCoefficients( const cv::Mat &value );
     const cv::Mat &distorsionCoefficients() const;
+
+    const StampedImage &image() const;
+    cv::Mat mask() const;
+
+    FlowPointPtr createFlowPoint( const size_t index );
+    FeaturePointPtr createFeaturePoint( const size_t index );
 
 protected:
     ProcFrame( const StereoFramePtr &parent );
@@ -107,13 +111,21 @@ protected:
 
     std::vector< FeaturePointPtr > _features;
 
-    cv::Mat cornersMask() const;
+    size_t addCornerPoint( const cv::Point2f &point );
+    size_t addCornerPoints( const std::vector< cv::Point2f > &points );
 
-    void addCornerPoint( const cv::Point2f &point );
-    void addCornerPoints( const std::vector< cv::Point2f > &points );
-
+    void setImagePyramid( const std::vector< cv::Mat > &value );
     const std::vector< cv::Mat > &imagePyramid() const;
+
     const std::vector< cv::Point2f > &cornerPoints() const;
+
+    void setFeaturePoints( const std::vector< cv::KeyPoint > &value );
+    const std::vector<cv::KeyPoint> &featurePoints() const;
+
+    void setDescriptors( const cv::Mat &value );
+    const cv::Mat &descriptors() const;
+
+    size_t extractionCornersCount() const;
 
 };
 
@@ -137,6 +149,8 @@ protected:
 
     FramePtr _leftFrame;
     FramePtr _rightFrame;
+
+    std::vector< StereoPointPtr > _points;
 };
 
 class FinalStereoFrame : public StereoFrame
@@ -164,6 +178,8 @@ protected:
 
 class ProcStereoFrame : public FinalStereoFrame
 {
+    friend class CPUFlowTracker;
+    friend class SiftTracker;
 public:
     using ObjectClass = ProcStereoFrame;
     using ParentClass = FinalStereoFrame;
@@ -174,7 +190,9 @@ public:
 
     void load( const StampedStereoImage &image );
 
-    void buildPyramid();
+    void prepareFrame();
+
+    void extractFeatures();
 
     void matchCorners();
 
@@ -186,8 +204,21 @@ public:
     ObjectPtr shared_from_this();
     ObjectConstPtr shared_from_this() const;
 
+    FlowStereoPointPtr createFlowPoint( const size_t leftIndex, const size_t rightIndex );
+    FeatureStereoPointPtr createFeaturePoint( const size_t leftIndex , const size_t rightIndex );
+
 protected:
     ProcStereoFrame( const MapPtr &parent );
+
+    void setImagePyramid( const std::vector< cv::Mat > &leftPyramid, const std::vector< cv::Mat > &rightPyramid );
+
+    void setFeaturePoints( const std::vector< cv::KeyPoint > &left, const std::vector< cv::KeyPoint > &right );
+    void setDescriptors( const cv::Mat &left, const cv::Mat &right );
+
+};
+
+class ConsecutiveStereoFrames
+{
 
 };
 

@@ -60,6 +60,11 @@ FlowPoint::FlowPoint( const ProcFramePtr &parentFrame, const size_t index )
 {
 }
 
+FlowPoint::ObjectPtr FlowPoint::create( const ProcFramePtr &parentFrame, const size_t index )
+{
+    return ObjectPtr( new FlowPoint( parentFrame, index ) );
+}
+
 FlowPoint::ObjectPtr FlowPoint::shared_from_this()
 {
     return std::dynamic_pointer_cast< FlowPoint >( Point2::shared_from_this() );
@@ -76,9 +81,14 @@ const cv::Point2f &FlowPoint::point() const
 }
 
 // FeaturePoint
-FeaturePoint::FeaturePoint(const ProcFramePtr &parentFrame, const size_t index )
+FeaturePoint::FeaturePoint( const ProcFramePtr &parentFrame, const size_t index )
     : ParentClass( parentFrame, index )
 {
+}
+
+FeaturePoint::ObjectPtr FeaturePoint::create( const ProcFramePtr &parentFrame, const size_t index )
+{
+    return ObjectPtr( new FeaturePoint( parentFrame, index ) );
 }
 
 FeaturePoint::ObjectPtr FeaturePoint::shared_from_this()
@@ -91,26 +101,42 @@ FeaturePoint::ObjectConstPtr FeaturePoint::shared_from_this() const
     return std::dynamic_pointer_cast< const FeaturePoint >( Point2::shared_from_this() );
 }
 
-// StereoPoint
-StereoPoint::StereoPoint( const Point2Ptr &leftPoint, const Point2Ptr &rightPoint )
+// DoublePoint
+DoublePoint::DoublePoint( const Point2Ptr &point1, const Point2Ptr &point2 )
 {
-    set( leftPoint, rightPoint );
+    set( point1, point2 );
 }
 
-void StereoPoint::set( const Point2Ptr &leftPoint, const Point2Ptr &rightPoint )
+void DoublePoint::set( const Point2Ptr &point1, const Point2Ptr &point2 )
 {
-    _leftPoint = leftPoint;
-    _rightPoint = rightPoint;
+    _point1 = point1;
+    _point2 = point2;
+}
+
+Point2Ptr DoublePoint::point1() const
+{
+    return _point1.lock();
+}
+
+Point2Ptr DoublePoint::point2() const
+{
+    return _point2.lock();
+}
+
+// StereoPoint
+StereoPoint::StereoPoint( const Point2Ptr &leftPoint, const Point2Ptr &rightPoint )
+    : DoublePoint( leftPoint, rightPoint )
+{
 }
 
 Point2Ptr StereoPoint::leftPoint() const
 {
-    return _leftPoint.lock();
+    return point1();
 }
 
 Point2Ptr StereoPoint::rightPoint() const
 {
-    return _rightPoint.lock();
+    return point2();
 }
 
 // ProcStereoPoint
@@ -145,6 +171,11 @@ FlowPointPtr FlowStereoPoint::rightPoint() const
     return std::dynamic_pointer_cast< FlowPoint >( StereoPoint::rightPoint() );
 }
 
+FlowStereoPoint::ObjectPtr FlowStereoPoint::create( const FlowPointPtr &leftPoint, const FlowPointPtr &rightPoint )
+{
+    return ObjectPtr( new FlowStereoPoint( leftPoint, rightPoint ) );
+}
+
 // FeatureStereoPoint
 FeatureStereoPoint::FeatureStereoPoint( const FeaturePointPtr &leftPoint, const FeaturePointPtr &rightPoint )
     : ProcStereoPoint( leftPoint, rightPoint )
@@ -160,5 +191,17 @@ FeaturePointPtr FeatureStereoPoint::rightPoint() const
 {
     return std::dynamic_pointer_cast< FeaturePoint >( StereoPoint::rightPoint() );
 }
+
+FeatureStereoPoint::ObjectPtr FeatureStereoPoint::create( const FeaturePointPtr &leftPoint, const FeaturePointPtr &rightPoint )
+{
+    return ObjectPtr( new FeatureStereoPoint( leftPoint, rightPoint ) );
+}
+
+// ConsecutivePoints
+ConsecutivePoints::ConsecutivePoints( const Point2Ptr &point1, const Point2Ptr &point2 )
+    : DoublePoint( point1, point2 )
+{
+}
+
 
 }

@@ -2,6 +2,8 @@
 
 #include "tracker.h"
 
+#include "frame.h"
+
 namespace slam2 {
 
 double FlowTracker::extractPrecision() const
@@ -55,23 +57,43 @@ void CPUFlowTracker::initialize()
     _pointsProcessor = std::unique_ptr< FlowProcessor >( new CPUFlowProcessor() );
 }
 
-std::vector< cv::Mat > CPUFlowTracker::buildPyramid( const CvImage &image )
+void CPUFlowTracker::prepareFrame( ProcStereoFrame *frame )
 {
-    std::vector< cv::Mat > ret;
+    std::vector< cv::Mat > leftPyramid, rightPyramid;
 
-    processor()->buildImagePyramid( image, &ret );
+    processor()->buildImagePyramid( frame->leftFrame()->image(), &leftPyramid );
+    processor()->buildImagePyramid( frame->rightFrame()->image(), &rightPyramid );
 
-    return ret;
+    frame->setImagePyramid( leftPyramid, rightPyramid );
 }
 
-void CPUFlowTracker::extractCorners( const CvImage &image, const cv::Mat &mask, const size_t count, std::vector< cv::Point2f > *cornerPoints )
+void CPUFlowTracker::extractFeatures( ProcStereoFrame *frame )
 {
-    processor()->extractPoints( image, mask, cornerPoints, count );
+    std::vector< cv::Point2f > cornerPoints;
+
+    processor()->extractPoints( frame->leftFrame()->image(), frame->leftFrame()->mask(), &cornerPoints, frame->leftFrame()->extractionCornersCount() );
+
+    frame->leftFrame()->addCornerPoints( cornerPoints );
 }
 
-void CPUFlowTracker::match( const std::vector< cv::Mat > &pyr1, const std::vector< cv::Mat > &pyr2 , const std::vector< cv::Point2f > &points, std::vector< FlowTrackResult > *results )
+void CPUFlowTracker::match( ProcStereoFrame *frame )
 {
-    processor()->track( pyr1, points, pyr2, results );
+    std::vector< FlowTrackResult > trackResults;
+
+    processor()->track( frame->leftFrame()->imagePyramid(), frame->leftFrame()->cornerPoints(), frame->rightFrame()->imagePyramid(), &trackResults );
+
+    for ( auto &i : trackResults ) {
+        auto rightIndex = frame->rightFrame()->addCornerPoint( i );
+
+        frame->createFlowPoint( i.index, rightIndex );
+
+    }
+
+}
+
+void CPUFlowTracker::match( ConsecutiveStereoFrames *frame )
+{
+
 }
 
 CPUFlowProcessor *CPUFlowTracker::processor() const
@@ -88,6 +110,49 @@ SiftTracker::SiftTracker()
 void SiftTracker::initialize()
 {
     _descriptorProcessor = std::unique_ptr< FullProcessor >( new SiftProcessor() );
+    _featuresMatcher = std::unique_ptr< DescriptorMatcher >( new FlannMatcher() );
+}
+
+void SiftTracker::prepareFrame( ProcStereoFrame * )
+{
+}
+
+void SiftTracker::extractFeatures( ProcStereoFrame *frame )
+{
+    std::vector< cv::Point2f > cornerPoints;
+
+    std::vector< cv::KeyPoint > leftKeypoints, rightKeypoints;
+    cv::Mat leftDescriptors, rightDescriptors;
+
+    processor()->extractAndCompute( frame->leftFrame()->image(), frame->leftFrame()->mask(), &leftKeypoints, &leftDescriptors );
+    processor()->extractAndCompute( frame->rightFrame()->image(), frame->rightFrame()->mask(), &rightKeypoints, &rightDescriptors );
+
+    frame->setFeaturePoints( leftKeypoints, rightKeypoints );
+    frame->setDescriptors( leftDescriptors, rightDescriptors );
+}
+
+void SiftTracker::match( ProcStereoFrame *frame )
+{
+    std::vector< cv::DMatch > matches;
+
+    matcher()->match( frame->leftFrame()->featurePoints(), frame->leftFrame()->descriptors(), frame->rightFrame()->featurePoints(), frame->rightFrame()->descriptors(), &matches );
+
+    for ( auto &i : matches )
+        frame->createFeaturePoint( i.queryIdx, i.trainIdx );
+}
+
+void SiftTracker::match( ConsecutiveStereoFrames *frame )
+{
+}
+
+SiftProcessor *SiftTracker::processor() const
+{
+    return dynamic_cast< SiftProcessor* >( _descriptorProcessor.get() );
+}
+
+FlannMatcher *SiftTracker::matcher() const
+{
+    return dynamic_cast< FlannMatcher* >( _featuresMatcher.get() );
 }
 
 }

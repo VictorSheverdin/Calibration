@@ -34,9 +34,9 @@ void Map::track( const StampedStereoImage &image )
 
     frame->load( image );
 
-    frame->buildPyramid();
+    frame->prepareFrame();
 
-    frame->leftFrame()->extractCorners();
+    frame->extractFeatures();
 
     frame->matchCorners();
 

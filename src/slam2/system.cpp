@@ -38,14 +38,9 @@ const Parameters &System::parameters() const
     return _parameters;
 }
 
-const std::shared_ptr< FlowTracker > &System::flowTracker() const
+const std::shared_ptr< Tracker > &System::tracker() const
 {
-    return _parameters.flowTracker();
-}
-
-const std::shared_ptr< FeatureTracker > &System::featureTracker() const
-{
-    return _parameters.featureTracker();
+    return _parameters.tracker();
 }
 
 void System::track( const StampedStereoImage &image )

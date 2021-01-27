@@ -4,8 +4,7 @@
 
 namespace slam2 {
 
-class FlowTracker;
-class FeatureTracker;
+class Tracker;
 
 class StereoRect
 {
@@ -73,11 +72,8 @@ public:
     const StereoCameraMatrix &cameraMatrix() const;
     const StereoDistorsionCoefficients &distorsionCoefficients() const;
 
-    void setFlowTracker( const std::shared_ptr< FlowTracker > &value );
-    void setFeatureTracker( const std::shared_ptr< FeatureTracker > &value );
-
-    const std::shared_ptr< FlowTracker > &flowTracker() const;
-    const std::shared_ptr< FeatureTracker > &featureTracker() const;
+    void setTracker( const std::shared_ptr< Tracker > &value );
+    const std::shared_ptr< Tracker > &tracker() const;
 
     void setCornerExtractionCount( const size_t value );
     size_t cornerExtractionCount() const;
@@ -90,8 +86,7 @@ protected:
     StereoCameraMatrix _cameraMatrix;
     StereoDistorsionCoefficients _distorsionCoefficients;
 
-    std::shared_ptr< FlowTracker > _flowTracker;
-    std::shared_ptr< FeatureTracker > _featureTracker;
+    std::shared_ptr< Tracker > _tracker;
 
     size_t _cornerExtractionCount;
 

@@ -157,6 +157,28 @@ void ProcessorThread::run()
                 }
 
             }
+            else {
+
+                auto superglueProcessor = std::dynamic_pointer_cast< SuperGlueProcessor >( m_descriptor );
+
+                if ( superglueProcessor ) {
+
+                    std::vector< cv::DMatch > matches;
+
+                    superglueProcessor->match( keyPoints1, keyPoints2, &matches );
+
+                    cv::drawMatches( m_img1, keyPoints1, m_img2, keyPoints2, matches, result );
+
+                    m_resultMutex.lock();
+                    m_result.count = matches.size();
+                    m_result.procTime = timer.toc();
+                    m_result.result = result;
+                    m_resultMutex.unlock();
+
+
+                }
+
+            }
 
         }
 

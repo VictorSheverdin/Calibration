@@ -6,13 +6,24 @@
 
 namespace slam2 {
 
-class FlowTracker
+class Tracker
 {
 public:
-    virtual std::vector< cv::Mat > buildPyramid( const CvImage &image ) = 0;
-    virtual void extractCorners( const CvImage &image, const cv::Mat &mask, const size_t count, std::vector< cv::Point2f > *cornerPoints ) = 0;
-    virtual void match( const std::vector< cv::Mat > &pyr1, const std::vector< cv::Mat > &pyr2, const std::vector< cv::Point2f > &points, std::vector< FlowTrackResult > *results ) = 0;
+    virtual ~Tracker() = default;
 
+    virtual void prepareFrame( ProcStereoFrame *frame ) = 0;
+    virtual void extractFeatures( ProcStereoFrame *frame ) = 0;
+    virtual void match( ProcStereoFrame *frame ) = 0;
+    virtual void match( ConsecutiveStereoFrames *frame ) = 0;
+
+protected:
+    Tracker() = default;
+
+};
+
+class FlowTracker : public Tracker
+{
+public:
     double extractPrecision() const;
     void setExtractPrecision( const double value );
 
@@ -37,9 +48,10 @@ class CPUFlowTracker : public FlowTracker
 public:
     CPUFlowTracker();
 
-    std::vector< cv::Mat > buildPyramid( const CvImage &image ) override;
-    void extractCorners( const CvImage &image, const cv::Mat &mask, const size_t count, std::vector< cv::Point2f > *cornerPoints ) override;
-    void match( const std::vector< cv::Mat > &pyr1, const std::vector< cv::Mat > &pyr2, const std::vector< cv::Point2f > &points, std::vector< FlowTrackResult > *results ) override;
+    void prepareFrame( ProcStereoFrame *frame ) override;
+    void extractFeatures( ProcStereoFrame *frame ) override;
+    void match( ProcStereoFrame *frame ) override;
+    void match( ConsecutiveStereoFrames *frame ) override;
 
 protected:
     CPUFlowProcessor *processor() const;
@@ -49,7 +61,7 @@ private:
 
 };
 
-class FeatureTracker
+class FeatureTracker : public Tracker
 {
 public:
 
@@ -65,8 +77,16 @@ class SiftTracker : public FeatureTracker
 public:
     SiftTracker();
 
+    void prepareFrame( ProcStereoFrame *frame ) override;
+    void extractFeatures( ProcStereoFrame *frame ) override;
+    void match( ProcStereoFrame *frame ) override;
+    void match( ConsecutiveStereoFrames *frame ) override;
+
 protected:
-    FlannMatcher _featuresMatcher;
+    SiftProcessor *processor() const;
+    FlannMatcher *matcher() const;
+
+    std::unique_ptr< DescriptorMatcher > _featuresMatcher;
 
 private:
     void initialize();

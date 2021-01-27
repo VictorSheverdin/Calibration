@@ -319,7 +319,12 @@ void SlamWidgetBase::initialize( const QString &calibrationFile )
 
     StereoCalibrationDataShort calibration( calibrationFile.toStdString() );
 
-    _processorThread = new ProcessorThread( this );
+    slam2::Parameters parameters;
+
+    parameters.setCameraMatrix( calibration.leftCameraResults().cameraMatrix(), calibration.rightCameraResults().cameraMatrix() );
+    parameters.setDistCoefficients( calibration.leftCameraResults().distortionCoefficients(), calibration.rightCameraResults().distortionCoefficients() );
+
+    _processorThread = new ProcessorThread( parameters, this );
 
     _updateTimer = new QTimer( this );
     _updateTimer->start( 1000 / 20 );

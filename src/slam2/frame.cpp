@@ -7,6 +7,8 @@
 
 #include "parameters.h"
 
+#include "framepoint.h"
+
 #include "tracker.h"
 
 namespace slam2 {
@@ -86,32 +88,6 @@ void ProcFrame::load( const StampedImage &image )
     _image = image;
 }
 
-void ProcFrame::buildPyramid()
-{
-    auto system = parentSystem();
-
-    auto tracker = system->flowTracker();
-
-    _imagePyramid = tracker->buildPyramid( _image );
-}
-
-void ProcFrame::extractCorners()
-{
-    auto system = parentSystem();
-
-    auto tracker = system->flowTracker();
-
-    size_t extractionCount = std::max( 0, static_cast< int >( system->parameters().cornerExtractionCount() )
-                                       - static_cast< int >( _cornerPoints.size() ) );
-
-    std::vector< cv::Point2f > cornerPoints;
-
-    tracker->extractCorners( _image, cornersMask(), extractionCount, &cornerPoints );
-
-    addCornerPoints( cornerPoints );
-
-}
-
 const cv::Point2f &ProcFrame::cornerPoint( const size_t index ) const
 {
     return _cornerPoints[ index ];
@@ -137,30 +113,69 @@ const cv::Mat &ProcFrame::distorsionCoefficients() const
     return _distCoefficients;
 }
 
-cv::Mat ProcFrame::cornersMask() const
+const StampedImage &ProcFrame::image() const
 {
-    cv::Mat ret( _image.rows, _image.cols, CV_8U, cv::Scalar( 1 ) );
+    return _image;
+}
 
-    auto system = parentSystem();
+cv::Mat ProcFrame::mask() const
+{
+    // TODO:
+    //cv::Mat ret( _image.rows, _image.cols, CV_8U, cv::Scalar( 1 ) );
 
-    auto tracker = system->flowTracker();
+    //auto system = parentSystem();
 
-    auto distance = tracker->extractionDistance();
+    //auto tracker = system->flowTracker();
 
-    for ( auto &i : _cornerPoints )
-        cv::rectangle( ret, cv::Rect( i.x - distance, i.y - distance, distance * 2, distance * 2 ), cv::Scalar( 0 ) );
+    //auto distance = tracker->extractionDistance();
+
+    //for ( auto &i : _cornerPoints )
+        //cv::rectangle( ret, cv::Rect( i.x - distance, i.y - distance, distance * 2, distance * 2 ), cv::Scalar( 0 ) );
+
+    //return ret;
+
+    return cv::Mat();
+}
+
+FlowPointPtr ProcFrame::createFlowPoint( const size_t index )
+{
+    auto point = FlowPoint::create( shared_from_this(), index );
+
+    _corners.push_back( point );
+
+    return point;
+}
+
+FeaturePointPtr ProcFrame::createFeaturePoint( const size_t index )
+{
+    auto point = FeaturePoint::create( shared_from_this(), index );
+
+    _features.push_back( point );
+
+    return point;
+}
+
+size_t ProcFrame::addCornerPoint( const cv::Point2f &point )
+{
+    auto ret = _cornerPoints.size();
+
+    _cornerPoints.push_back( point );
 
     return ret;
 }
 
-void ProcFrame::addCornerPoint( const cv::Point2f &point )
+size_t ProcFrame::addCornerPoints( const std::vector< cv::Point2f > &points )
 {
-    _cornerPoints.push_back( point );
+    auto ret = _cornerPoints.size();
+
+    _cornerPoints.insert( _cornerPoints.end(), points.begin(), points.end() );
+
+    return ret;
 }
 
-void ProcFrame::addCornerPoints( const std::vector< cv::Point2f > &points )
+void ProcFrame::setImagePyramid( const std::vector< cv::Mat > &value )
 {
-    _cornerPoints.insert( _cornerPoints.end(), points.begin(), points.end() );
+    _imagePyramid = value;
 }
 
 const std::vector< cv::Mat > &ProcFrame::imagePyramid() const
@@ -171,6 +186,34 @@ const std::vector< cv::Mat > &ProcFrame::imagePyramid() const
 const std::vector< cv::Point2f > &ProcFrame::cornerPoints() const
 {
     return _cornerPoints;
+}
+
+void ProcFrame::setFeaturePoints( const std::vector< cv::KeyPoint > &value )
+{
+    _featurePoints = value;
+}
+
+const std::vector< cv::KeyPoint > &ProcFrame::featurePoints() const
+{
+    return _featurePoints;
+}
+
+void ProcFrame::setDescriptors( const cv::Mat &value )
+{
+    _descriptors = value;
+}
+
+const cv::Mat &ProcFrame::descriptors() const
+{
+    return _descriptors;
+}
+
+size_t ProcFrame::extractionCornersCount() const
+{
+    // TODO:
+    auto system = parentSystem();
+
+    return system->parameters().cornerExtractionCount();
 }
 
 // StereoFrame
@@ -244,33 +287,46 @@ ProcStereoFrame::ProcStereoFrame( const MapPtr &parent )
 
 ProcStereoFrame::ObjectPtr ProcStereoFrame::create( const MapPtr &parent )
 {
-    return ObjectPtr( new ProcStereoFrame( parent ) );
+    auto frame = ObjectPtr( new ProcStereoFrame( parent ) );
+
+    frame->setLeftFrame( ProcFrame::create( frame ) );
+    frame->setRightFrame( ProcFrame::create( frame ) );
+
+    return frame;
 }
 
 void ProcStereoFrame::load( const StampedStereoImage &image )
 {
-    setLeftFrame( ProcFrame::create( shared_from_this() ) );
-    setRightFrame( ProcFrame::create( shared_from_this() ) );
-
     leftFrame()->load( image.leftImage() );
     rightFrame()->load( image.rightImage() );
 }
 
-void ProcStereoFrame::buildPyramid()
+void ProcStereoFrame::prepareFrame()
 {
-    leftFrame()->buildPyramid();
-    rightFrame()->buildPyramid();
+    auto system = parentSystem();
+
+    auto tracker = system->tracker();
+
+    tracker->prepareFrame( this );
+}
+
+void ProcStereoFrame::extractFeatures()
+{
+    auto system = parentSystem();
+
+    auto tracker = system->tracker();
+
+    tracker->extractFeatures( this );
+
 }
 
 void ProcStereoFrame::matchCorners()
 {
     auto system = parentSystem();
 
-    auto tracker = system->flowTracker();
+    auto tracker = system->tracker();
 
-    std::vector< FlowTrackResult > matchResults;
-
-    tracker->match( leftFrame()->imagePyramid(), rightFrame()->imagePyramid(), leftFrame()->cornerPoints(), &matchResults );
+    tracker->match( this );
 
 }
 
@@ -298,6 +354,48 @@ ProcStereoFrame::ObjectPtr ProcStereoFrame::shared_from_this()
 ProcStereoFrame::ObjectConstPtr ProcStereoFrame::shared_from_this() const
 {
     return std::dynamic_pointer_cast< const ProcStereoFrame >( StereoFrame::shared_from_this() );
+}
+
+FlowStereoPointPtr ProcStereoFrame::createFlowPoint( const size_t leftIndex , const size_t rightIndex )
+{
+    auto leftPoint = leftFrame()->createFlowPoint( leftIndex );
+    auto rightPoint = rightFrame()->createFlowPoint( rightIndex );
+
+    auto stereoPoint = FlowStereoPoint::create( leftPoint, rightPoint );
+
+    _points.push_back( stereoPoint );
+
+    return stereoPoint;
+}
+
+FeatureStereoPointPtr ProcStereoFrame::createFeaturePoint( const size_t leftIndex, const size_t rightIndex )
+{
+    auto leftPoint = leftFrame()->createFeaturePoint( leftIndex );
+    auto rightPoint = rightFrame()->createFeaturePoint( rightIndex );
+
+    auto stereoPoint = FeatureStereoPoint::create( leftPoint, rightPoint );
+
+    _points.push_back( stereoPoint );
+
+    return stereoPoint;
+}
+
+void ProcStereoFrame::setImagePyramid( const std::vector< cv::Mat > &leftPyramid, const std::vector< cv::Mat > &rightPyramid )
+{
+    leftFrame()->setImagePyramid( leftPyramid );
+    rightFrame()->setImagePyramid( rightPyramid );
+}
+
+void ProcStereoFrame::setFeaturePoints( const std::vector< cv::KeyPoint > &left, const std::vector< cv::KeyPoint > &right )
+{
+    leftFrame()->setFeaturePoints( left );
+    rightFrame()->setFeaturePoints( right );
+}
+
+void ProcStereoFrame::setDescriptors( const cv::Mat &left, const cv::Mat &right )
+{
+    leftFrame()->setDescriptors( left );
+    rightFrame()->setDescriptors( right );
 }
 
 }

@@ -5,6 +5,8 @@
 
 #include "src/common/image.h"
 
+#include "parameters.h"
+
 #include "alias.h"
 
 class ProcessorThread : public QThread
@@ -12,7 +14,7 @@ class ProcessorThread : public QThread
     Q_OBJECT
 
 public:
-    explicit ProcessorThread( QObject *parent = nullptr );
+    explicit ProcessorThread( const slam2::Parameters &parameters, QObject *parent = nullptr );
 
     void process( const StampedStereoImage image );
 
@@ -34,5 +36,7 @@ protected:
     slam2::SystemPtr _system;
 
     virtual void run() override;
+
+    void processNext();
 
 };

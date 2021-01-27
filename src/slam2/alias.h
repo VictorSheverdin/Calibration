@@ -12,8 +12,9 @@ class FinalFrame;
 class ProcFrame;
 
 class StereoFrame;
-class ProcStereoFrame;
 class FinalStereoFrame;
+class ProcStereoFrame;
+class ConsecutiveStereoFrames;
 
 class Track;
 
@@ -24,6 +25,10 @@ class FramePoint;
 class ProcPoint;
 class FlowPoint;
 class FeaturePoint;
+
+class StereoPoint;
+class FlowStereoPoint;
+class FeatureStereoPoint;
 
 class MapPoint;
 
@@ -50,6 +55,10 @@ using FramePointPtr = std::shared_ptr< FramePoint >;
 using ProcPointPtr = std::shared_ptr< ProcPoint >;
 using FlowPointPtr = std::shared_ptr< FlowPoint >;
 using FeaturePointPtr = std::shared_ptr< FeaturePoint >;
+
+using StereoPointPtr = std::shared_ptr< StereoPoint >;
+using FlowStereoPointPtr = std::shared_ptr< FlowStereoPoint >;
+using FeatureStereoPointPtr = std::shared_ptr< FeatureStereoPoint >;
 
 using MapPointPtr = std::shared_ptr< MapPoint >;
 
