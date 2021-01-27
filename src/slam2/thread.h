@@ -13,6 +13,8 @@ class ProcessorThread : public QThread
 {
     Q_OBJECT
 
+    friend class SlamImageWidget;
+
 public:
     explicit ProcessorThread( const slam2::Parameters &parameters, QObject *parent = nullptr );
 
@@ -31,7 +33,11 @@ protected:
     std::list< StampedStereoImage > _processQueue;
 
     QMutex _queueMutex;
-    QMutex _resultMutex;
+    mutable QMutex _resultMutex;
+
+    CvImage _pointsImage;
+    CvImage _tracksImage;
+    CvImage _stereoImage;
 
     slam2::SystemPtr _system;
 

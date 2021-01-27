@@ -29,6 +29,10 @@ public:
 
     const std::shared_ptr< Tracker > &tracker() const;
 
+    CvImage pointsImage() const;
+    CvImage tracksImage() const;
+    CvImage stereoImage() const;
+
     void track( const StampedStereoImage &image );
 
 protected:

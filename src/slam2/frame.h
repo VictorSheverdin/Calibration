@@ -207,6 +207,10 @@ public:
     FlowStereoPointPtr createFlowPoint( const size_t leftIndex, const size_t rightIndex );
     FeatureStereoPointPtr createFeaturePoint( const size_t leftIndex , const size_t rightIndex );
 
+    CvImage drawPoints() const;
+    CvImage drawTracks() const;
+    CvImage drawStereo() const;
+
 protected:
     ProcStereoFrame( const MapPtr &parent );
 

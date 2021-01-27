@@ -11,6 +11,8 @@
 
 #include "tracker.h"
 
+#include "src/common/functions.h"
+
 namespace slam2 {
 
 // Frame
@@ -378,6 +380,51 @@ FeatureStereoPointPtr ProcStereoFrame::createFeaturePoint( const size_t leftInde
     _points.push_back( stereoPoint );
 
     return stereoPoint;
+}
+
+CvImage ProcStereoFrame::drawPoints() const
+{
+    auto system = parentSystem();
+
+    CvImage leftImage, rightImage;
+
+    leftFrame()->image().copyTo( leftImage );
+    rightFrame()->image().copyTo( rightImage );
+
+    auto leftCorners = leftFrame()->cornerPoints();
+    auto leftKeypoints = leftFrame()->featurePoints();
+    auto rightCorners = rightFrame()->cornerPoints();
+    auto rightKeypoints = rightFrame()->featurePoints();
+
+    double radius;
+
+    auto pointDrawScale = system->parameters().pointsDrawScale();
+
+    radius = std::min( leftImage.width(), leftImage.height() ) * pointDrawScale;
+
+    drawFeaturePoints( &leftImage, leftCorners, 3, cv::Scalar( 0, 0, 255, 255 ) );
+    drawFeaturePoints( &leftImage, leftKeypoints, 3, cv::Scalar( 0, 255, 0, 255 ) );
+
+    radius = std::min( rightImage.width(), rightImage.height() ) * pointDrawScale;
+
+    drawFeaturePoints( &rightImage, rightKeypoints, 3, cv::Scalar( 0, 255, 0, 255 ) );
+    drawFeaturePoints( &rightImage, rightCorners, 3, cv::Scalar( 0, 0, 255, 255 ) );
+
+    return makeStraightPreview( leftImage, rightImage );
+}
+
+CvImage ProcStereoFrame::drawTracks() const
+{
+    auto stackedImage = makeStraightPreview( leftFrame()->image(), rightFrame()->image() );
+
+    return stackedImage;
+}
+
+CvImage ProcStereoFrame::drawStereo() const
+{
+    auto stackedImage = makeStraightPreview( leftFrame()->image(), rightFrame()->image() );
+
+    return stackedImage;
 }
 
 void ProcStereoFrame::setImagePyramid( const std::vector< cv::Mat > &leftPyramid, const std::vector< cv::Mat > &rightPyramid )

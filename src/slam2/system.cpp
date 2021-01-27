@@ -43,6 +43,30 @@ const std::shared_ptr< Tracker > &System::tracker() const
     return _parameters.tracker();
 }
 
+CvImage System::pointsImage() const
+{
+    if ( !_maps.empty() )
+        return _maps.back()->drawPoints();
+    else
+        return CvImage();
+}
+
+CvImage System::tracksImage() const
+{
+    if ( !_maps.empty() )
+        return _maps.back()->drawTracks();
+    else
+        return CvImage();
+}
+
+CvImage System::stereoImage() const
+{
+    if ( !_maps.empty() )
+        return _maps.back()->drawStereo();
+    else
+        return CvImage();
+}
+
 void System::track( const StampedStereoImage &image )
 {
     CV_Assert( !_maps.empty() );

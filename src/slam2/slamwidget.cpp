@@ -23,6 +23,8 @@
 #include <vtkPlanes.h>
 #include <vtkFrustumSource.h>
 
+#define _DEBUG_THREADS
+
 // ImagesWidget
 ImagesWidget::ImagesWidget( QWidget* parent )
     : QSplitter( Qt::Vertical, parent )
@@ -40,9 +42,6 @@ void ImagesWidget::initialize()
 
     _stereoWidget = new ImageWidget( this );
     addWidget( _stereoWidget );
-
-    _pointsWidget->hide();
-    _stereoWidget->hide();
 
     int widthDiv3 = width() / 3;
 
@@ -331,7 +330,9 @@ void SlamWidgetBase::initialize( const QString &calibrationFile )
 
     connect( _updateTimer, &QTimer::timeout, this, &SlamWidgetBase::updateViews );
 
+#ifndef _DEBUG_THREADS
     _processorThread->start();
+#endif
 
     updateVisibility();
 
@@ -411,6 +412,10 @@ void SlamImageWidget::timerEvent( QTimerEvent * )
 
         _processorThread->process( StampedStereoImage( leftImage, rightImage ) );
         ++_index;
+
+#ifdef _DEBUG_THREADS
+        _processorThread->processNext();
+#endif
 
         time += std::chrono::milliseconds{ static_cast< int64_t >( 1000.0 / _fps  ) } ;
 

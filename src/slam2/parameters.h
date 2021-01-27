@@ -78,6 +78,8 @@ public:
     void setCornerExtractionCount( const size_t value );
     size_t cornerExtractionCount() const;
 
+    double pointsDrawScale() const;
+
 protected:
     cv::Size _frameSize;
 

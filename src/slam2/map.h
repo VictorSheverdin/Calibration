@@ -24,6 +24,10 @@ public:
 
     std::shared_ptr< System > parentSystem() const;
 
+    CvImage drawPoints() const;
+    CvImage drawTracks() const;
+    CvImage drawStereo() const;
+
     void track( const StampedStereoImage &image );
 
 protected:

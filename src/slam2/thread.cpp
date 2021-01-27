@@ -27,26 +27,35 @@ slam2::SystemPtr ProcessorThread::system() const
 
 CvImage ProcessorThread::pointsImage() const
 {
-    return CvImage();
+    _resultMutex.lock();
+    auto ret = _pointsImage;
+    _resultMutex.unlock();
+
+    return ret;
 }
 
 CvImage ProcessorThread::tracksImage() const
 {
-    return CvImage();
+    _resultMutex.lock();
+    auto ret = _tracksImage;
+    _resultMutex.unlock();
+
+    return ret;
 }
 
 CvImage ProcessorThread::stereoImage() const
 {
-    return CvImage();
+    _resultMutex.lock();
+    auto ret = _stereoImage;
+    _resultMutex.unlock();
+
+    return ret;
 }
 
 void ProcessorThread::run()
 {
-    while( !isInterruptionRequested() )
-    {
-
+    while( !isInterruptionRequested() ) {
         processNext();
-
         std::this_thread::sleep_for( std::chrono::microseconds( 1 ) );
 
     }
@@ -69,6 +78,15 @@ void ProcessorThread::processNext()
     if ( !frame.empty() ) {
 
         _system->track( frame );
+
+        _resultMutex.lock();
+
+        _pointsImage = _system->pointsImage();
+        _tracksImage = _system->tracksImage();
+        _stereoImage = _system->stereoImage();
+
+        _resultMutex.unlock();
+
 
     }
 

@@ -23,6 +23,39 @@ std::shared_ptr< System > Map::parentSystem() const
     return parentPointer();
 }
 
+CvImage Map::drawPoints() const
+{
+    for ( auto i = _sequence.rbegin(); i!= _sequence.rend(); ++i ) {
+        auto procFrame = std::dynamic_pointer_cast< ProcStereoFrame >( *i );
+        if ( procFrame )
+            return procFrame->drawPoints();
+    }
+
+    return CvImage();
+}
+
+CvImage Map::drawTracks() const
+{
+    for ( auto i = _sequence.rbegin(); i!= _sequence.rend(); ++i ) {
+        auto procFrame = std::dynamic_pointer_cast< ProcStereoFrame >( *i );
+        if ( procFrame )
+            return procFrame->drawTracks();
+    }
+
+    return CvImage();
+}
+
+CvImage Map::drawStereo() const
+{
+    for ( auto i = _sequence.rbegin(); i!= _sequence.rend(); ++i ) {
+        auto procFrame = std::dynamic_pointer_cast< ProcStereoFrame >( *i );
+        if ( procFrame )
+            return procFrame->drawStereo();
+    }
+
+    return CvImage();
+}
+
 void Map::track( const StampedStereoImage &image )
 {
     auto frame = ProcStereoFrame::create( shared_from_this() );

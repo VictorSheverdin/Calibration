@@ -135,4 +135,9 @@ size_t Parameters::cornerExtractionCount() const
     return _cornerExtractionCount;
 }
 
+double Parameters::pointsDrawScale() const
+{
+    return 1./500.;
+}
+
 }
