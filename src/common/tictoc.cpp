@@ -15,7 +15,7 @@ void TicToc::tic()
 
 double TicToc::toc()
 {
-    return std::chrono::duration< double >( std::chrono::steady_clock::now() - m_start ).count();
+    return static_cast< double>( std::chrono::duration_cast< std::chrono::milliseconds >( std::chrono::steady_clock::now() - m_start ).count() ) * 1.e-3;
 }
 
 void TicToc::report()

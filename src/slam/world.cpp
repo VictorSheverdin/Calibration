@@ -271,9 +271,9 @@ std::list< StereoCameraMatrix > World::path() const
     return ret;
 }
 
-std::list< ColorPoint3d > World::sparseCloud() const
+std::vector< ColorPoint3d > World::sparseCloud() const
 {
-    std::list< ColorPoint3d > ret;
+    std::vector< ColorPoint3d > ret;
 
     for ( auto &map : m_maps ) {
 

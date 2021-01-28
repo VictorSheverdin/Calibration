@@ -5,6 +5,7 @@
 
 #include "src/common/supportclasses.h"
 
+#include "src/common/colorpoint.h"
 #include "src/common/image.h"
 
 #include "alias.h"
@@ -27,6 +28,8 @@ public:
     CvImage drawPoints() const;
     CvImage drawTracks() const;
     CvImage drawStereo() const;
+
+    std::vector< ColorPoint3d > lastSparseCloud() const;
 
     void track( const StampedStereoImage &image );
 

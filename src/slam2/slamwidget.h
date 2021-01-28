@@ -66,8 +66,8 @@ class SlamViewWidget : public QSplitter
 public:
     explicit SlamViewWidget( QWidget* parent = nullptr );
 
-    void setSparseCloud( const std::list< ColorPoint3d > &points );
-    void setPointCloud( const std::list< ColorPoint3d > &points, const std::string &id,
+    void setSparseCloud( const std::vector<ColorPoint3d> &points );
+    void setPointCloud( const std::vector< ColorPoint3d > &points, const std::string &id,
                         const Eigen::Vector4f &origin = Eigen::Vector4f::Zero(),
                         const Eigen::Quaternionf &orientation = Eigen::Quaternionf::Identity() );
     void setPointCloudPose( const std::string &id, const Eigen::Vector4f &origin, const Eigen::Quaternionf &orientation );

@@ -19,6 +19,9 @@ public:
 
     virtual ~Point2() = default;
 
+    virtual const cv::Point2f &point2d() const = 0;
+    virtual cv::Scalar color() const = 0;
+
 protected:
     Point2() = default;
 
@@ -54,6 +57,9 @@ public:
     ObjectPtr shared_from_this();
     ObjectConstPtr shared_from_this() const;
 
+    virtual const cv::Point2f &undistortedPoint() const = 0;
+    cv::Scalar color() const override;
+
 protected:
     ProcPoint( const ProcFramePtr &parentFrame, const size_t index );
 
@@ -77,7 +83,8 @@ public:
     ObjectPtr shared_from_this();
     ObjectConstPtr shared_from_this() const;
 
-    const cv::Point2f &point() const;
+    const cv::Point2f &undistortedPoint() const override;
+    const cv::Point2f &point2d() const override;
 
 protected:
     FlowPoint( const ProcFramePtr &parentFrame, const size_t index );
@@ -97,6 +104,9 @@ public:
 
     ObjectPtr shared_from_this();
     ObjectConstPtr shared_from_this() const;
+
+    const cv::Point2f &undistortedPoint() const override;
+    const cv::Point2f &point2d() const override;
 
 protected:
     FeaturePoint( const ProcFramePtr &parentFrame, const size_t index );
@@ -136,8 +146,15 @@ public:
     Point2Ptr leftPoint() const;
     Point2Ptr rightPoint() const;
 
+    void setPoint3d( const cv::Point3f &value );
+    const cv::Point3f &point3d() const;
+
+    cv::Scalar color() const;
+
 protected:
     StereoPoint( const Point2Ptr &leftPoint, const Point2Ptr &rightPoint );
+
+    cv::Point3f _point3d;
 
 };
 

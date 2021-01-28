@@ -11,6 +11,7 @@
 
 #include "tracker.h"
 
+#include "src/common/defs.h"
 #include "src/common/functions.h"
 
 namespace slam2 {
@@ -40,6 +41,12 @@ std::shared_ptr< System > Frame::parentSystem() const
 FinalFrame::FinalFrame( const StereoFramePtr &parent )
     : Frame( parent )
 {
+    initialize();
+}
+
+void FinalFrame::initialize()
+{
+    setCameraMatrix( cv::Mat::eye( 3, 3, CV_64F ) );
 }
 
 FinalFrame::ObjectPtr FinalFrame::shared_from_this()
@@ -93,6 +100,21 @@ void ProcFrame::load( const StampedImage &image )
 const cv::Point2f &ProcFrame::cornerPoint( const size_t index ) const
 {
     return _cornerPoints[ index ];
+}
+
+const cv::Point2f &ProcFrame::undistortedCornerPoint( const size_t index ) const
+{
+    return _undistCornerPoints[ index ];
+}
+
+const cv::Point2f &ProcFrame::featurePoint( const size_t index ) const
+{
+    return _featurePoints[ index ].pt;
+}
+
+const cv::Point2f &ProcFrame::undistortedFeaturePoint( const size_t index ) const
+{
+    return _undistFeaturePoints[ index ];
 }
 
 ProcFrame::ObjectPtr ProcFrame::shared_from_this()
@@ -161,7 +183,13 @@ size_t ProcFrame::addCornerPoint( const cv::Point2f &point )
 {
     auto ret = _cornerPoints.size();
 
+    std::vector< cv::Point2f > points, undistortedPoints;
+    points.push_back( point );
+
+    undistortPoints( points, &undistortedPoints );
+
     _cornerPoints.push_back( point );
+    _undistCornerPoints.push_back( undistortedPoints.front() );
 
     return ret;
 }
@@ -170,9 +198,59 @@ size_t ProcFrame::addCornerPoints( const std::vector< cv::Point2f > &points )
 {
     auto ret = _cornerPoints.size();
 
+    std::vector< cv::Point2f > undistortedPoints;
+
+    undistortPoints( points, &undistortedPoints );
+
     _cornerPoints.insert( _cornerPoints.end(), points.begin(), points.end() );
+    _undistCornerPoints.insert( _undistCornerPoints.end(), undistortedPoints.begin(), undistortedPoints.end() );
 
     return ret;
+}
+
+void ProcFrame::setFeaturePoints( const std::vector< cv::KeyPoint > &value )
+{
+    std::vector< cv::Point2f > points;
+
+    for ( auto &i : value )
+        points.push_back( i.pt );
+
+    undistortPoints( points, &_undistFeaturePoints );
+
+    _featurePoints = value;
+}
+
+void ProcFrame::undistortPoints( const std::vector< cv::Point2f > &sourcePoints, std::vector< cv::Point2f > *undistortedPoints ) const
+{
+    cv::undistortPoints( sourcePoints, *undistortedPoints, _cameraMatrix, _distCoefficients );
+
+    for ( auto &i : *undistortedPoints ) {
+        cv::Mat pt( 3, 1, CV_64F );
+        pt.at< double >( 0, 0 ) = i.x;
+        pt.at< double >( 1, 0 ) = i.y;
+        pt.at< double >( 2, 0 ) = 1;
+
+        cv::Mat mul = _cameraMatrix * pt;
+
+        auto w = mul.at< double >( 2, 0 );
+
+        if ( std::abs( w ) > FLOAT_EPS ) {
+            i.x = mul.at< double >( 0, 0 ) / w;
+            i.y = mul.at< double >( 1, 0 ) / w;
+        }
+        else {
+            i.x = 0.;
+            i.y = 0.;
+        }
+
+    }
+
+}
+
+
+const std::vector< cv::KeyPoint > &ProcFrame::featurePoints() const
+{
+    return _featurePoints;
 }
 
 void ProcFrame::setImagePyramid( const std::vector< cv::Mat > &value )
@@ -188,16 +266,6 @@ const std::vector< cv::Mat > &ProcFrame::imagePyramid() const
 const std::vector< cv::Point2f > &ProcFrame::cornerPoints() const
 {
     return _cornerPoints;
-}
-
-void ProcFrame::setFeaturePoints( const std::vector< cv::KeyPoint > &value )
-{
-    _featurePoints = value;
-}
-
-const std::vector< cv::KeyPoint > &ProcFrame::featurePoints() const
-{
-    return _featurePoints;
 }
 
 void ProcFrame::setDescriptors( const cv::Mat &value )
@@ -222,6 +290,13 @@ size_t ProcFrame::extractionCornersCount() const
 StereoFrame::StereoFrame( const MapPtr &parent )
     : Parent_Shared_Ptr< Map >( parent )
 {
+    initialize();
+}
+
+void StereoFrame::initialize()
+{
+    setRotation( cv::Mat::eye( 3, 3, CV_64F ) );
+    setTranslation( cv::Mat::zeros( 3, 1, CV_64F ) );
 }
 
 void StereoFrame::setLeftFrame( const FramePtr value )
@@ -242,6 +317,46 @@ std::shared_ptr< Map > StereoFrame::parentMap() const
 std::shared_ptr< System > StereoFrame::parentSystem() const
 {
     return parentMap()->parentSystem();
+}
+
+void StereoFrame::setRotation( const cv::Mat &value )
+{
+    _rotation = value;
+}
+
+const cv::Mat &StereoFrame::rotation() const
+{
+    return _rotation;
+}
+
+void StereoFrame::setTranslation( const cv::Mat &value )
+{
+    _translation = value;
+}
+
+const cv::Mat &StereoFrame::translation() const
+{
+    return _translation;
+}
+
+void StereoFrame::setRightRotation( const cv::Mat &value )
+{
+    _rightRotation = value;
+}
+
+const cv::Mat &StereoFrame::rightRotation() const
+{
+    return _rightRotation;
+}
+
+void StereoFrame::setRightTranslation( const cv::Mat &value )
+{
+    _rightTranslation = value;
+}
+
+const cv::Mat &StereoFrame::rightTranslation() const
+{
+    return _rightTranslation;
 }
 
 // FinalStereoFrame
@@ -269,6 +384,28 @@ void FinalStereoFrame::setCameraMatrices( const StereoCameraMatrix &value )
 {
     leftFrame()->setCameraMatrix( value.left() );
     rightFrame()->setCameraMatrix( value.right() );
+}
+
+ProjectionMatrix FinalStereoFrame::leftProjectionMatrix() const
+{
+    ProjectionMatrix ret;
+
+    ret.setCameraMatrix( leftFrame()->cameraMatrix() );
+    ret.setRotation( rotation() );
+    ret.setTranslation( translation() );
+
+    return ret;
+}
+
+ProjectionMatrix FinalStereoFrame::rightProjectionMatrix() const
+{
+    ProjectionMatrix ret;
+
+    ret.setCameraMatrix( leftFrame()->cameraMatrix() );
+    ret.setRotation( rightRotation() );
+    ret.setTranslation( rightTranslation() );
+
+    return ret;
 }
 
 FinalStereoFrame::ObjectPtr FinalStereoFrame::shared_from_this()
@@ -319,16 +456,153 @@ void ProcStereoFrame::extractFeatures()
     auto tracker = system->tracker();
 
     tracker->extractFeatures( this );
-
 }
 
-void ProcStereoFrame::matchCorners()
+void ProcStereoFrame::match()
 {
     auto system = parentSystem();
 
     auto tracker = system->tracker();
 
     tracker->match( this );
+}
+
+void ProcStereoFrame::triangulatePoints()
+{
+    auto system = parentSystem();
+
+    auto maxReprojectionError = system->parameters().maxReprojectionError();
+
+    cv::Mat homogeneousPoints3d;
+
+    cv::Mat_< float > leftPoints( 2, _points.size() ), rightPoints( 2, _points.size() );
+
+    for ( size_t i = 0; i < _points.size(); ++i ) {
+        auto leftPoint = _points[i]->leftPoint()->undistortedPoint();
+        auto rightPoint = _points[i]->leftPoint()->undistortedPoint();
+        leftPoints.row( 0 ).col( i ) = leftPoint.x;
+        leftPoints.row( 1 ).col( i ) = leftPoint.y;
+        rightPoints.row( 0 ).col( i ) = rightPoint.x;
+        rightPoints.row( 1 ).col( i ) = rightPoint.y;
+    }
+
+    cv::triangulatePoints( leftProjectionMatrix().projectionMatrix(), rightProjectionMatrix().projectionMatrix(), leftPoints, rightPoints, homogeneousPoints3d );
+
+    for ( size_t i = 0; i < _points.size(); ++i ) {
+
+        auto w = homogeneousPoints3d.at< float >( 3, i );
+
+        if ( std::abs( w ) > FLOAT_EPS ) {
+
+            auto x = homogeneousPoints3d.at< float >( 0, i ) / w;
+            auto y = homogeneousPoints3d.at< float >( 1, i ) / w;
+            auto z = homogeneousPoints3d.at< float >( 2, i ) / w;
+
+            auto pt = cv::Point3f( x, y, z );
+
+            //TODO : Reprojection Error
+
+            _points[i]->setPoint3d( pt );
+
+        }
+
+    }
+
+
+
+
+
+        /*if ( !leftPoints.empty() && leftPoints.size() == rightPoints.size() ) {
+
+            auto leftProjectionMatrix = leftFrame()->projectionMatrix();
+            auto rightProjectionMatrix = rightFrame()->projectionMatrix();
+
+            cv::triangulatePoints( leftProjectionMatrix, rightProjectionMatrix, leftPoints, rightPoints, homogeneousPoints3d );
+
+            for ( size_t i = 0; i < stereoPoints.size(); ++i ) {
+
+                auto w = homogeneousPoints3d.at< float >( 3, i );
+
+                if ( std::abs( w ) > FLOAT_EPS ) {
+
+                    auto x = homogeneousPoints3d.at< float >( 0, i ) / w;
+                    auto y = homogeneousPoints3d.at< float >( 1, i ) / w;
+                    auto z = homogeneousPoints3d.at< float >( 2, i ) / w;
+
+                    auto pt = cv::Point3d( x, y, z );
+
+                    cv::Mat pt4d( 4, 1, CV_64F );
+                    homogeneousPoints3d.col( i ).convertTo( pt4d, CV_64F );
+
+                    cv::Mat leftReprojMat = leftProjectionMatrix * pt4d;
+                    cv::Mat rightReprojMat = rightProjectionMatrix * pt4d;
+
+                    auto leftW = leftReprojMat.at< double >( 2, 0 );
+                    auto rightW = rightReprojMat.at< double >( 2, 0 );
+
+                    if ( std::abs( leftW ) > DOUBLE_EPS && std::abs( rightW ) > DOUBLE_EPS &&
+                            leftW / w > 0 && rightW / w > 0 ) {
+
+                        cv::Point2d leftReprojPt( leftReprojMat.at< double >( 0, 0 ) / leftW,
+                                                  leftReprojMat.at< double >( 1, 0 ) / leftW );
+
+                        cv::Point2d rightReprojPt( rightReprojMat.at< double >( 0, 0 ) / rightW,
+                                                  rightReprojMat.at< double >( 1, 0 ) / rightW );
+
+                        auto leftNorm = cv::norm( leftReprojPt - cv::Point2d( stereoPoints[i].leftPoint() ) );
+                        auto rightNorm = cv::norm( rightReprojPt - cv::Point2d( stereoPoints[i].rightPoint() ) );
+
+                        if ( leftNorm < maxReprojectionError && rightNorm < maxReprojectionError ) {
+
+                            ++ret;
+
+                            auto leftFramePoint = stereoPoints[i].leftFramePoint();
+                            auto rightFramePoint = stereoPoints[i].rightFramePoint();
+
+                            MapPointPtr mapPoint;
+
+                            if ( !leftFramePoint->mapPoint() && !rightFramePoint->mapPoint() ) {
+
+                                mapPoint = map->createMapPoint( pt, leftFramePoint->color() );
+
+                                leftFramePoint->setMapPoint( mapPoint );
+                                rightFramePoint->setMapPoint( mapPoint );
+
+                            }
+                            else {
+
+                                if ( !stereoPoints[i].leftFramePoint()->mapPoint() )
+                                    leftFramePoint->setMapPoint( rightFramePoint->mapPoint() );
+
+                                else if ( !rightFramePoint->mapPoint() )
+                                    rightFramePoint->setMapPoint( leftFramePoint->mapPoint() );
+
+                                mapPoint = leftFramePoint->mapPoint();
+
+                                mapPoint->setPoint( pt );
+                                mapPoint->setColor( leftFramePoint->color() );
+
+                            }
+
+                            auto leftNextPoint = leftFramePoint->nextPoint();
+
+                            if ( leftNextPoint )
+                                leftNextPoint->setMapPoint( mapPoint );
+
+                            auto rightNextPoint = rightFramePoint->nextPoint();
+
+                            if ( rightNextPoint )
+                                rightNextPoint->setMapPoint( mapPoint );
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+        }*/
 
 }
 
@@ -424,7 +698,36 @@ CvImage ProcStereoFrame::drawStereo() const
 {
     auto stackedImage = makeStraightPreview( leftFrame()->image(), rightFrame()->image() );
 
+    auto system = parentSystem();
+
+    auto pointDrawScale = system->parameters().pointsDrawScale();
+
+    auto radius = std::min( stackedImage.width(), stackedImage.height() ) * pointDrawScale;
+
+    for ( auto &i :_points ) {
+
+        auto left = i->leftPoint()->point2d();
+        auto right = i->rightPoint()->point2d();
+
+        auto offset = cv::Point2f( leftFrame()->image().width(), 0 );
+
+        drawLine( &stackedImage, left, right + offset, cv::Scalar( 0, 255, 0, 255 ) );
+        drawFeaturePoint( &stackedImage, left, radius, cv::Scalar( 0, 0, 255, 255 ) );
+        drawFeaturePoint( &stackedImage, right + offset, radius, cv::Scalar( 0, 0, 255, 255 ) );
+
+    }
+
     return stackedImage;
+}
+
+std::vector< ColorPoint3d > ProcStereoFrame::sparseCloud() const
+{
+    std::vector< ColorPoint3d > ret;
+
+    for ( auto &i : _points )
+        ret.push_back( ColorPoint3d( i->point3d(), i->color() ) );
+
+    return ret;
 }
 
 void ProcStereoFrame::setImagePyramid( const std::vector< cv::Mat > &leftPyramid, const std::vector< cv::Mat > &rightPyramid )

@@ -63,7 +63,7 @@ void FlowProcessor::initialize()
 
 }
 
-void FlowProcessor::extractPoints( const CvImage &image, const cv::Mat &mask, std::vector< cv::Point2f > *points , const size_t count )
+void FlowProcessor::extractPoints( const CvImage &image, const cv::Mat &mask, std::vector< cv::Point2f > *points, const size_t count )
 {
     if ( points ) {
 
@@ -509,14 +509,16 @@ void SuperGlueProcessor::initialize( const std::string &detectorModelFile, const
 {
     marker::StreamLogger logger( std::cout, marker::StreamLogger::Severity::kWARNING );
 
-    marker::SuperPointDetector::Config cfg;
+    marker::KeypointSelector::Config cfg;
 
     cfg.border = 10;
-    cfg.score_threshold = .3;
+    cfg.score_threshold = .05;
 
-    _detector = std::make_shared< marker::SuperPointDetector >( detectorModelFile, cfg, logger );
+    _matcherThreshold = 0.5;
+
+    _detector = std::make_shared< marker::SuperPointDetector >( detectorModelFile, logger );
+    _keypointSelector = std::make_shared< marker::KeypointSelector >( cfg, _detector->scores_shape() );
     _matcher = std::make_shared< marker::SuperGlueMatcher >( matcherModelFile, logger );
-
 }
 
 void SuperGlueProcessor::setMatchingThreshold( const double value )
@@ -529,50 +531,84 @@ int SuperGlueProcessor::matchingThreshold() const
     return _matcherThreshold;
 }
 
-void SuperGlueProcessor::extractKeypoints( const CvImage &image1, const cv::Mat &mask1, const CvImage &image2, const cv::Mat &mask2,
-                                            std::vector<cv::KeyPoint> *keypoints1, std::vector<cv::KeyPoint> *keypoints2 )
+void SuperGlueProcessor::extractAndMatch( const CvImage &image1, const cv::Mat &mask1, const CvImage &image2, const cv::Mat &mask2,
+                                            std::vector<cv::KeyPoint> *keypoints1, std::vector<cv::KeyPoint> *keypoints2, const size_t count, std::vector<cv::DMatch> *matches )
 {
     CV_Assert( image1.channels() == 1 && image2.channels() == 1 );
+    CV_Assert( count <= _maxPointsCount );
 
-    auto input_shape = _detector->input_shape();
+    _detector->detect( image1, image2 );
+    auto& scoreMap = _detector->score_map();
+    auto& descrMap = _detector->descriptor_map();
 
-    CvImage resizedImage1, resizedImage2;
+    auto keypointSet = marker::KeypointSelector::make_keypoints();
 
-    if ( image1.rows != input_shape.rows || image2.cols != input_shape.cols )
-        cv::resize( image1, resizedImage1, cv::Size(input_shape.cols, input_shape.rows) );
-    if ( image2.rows != input_shape.rows || image2.cols != input_shape.cols )
-        cv::resize( image1, resizedImage2, cv::Size( input_shape.cols, input_shape.rows ) );
+    _keypointSelector->select_keypoints( scoreMap, mask1, mask2, count, keypointSet );
 
-    _detector->detect( resizedImage1, mask1, resizedImage2, mask2 );
-    auto& kpts = _detector->output();
+    auto descrSets = marker::sample_descriptors( descrMap, keypointSet );
 
-    kpts[0].get_keypoints( *keypoints1 );
-    kpts[1].get_keypoints( *keypoints2 );
-}
-
-void SuperGlueProcessor::match( const std::vector<cv::KeyPoint> &queryKeypoints, const std::vector<cv::KeyPoint> &trainKeypoints, std::vector< cv::DMatch > *matches )
-{
-    marker::KeypointSetArray kpts;
-
-    kpts[ 0 ].set_keypoints( queryKeypoints );
-    kpts[ 1 ].set_keypoints( trainKeypoints );
-
-    _matcher->match( kpts );
+    _matcher->match( keypointSet, descrSets );
     auto& match_table = _matcher->output();
+
+    keypointSet[ 0 ].get_keypoints( *keypoints1 );
+    keypointSet[ 1 ].get_keypoints( *keypoints2 );
+
+    matches->clear();
 
     cv::Mat scores;
 
-    match_table.get_scores( scores );
+    match_table.get_scores(scores);
 
-    for( int i = 0; i < scores.rows - 1; ++i ) {
-        auto row_begin = scores.ptr< float >( i );
+    for(int i = 0; i < scores.rows - 1; ++i) {
+        auto row_begin = scores.ptr<float>(i);
         auto row_end = row_begin + scores.cols;
-        auto max_score = std::max_element( row_begin, row_end );
-        if ( max_score < row_end - 1 && *max_score > _matcherThreshold ) {
+        auto max_score = std::max_element(row_begin, row_end);
+        if ( max_score < row_end - 1 && *max_score > _matcherThreshold )
+        {
             int j = max_score - row_begin;
             float d = 1.f - *max_score;
             matches->emplace_back( i, j, d );
+        }
 
+    }
+
+}
+
+void SuperGlueProcessor::match( const CvImage &image1, const CvImage &image2, const std::vector<cv::KeyPoint> &keypoints1, const std::vector<cv::KeyPoint> &keypoints2, std::vector< cv::DMatch > *matches )
+{
+    CV_Assert( image1.channels() == 1 && image2.channels() == 1 );
+
+    _detector->detect( image1, image2 );
+    auto& descrMap = _detector->descriptor_map();
+
+    auto keypointSet = marker::KeypointSelector::make_keypoints();
+
+    keypointSet[ 0 ].image_size = image1.size();
+    keypointSet[ 1 ].image_size = image2.size();
+
+    keypointSet[ 0 ].set_keypoints( keypoints1 );
+    keypointSet[ 1 ].set_keypoints( keypoints2 );
+
+    auto descrSets = marker::sample_descriptors( descrMap, keypointSet );
+
+    _matcher->match( keypointSet, descrSets );
+    auto& match_table = _matcher->output();
+
+    matches->clear();
+
+    cv::Mat scores;
+
+    match_table.get_scores(scores);
+
+    for(int i = 0; i < scores.rows - 1; ++i) {
+        auto row_begin = scores.ptr<float>(i);
+        auto row_end = row_begin + scores.cols;
+        auto max_score = std::max_element(row_begin, row_end);
+        if ( max_score < row_end - 1 && *max_score > _matcherThreshold )
+        {
+            int j = max_score - row_begin;
+            float d = 1.f - *max_score;
+            matches->emplace_back( i, j, d );
         }
 
     }

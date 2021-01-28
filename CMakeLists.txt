@@ -63,6 +63,7 @@ set ( COMMON_SOURCES
     src/superglue/extract_common.cpp
     src/superglue/super_point_detector.cpp
     src/superglue/super_glue_matcher.cpp
+    src/superglue/keypoint_selector.cpp
 )
 
 set ( LIBELAS_SOURCES

@@ -195,12 +195,12 @@ void SlamViewWidget::initialize()
 
 }
 
-void SlamViewWidget::setSparseCloud( const std::list< ColorPoint3d > &points )
+void SlamViewWidget::setSparseCloud( const std::vector< ColorPoint3d > &points )
 {
     setPointCloud( points, "sparse_cloud" );
 }
 
-void SlamViewWidget::setPointCloud( const std::list< ColorPoint3d > &points, const std::string &id, const Eigen::Vector4f &origin, const Eigen::Quaternionf &orientation )
+void SlamViewWidget::setPointCloud( const std::vector< ColorPoint3d > &points, const std::string &id, const Eigen::Vector4f &origin, const Eigen::Quaternionf &orientation )
 {
     _view3dWidget->setPointCloud( points, id, origin, orientation );
 }
@@ -323,6 +323,9 @@ void SlamWidgetBase::initialize( const QString &calibrationFile )
     parameters.setCameraMatrix( calibration.leftCameraResults().cameraMatrix(), calibration.rightCameraResults().cameraMatrix() );
     parameters.setDistCoefficients( calibration.leftCameraResults().distortionCoefficients(), calibration.rightCameraResults().distortionCoefficients() );
 
+    parameters.setRightRotation( calibration.rotationMatrix() );
+    parameters.setRightTranslation( calibration.translationVector() );
+
     _processorThread = new ProcessorThread( parameters, this );
 
     _updateTimer = new QTimer( this );
@@ -358,6 +361,7 @@ void SlamWidgetBase::updateImages()
 
 void SlamWidgetBase::update3DView()
 {
+    _viewWidget->setSparseCloud( _processorThread->sparseCloud() );
 }
 
 // SlamImageWidget

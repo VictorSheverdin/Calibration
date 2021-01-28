@@ -135,6 +135,31 @@ size_t Parameters::cornerExtractionCount() const
     return _cornerExtractionCount;
 }
 
+void Parameters::setRightRotation( const cv::Mat &value )
+{
+    _rightRotation = value;
+}
+
+const cv::Mat &Parameters::rightRotation() const
+{
+    return _rightRotation;
+}
+
+void Parameters::setRightTranslation( const cv::Mat &value )
+{
+    _rightTranslation = value;
+}
+
+const cv::Mat &Parameters::rightTranslation() const
+{
+    return _rightTranslation;
+}
+
+double Parameters::maxReprojectionError() const
+{
+    return 2.;
+}
+
 double Parameters::pointsDrawScale() const
 {
     return 1./500.;

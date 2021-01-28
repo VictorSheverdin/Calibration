@@ -49,7 +49,7 @@ void PCLWidget::setPointCloud( const pcl::PointCloud< pcl::PointXYZRGB >::Ptr &c
 
 }
 
-void PCLWidget::setPointCloud( const std::list< ColorPoint3d > &points, const std::string &id, const Eigen::Vector4f &origin, const Eigen::Quaternionf &orientation )
+void PCLWidget::setPointCloud( const std::vector< ColorPoint3d > &points, const std::string &id, const Eigen::Vector4f &origin, const Eigen::Quaternionf &orientation )
 {
     pcl::PointCloud< pcl::PointXYZRGB >::Ptr pointCloud( new pcl::PointCloud< pcl::PointXYZRGB > );
 

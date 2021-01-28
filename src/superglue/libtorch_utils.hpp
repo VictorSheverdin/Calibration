@@ -6,6 +6,7 @@
 #include "qttorch.h"
 #include "tensor_rt_utils.hpp"
 #include "opencv2/core.hpp"
+#include "opencv2/cudaimgproc.hpp"
 #include "cuda_runtime.h"
 
 
@@ -44,6 +45,16 @@ namespace libtorch_utils
         return torch::empty({ dims.rows, dims.cols }, opt);
     }
 
+    inline at::Tensor make_tensor_1d(int size, c10::ScalarType dtype, c10::Device device)
+    {
+        auto opt = torch::TensorOptions()
+            .dtype(dtype)
+            .layout(torch::kStrided)
+            .device(device)
+            .requires_grad(false);
+        return torch::empty({ size }, opt);
+    }
+
     template<trt_utils::BlockLayout layout>
     at::Tensor make_block_tensor(trt_utils::DimsBlock<layout> dims, c10::ScalarType dtype, c10::Device device)
     {
@@ -74,6 +85,16 @@ namespace libtorch_utils
             cudaMemcpyKind::cudaMemcpyDeviceToHost);
         if (status != cudaSuccess)
             throw std::runtime_error(cudaGetErrorString(status));
+    }
+
+    inline at::Tensor as_tensor(cv::cuda::GpuMat& mat, c10::ScalarType dtype)
+    {
+        auto opt = torch::TensorOptions()
+            .dtype(dtype)
+            .layout(torch::kStrided)
+            .device(torch::kCUDA)
+            .requires_grad(false);
+        return torch::from_blob(mat.cudaPtr(), { mat.rows, mat.cols }, opt);
     }
 }
 

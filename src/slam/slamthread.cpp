@@ -100,7 +100,7 @@ std::list< StereoCameraMatrix > SlamThread::path() const
 
 }
 
-std::list< ColorPoint3d > SlamThread::sparseCloud() const
+std::vector< ColorPoint3d > SlamThread::sparseCloud() const
 {
     m_systemMutex.lock();
 

@@ -56,6 +56,17 @@ CvImage Map::drawStereo() const
     return CvImage();
 }
 
+std::vector< ColorPoint3d > Map::lastSparseCloud() const
+{
+    for ( auto i = _sequence.rbegin(); i!= _sequence.rend(); ++i ) {
+        auto procFrame = std::dynamic_pointer_cast< ProcStereoFrame >( *i );
+        if ( procFrame )
+            return procFrame->sparseCloud();
+    }
+
+    return std::vector< ColorPoint3d >();
+}
+
 void Map::track( const StampedStereoImage &image )
 {
     auto frame = ProcStereoFrame::create( shared_from_this() );
@@ -65,15 +76,25 @@ void Map::track( const StampedStereoImage &image )
     frame->setCameraMatrices( system->parameters().cameraMatrix() );
     frame->setDistorsionCoefficients( system->parameters().distorsionCoefficients() );
 
+    frame->setRightRotation( system->parameters().rightRotation() );
+    frame->setRightTranslation( system->parameters().rightTranslation() );
+
     frame->load( image );
 
     frame->prepareFrame();
 
     frame->extractFeatures();
 
-    frame->matchCorners();
+    frame->match();
+
+    frame->triangulatePoints();
+
+    // TEMPORARY:
+    if ( _sequence.size() > 5 )
+        _sequence.clear();
 
     _sequence.push_back( frame );
+
 }
 
 }

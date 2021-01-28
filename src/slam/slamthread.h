@@ -36,7 +36,7 @@ public:
     CvImage stereoImage() const;
 
     std::list< StereoCameraMatrix > path() const;
-    std::list< ColorPoint3d > sparseCloud() const;
+    std::vector< ColorPoint3d > sparseCloud() const;
 
 signals:
     void updateSignal();

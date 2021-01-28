@@ -19,7 +19,7 @@ namespace marker
 
         void create(std::uint32_t size, std::uint32_t rows, std::uint32_t cols, int type)
         {
-            content.create(size * rows, cols, type);
+            content = cv::cuda::createContinuous(size * rows, cols, type);
             for(std::size_t i = 0; i < size; ++i)
                 header.push_back(content(cv::Rect(0, i * rows, cols, rows)));
         }

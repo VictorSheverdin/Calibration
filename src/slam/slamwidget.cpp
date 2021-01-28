@@ -1119,12 +1119,12 @@ void SlamViewWidget::setPath( const std::list< StereoCameraMatrix > &path )
     _view3dWidget->setPath( path );
 }
 
-void SlamViewWidget::setSparseCloud( const std::list< ColorPoint3d > &points )
+void SlamViewWidget::setSparseCloud(const std::vector< ColorPoint3d > &points )
 {
     setPointCloud( points, "sparse_cloud" );
 }
 
-void SlamViewWidget::setPointCloud( const std::list< ColorPoint3d > &points, const std::string &id, const Eigen::Vector4f &origin, const Eigen::Quaternionf &orientation )
+void SlamViewWidget::setPointCloud( const std::vector< ColorPoint3d > &points, const std::string &id, const Eigen::Vector4f &origin, const Eigen::Quaternionf &orientation )
 {
     _view3dWidget->setPointCloud( points, id, origin, orientation );
 }

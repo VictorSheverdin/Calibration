@@ -7,6 +7,7 @@
 
 #include "parameters.h"
 
+#include "src/common/colorpoint.h"
 #include "src/common/image.h"
 
 namespace slam2 {
@@ -32,6 +33,8 @@ public:
     CvImage pointsImage() const;
     CvImage tracksImage() const;
     CvImage stereoImage() const;
+
+    std::vector< ColorPoint3d > sparseCloud() const;
 
     void track( const StampedStereoImage &image );
 

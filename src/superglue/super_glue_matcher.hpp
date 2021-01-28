@@ -6,7 +6,8 @@
 #include <array>
 
 #include "opencv2/core.hpp"
-#include "qttorch.h"
+#include "opencv2/cudaarithm.hpp"
+#include "torch/torch.h"
 
 #include "extract_common.hpp"
 
@@ -27,7 +28,7 @@ namespace marker
         int keypoint_size() const;
         int score_size() const;
         int descr_size() const;
-        void match(const KeypointSetArray& src);
+        void match(const KeypointSetArray& keypoints, const DescriptorSetArray& descriptors);
         const MatchTable& output() const;
 
     public:
@@ -40,10 +41,13 @@ namespace marker
 
             PerformanceStats();
         };
-        void performance_test_match(const KeypointSetArray& src, PerformanceStats& perf_stats);
+        void performance_test_match(const KeypointSetArray& keypoints, 
+            const DescriptorSetArray& descriptors, PerformanceStats& perf_stats);
 
     private:
         SuperGlue m_super_glue;
+        cv::Mat m_params_cpu;
+        cv::cuda::GpuMat m_params_gpu;
         MatchTable m_output;
     };
 }

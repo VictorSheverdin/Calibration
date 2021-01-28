@@ -6,6 +6,12 @@ namespace marker
     namespace trt_u = tensor_rt_utils;
     namespace tch_u = libtorch_utils;
 
+    void ScoreMap::init(tensor_rt_utils::Dims4d dims, c10::ScalarType dtype, c10::Device device)
+    {
+        values = tch_u::make_tensor_4d(dims, dtype, device);
+        image_size.resize(dims.batch);
+    }
+
     void KeypointSet::get_keypoints(std::vector<cv::KeyPoint>& dst) const
     {
         //  Copy to host and get accessors
@@ -23,19 +29,6 @@ namespace marker
             dst[i].pt.y = keypoints_accessor[i][1];
             dst[i].response = scores_accessor[i];
         }
-    }
-
-    void KeypointSet::get_descriptors(cv::Mat& dst) const
-    {   
-        //  Copy to host
-        auto cpu_descr = descriptors.to(torch::kCPU);
-
-        //  Prepare dst and copy data
-        dst.create(descriptors.size(0), descriptors.size(1), CV_32FC1);
-        auto copy_src = static_cast<float*>(cpu_descr.data_ptr());
-        auto copy_count = dst.rows * dst.cols;
-        auto copy_dst = dst.ptr<float>(0);
-        std::copy_n(copy_src, copy_count, copy_dst);
     }
 
     void MatchTable::get_scores(cv::Mat& dst) const
@@ -72,10 +65,44 @@ namespace marker
         tch_u::host_to_device(cpu_scores, this->scores);
     }
 
-    void KeypointSet::set_descriptors(const cv::Mat& src)
+    DescriptorSetArray sample_descriptors(const DescriptorMap& descriptor_map, 
+        const KeypointSetArray& keypoints)
     {
-        //  Prepare device buffers and copy data
-        this->descriptors = tch_u::make_tensor_2d(trt_u::Dims2d(src.rows, src.cols), torch::kFloat32, torch::kCUDA);
-        tch_u::host_to_device(src, this->descriptors);
+        namespace tf = torch::nn::functional;
+
+        static auto bilinear_sample = tf::GridSampleFuncOptions()
+            .mode(torch::kBilinear)
+            .align_corners(true);
+        static auto normalize_l2 = tf::NormalizeFuncOptions()
+            .dim(1)
+            .p(2);
+        DescriptorSetArray ret;
+        for(int i = 0; i < keypoints.size(); ++i)
+        {
+            auto dmap = descriptor_map.values.select(0, i);
+            auto grid = keypoints[i].keypoints.clone();
+
+            // Normalize x to [-1, 1]
+            auto scale_x = keypoints[i].image_size.width / dmap.size(2);
+            grid.slice(1, 0, 1)
+                .sub_(scale_x / 2 - .5f)
+                .true_divide_(keypoints[i].image_size.width - scale_x / 2 - .5f)
+                .mul_(2)
+                .sub_(1);
+
+            //  Normalize y to [-1, 1]
+            auto scale_y = keypoints[i].image_size.height / dmap.size(1);
+            grid.slice(1, 1, 2)
+                .sub_(scale_y / 2 - .5f)
+                .true_divide_(keypoints[i].image_size.height - scale_y / 2 - .5f)
+                .mul_(2)
+                .sub_(1);
+
+            //  Perform grid sample and return normalized version
+            auto src_sampled = tf::grid_sample(dmap.view({ 1, dmap.size(0), dmap.size(1), dmap.size(2) }), 
+                grid.view({1, 1, -1, 2}), bilinear_sample);
+            ret[i].values = tf::normalize(src_sampled, normalize_l2).select(0, 0).select(1, 0);
+        }
+        return ret;
     }
 }

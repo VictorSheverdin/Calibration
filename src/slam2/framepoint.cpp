@@ -54,6 +54,11 @@ ProcPoint::ObjectConstPtr ProcPoint::shared_from_this() const
     return std::dynamic_pointer_cast< const ProcPoint >( Point2::shared_from_this() );
 }
 
+cv::Scalar ProcPoint::color() const
+{
+    return parentFrame()->image().at< cv::Vec3b >( point2d() );
+}
+
 // FlowPoint
 FlowPoint::FlowPoint( const ProcFramePtr &parentFrame, const size_t index )
     : ParentClass( parentFrame, index )
@@ -75,7 +80,12 @@ FlowPoint::ObjectConstPtr FlowPoint::shared_from_this() const
     return std::dynamic_pointer_cast< const FlowPoint >( Point2::shared_from_this() );
 }
 
-const cv::Point2f &FlowPoint::point() const
+const cv::Point2f &FlowPoint::undistortedPoint() const
+{
+    return parentFrame()->undistortedCornerPoint( _index );
+}
+
+const cv::Point2f &FlowPoint::point2d() const
 {
     return parentFrame()->cornerPoint( _index );
 }
@@ -99,6 +109,16 @@ FeaturePoint::ObjectPtr FeaturePoint::shared_from_this()
 FeaturePoint::ObjectConstPtr FeaturePoint::shared_from_this() const
 {
     return std::dynamic_pointer_cast< const FeaturePoint >( Point2::shared_from_this() );
+}
+
+const cv::Point2f &FeaturePoint::undistortedPoint() const
+{
+    return parentFrame()->undistortedFeaturePoint( _index );
+}
+
+const cv::Point2f &FeaturePoint::point2d() const
+{
+    return parentFrame()->featurePoint( _index );
 }
 
 // DoublePoint
@@ -137,6 +157,21 @@ Point2Ptr StereoPoint::leftPoint() const
 Point2Ptr StereoPoint::rightPoint() const
 {
     return point2();
+}
+
+void StereoPoint::setPoint3d( const cv::Point3f &value )
+{
+    _point3d = value;
+}
+
+const cv::Point3f &StereoPoint::point3d() const
+{
+    return _point3d;
+}
+
+cv::Scalar StereoPoint::color() const
+{
+    return .5 * ( leftPoint()->color() + rightPoint()->color() );
 }
 
 // ProcStereoPoint

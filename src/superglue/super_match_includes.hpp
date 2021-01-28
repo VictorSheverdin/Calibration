@@ -3,8 +3,10 @@
 
 #include "tensor_rt_utils.hpp"
 #include "super_point_detector.hpp"
+#include "keypoint_selector.hpp"
 #include "super_glue_matcher.hpp"
 #include "extract_common.hpp"
+
 
 namespace marker
 {

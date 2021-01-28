@@ -67,6 +67,14 @@ CvImage System::stereoImage() const
         return CvImage();
 }
 
+std::vector< ColorPoint3d > System::sparseCloud() const
+{
+    if ( !_maps.empty() )
+        return _maps.back()->lastSparseCloud();
+    else
+        return std::vector< ColorPoint3d >();
+}
+
 void System::track( const StampedStereoImage &image )
 {
     CV_Assert( !_maps.empty() );

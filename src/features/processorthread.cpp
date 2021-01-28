@@ -88,7 +88,9 @@ void ProcessorThread::run()
                 cv::cvtColor( m_img1, gray1, cv::COLOR_BGR2GRAY );
                 cv::cvtColor( m_img2, gray2, cv::COLOR_BGR2GRAY );
 
-                superglueProcessor->extractKeypoints( gray1, cv::Mat(), gray2, cv::Mat(), &keyPoints1, &keyPoints2 );
+                std::vector< cv::DMatch > matches;
+
+                superglueProcessor->extractAndMatch( gray1, cv::Mat(), gray2, cv::Mat(), &keyPoints1, &keyPoints2, 1024, &matches );
             }
 
         }
@@ -163,9 +165,15 @@ void ProcessorThread::run()
 
                 if ( superglueProcessor ) {
 
+                    timer.tic();
+
+                    CvImage gray1, gray2;
+                    cv::cvtColor( m_img1, gray1, cv::COLOR_BGR2GRAY );
+                    cv::cvtColor( m_img2, gray2, cv::COLOR_BGR2GRAY );
+
                     std::vector< cv::DMatch > matches;
 
-                    superglueProcessor->match( keyPoints1, keyPoints2, &matches );
+                    superglueProcessor->match( gray1, gray2, keyPoints1, keyPoints2, &matches );
 
                     cv::drawMatches( m_img1, keyPoints1, m_img2, keyPoints2, matches, result );
 

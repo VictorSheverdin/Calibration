@@ -78,6 +78,14 @@ public:
     void setCornerExtractionCount( const size_t value );
     size_t cornerExtractionCount() const;
 
+    void setRightRotation( const cv::Mat &value );
+    const cv::Mat &rightRotation() const;
+
+    void setRightTranslation( const cv::Mat &value );
+    const cv::Mat &rightTranslation() const;
+
+    double maxReprojectionError() const;
+
     double pointsDrawScale() const;
 
 protected:
@@ -89,6 +97,9 @@ protected:
     StereoDistorsionCoefficients _distorsionCoefficients;
 
     std::shared_ptr< Tracker > _tracker;
+
+    cv::Mat _rightRotation;
+    cv::Mat _rightTranslation;
 
     size_t _cornerExtractionCount;
 

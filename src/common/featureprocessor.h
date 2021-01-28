@@ -231,9 +231,9 @@ private:
 
 };
 
-namespace marker
-{
+namespace marker {
     class SuperPointDetector;
+    class KeypointSelector;
     class SuperGlueMatcher;
 }
 
@@ -245,17 +245,19 @@ public:
     void setMatchingThreshold( const double value );
     int matchingThreshold() const;
 
-    void extractKeypoints( const CvImage &image1, const cv::Mat &mask1, const CvImage &image2, const cv::Mat &mask2,
-                           std::vector< cv::KeyPoint > *keypoints1, std::vector< cv::KeyPoint > *keypoints2 );
+    void extractAndMatch( const CvImage &image1, const cv::Mat &mask1, const CvImage &image2, const cv::Mat &mask2,
+                           std::vector< cv::KeyPoint > *keypoints1, std::vector< cv::KeyPoint > *keypoints2, const size_t count, std::vector< cv::DMatch > *matches );
 
-    void match( const std::vector<cv::KeyPoint> &queryKeypoints, const std::vector<cv::KeyPoint> &trainKeypoints, std::vector< cv::DMatch > *matches );
+    void match( const CvImage &image1, const CvImage &image2, const std::vector< cv::KeyPoint > &keypoints1, const std::vector< cv::KeyPoint > &keypoints2, std::vector< cv::DMatch > *matches );
 
 protected:
     std::shared_ptr< marker::SuperPointDetector > _detector;
+    std::shared_ptr< marker::KeypointSelector > _keypointSelector;
     std::shared_ptr< marker::SuperGlueMatcher > _matcher;
 
     double _matcherThreshold;
 
+    static const size_t _maxPointsCount = 1024;
 private:
     void initialize( const std::string &detectorModelFile, const std::string &matcherModelFile );
 

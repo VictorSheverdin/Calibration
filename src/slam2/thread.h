@@ -3,6 +3,8 @@
 #include <QThread>
 #include <QMutex>
 
+#include "src/common/colorpoint.h"
+
 #include "src/common/image.h"
 
 #include "parameters.h"
@@ -26,6 +28,8 @@ public:
     CvImage tracksImage() const;
     CvImage stereoImage() const;
 
+    std::vector< ColorPoint3d > sparseCloud() const;
+
 signals:
     void updateSignal();
 
@@ -38,6 +42,8 @@ protected:
     CvImage _pointsImage;
     CvImage _tracksImage;
     CvImage _stereoImage;
+
+    std::vector< ColorPoint3d > _sparseCloud;
 
     slam2::SystemPtr _system;
 

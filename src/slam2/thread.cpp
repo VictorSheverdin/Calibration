@@ -4,6 +4,8 @@
 
 #include "system.h"
 
+#include "src/common/tictoc.h"
+
 // ProcessorThread
 ProcessorThread::ProcessorThread( const slam2::Parameters &parameters, QObject *parent )
     : QThread( parent )
@@ -52,6 +54,15 @@ CvImage ProcessorThread::stereoImage() const
     return ret;
 }
 
+std::vector< ColorPoint3d > ProcessorThread::sparseCloud() const
+{
+    _resultMutex.lock();
+    auto ret = _sparseCloud;
+    _resultMutex.unlock();
+
+    return ret;
+}
+
 void ProcessorThread::run()
 {
     while( !isInterruptionRequested() ) {
@@ -77,16 +88,20 @@ void ProcessorThread::processNext()
 
     if ( !frame.empty() ) {
 
+        TicToc timer;
+
         _system->track( frame );
+
+        timer.report();
 
         _resultMutex.lock();
 
         _pointsImage = _system->pointsImage();
         _tracksImage = _system->tracksImage();
         _stereoImage = _system->stereoImage();
+        _sparseCloud = _system->sparseCloud();
 
         _resultMutex.unlock();
-
 
     }
 

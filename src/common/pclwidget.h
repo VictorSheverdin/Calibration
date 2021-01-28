@@ -15,7 +15,7 @@ public:
 
     void setPointCloud( const pcl::PointCloud< pcl::PointXYZRGB >::Ptr &cloud, const std::string &id = "cloud" );
 
-    void setPointCloud( const std::list< ColorPoint3d > &points,
+    void setPointCloud( const std::vector< ColorPoint3d > &points,
                         const std::string &id = "cloud",
                         const Eigen::Vector4f &origin = Eigen::Vector4f::Zero(),
                         const Eigen::Quaternionf &orientation = Eigen::Quaternionf::Identity() );
