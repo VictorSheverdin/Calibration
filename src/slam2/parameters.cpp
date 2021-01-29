@@ -82,7 +82,7 @@ void Parameters::initialize()
 {
     _cornerExtractionCount = 5e2;
 
-    setTracker( std::make_shared< CPUFlowTracker >() );
+    setTracker( std::make_shared< SuperGlueTracker >() );
 }
 
 void Parameters::setProcessRect( const StereoRect &rect )

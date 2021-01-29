@@ -159,6 +159,11 @@ Point2Ptr StereoPoint::rightPoint() const
     return point2();
 }
 
+bool StereoPoint::isPoint3dExist()
+{
+    return _point3d.has_value();
+}
+
 void StereoPoint::setPoint3d( const cv::Point3f &value )
 {
     _point3d = value;
@@ -166,7 +171,7 @@ void StereoPoint::setPoint3d( const cv::Point3f &value )
 
 const cv::Point3f &StereoPoint::point3d() const
 {
-    return _point3d;
+    return _point3d.value();
 }
 
 cv::Scalar StereoPoint::color() const

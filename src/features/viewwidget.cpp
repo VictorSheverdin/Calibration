@@ -36,7 +36,7 @@ void FeaturesViewWidget::initialize()
     m_orbProcessor = std::shared_ptr< OrbProcessor >( new OrbProcessor );
     m_kazeProcessor = std::shared_ptr< KazeProcessor >( new KazeProcessor );
     m_akazeProcessor = std::shared_ptr< AKazeProcessor >( new AKazeProcessor );
-    m_superglueProcessor = std::shared_ptr< SuperGlueProcessor >( new SuperGlueProcessor( "superpoint_fp32.eng", "superglue_fp32.eng" ) );
+    m_superglueProcessor = std::shared_ptr< SuperGlueProcessor >( new SuperGlueProcessor( "superpoint_fp32_2048.eng", "superglue_fp32.eng" ) );
 
     m_matcher = std::shared_ptr< BFMatcher >( new BFMatcher );
 

@@ -13,7 +13,6 @@ public:
 
     virtual void prepareFrame( ProcStereoFrame *frame ) = 0;
     virtual void extractFeatures( ProcStereoFrame *frame ) = 0;
-    virtual void match( ProcStereoFrame *frame ) = 0;
     virtual void match( ConsecutiveStereoFrames *frame ) = 0;
 
 protected:
@@ -50,11 +49,27 @@ public:
 
     void prepareFrame( ProcStereoFrame *frame ) override;
     void extractFeatures( ProcStereoFrame *frame ) override;
-    void match( ProcStereoFrame *frame ) override;
     void match( ConsecutiveStereoFrames *frame ) override;
 
 protected:
     CPUFlowProcessor *processor() const;
+
+private:
+    void initialize();
+
+};
+
+class GPUFlowTracker : public FlowTracker
+{
+public:
+    GPUFlowTracker();
+
+    void prepareFrame( ProcStereoFrame *frame ) override;
+    void extractFeatures( ProcStereoFrame *frame ) override;
+    void match( ConsecutiveStereoFrames *frame ) override;
+
+protected:
+    GPUFlowProcessor *processor() const;
 
 private:
     void initialize();
@@ -69,6 +84,7 @@ protected:
     FeatureTracker() = default;
 
     std::unique_ptr< FullProcessor > _descriptorProcessor;
+    std::unique_ptr< DescriptorMatcher > _featuresMatcher;
 
 };
 
@@ -79,14 +95,66 @@ public:
 
     void prepareFrame( ProcStereoFrame *frame ) override;
     void extractFeatures( ProcStereoFrame *frame ) override;
-    void match( ProcStereoFrame *frame ) override;
     void match( ConsecutiveStereoFrames *frame ) override;
 
 protected:
     SiftProcessor *processor() const;
     FlannMatcher *matcher() const;
 
-    std::unique_ptr< DescriptorMatcher > _featuresMatcher;
+private:
+    void initialize();
+
+};
+
+class OrbTracker : public FeatureTracker
+{
+public:
+    OrbTracker();
+
+    void prepareFrame( ProcStereoFrame *frame ) override;
+    void extractFeatures( ProcStereoFrame *frame ) override;
+    void match( ConsecutiveStereoFrames *frame ) override;
+
+protected:
+    OrbProcessor *processor() const;
+    BFMatcher *matcher() const;
+
+private:
+    void initialize();
+
+};
+
+class AKazeTracker : public FeatureTracker
+{
+public:
+    AKazeTracker();
+
+    void prepareFrame( ProcStereoFrame *frame ) override;
+    void extractFeatures( ProcStereoFrame *frame ) override;
+    void match( ConsecutiveStereoFrames *frame ) override;
+
+protected:
+    AKazeProcessor *processor() const;
+    BFMatcher *matcher() const;
+
+private:
+    void initialize();
+
+};
+
+class SuperGlueTracker : public Tracker
+{
+public:
+    SuperGlueTracker();
+
+    void prepareFrame( ProcStereoFrame *frame ) override;
+    void extractFeatures( ProcStereoFrame *frame ) override;
+    void match( ConsecutiveStereoFrames *frame ) override;
+
+protected:
+    SuperGlueProcessor *processor() const;
+
+    std::unique_ptr< SuperGlueProcessor > _processor;
 
 private:
     void initialize();

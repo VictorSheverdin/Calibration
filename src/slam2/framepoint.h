@@ -146,6 +146,8 @@ public:
     Point2Ptr leftPoint() const;
     Point2Ptr rightPoint() const;
 
+    bool isPoint3dExist();
+
     void setPoint3d( const cv::Point3f &value );
     const cv::Point3f &point3d() const;
 
@@ -154,7 +156,7 @@ public:
 protected:
     StereoPoint( const Point2Ptr &leftPoint, const Point2Ptr &rightPoint );
 
-    cv::Point3f _point3d;
+    std::optional< cv::Point3f > _point3d;
 
 };
 

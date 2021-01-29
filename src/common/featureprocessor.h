@@ -9,6 +9,8 @@
 #include <opencv2/optflow.hpp>
 #include <opencv2/cudaoptflow.hpp>
 
+#include "src/superglue/super_match_includes.hpp"
+
 struct FlowTrackResult : public cv::Point2f
 {
 public:
@@ -251,9 +253,9 @@ public:
     void match( const CvImage &image1, const CvImage &image2, const std::vector< cv::KeyPoint > &keypoints1, const std::vector< cv::KeyPoint > &keypoints2, std::vector< cv::DMatch > *matches );
 
 protected:
-    std::shared_ptr< marker::SuperPointDetector > _detector;
-    std::shared_ptr< marker::KeypointSelector > _keypointSelector;
-    std::shared_ptr< marker::SuperGlueMatcher > _matcher;
+    std::unique_ptr< marker::SuperPointDetector > _detector;
+    std::unique_ptr< marker::KeypointSelector > _keypointSelector;
+    std::unique_ptr< marker::SuperGlueMatcher > _matcher;
 
     double _matcherThreshold;
 

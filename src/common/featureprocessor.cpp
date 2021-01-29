@@ -4,8 +4,6 @@
 
 #include "defs.h"
 
-#include "src/superglue/super_match_includes.hpp"
-
 void extractKeypoints( cv::Ptr< cv::Feature2D > processor, const CvImage &image, const cv::Mat &mask, std::vector< cv::KeyPoint > *keypoints )
 {
     if ( processor && keypoints ) {
@@ -516,9 +514,9 @@ void SuperGlueProcessor::initialize( const std::string &detectorModelFile, const
 
     _matcherThreshold = 0.5;
 
-    _detector = std::make_shared< marker::SuperPointDetector >( detectorModelFile, logger );
-    _keypointSelector = std::make_shared< marker::KeypointSelector >( cfg, _detector->scores_shape() );
-    _matcher = std::make_shared< marker::SuperGlueMatcher >( matcherModelFile, logger );
+    _detector = std::make_unique< marker::SuperPointDetector >( detectorModelFile, logger );
+    _keypointSelector = std::make_unique< marker::KeypointSelector >( cfg, _detector->scores_shape() );
+    _matcher = std::make_unique< marker::SuperGlueMatcher >( matcherModelFile, logger );
 }
 
 void SuperGlueProcessor::setMatchingThreshold( const double value )

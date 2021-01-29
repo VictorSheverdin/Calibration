@@ -83,9 +83,7 @@ void Map::track( const StampedStereoImage &image )
 
     frame->prepareFrame();
 
-    frame->extractFeatures();
-
-    frame->match();
+    frame->extract();
 
     frame->triangulatePoints();
 

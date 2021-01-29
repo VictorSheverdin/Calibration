@@ -70,6 +70,7 @@ class ProcFrame : public FinalFrame
 {
     friend class ProcStereoFrame;
     friend class CPUFlowTracker;
+    friend class GPUFlowTracker;
     friend class SiftTracker;
 public:
     using ObjectClass = ProcFrame;
@@ -149,8 +150,7 @@ public:
 
     virtual ~StereoFrame() = default;
 
-    void setLeftFrame( const FramePtr value );
-    void setRightFrame( const FramePtr value );
+    void set( const FramePtr &leftFrame, const FramePtr &rightFrame );
 
     std::shared_ptr< Map > parentMap() const;
     std::shared_ptr< System > parentSystem() const;
@@ -213,7 +213,11 @@ protected:
 class ProcStereoFrame : public FinalStereoFrame
 {
     friend class CPUFlowTracker;
+    friend class GPUFlowTracker;
     friend class SiftTracker;
+    friend class OrbTracker;
+    friend class AKazeTracker;
+    friend class SuperGlueTracker;
 public:
     using ObjectClass = ProcStereoFrame;
     using ParentClass = FinalStereoFrame;
@@ -226,11 +230,9 @@ public:
 
     void prepareFrame();
 
-    void extractFeatures();
+    void extract();
 
-    void match();
-
-    void triangulatePoints();
+    size_t triangulatePoints();
 
     ProcFramePtr leftFrame() const;
     ProcFramePtr rightFrame() const;
@@ -263,7 +265,6 @@ protected:
 
 class ConsecutiveStereoFrames
 {
-
 };
 
 }
