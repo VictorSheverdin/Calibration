@@ -43,6 +43,9 @@ void ImagesWidget::initialize()
     _stereoWidget = new ImageWidget( this );
     addWidget( _stereoWidget );
 
+    _pointsWidget->hide();
+    _stereoWidget->hide();
+
     int widthDiv3 = width() / 3;
 
     setSizes( QList< int >() << widthDiv3 << widthDiv3 << widthDiv3 );

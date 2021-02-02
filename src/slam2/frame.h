@@ -138,14 +138,15 @@ protected:
 
     size_t addCornerPoint( const cv::Point2f &point );
     size_t addCornerPoints( const std::vector< cv::Point2f > &points );
+    const std::vector< cv::Point2f > &cornerPoints() const;
+    const std::vector< cv::Point2f > &undistortedCornerPoints() const;
 
     void setKeyPoints( const std::vector< cv::KeyPoint > &value );
     const std::vector< cv::KeyPoint > &keyPoints() const;
+    const std::vector< cv::KeyPoint > &undistortedKeyPoints() const;
 
     void setImagePyramid( const std::vector< cv::Mat > &value );
     const std::vector< cv::Mat > &imagePyramid() const;
-
-    const std::vector< cv::Point2f > &cornerPoints() const;
 
     void setDescriptors( const cv::Mat &value );
     const cv::Mat &descriptors() const;

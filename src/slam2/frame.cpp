@@ -436,6 +436,11 @@ const std::vector< cv::KeyPoint > &ProcFrame::keyPoints() const
     return _keyPoints;
 }
 
+const std::vector< cv::KeyPoint > &ProcFrame::undistortedKeyPoints() const
+{
+    return _undistKeyPoints;
+}
+
 void ProcFrame::setImagePyramid( const std::vector< cv::Mat > &value )
 {
     _imagePyramid = value;
@@ -449,6 +454,11 @@ const std::vector< cv::Mat > &ProcFrame::imagePyramid() const
 const std::vector< cv::Point2f > &ProcFrame::cornerPoints() const
 {
     return _cornerPoints;
+}
+
+const std::vector< cv::Point2f > &ProcFrame::undistortedCornerPoints() const
+{
+    return _undistCornerPoints;
 }
 
 void ProcFrame::setDescriptors( const cv::Mat &value )
@@ -815,7 +825,7 @@ CvImage ProcStereoFrame::drawPoints() const
 
 CvImage ProcStereoFrame::drawTracks() const
 {
-    return makeStraightPreview( leftFrame()->drawTracks(), rightFrame()->drawTracks() );
+    return leftFrame()->drawTracks();
 }
 
 CvImage ProcStereoFrame::drawStereo() const

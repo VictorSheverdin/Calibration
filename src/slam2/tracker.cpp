@@ -105,7 +105,10 @@ void CPUFlowTracker::match( ProcStereoFrame *frame )
 {
     std::vector< FlowTrackResult > trackResults;
 
-    processor()->track( frame->leftFrame()->imagePyramid(), frame->leftFrame()->cornerPoints(), frame->rightFrame()->imagePyramid(), &trackResults );
+    auto leftFrame = frame->leftFrame();
+    auto rightFrame = frame->rightFrame();
+
+    processor()->track( leftFrame->imagePyramid(), leftFrame->cornerPoints(), rightFrame->imagePyramid(), &trackResults );
 
     for ( auto &i : trackResults ) {
         auto rightIndex = frame->rightFrame()->addCornerPoint( i );
@@ -200,7 +203,10 @@ void GPUFlowTracker::match( ProcStereoFrame *frame )
 {
     std::vector< FlowTrackResult > trackResults;
 
-    processor()->track( frame->leftFrame()->image(), frame->leftFrame()->cornerPoints(), frame->rightFrame()->image(), &trackResults );
+    auto leftFrame = frame->leftFrame();
+    auto rightFrame = frame->rightFrame();
+
+    processor()->track( leftFrame->image(), leftFrame->cornerPoints(), rightFrame->image(), &trackResults );
 
     for ( auto &i : trackResults ) {
         auto rightIndex = frame->rightFrame()->addCornerPoint( i );
@@ -276,7 +282,10 @@ void SiftTracker::match( ProcStereoFrame *frame )
 {
     std::vector< cv::DMatch > matches;
 
-    matcher()->match( frame->leftFrame()->keyPoints(), frame->leftFrame()->descriptors(), frame->rightFrame()->keyPoints(), frame->rightFrame()->descriptors(), &matches );
+    auto leftFrame = frame->leftFrame();
+    auto rightFrame = frame->rightFrame();
+
+    matcher()->match( leftFrame->keyPoints(), leftFrame->descriptors(), rightFrame->keyPoints(), rightFrame->descriptors(), &matches );
 
     for ( auto &i : matches )
         frame->createFeaturePoint( i.queryIdx, i.trainIdx );
@@ -352,7 +361,10 @@ void OrbTracker::match( ProcStereoFrame *frame )
 {
     std::vector< cv::DMatch > matches;
 
-    matcher()->match( frame->leftFrame()->keyPoints(), frame->leftFrame()->descriptors(), frame->rightFrame()->keyPoints(), frame->rightFrame()->descriptors(), &matches );
+    auto leftFrame = frame->leftFrame();
+    auto rightFrame = frame->rightFrame();
+
+    matcher()->match( leftFrame->keyPoints(), leftFrame->descriptors(), rightFrame->keyPoints(), rightFrame->descriptors(), &matches );
 
     for ( auto &i : matches )
         frame->createFeaturePoint( i.queryIdx, i.trainIdx );
@@ -429,7 +441,10 @@ void AKazeTracker::match( ProcStereoFrame *frame )
 {
     std::vector< cv::DMatch > matches;
 
-    matcher()->match( frame->leftFrame()->keyPoints(), frame->leftFrame()->descriptors(), frame->rightFrame()->keyPoints(), frame->rightFrame()->descriptors(), &matches );
+    auto leftFrame = frame->leftFrame();
+    auto rightFrame = frame->rightFrame();
+
+    matcher()->match( leftFrame->keyPoints(), leftFrame->descriptors(), rightFrame->keyPoints(), rightFrame->descriptors(), &matches );
 
     for ( auto &i : matches )
         frame->createFeaturePoint( i.queryIdx, i.trainIdx );
@@ -510,7 +525,10 @@ void SuperGlueTracker::match( ProcStereoFrame *frame )
 {
     std::vector< cv::DMatch > matches;
 
-    _processor->match( frame->leftFrame()->image().size(), frame->rightFrame()->image().size(), frame->leftFrame()->keyPoints(), frame->rightFrame()->keyPoints(), frame->leftFrame()->descriptors(), frame->rightFrame()->descriptors(), &matches );
+    auto leftFrame = frame->leftFrame();
+    auto rightFrame = frame->rightFrame();
+
+    _processor->match( leftFrame->image().size(), rightFrame->image().size(), leftFrame->keyPoints(), rightFrame->keyPoints(), leftFrame->descriptors(), rightFrame->descriptors(), &matches );
 
     for ( auto &i : matches )
         frame->createFeaturePoint( i.queryIdx, i.trainIdx );

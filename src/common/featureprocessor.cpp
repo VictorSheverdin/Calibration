@@ -510,9 +510,9 @@ void SuperGlueProcessor::initialize( const std::string &detectorModelFile, const
     marker::KeypointSelector::Config cfg;
 
     cfg.border = 10;
-    cfg.score_threshold = .1;
+    cfg.score_threshold = .05;
 
-    _matcherThreshold = 0.5;
+    _matcherThreshold = 0.75;
 
     _detector = std::make_unique< marker::SuperPointDetector >( detectorModelFile, logger );
     _keypointSelector = std::make_unique< marker::KeypointSelector >( cfg, _detector->scores_shape() );
@@ -574,7 +574,7 @@ void SuperGlueProcessor::match( const cv::Size &imageSize1, const cv::Size &imag
 
     match_table.download( scores );
 
-    matches->clear();
+    std::vector< cv::DMatch > rawMatches;
 
     for( int i = 0; i < scores.rows - 1; ++i ) {
         auto row_begin = scores.ptr< float >( i );
@@ -583,10 +583,36 @@ void SuperGlueProcessor::match( const cv::Size &imageSize1, const cv::Size &imag
         if ( max_score < row_end - 1 && *max_score > _matcherThreshold ) {
             int j = max_score - row_begin;
             float d = 1.f - *max_score;
-            matches->emplace_back( i, j, d );
+            rawMatches.emplace_back( i, j, d );
         }
 
     }
+
+    matches->clear();
+
+    *matches = rawMatches;
+
+    /*std::vector< cv::Point2f > points1, points2;
+
+    points1.reserve( keypoints1.size() );
+    points2.reserve( keypoints2.size() );
+
+    for ( auto &i : rawMatches ) {
+        points1.push_back( keypoints1[ i.queryIdx ].pt );
+        points2.push_back( keypoints2[ i.trainIdx ].pt );
+    }
+
+    if ( points1.size() > MIN_FMAT_POINTS_COUNT ) {
+
+        std::vector< uchar > inliers( points1.size(), 0 );
+
+        auto fMat = cv::findFundamentalMat( points1, points2, inliers, cv::FM_RANSAC );
+
+        for ( size_t i = 0; i < inliers.size(); ++i )
+            if ( inliers[ i ] )
+                matches->push_back( rawMatches[ i ] );
+
+    }*/
 
 }
 
