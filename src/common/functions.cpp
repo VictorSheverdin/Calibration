@@ -117,9 +117,9 @@ bool drawFeaturePoints( CvImage *target, const std::vector< cv::KeyPoint > &keyp
 
 }
 
-void drawLine( CvImage *target, const cv::Point2f &pt1, const cv::Point2f &pt2, const cv::Scalar &color )
+void drawLine( CvImage *target, const cv::Point2f &pt1, const cv::Point2f &pt2, int thickness, const cv::Scalar &color )
 {
-    cv::line( *target, pt1, pt2, color, 1/*, cv::LINE_AA*/ );
+    cv::line( *target, pt1, pt2, color, thickness/*, cv::LINE_AA*/ );
 }
 
 void drawLabel( CvImage *target, const std::string text, int height, int fontFace, const int thickness, const cv::Scalar &color )

@@ -13,15 +13,16 @@ namespace marker
     {
         //  Input buffers init
         auto in_dims = m_super_point.images_dims();
+        
         m_input_shape = trt_u::Dims3d(in_dims.chan, in_dims.rows, in_dims.cols);
-        m_gpu_uint8.create(IMAGE_COUNT, in_dims.rows, in_dims.cols, CV_8UC1);
-        m_gpu_float.create(IMAGE_COUNT, in_dims.rows, in_dims.cols, CV_32FC1);
+        m_gpu_uint8 = cv::cuda::createContinuous(in_dims.rows, in_dims.cols, CV_8UC1);
+        m_gpu_float = cv::cuda::createContinuous(in_dims.rows, in_dims.cols, CV_32FC1);
         
         //  Output buffers init
-        auto score_map_dims = m_super_point.scores_dims();
-        auto descr_map_dims = m_super_point.descrs_dims();
-        m_score_map.init(score_map_dims, torch::kFloat32, torch::kCUDA);
-        m_descr_map.values = tch_u::make_tensor_4d(descr_map_dims, torch::kFloat32, torch::kCUDA);
+        m_scores_shape = m_super_point.scores_dims();
+        m_descr_shape = m_super_point.descrs_dims();
+        m_score_map.init(m_scores_shape, torch::kFloat32, torch::kCUDA);
+        m_descr_map.values = tch_u::make_tensor_4d(m_descr_shape, torch::kFloat32, torch::kCUDA);
     }
 
     const trt_u::Dims3d& SuperPointDetector::input_shape() const
@@ -29,14 +30,14 @@ namespace marker
         return m_input_shape;
     }
 
-    tensor_rt_utils::Dims4d SuperPointDetector::scores_shape() const
+    const tensor_rt_utils::Dims4d& SuperPointDetector::scores_shape() const
     {
-        return m_super_point.scores_dims();
+        return m_scores_shape;
     }
 
-    tensor_rt_utils::Dims4d SuperPointDetector::descriptors_shape() const
+    const tensor_rt_utils::Dims4d& SuperPointDetector::descriptors_shape() const
     {
-        return m_super_point.descrs_dims();
+        return m_descr_shape;
     }
 
     const ScoreMap& SuperPointDetector::score_map() const
@@ -49,43 +50,45 @@ namespace marker
         return m_descr_map;
     }
 
-    void SuperPointDetector::detect(const cv::Mat& first, const cv::Mat& second)
+    void SuperPointDetector::detect(const cv::Mat& image)
     {
-        //  Copy to device, possibly using intermediate buffers (m_gpu_input) to resize on GPU
-        if (first.rows != m_input_shape.rows || first.cols != m_input_shape.cols)
-        {
-            if (first.rows != m_gpu_input[0].rows || first.cols != m_gpu_input[0].cols)
-                m_gpu_input[0].create(first.rows, first.cols, first.type());
-            m_gpu_input[0].upload(first);
-            cv::cuda::resize(m_gpu_input[0], m_gpu_uint8.header[0], 
-                cv::Size(m_input_shape.cols, m_input_shape.rows));
-        }
-        else
-            m_gpu_uint8.header[0].upload(first);    
-        if (second.rows != m_input_shape.rows || second.cols != m_input_shape.cols)
-        {
-            if (second.rows != m_gpu_input[1].rows || second.cols != m_gpu_input[1].cols)
-                m_gpu_input[1].create(second.rows, second.cols, second.type());
-            m_gpu_input[1].upload(second);
-            cv::cuda::resize(m_gpu_input[1], m_gpu_uint8.header[1], 
-                cv::Size(m_input_shape.cols, m_input_shape.rows));
-        }
-        else
-            m_gpu_uint8.header[1].upload(second);   
+        upload_image(image);
+        convert_normalize();
+        forward();
+        read_image_size(image);
+    }
 
+    void SuperPointDetector::upload_image(const cv::Mat& image)
+    {
+        if (image.rows != m_input_shape.rows || image.cols != m_input_shape.cols)
+        {
+            if (image.rows != m_gpu_input.rows || image.cols != m_gpu_input.cols)
+                m_gpu_input.create(image.rows, image.cols, image.type());
+            m_gpu_input.upload(image);
+            cv::cuda::resize(m_gpu_input, m_gpu_uint8, 
+                cv::Size(m_input_shape.cols, m_input_shape.rows));
+        }
+        else
+            m_gpu_uint8.upload(image);
+    }
+
+    void SuperPointDetector::convert_normalize()
+    {
         //  Convert to float in range [0, 255]
-        for (int i = 0; i < IMAGE_COUNT; ++i)
-            m_gpu_uint8.header[i].convertTo(m_gpu_float.header[i], m_gpu_float.header[i].type(), 1.f / 255);
+        m_gpu_uint8.convertTo(m_gpu_float, m_gpu_float.type(), 1.f / 255);
+    }
 
-        //  Forward
-        void* buffers[] = { m_gpu_float.content.cudaPtr(), 
+    void SuperPointDetector::forward()
+    {
+        void* buffers[] = { m_gpu_float.cudaPtr(), 
             m_score_map.values.data_ptr(), m_descr_map.values.data_ptr() };
         m_super_point.execute(buffers);
+    }
 
-        m_score_map.image_size[0].width = first.cols;
-        m_score_map.image_size[0].height = first.rows;
-        m_score_map.image_size[1].width = second.cols;
-        m_score_map.image_size[1].height = second.rows;
+    void SuperPointDetector::read_image_size(const cv::Mat& image)
+    {
+        m_score_map.image_size.width = image.cols;
+        m_score_map.image_size.height = image.rows;
     }
 
 
@@ -97,8 +100,7 @@ namespace marker
         , call_count(0)
     {}
 
-    void SuperPointDetector::performance_test_detect(const cv::Mat& first, const cv::Mat& second, 
-            PerformanceStats& perf_stats)
+    void SuperPointDetector::performance_test_detect(const cv::Mat& image, PerformanceStats& perf_stats)
     {
         namespace chr = std::chrono;
         using Clock = chr::steady_clock;
@@ -108,44 +110,20 @@ namespace marker
             return chr::duration_cast<chr::microseconds>(end - beg);
         };
 
+        auto on_preprocess = Clock::now();
 
-        auto on_preprocess = chr::steady_clock::now();
+        upload_image(image);
+        convert_normalize();
 
-                //  Copy to device, possibly using intermediate buffers (m_gpu_input) to resize on GPU
-        if (first.rows != m_input_shape.rows || first.cols != m_input_shape.cols)
-        {
-            if (first.rows != m_gpu_input[0].rows || first.cols != m_gpu_input[0].cols)
-                m_gpu_input[0].create(first.rows, first.cols, first.type());
-            m_gpu_input[0].upload(first);
-            cv::cuda::resize(m_gpu_input[0], m_gpu_uint8.header[0], 
-                cv::Size(m_input_shape.cols, m_input_shape.rows));
-        }
-        else
-            m_gpu_uint8.header[0].upload(first);    
-        if (second.rows != m_input_shape.rows || second.cols != m_input_shape.cols)
-        {
-            if (second.rows != m_gpu_input[1] .rows || second.cols != m_gpu_input[1].cols)
-                m_gpu_input[1].create(second.rows, second.cols, second.type());
-            m_gpu_input[1].upload(second);
-            cv::cuda::resize(m_gpu_input[1], m_gpu_uint8.header[1], 
-                cv::Size(m_input_shape.cols, m_input_shape.rows));
-        }
-        else
-            m_gpu_uint8.header[1].upload(second);    
+        auto on_forward = Clock::now();
 
-        //  Convert to float in range [0, 255]
-        for (int i = 0; i < IMAGE_COUNT; ++i)
-            m_gpu_uint8.header[i].convertTo(m_gpu_float.header[i], m_gpu_float.header[i].type(), 1.f / 255);
-
-        auto on_forward = chr::steady_clock::now();
-
-        //  Forward
-        void* buffers[] = { m_gpu_float.content.cudaPtr(), 
-            m_score_map.values.data_ptr(), m_descr_map.values.data_ptr() };
-        m_super_point.execute(buffers);
+        forward();
         cudaDeviceSynchronize();
 
-        auto on_exit = chr::steady_clock::now();
+        read_image_size(image);
+
+        auto on_exit = Clock::now();
+        
         if (perf_stats.call_count > 0)
         {
             perf_stats.preprocessing_duration += diff_time(on_preprocess, on_forward);

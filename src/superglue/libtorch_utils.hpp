@@ -81,7 +81,7 @@ namespace libtorch_utils
 
     inline void device_to_host(const at::Tensor& src, cv::Mat& dst)
     {
-        auto status = cudaMemcpy(src.data_ptr(), dst.data, dst.total() * dst.elemSize(), 
+        auto status = cudaMemcpy(dst.data, src.data_ptr(), dst.total() * dst.elemSize(), 
             cudaMemcpyKind::cudaMemcpyDeviceToHost);
         if (status != cudaSuccess)
             throw std::runtime_error(cudaGetErrorString(status));

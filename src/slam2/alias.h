@@ -14,7 +14,7 @@ class ProcFrame;
 class StereoFrame;
 class FinalStereoFrame;
 class ProcStereoFrame;
-class ConsecutiveStereoFrames;
+class ConsecutiveFrames;
 
 class Track;
 
@@ -45,8 +45,10 @@ using ProcFramePtr = std::shared_ptr< ProcFrame >;
 using StereoFramePtr = std::shared_ptr< StereoFrame >;
 using FinalStereoFramePtr = std::shared_ptr< FinalStereoFrame >;
 using ProcStereoFramePtr = std::shared_ptr< ProcStereoFrame >;
+using ProcStereoFrameWeak = std::weak_ptr< ProcStereoFrame >;
 
 using TrackPtr = std::shared_ptr< Track >;
+using TrackWeak = std::weak_ptr< Track >;
 
 using Point2Ptr = std::shared_ptr< Point2 >;
 using Point2Weak = std::weak_ptr< Point2 >;
@@ -63,5 +65,6 @@ using FlowStereoPointPtr = std::shared_ptr< FlowStereoPoint >;
 using FeatureStereoPointPtr = std::shared_ptr< FeatureStereoPoint >;
 
 using MapPointPtr = std::shared_ptr< MapPoint >;
+using MapPointWeak = std::weak_ptr< MapPoint >;
 
 }

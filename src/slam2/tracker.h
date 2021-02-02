@@ -12,8 +12,13 @@ public:
     virtual ~Tracker() = default;
 
     virtual void prepareFrame( ProcStereoFrame *frame ) = 0;
-    virtual void extractFeatures( ProcStereoFrame *frame ) = 0;
-    virtual void match( ConsecutiveStereoFrames *frame ) = 0;
+    virtual void prepareFrame( ConsecutiveFrames *frame ) = 0;
+
+    virtual void extract( ProcStereoFrame *frame ) = 0;
+    virtual void extract( ConsecutiveFrames *frame ) = 0;
+
+    virtual void match( ProcStereoFrame *frame ) = 0;
+    virtual void match( ConsecutiveFrames *frame ) = 0;
 
 protected:
     Tracker() = default;
@@ -48,11 +53,19 @@ public:
     CPUFlowTracker();
 
     void prepareFrame( ProcStereoFrame *frame ) override;
-    void extractFeatures( ProcStereoFrame *frame ) override;
-    void match( ConsecutiveStereoFrames *frame ) override;
+    void prepareFrame( ConsecutiveFrames *frame ) override;
+
+    void extract( ProcStereoFrame *frame ) override;
+    void extract( ConsecutiveFrames *frame ) override;
+
+    void match( ProcStereoFrame *frame ) override;
+    void match( ConsecutiveFrames *frame ) override;
 
 protected:
     CPUFlowProcessor *processor() const;
+
+    void prepareFrame( ProcFrame *frame );
+    void extract( ProcFrame *frame );
 
 private:
     void initialize();
@@ -65,11 +78,19 @@ public:
     GPUFlowTracker();
 
     void prepareFrame( ProcStereoFrame *frame ) override;
-    void extractFeatures( ProcStereoFrame *frame ) override;
-    void match( ConsecutiveStereoFrames *frame ) override;
+    void prepareFrame( ConsecutiveFrames *frame ) override;
+
+    void extract( ProcStereoFrame *frame ) override;
+    void extract( ConsecutiveFrames *frame ) override;
+
+    void match( ProcStereoFrame *frame ) override;
+    void match( ConsecutiveFrames *frame ) override;
 
 protected:
     GPUFlowProcessor *processor() const;
+
+    void prepareFrame( ProcFrame *frame );
+    void extract( ProcFrame *frame );
 
 private:
     void initialize();
@@ -94,12 +115,20 @@ public:
     SiftTracker();
 
     void prepareFrame( ProcStereoFrame *frame ) override;
-    void extractFeatures( ProcStereoFrame *frame ) override;
-    void match( ConsecutiveStereoFrames *frame ) override;
+    void prepareFrame( ConsecutiveFrames *frame ) override;
+
+    void extract( ProcStereoFrame *frame ) override;
+    void extract( ConsecutiveFrames *frame ) override;
+
+    void match( ProcStereoFrame *frame ) override;
+    void match( ConsecutiveFrames *frame ) override;
 
 protected:
     SiftProcessor *processor() const;
     FlannMatcher *matcher() const;
+
+    void prepareFrame( ProcFrame *frame );
+    void extract( ProcFrame *frame );
 
 private:
     void initialize();
@@ -112,12 +141,20 @@ public:
     OrbTracker();
 
     void prepareFrame( ProcStereoFrame *frame ) override;
-    void extractFeatures( ProcStereoFrame *frame ) override;
-    void match( ConsecutiveStereoFrames *frame ) override;
+    void prepareFrame( ConsecutiveFrames *frame ) override;
+
+    void extract( ProcStereoFrame *frame ) override;
+    void extract( ConsecutiveFrames *frame ) override;
+
+    void match( ProcStereoFrame *frame ) override;
+    void match( ConsecutiveFrames *frame ) override;
 
 protected:
     OrbProcessor *processor() const;
     BFMatcher *matcher() const;
+
+    void prepareFrame( ProcFrame *frame );
+    void extract( ProcFrame *frame );
 
 private:
     void initialize();
@@ -130,12 +167,20 @@ public:
     AKazeTracker();
 
     void prepareFrame( ProcStereoFrame *frame ) override;
-    void extractFeatures( ProcStereoFrame *frame ) override;
-    void match( ConsecutiveStereoFrames *frame ) override;
+    void prepareFrame( ConsecutiveFrames *frame ) override;
+
+    void extract( ProcStereoFrame *frame ) override;
+    void extract( ConsecutiveFrames *frame ) override;
+
+    void match( ProcStereoFrame *frame ) override;
+    void match( ConsecutiveFrames *frame ) override;
 
 protected:
     AKazeProcessor *processor() const;
     BFMatcher *matcher() const;
+
+    void prepareFrame( ProcFrame *frame );
+    void extract( ProcFrame *frame );
 
 private:
     void initialize();
@@ -148,13 +193,21 @@ public:
     SuperGlueTracker();
 
     void prepareFrame( ProcStereoFrame *frame ) override;
-    void extractFeatures( ProcStereoFrame *frame ) override;
-    void match( ConsecutiveStereoFrames *frame ) override;
+    void prepareFrame( ConsecutiveFrames *frame ) override;
+
+    void extract( ProcStereoFrame *frame ) override;
+    void extract( ConsecutiveFrames *frame ) override;
+
+    void match( ProcStereoFrame *frame ) override;
+    void match( ConsecutiveFrames *frame ) override;
 
 protected:
     SuperGlueProcessor *processor() const;
 
     std::unique_ptr< SuperGlueProcessor > _processor;
+
+    void prepareFrame( ProcFrame *frame );
+    void extract( ProcFrame *frame );
 
 private:
     void initialize();

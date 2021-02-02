@@ -260,7 +260,7 @@ namespace slam {
 
         if ( prevPoint ) {
 
-            drawLine( target, prevPoint->point(), point(), color );
+            drawLine( target, prevPoint->point(), point(), 1, color );
 
             prevPoint->drawPrevTrack( target, color );
 
@@ -274,7 +274,7 @@ namespace slam {
 
         if ( nextPoint ) {
 
-            drawLine( target, point(), nextPoint->point(), color );
+            drawLine( target, point(), nextPoint->point(), 1, color );
 
             nextPoint->drawNextTrack( target, color );
 

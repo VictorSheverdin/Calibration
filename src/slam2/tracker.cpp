@@ -2,10 +2,15 @@
 
 #include "tracker.h"
 
+#include "track.h"
+
 #include "frame.h"
+
+#include "framepoint.h"
 
 namespace slam2 {
 
+// FlowTracker
 double FlowTracker::extractPrecision() const
 {
     return _pointsProcessor->extractPrecision();
@@ -57,27 +62,50 @@ void CPUFlowTracker::initialize()
     _pointsProcessor = std::unique_ptr< FlowProcessor >( new CPUFlowProcessor() );
 }
 
-void CPUFlowTracker::prepareFrame( ProcStereoFrame *frame )
+void CPUFlowTracker::prepareFrame( ProcFrame *frame )
 {
-    std::vector< cv::Mat > leftPyramid, rightPyramid;
+    if ( frame->imagePyramid().empty() ) {
+        std::vector< cv::Mat > pyramid;
+        processor()->buildImagePyramid( frame->image(), &pyramid );
+        frame->setImagePyramid( pyramid );
+    }
 
-    processor()->buildImagePyramid( frame->leftFrame()->image(), &leftPyramid );
-    processor()->buildImagePyramid( frame->rightFrame()->image(), &rightPyramid );
-
-    frame->setImagePyramid( leftPyramid, rightPyramid );
 }
 
-void CPUFlowTracker::extractFeatures( ProcStereoFrame *frame )
+void CPUFlowTracker::extract( ProcFrame *frame )
 {
     std::vector< cv::Point2f > cornerPoints;
 
-    processor()->extractPoints( frame->leftFrame()->image(), frame->leftFrame()->mask(), &cornerPoints, frame->leftFrame()->extractionCornersCount() );
+    processor()->extractPoints( frame->image(), frame->mask(), &cornerPoints, frame->extractionCornersCount() );
 
-    frame->leftFrame()->addCornerPoints( cornerPoints );
+    frame->addCornerPoints( cornerPoints );
+}
 
+void CPUFlowTracker::prepareFrame( ProcStereoFrame *frame )
+{
+    prepareFrame( frame->leftFrame().get() );
+    prepareFrame( frame->rightFrame().get() );
+}
+
+void CPUFlowTracker::prepareFrame( ConsecutiveFrames *frame )
+{
+    prepareFrame( frame->frame2().get() );
+}
+
+void CPUFlowTracker::extract( ProcStereoFrame *frame )
+{
+    extract( frame->leftFrame().get() );
+}
+
+void CPUFlowTracker::extract( ConsecutiveFrames * )
+{
+}
+
+void CPUFlowTracker::match( ProcStereoFrame *frame )
+{
     std::vector< FlowTrackResult > trackResults;
 
-    processor()->track( frame->leftFrame()->imagePyramid(), cornerPoints, frame->rightFrame()->imagePyramid(), &trackResults );
+    processor()->track( frame->leftFrame()->imagePyramid(), frame->leftFrame()->cornerPoints(), frame->rightFrame()->imagePyramid(), &trackResults );
 
     for ( auto &i : trackResults ) {
         auto rightIndex = frame->rightFrame()->addCornerPoint( i );
@@ -87,8 +115,36 @@ void CPUFlowTracker::extractFeatures( ProcStereoFrame *frame )
 
 }
 
-void CPUFlowTracker::match( ConsecutiveStereoFrames *frame )
+void CPUFlowTracker::match( ConsecutiveFrames *frame )
 {
+    auto frame1 = frame->frame1();
+    auto frame2 = frame->frame2();
+
+    std::vector< FlowTrackResult > trackResults;
+
+    processor()->track( frame1->imagePyramid(), frame1->cornerPoints(), frame2->imagePyramid(), &trackResults );
+
+    for ( auto &i : trackResults ) {
+        auto flowIndex = frame2->addCornerPoint( i );
+        auto flowPoint = frame2->createFlowPoint( flowIndex );
+
+        auto prevFlowPoint = frame1->flowPoint( i.index );
+
+        if ( prevFlowPoint ) {
+
+            auto track = prevFlowPoint->parentTrack();
+
+            if ( !track ) {
+                track = frame1->createTrack();
+                track->addPoint( prevFlowPoint );
+            }
+
+            track->addPoint( flowPoint );
+
+        }
+
+    }
+
 }
 
 CPUFlowProcessor *CPUFlowTracker::processor() const
@@ -107,21 +163,44 @@ void GPUFlowTracker::initialize()
     _pointsProcessor = std::unique_ptr< FlowProcessor >( new GPUFlowProcessor() );
 }
 
-void GPUFlowTracker::prepareFrame( ProcStereoFrame *frame )
+void GPUFlowTracker::prepareFrame( ProcFrame * )
 {
 }
 
-void GPUFlowTracker::extractFeatures( ProcStereoFrame *frame )
+void GPUFlowTracker::extract( ProcFrame *frame )
 {
     std::vector< cv::Point2f > cornerPoints;
 
-    processor()->extractPoints( frame->leftFrame()->image(), frame->leftFrame()->mask(), &cornerPoints, frame->leftFrame()->extractionCornersCount() );
+    processor()->extractPoints( frame->image(), frame->mask(), &cornerPoints, frame->extractionCornersCount() );
 
-    frame->leftFrame()->addCornerPoints( cornerPoints );
+    frame->addCornerPoints( cornerPoints );
+}
 
+void GPUFlowTracker::prepareFrame( ProcStereoFrame *frame )
+{
+    prepareFrame( frame->leftFrame().get() );
+    prepareFrame( frame->rightFrame().get() );
+}
+
+void GPUFlowTracker::prepareFrame( ConsecutiveFrames *frame )
+{
+    prepareFrame( frame->frame2().get() );
+}
+
+void GPUFlowTracker::extract( ProcStereoFrame *frame )
+{
+    extract( frame->leftFrame().get() );
+}
+
+void GPUFlowTracker::extract( ConsecutiveFrames * )
+{
+}
+
+void GPUFlowTracker::match( ProcStereoFrame *frame )
+{
     std::vector< FlowTrackResult > trackResults;
 
-    processor()->track( frame->leftFrame()->image(), cornerPoints, frame->rightFrame()->image(), &trackResults );
+    processor()->track( frame->leftFrame()->image(), frame->leftFrame()->cornerPoints(), frame->rightFrame()->image(), &trackResults );
 
     for ( auto &i : trackResults ) {
         auto rightIndex = frame->rightFrame()->addCornerPoint( i );
@@ -131,7 +210,7 @@ void GPUFlowTracker::extractFeatures( ProcStereoFrame *frame )
 
 }
 
-void GPUFlowTracker::match( ConsecutiveStereoFrames *frame )
+void GPUFlowTracker::match( ConsecutiveFrames *frame )
 {
 }
 
@@ -139,6 +218,8 @@ GPUFlowProcessor *GPUFlowTracker::processor() const
 {
     return dynamic_cast< GPUFlowProcessor* >( _pointsProcessor.get() );
 }
+
+// FeatureTracker
 
 // SiftTracker
 SiftTracker::SiftTracker()
@@ -152,33 +233,57 @@ void SiftTracker::initialize()
     _featuresMatcher = std::unique_ptr< DescriptorMatcher >( new FlannMatcher() );
 }
 
-void SiftTracker::prepareFrame( ProcStereoFrame * )
+void SiftTracker::prepareFrame( ProcFrame * )
 {
 }
 
-void SiftTracker::extractFeatures( ProcStereoFrame *frame )
+void SiftTracker::extract( ProcFrame *frame )
 {
     std::vector< cv::Point2f > cornerPoints;
 
-    std::vector< cv::KeyPoint > leftKeypoints, rightKeypoints;
-    cv::Mat leftDescriptors, rightDescriptors;
+    std::vector< cv::KeyPoint > keypoints;
+    cv::Mat descriptors;
 
-    processor()->extractAndCompute( frame->leftFrame()->image(), frame->leftFrame()->mask(), &leftKeypoints, &leftDescriptors );
-    processor()->extractAndCompute( frame->rightFrame()->image(), frame->rightFrame()->mask(), &rightKeypoints, &rightDescriptors );
+    processor()->extractAndCompute( frame->image(), frame->mask(), &keypoints, &descriptors );
 
-    frame->setFeaturePoints( leftKeypoints, rightKeypoints );
-    frame->setDescriptors( leftDescriptors, rightDescriptors );
+    frame->setKeyPoints( keypoints );
+    frame->setDescriptors( descriptors );
+}
 
+void SiftTracker::prepareFrame( ProcStereoFrame *frame )
+{
+    prepareFrame( frame->leftFrame().get() );
+    prepareFrame( frame->rightFrame().get() );
+}
+
+void SiftTracker::prepareFrame( ConsecutiveFrames *frame )
+{
+    prepareFrame( frame->frame2().get() );
+}
+
+void SiftTracker::extract( ProcStereoFrame *frame )
+{
+    extract( frame->leftFrame().get() );
+    extract( frame->rightFrame().get() );
+}
+
+void SiftTracker::extract( ConsecutiveFrames *frame )
+{
+    extract( frame->frame2().get() );
+}
+
+void SiftTracker::match( ProcStereoFrame *frame )
+{
     std::vector< cv::DMatch > matches;
 
-    matcher()->match( leftKeypoints, leftDescriptors, rightKeypoints, rightDescriptors, &matches );
+    matcher()->match( frame->leftFrame()->keyPoints(), frame->leftFrame()->descriptors(), frame->rightFrame()->keyPoints(), frame->rightFrame()->descriptors(), &matches );
 
     for ( auto &i : matches )
         frame->createFeaturePoint( i.queryIdx, i.trainIdx );
 
 }
 
-void SiftTracker::match( ConsecutiveStereoFrames *frame )
+void SiftTracker::match( ConsecutiveFrames *frame )
 {
 }
 
@@ -204,32 +309,57 @@ void OrbTracker::initialize()
     _featuresMatcher = std::unique_ptr< DescriptorMatcher >( new BFMatcher() );
 }
 
-void OrbTracker::prepareFrame( ProcStereoFrame * )
+void OrbTracker::prepareFrame( ProcFrame * )
 {
 }
 
-void OrbTracker::extractFeatures( ProcStereoFrame *frame )
+void OrbTracker::extract( ProcFrame *frame )
 {
     std::vector< cv::Point2f > cornerPoints;
 
-    std::vector< cv::KeyPoint > leftKeypoints, rightKeypoints;
-    cv::Mat leftDescriptors, rightDescriptors;
+    std::vector< cv::KeyPoint > keypoints;
+    cv::Mat descriptors;
 
-    processor()->extractAndCompute( frame->leftFrame()->image(), frame->leftFrame()->mask(), &leftKeypoints, &leftDescriptors );
-    processor()->extractAndCompute( frame->rightFrame()->image(), frame->rightFrame()->mask(), &rightKeypoints, &rightDescriptors );
+    processor()->extractAndCompute( frame->image(), frame->mask(), &keypoints, &descriptors );
 
-    frame->setFeaturePoints( leftKeypoints, rightKeypoints );
-    frame->setDescriptors( leftDescriptors, rightDescriptors );
+    frame->setKeyPoints( keypoints );
+    frame->setDescriptors( descriptors );
+}
 
+void OrbTracker::prepareFrame( ProcStereoFrame *frame )
+{
+    prepareFrame( frame->leftFrame().get() );
+    prepareFrame( frame->rightFrame().get() );
+}
+
+void OrbTracker::prepareFrame( ConsecutiveFrames *frame )
+{
+    prepareFrame( frame->frame2().get() );
+}
+
+void OrbTracker::extract( ProcStereoFrame *frame )
+{
+    extract( frame->leftFrame().get() );
+    extract( frame->rightFrame().get() );
+}
+
+void OrbTracker::extract( ConsecutiveFrames *frame )
+{
+    extract( frame->frame2().get() );
+}
+
+void OrbTracker::match( ProcStereoFrame *frame )
+{
     std::vector< cv::DMatch > matches;
 
-    matcher()->match( leftKeypoints, leftDescriptors, rightKeypoints, rightDescriptors, &matches );
+    matcher()->match( frame->leftFrame()->keyPoints(), frame->leftFrame()->descriptors(), frame->rightFrame()->keyPoints(), frame->rightFrame()->descriptors(), &matches );
 
     for ( auto &i : matches )
         frame->createFeaturePoint( i.queryIdx, i.trainIdx );
+
 }
 
-void OrbTracker::match( ConsecutiveStereoFrames *frame )
+void OrbTracker::match( ConsecutiveFrames *frame )
 {
 }
 
@@ -255,33 +385,58 @@ void AKazeTracker::initialize()
     _featuresMatcher = std::make_unique< BFMatcher >();
 }
 
-void AKazeTracker::prepareFrame( ProcStereoFrame * )
+void AKazeTracker::prepareFrame( ProcFrame * )
 {
+
 }
 
-void AKazeTracker::extractFeatures( ProcStereoFrame *frame )
+void AKazeTracker::extract( ProcFrame *frame )
 {
     std::vector< cv::Point2f > cornerPoints;
 
-    std::vector< cv::KeyPoint > leftKeypoints, rightKeypoints;
-    cv::Mat leftDescriptors, rightDescriptors;
+    std::vector< cv::KeyPoint > keypoints;
+    cv::Mat descriptors;
 
-    processor()->extractAndCompute( frame->leftFrame()->image(), frame->leftFrame()->mask(), &leftKeypoints, &leftDescriptors );
-    processor()->extractAndCompute( frame->rightFrame()->image(), frame->rightFrame()->mask(), &rightKeypoints, &rightDescriptors );
+    processor()->extractAndCompute( frame->image(), frame->mask(), &keypoints, &descriptors );
 
-    frame->setFeaturePoints( leftKeypoints, rightKeypoints );
-    frame->setDescriptors( leftDescriptors, rightDescriptors );
+    frame->setKeyPoints( keypoints );
+    frame->setDescriptors( descriptors );
+}
 
+void AKazeTracker::prepareFrame( ProcStereoFrame *frame )
+{
+    prepareFrame( frame->leftFrame().get() );
+    prepareFrame( frame->rightFrame().get() );
+}
+
+void AKazeTracker::prepareFrame( ConsecutiveFrames *frame )
+{
+    prepareFrame( frame->frame2().get() );
+}
+
+void AKazeTracker::extract( ProcStereoFrame *frame )
+{
+    extract( frame->leftFrame().get() );
+    extract( frame->rightFrame().get() );
+}
+
+void AKazeTracker::extract( ConsecutiveFrames *frame )
+{
+    extract( frame->frame2().get() );
+}
+
+void AKazeTracker::match( ProcStereoFrame *frame )
+{
     std::vector< cv::DMatch > matches;
 
-    matcher()->match( leftKeypoints, leftDescriptors, rightKeypoints, rightDescriptors, &matches );
+    matcher()->match( frame->leftFrame()->keyPoints(), frame->leftFrame()->descriptors(), frame->rightFrame()->keyPoints(), frame->rightFrame()->descriptors(), &matches );
 
     for ( auto &i : matches )
         frame->createFeaturePoint( i.queryIdx, i.trainIdx );
 
 }
 
-void AKazeTracker::match( ConsecutiveStereoFrames *frame )
+void AKazeTracker::match( ConsecutiveFrames *frame )
 {
 }
 
@@ -306,31 +461,89 @@ void SuperGlueTracker::initialize()
     _processor = std::make_unique< SuperGlueProcessor >( "superpoint_fp32_1024.eng", "superglue_fp32.eng" );
 }
 
-void SuperGlueTracker::prepareFrame( ProcStereoFrame * )
+void SuperGlueTracker::prepareFrame( ProcFrame * )
 {
 }
 
-void SuperGlueTracker::extractFeatures( ProcStereoFrame *frame )
+void SuperGlueTracker::extract( ProcFrame *frame )
 {
-    std::vector< cv::KeyPoint > leftKeypoints, rightKeypoints;
+    if ( frame->keyPoints().empty() ) {
+        std::vector< cv::KeyPoint > keypoints;
+        cv::Mat descriptors;
+
+        CvImage gray;
+
+        cv::cvtColor( frame->image(), gray, cv::COLOR_BGR2GRAY );
+
+        _processor->extract( gray, frame->mask(), &keypoints, &descriptors );
+
+        frame->setKeyPoints( keypoints );
+        frame->setDescriptors( descriptors );
+
+    }
+
+}
+
+void SuperGlueTracker::prepareFrame( ProcStereoFrame *frame )
+{
+    prepareFrame( frame->leftFrame().get() );
+    prepareFrame( frame->rightFrame().get() );
+}
+
+void SuperGlueTracker::prepareFrame( ConsecutiveFrames *frame )
+{
+    prepareFrame( frame->frame2().get() );
+}
+
+void SuperGlueTracker::extract( ProcStereoFrame *frame )
+{
+    extract( frame->leftFrame().get() );
+    extract( frame->rightFrame().get() );
+}
+
+void SuperGlueTracker::extract( ConsecutiveFrames *frame )
+{
+    extract( frame->frame2().get() );
+}
+
+void SuperGlueTracker::match( ProcStereoFrame *frame )
+{
     std::vector< cv::DMatch > matches;
 
-    CvImage leftGray, rightGray;
-
-    cv::cvtColor( frame->leftFrame()->image(), leftGray, cv::COLOR_BGR2GRAY );
-    cv::cvtColor( frame->rightFrame()->image(), rightGray, cv::COLOR_BGR2GRAY );
-
-    _processor->extractAndMatch( leftGray, frame->leftFrame()->mask(), rightGray, frame->rightFrame()->mask(), &leftKeypoints, &rightKeypoints, 1024, &matches );
-
-    frame->setFeaturePoints( leftKeypoints, rightKeypoints );
+    _processor->match( frame->leftFrame()->image().size(), frame->rightFrame()->image().size(), frame->leftFrame()->keyPoints(), frame->rightFrame()->keyPoints(), frame->leftFrame()->descriptors(), frame->rightFrame()->descriptors(), &matches );
 
     for ( auto &i : matches )
         frame->createFeaturePoint( i.queryIdx, i.trainIdx );
 }
 
-void SuperGlueTracker::match( ConsecutiveStereoFrames *frame )
+void SuperGlueTracker::match( ConsecutiveFrames *frame )
 {
+    auto frame1 = frame->frame1();
+    auto frame2 = frame->frame2();
 
+    std::vector< cv::DMatch > matches;
+
+    processor()->match( frame1->image().size(), frame2->image().size(), frame1->keyPoints(), frame2->keyPoints(), frame1->descriptors(), frame2->descriptors(), &matches );
+
+    for ( auto &i : matches ) {
+        auto featurePoint = frame2->createFeaturePoint( i.trainIdx );
+
+        auto prevFeaturePoint = frame1->featurePoint( i.queryIdx );
+
+        if ( prevFeaturePoint ) {
+
+            auto track = prevFeaturePoint->parentTrack();
+
+            if ( !track ) {
+                track = frame1->createTrack();
+                track->addPoint( prevFeaturePoint );
+            }
+
+            track->addPoint( featurePoint );
+
+        }
+
+    }
 }
 
 SuperGlueProcessor *SuperGlueTracker::processor() const

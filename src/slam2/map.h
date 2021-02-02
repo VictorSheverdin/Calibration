@@ -36,7 +36,7 @@ public:
 protected:
     Map( const SystemPtr &parent );
 
-    std::vector< StereoFramePtr > _sequence;
+    std::list< StereoFramePtr > _sequence;
 
 };
 

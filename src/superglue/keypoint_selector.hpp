@@ -29,19 +29,23 @@ namespace marker
         };
 
         KeypointSelector(const Config& cfg, const tensor_rt_utils::Dims4d& scores_dims);
-        void select_keypoints(const ScoreMap& score_map, int count, KeypointSetArray& dst);
-        void select_keypoints(const ScoreMap& score_map, const cv::Mat& first_mask, 
-            const cv::Mat& second_mask, int count, KeypointSetArray& dst);
-        static KeypointSetArray make_keypoints();
+        void select(const ScoreMap& score_map, int count, KeypointSet& dst);
+        void select(const ScoreMap& score_map, const cv::Mat& mask, int count, KeypointSet& dst);
 
     private:
         cv::Size2i m_scores_size;
-        std::array<cv::cuda::GpuMat, IMAGE_COUNT> m_input_mask;
-        std::array<cv::cuda::GpuMat, IMAGE_COUNT> m_input_mask_resized;
+        cv::cuda::GpuMat m_input_mask;
+        cv::cuda::GpuMat m_input_mask_resized;
         at::Tensor m_score_mask;
         at::Tensor m_inner_area;
         at::Tensor m_topk_indices;
         Config m_cfg;
+
+    private:
+        void upload_mask(const cv::Mat& mask);
+        void apply_input_mask();
+        void apply_threshold_mask(const ScoreMap& score_map);
+        void select_inner(const ScoreMap& score_map, int count, KeypointSet& dst);
     };
 }
 

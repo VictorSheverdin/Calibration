@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <map>
 #include <memory>
 
 #include "alias.h"
@@ -16,16 +17,23 @@ public:
 
     virtual ~Track() = default;
 
+    static ObjectPtr create();
+
+    void addPoint( const Point2Ptr &point );
+
+    std::vector< Point2Ptr > validPoints() const;
+
 protected:
-    using PointPtrImpl = std::weak_ptr< Point2 >;
-    using MapPointPtrImpl = std::weak_ptr< MapPoint >;
+    Track();
 
-    Track() = default;
+    std::map< size_t, Point2Weak > _points;
 
-    std::vector< PointPtrImpl > _points;
+    MapPointWeak _mapPoint;
 
-    MapPointPtrImpl _mapPoint;
+    size_t _maxIndex;
 
+private:
+    void initialize();
 };
 
 }

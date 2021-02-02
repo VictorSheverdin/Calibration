@@ -30,9 +30,12 @@ public:
     std::shared_ptr< Map > parentMap() const;
     std::shared_ptr< System > parentSystem() const;
 
+    TrackPtr createTrack();
+
 protected:
     Frame( const StereoFramePtr &parent );
 
+    std::vector< TrackPtr > _tracks;
 };
 
 class FinalFrame : public Frame
@@ -72,6 +75,9 @@ class ProcFrame : public FinalFrame
     friend class CPUFlowTracker;
     friend class GPUFlowTracker;
     friend class SiftTracker;
+    friend class OrbTracker;
+    friend class AKazeTracker;
+    friend class SuperGlueTracker;
 public:
     using ObjectClass = ProcFrame;
     using ParentClass = Frame;
@@ -85,8 +91,8 @@ public:
     const cv::Point2f &cornerPoint( const size_t index ) const;
     const cv::Point2f &undistortedCornerPoint( const size_t index ) const;
 
-    const cv::Point2f &featurePoint( const size_t index ) const;
-    const cv::Point2f &undistortedFeaturePoint( const size_t index ) const;
+    const cv::KeyPoint &keyPoint( const size_t index ) const;
+    const cv::KeyPoint &undistortedKeyPoint( const size_t index ) const;
 
     ObjectPtr shared_from_this();
     ObjectConstPtr shared_from_this() const;
@@ -100,6 +106,16 @@ public:
     FlowPointPtr createFlowPoint( const size_t index );
     FeaturePointPtr createFeaturePoint( const size_t index );
 
+    FlowPointPtr flowPoint( const size_t index ) const;
+    FeaturePointPtr featurePoint( const size_t index ) const;
+
+    CvImage drawPoints() const;
+    CvImage drawTracks() const;
+
+    size_t tracksCount() const;
+
+    void clearMemory();
+
 protected:
     ProcFrame( const StereoFramePtr &parent );
 
@@ -112,20 +128,19 @@ protected:
     std::vector< cv::Point2f > _cornerPoints;
     std::vector< cv::Point2f > _undistCornerPoints;
 
-    std::vector< FlowPointPtr > _corners;
+    std::map< size_t, FlowPointPtr > _flowPoints;
 
-    std::vector< cv::KeyPoint > _featurePoints;
-    std::vector< cv::Point2f > _undistFeaturePoints;
-
+    std::vector< cv::KeyPoint > _keyPoints;
+    std::vector< cv::KeyPoint > _undistKeyPoints;
     cv::Mat _descriptors;
 
-    std::vector< FeaturePointPtr > _features;
+    std::map< size_t, FeaturePointPtr > _featurePoints;
 
     size_t addCornerPoint( const cv::Point2f &point );
     size_t addCornerPoints( const std::vector< cv::Point2f > &points );
 
-    void setFeaturePoints( const std::vector< cv::KeyPoint > &value );
-    const std::vector<cv::KeyPoint> &featurePoints() const;
+    void setKeyPoints( const std::vector< cv::KeyPoint > &value );
+    const std::vector< cv::KeyPoint > &keyPoints() const;
 
     void setImagePyramid( const std::vector< cv::Mat > &value );
     const std::vector< cv::Mat > &imagePyramid() const;
@@ -141,10 +156,36 @@ protected:
 
 };
 
-class StereoFrame : public std::enable_shared_from_this< StereoFrame >, protected Parent_Shared_Ptr< Map >
+class DoubleFrame : public std::enable_shared_from_this< DoubleFrame >, protected Parent_Shared_Ptr< Map >
+{
+public:
+    using ObjectClass = DoubleFrame;
+    using ObjectPtr = std::shared_ptr< DoubleFrame >;
+    using ObjectConstPtr = std::shared_ptr< const DoubleFrame >;
+
+    virtual ~DoubleFrame() = default;
+
+    void set( const FramePtr &frame1, const FramePtr &frame2 );
+
+    const FramePtr &frame1() const;
+    const FramePtr &frame2() const;
+
+    std::shared_ptr< Map > parentMap() const;
+    std::shared_ptr< System > parentSystem() const;
+
+protected:
+    DoubleFrame( const MapPtr &parent );
+
+    FramePtr _frame1;
+    FramePtr _frame2;
+
+};
+
+class StereoFrame : public DoubleFrame
 {
 public:
     using ObjectClass = StereoFrame;
+    using ParentClass = DoubleFrame;
     using ObjectPtr = std::shared_ptr< StereoFrame >;
     using ObjectConstPtr = std::shared_ptr< const StereoFrame >;
 
@@ -152,8 +193,8 @@ public:
 
     void set( const FramePtr &leftFrame, const FramePtr &rightFrame );
 
-    std::shared_ptr< Map > parentMap() const;
-    std::shared_ptr< System > parentSystem() const;
+    const FramePtr &leftFrame() const;
+    const FramePtr &rightFrame() const;
 
     void setRotation( const cv::Mat &value );
     const cv::Mat &rotation() const;
@@ -169,9 +210,6 @@ public:
 
 protected:
     StereoFrame( const MapPtr &parent );
-
-    FramePtr _leftFrame;
-    FramePtr _rightFrame;
 
     cv::Mat _rotation;
     cv::Mat _translation;
@@ -229,8 +267,8 @@ public:
     void load( const StampedStereoImage &image );
 
     void prepareFrame();
-
     void extract();
+    void match();
 
     size_t triangulatePoints();
 
@@ -251,20 +289,40 @@ public:
 
     std::vector< ColorPoint3d > sparseCloud() const;
 
+    void clearMemory();
+
 protected:
     ProcStereoFrame( const MapPtr &parent );
 
     void setImagePyramid( const std::vector< cv::Mat > &leftPyramid, const std::vector< cv::Mat > &rightPyramid );
 
-    void setFeaturePoints( const std::vector< cv::KeyPoint > &left, const std::vector< cv::KeyPoint > &right );
+    void setKeyPoints( const std::vector< cv::KeyPoint > &left, const std::vector< cv::KeyPoint > &right );
     void setDescriptors( const cv::Mat &left, const cv::Mat &right );
 
     std::vector< ProcStereoPointPtr > _points;
 
 };
 
-class ConsecutiveStereoFrames
+class ConsecutiveFrames : public DoubleFrame
 {
+public:
+    using ObjectClass = ConsecutiveFrames;
+    using ParentClass = DoubleFrame;
+    using ObjectPtr = std::shared_ptr< ConsecutiveFrames >;
+    using ObjectConstPtr = std::shared_ptr< const ConsecutiveFrames >;
+
+    static ObjectPtr create( const ProcFramePtr &frame1, const ProcFramePtr &frame2, const MapPtr &parent );
+
+    ProcFramePtr frame1() const;
+    ProcFramePtr frame2() const;
+
+    void prepareFrame();
+    void extract();
+    void track();
+
+protected:
+    ConsecutiveFrames( const ProcFramePtr &frame1, const ProcFramePtr &frame2, const MapPtr &parent );
+
 };
 
 }

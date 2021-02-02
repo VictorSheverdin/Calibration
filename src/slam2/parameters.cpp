@@ -80,7 +80,8 @@ Parameters::Parameters()
 
 void Parameters::initialize()
 {
-    _cornerExtractionCount = 5e2;
+    _cornerExtractionCount = 1 << 9;
+    _minimumTracksCount = 1 << 6;
 
     setTracker( std::make_shared< SuperGlueTracker >() );
 }
@@ -133,6 +134,16 @@ void Parameters::setCornerExtractionCount( const size_t value )
 size_t Parameters::cornerExtractionCount() const
 {
     return _cornerExtractionCount;
+}
+
+void Parameters::setMinimumTracksCount(  const size_t value )
+{
+    _minimumTracksCount = value;
+}
+
+size_t Parameters::minimumTracksCount() const
+{
+    return _minimumTracksCount;
 }
 
 void Parameters::setRightRotation( const cv::Mat &value )

@@ -78,6 +78,9 @@ public:
     void setCornerExtractionCount( const size_t value );
     size_t cornerExtractionCount() const;
 
+    void setMinimumTracksCount(  const size_t value );
+    size_t minimumTracksCount() const;
+
     void setRightRotation( const cv::Mat &value );
     const cv::Mat &rightRotation() const;
 
@@ -102,6 +105,8 @@ protected:
     cv::Mat _rightTranslation;
 
     size_t _cornerExtractionCount;
+
+    size_t _minimumTracksCount;
 
 private:
     void initialize();

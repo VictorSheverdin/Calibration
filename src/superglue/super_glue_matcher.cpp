@@ -22,48 +22,48 @@ namespace marker
         m_output.scores = tch_u::make_tensor_2d(trt_u::Dims2d(0, 0), torch::kFloat32, torch::kCUDA);
     }
 
-    void SuperGlueMatcher::match(const KeypointSetArray& keypoints, const DescriptorSetArray& descriptors)
+    void SuperGlueMatcher::match(const KeypointSet& left_keypoints, const KeypointSet& right_keypoints, 
+        const DescriptorSet& left_descriptors, const DescriptorSet& right_descriptors)
     {
         //  Try to resize SuperGlue bindings
-        std::array<std::int64_t, IMAGE_COUNT> keypoint_count;
-        for (int i = 0; i < IMAGE_COUNT; ++i)
+        std::int64_t left_count = left_keypoints.count();
+        std::int64_t right_count = right_keypoints.count();
+        if (!m_super_glue.resize_bindings(0, left_count))
         {
-            keypoint_count[i] = keypoints[i].keypoints.size(0);
-            if (!m_super_glue.resize_bindings(i, keypoint_count[i]))
-            {
-                m_output.scores.resize_({ 1, 0, 0 });
-                return;
-            }
+            m_output.scores.resize_({ 1, 0, 0 });
+            return;
+        }
+        if (!m_super_glue.resize_bindings(1, right_count))
+        {
+            m_output.scores.resize_({ 1, 0, 0 });
+            return;
         }
 
         // Copy keypoint counts and image shapes to device.
-        m_params_cpu.at<float>(0, 0) = keypoint_count[0];
-        m_params_cpu.at<float>(0, 1) = keypoint_count[1];
-        m_params_cpu.at<float>(0, 2) = keypoints[0].image_size.height;
-        m_params_cpu.at<float>(0, 3) = keypoints[0].image_size.width;
-        m_params_cpu.at<float>(0, 4) = keypoints[1].image_size.height;
-        m_params_cpu.at<float>(0, 5) = keypoints[1].image_size.width;
+        m_params_cpu.at<float>(0, 0) = left_count;
+        m_params_cpu.at<float>(0, 1) = right_count;
+        m_params_cpu.at<float>(0, 2) = left_keypoints.image_size.height;
+        m_params_cpu.at<float>(0, 3) = left_keypoints.image_size.width;
+        m_params_cpu.at<float>(0, 4) = right_keypoints.image_size.height;
+        m_params_cpu.at<float>(0, 5) = right_keypoints.image_size.width;
         m_params_gpu.upload(m_params_cpu);
         auto kpt_count_ptr = m_params_gpu.cudaPtr();
         auto left_img_shape_ptr = static_cast<float*>(m_params_gpu.cudaPtr()) + 2;
         auto right_img_shape_ptr = static_cast<float*>(m_params_gpu.cudaPtr()) + 4;
 
         //  Prepare output scores buffer
-        m_output.scores.resize_({ 1, keypoint_count[0] + 1, keypoint_count[1] + 1 });
+        m_output.scores.resize_({ 1, left_count + 1, right_count + 1 });
 
         //  Set buffer pointers and do forward
-        std::vector<void*> superglue_buffers;
-        superglue_buffers.push_back(left_img_shape_ptr);
-        superglue_buffers.push_back(right_img_shape_ptr);
-        for (const DescriptorSet& ds : descriptors)
-            superglue_buffers.push_back(ds.values.data_ptr());
-        for (const KeypointSet& ks : keypoints)
-            superglue_buffers.push_back(ks.keypoints.data_ptr());
-        for (const KeypointSet& ks : keypoints)
-            superglue_buffers.push_back(ks.scores.data_ptr());
-        superglue_buffers.push_back(kpt_count_ptr);
-        superglue_buffers.push_back(m_output.scores.data_ptr());
-        m_super_glue.execute(superglue_buffers.data());
+        void* superglue_buffers[] = {
+            left_img_shape_ptr, right_img_shape_ptr,
+            left_descriptors.values.data_ptr(), right_descriptors.values.data_ptr(),
+            left_keypoints.keypoints.data_ptr(), right_keypoints.keypoints.data_ptr(),
+            left_keypoints.scores.data_ptr(), right_keypoints.scores.data_ptr(),
+            kpt_count_ptr,
+            m_output.scores.data_ptr()
+        };
+        m_super_glue.execute(superglue_buffers);        
     }
 
     int SuperGlueMatcher::keypoint_size() const
@@ -95,8 +95,8 @@ namespace marker
         , call_count(0)
     {}
 
-    void SuperGlueMatcher::performance_test_match(const KeypointSetArray& keypoints, 
-        const DescriptorSetArray& descriptors, PerformanceStats& perf_stats)
+    void SuperGlueMatcher::performance_test_match(const KeypointSet& left_keypoints, const KeypointSet& right_keypoints, 
+        const DescriptorSet& left_descriptors, const DescriptorSet& right_descriptors, PerformanceStats& perf_stats)
     {
         namespace chr = std::chrono;
         using Clock = chr::steady_clock;
@@ -109,49 +109,48 @@ namespace marker
         auto on_resize_bindings = chr::steady_clock::now();
 
         //  Try to resize SuperGlue bindings
-        std::array<std::int64_t, IMAGE_COUNT> keypoint_count;
-        for (int i = 0; i < IMAGE_COUNT; ++i)
+        std::int64_t left_count = left_keypoints.count();
+        std::int64_t right_count = right_keypoints.count();
+        if (!m_super_glue.resize_bindings(0, left_count))
         {
-            keypoint_count[i] = keypoints[i].keypoints.size(0);
-            if (!m_super_glue.resize_bindings(i, keypoint_count[i]))
-            {
-                m_output.scores.resize_({ 1, 0, 0 });
-                return;
-            }
+            m_output.scores.resize_({ 1, 0, 0 });
+            return;
+        }
+        if (!m_super_glue.resize_bindings(1, right_count))
+        {
+            m_output.scores.resize_({ 1, 0, 0 });
+            return;
         }
 
         auto on_keypoint_count = chr::steady_clock::now();
 
         // Copy keypoint counts and image shapes to device.
-        m_params_cpu.at<float>(0, 0) = keypoint_count[0];
-        m_params_cpu.at<float>(0, 1) = keypoint_count[1];
-        m_params_cpu.at<float>(0, 2) = keypoints[0].image_size.height;
-        m_params_cpu.at<float>(0, 3) = keypoints[0].image_size.width;
-        m_params_cpu.at<float>(0, 4) = keypoints[1].image_size.height;
-        m_params_cpu.at<float>(0, 5) = keypoints[1].image_size.width;
+        m_params_cpu.at<float>(0, 0) = left_count;
+        m_params_cpu.at<float>(0, 1) = right_count;
+        m_params_cpu.at<float>(0, 2) = left_keypoints.image_size.height;
+        m_params_cpu.at<float>(0, 3) = left_keypoints.image_size.width;
+        m_params_cpu.at<float>(0, 4) = right_keypoints.image_size.height;
+        m_params_cpu.at<float>(0, 5) = right_keypoints.image_size.width;
         m_params_gpu.upload(m_params_cpu);
         auto kpt_count_ptr = m_params_gpu.cudaPtr();
         auto left_img_shape_ptr = static_cast<float*>(m_params_gpu.cudaPtr()) + 2;
         auto right_img_shape_ptr = static_cast<float*>(m_params_gpu.cudaPtr()) + 4;
 
         //  Prepare output scores buffer
-        m_output.scores.resize_({ 1, keypoint_count[0] + 1, keypoint_count[1] + 1 });
+        m_output.scores.resize_({ 1, left_count + 1, right_count + 1 });
 
         auto on_forward = chr::steady_clock::now();
 
         //  Set buffer pointers and do forward
-        std::vector<void*> superglue_buffers;
-        superglue_buffers.push_back(left_img_shape_ptr);
-        superglue_buffers.push_back(right_img_shape_ptr);
-        for (const DescriptorSet& ds : descriptors)
-            superglue_buffers.push_back(ds.values.data_ptr());
-        for (const KeypointSet& ks : keypoints)
-            superglue_buffers.push_back(ks.keypoints.data_ptr());
-        for (const KeypointSet& ks : keypoints)
-            superglue_buffers.push_back(ks.scores.data_ptr());
-        superglue_buffers.push_back(kpt_count_ptr);
-        superglue_buffers.push_back(m_output.scores.data_ptr());
-        m_super_glue.execute(superglue_buffers.data());
+        void* superglue_buffers[] = {
+            left_img_shape_ptr, right_img_shape_ptr,
+            left_descriptors.values.data_ptr(), right_descriptors.values.data_ptr(),
+            left_keypoints.keypoints.data_ptr(), right_keypoints.keypoints.data_ptr(),
+            left_keypoints.scores.data_ptr(), right_keypoints.scores.data_ptr(),
+            kpt_count_ptr,
+            m_output.scores.data_ptr()
+        };
+        m_super_glue.execute(superglue_buffers);     
 
         auto on_exit = chr::steady_clock::now();
 
@@ -161,7 +160,6 @@ namespace marker
             perf_stats.keypoint_count_duration += diff_time(on_keypoint_count, on_forward);
             perf_stats.forward_duration += diff_time(on_forward, on_exit);
         }
-        ++perf_stats.call_count;
-
+        ++perf_stats.call_count;   
     }
 }

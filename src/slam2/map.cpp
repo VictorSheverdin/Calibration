@@ -81,17 +81,38 @@ void Map::track( const StampedStereoImage &image )
 
     frame->load( image );
 
-    frame->prepareFrame();
+    if ( _sequence.empty() ) {
+        frame->prepareFrame();
+        frame->extract();
+        frame->match();
+        frame->triangulatePoints();
+    }
+    else {
+        auto prevFrame = std::dynamic_pointer_cast< ProcStereoFrame >( _sequence.back() );
 
-    frame->extract();
+        auto consecutiveFrames = ConsecutiveFrames::create( prevFrame->leftFrame(), frame->leftFrame(), shared_from_this() );
 
-    frame->triangulatePoints();
+        consecutiveFrames->prepareFrame();
+        consecutiveFrames->extract();
+        consecutiveFrames->track();
 
-    // TEMPORARY:
-    if ( _sequence.size() > 5 )
-        _sequence.clear();
+        if ( frame->leftFrame()->tracksCount() < system->parameters().minimumTracksCount() ) {
+            frame->prepareFrame();
+            frame->extract();
+            frame->match();
+            frame->triangulatePoints();
+        }
+
+        // TEMPORARY:
+        prevFrame->clearMemory();
+
+    }
 
     _sequence.push_back( frame );
+
+    // TEMPORARY:
+    if ( _sequence.size() > 100 )
+        _sequence.pop_front();
 
 }
 

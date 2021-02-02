@@ -10,8 +10,12 @@
 
 namespace slam2 {
 
+class Track;
+
 class Point2 : public std::enable_shared_from_this< Point2 >
 {
+    friend class Track;
+
 public:
     using ObjectClass = Point2;
     using ObjectPtr = std::shared_ptr< Point2 >;
@@ -22,8 +26,17 @@ public:
     virtual const cv::Point2f &point2d() const = 0;
     virtual cv::Scalar color() const = 0;
 
+    TrackPtr parentTrack() const;
+    size_t trackIndex() const;
+
 protected:
     Point2() = default;
+
+    TrackWeak _parentTrack;
+    size_t _trackIndex;
+
+    void setParentTrack( const TrackPtr &track );
+    void setTrackIndex( const size_t index );
 
 };
 

@@ -510,7 +510,7 @@ void SuperGlueProcessor::initialize( const std::string &detectorModelFile, const
     marker::KeypointSelector::Config cfg;
 
     cfg.border = 10;
-    cfg.score_threshold = .05;
+    cfg.score_threshold = .1;
 
     _matcherThreshold = 0.5;
 
@@ -529,81 +529,58 @@ int SuperGlueProcessor::matchingThreshold() const
     return _matcherThreshold;
 }
 
-void SuperGlueProcessor::extractAndMatch( const CvImage &image1, const cv::Mat &mask1, const CvImage &image2, const cv::Mat &mask2,
-                                            std::vector<cv::KeyPoint> *keypoints1, std::vector<cv::KeyPoint> *keypoints2, const size_t count, std::vector<cv::DMatch> *matches )
+void SuperGlueProcessor::extract( const CvImage &image, const cv::Mat &mask, std::vector< cv::KeyPoint > *keypoints, cv::Mat *descriptors, const size_t count )
 {
-    CV_Assert( image1.channels() == 1 && image2.channels() == 1 );
+    CV_Assert( image.channels() == 1 );
     CV_Assert( count <= _maxPointsCount );
 
-    _detector->detect( image1, image2 );
+    _detector->detect( image );
     auto& scoreMap = _detector->score_map();
     auto& descrMap = _detector->descriptor_map();
 
-    auto keypointSet = marker::KeypointSelector::make_keypoints();
+    auto keypointSet = marker::KeypointSet::create();
 
-    _keypointSelector->select_keypoints( scoreMap, mask1, mask2, count, keypointSet );
+    _keypointSelector->select( scoreMap, mask, count, keypointSet );
 
-    auto descrSets = marker::sample_descriptors( descrMap, keypointSet );
+    auto descriptorSet = marker::sample_descriptors( descrMap, keypointSet );
 
-    _matcher->match( keypointSet, descrSets );
-    auto& match_table = _matcher->output();
+    keypointSet.download( *keypoints );
 
-    keypointSet[ 0 ].get_keypoints( *keypoints1 );
-    keypointSet[ 1 ].get_keypoints( *keypoints2 );
-
-    matches->clear();
-
-    cv::Mat scores;
-
-    match_table.get_scores(scores);
-
-    for(int i = 0; i < scores.rows - 1; ++i) {
-        auto row_begin = scores.ptr<float>(i);
-        auto row_end = row_begin + scores.cols;
-        auto max_score = std::max_element(row_begin, row_end);
-        if ( max_score < row_end - 1 && *max_score > _matcherThreshold )
-        {
-            int j = max_score - row_begin;
-            float d = 1.f - *max_score;
-            matches->emplace_back( i, j, d );
-        }
-
-    }
+    descriptorSet.download( *descriptors );
 
 }
 
-void SuperGlueProcessor::match( const CvImage &image1, const CvImage &image2, const std::vector<cv::KeyPoint> &keypoints1, const std::vector<cv::KeyPoint> &keypoints2, std::vector< cv::DMatch > *matches )
+void SuperGlueProcessor::match( const cv::Size &imageSize1, const cv::Size &imageSize2, const std::vector< cv::KeyPoint > &keypoints1, const std::vector< cv::KeyPoint > &keypoints2, const cv::Mat &descriptors1, const cv::Mat &descriptors2, std::vector< cv::DMatch > *matches )
 {
-    CV_Assert( image1.channels() == 1 && image2.channels() == 1 );
+    auto keypointSet1 = marker::KeypointSet::create();
+    auto keypointSet2 = marker::KeypointSet::create();
 
-    _detector->detect( image1, image2 );
-    auto& descrMap = _detector->descriptor_map();
+    keypointSet1.image_size = imageSize1;
+    keypointSet2.image_size = imageSize2;
 
-    auto keypointSet = marker::KeypointSelector::make_keypoints();
+    keypointSet1.upload( keypoints1 );
+    keypointSet2.upload( keypoints2 );
 
-    keypointSet[ 0 ].image_size = image1.size();
-    keypointSet[ 1 ].image_size = image2.size();
+    auto descriptorSet1 = marker::DescriptorSet::create();
+    auto descriptorSet2 = marker::DescriptorSet::create();
 
-    keypointSet[ 0 ].set_keypoints( keypoints1 );
-    keypointSet[ 1 ].set_keypoints( keypoints2 );
+    descriptorSet1.upload( descriptors1 );
+    descriptorSet2.upload( descriptors2 );
 
-    auto descrSets = marker::sample_descriptors( descrMap, keypointSet );
-
-    _matcher->match( keypointSet, descrSets );
+    _matcher->match( keypointSet1, keypointSet2, descriptorSet1, descriptorSet2 );
     auto& match_table = _matcher->output();
-
-    matches->clear();
 
     cv::Mat scores;
 
-    match_table.get_scores(scores);
+    match_table.download( scores );
 
-    for(int i = 0; i < scores.rows - 1; ++i) {
-        auto row_begin = scores.ptr<float>(i);
+    matches->clear();
+
+    for( int i = 0; i < scores.rows - 1; ++i ) {
+        auto row_begin = scores.ptr< float >( i );
         auto row_end = row_begin + scores.cols;
-        auto max_score = std::max_element(row_begin, row_end);
-        if ( max_score < row_end - 1 && *max_score > _matcherThreshold )
-        {
+        auto max_score = std::max_element( row_begin, row_end );
+        if ( max_score < row_end - 1 && *max_score > _matcherThreshold ) {
             int j = max_score - row_begin;
             float d = 1.f - *max_score;
             matches->emplace_back( i, j, d );

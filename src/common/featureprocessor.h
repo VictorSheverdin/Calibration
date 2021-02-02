@@ -247,10 +247,9 @@ public:
     void setMatchingThreshold( const double value );
     int matchingThreshold() const;
 
-    void extractAndMatch( const CvImage &image1, const cv::Mat &mask1, const CvImage &image2, const cv::Mat &mask2,
-                           std::vector< cv::KeyPoint > *keypoints1, std::vector< cv::KeyPoint > *keypoints2, const size_t count, std::vector< cv::DMatch > *matches );
+    void extract( const CvImage &image, const cv::Mat &mask, std::vector< cv::KeyPoint > *keypoints, cv::Mat *descriptors, const size_t count = _maxPointsCount );
 
-    void match( const CvImage &image1, const CvImage &image2, const std::vector< cv::KeyPoint > &keypoints1, const std::vector< cv::KeyPoint > &keypoints2, std::vector< cv::DMatch > *matches );
+    void match( const cv::Size &imageSize1, const cv::Size &imageSize2, const std::vector< cv::KeyPoint > &keypoints1, const std::vector< cv::KeyPoint > &keypoints2, const cv::Mat &descriptors1, const cv::Mat &descriptors2, std::vector< cv::DMatch > *matches );
 
 protected:
     std::unique_ptr< marker::SuperPointDetector > _detector;

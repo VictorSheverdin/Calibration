@@ -6,6 +6,27 @@
 
 namespace slam2 {
 
+// Point2
+void Point2::setParentTrack( const TrackPtr &track )
+{
+    _parentTrack = track;
+}
+
+TrackPtr Point2::parentTrack() const
+{
+    return _parentTrack.lock();
+}
+
+void Point2::setTrackIndex( const size_t index )
+{
+    _trackIndex = index;
+}
+
+size_t Point2::trackIndex() const
+{
+    return _trackIndex;
+}
+
 // FramePoint
 FramePoint::ObjectPtr FramePoint::shared_from_this()
 {
@@ -113,12 +134,12 @@ FeaturePoint::ObjectConstPtr FeaturePoint::shared_from_this() const
 
 const cv::Point2f &FeaturePoint::undistortedPoint() const
 {
-    return parentFrame()->undistortedFeaturePoint( _index );
+    return parentFrame()->undistortedKeyPoint( _index ).pt;
 }
 
 const cv::Point2f &FeaturePoint::point2d() const
 {
-    return parentFrame()->featurePoint( _index );
+    return parentFrame()->keyPoint( _index ).pt;
 }
 
 // DoublePoint

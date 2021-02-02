@@ -17,24 +17,22 @@
 #include "super_point.hpp"
 #include "tensor_rt_utils.hpp"
 #include "libtorch_utils.hpp"
-#include "gpu_mat_batch.hpp"
+
 
 namespace marker
 {
     class SuperPointDetector
     {
     public:
-        static constexpr int IMAGE_COUNT = 2;
+        static constexpr int IMAGE_COUNT = 1;
 
     public:
         SuperPointDetector(const std::string& engine_path, tensor_rt_utils::Logger& logger);
         const tensor_rt_utils::Dims3d& input_shape() const;
-        tensor_rt_utils::Dims4d scores_shape() const;
-        tensor_rt_utils::Dims4d descriptors_shape() const;
-        // void detect(const cv::Mat& first, const cv::Mat& first_mask, 
-        //     const cv::Mat& second, const cv::Mat& second_mask);
+        const tensor_rt_utils::Dims4d& scores_shape() const;
+        const tensor_rt_utils::Dims4d& descriptors_shape() const;
 
-        void detect(const cv::Mat& first, const cv::Mat& second);
+        void detect(const cv::Mat& image);
 
         const ScoreMap& score_map() const;
         const DescriptorMap& descriptor_map() const;
@@ -48,25 +46,27 @@ namespace marker
 
             PerformanceStats();
         };
-        void performance_test_detect(const cv::Mat& first, const cv::Mat& second, 
-            PerformanceStats& perf_stats);
+        void performance_test_detect(const cv::Mat& image, PerformanceStats& perf_stats);
 
     private:
         SuperPoint m_super_point;
+        
+        cv::cuda::GpuMat m_gpu_input;
+        cv::cuda::GpuMat m_gpu_uint8;
+        cv::cuda::GpuMat m_gpu_float;
+
         tensor_rt_utils::Dims3d m_input_shape;
-        std::array<cv::cuda::GpuMat, IMAGE_COUNT> m_gpu_input;      
-        GpuMatBatch m_gpu_uint8;
-        GpuMatBatch m_gpu_float;
-        // std::array<at::Tensor, IMAGE_COUNT> m_input_masks;
+        tensor_rt_utils::Dims4d m_scores_shape;
+        tensor_rt_utils::Dims4d m_descr_shape;
 
-        // at::Tensor m_score_map;
-        // at::Tensor m_score_mask;
-        // at::Tensor m_inner_area;
-        // at::Tensor m_descr_map;
-
-        // KeypointSetArray m_output;
         ScoreMap m_score_map;
         DescriptorMap m_descr_map;
+
+    private:
+        void upload_image(const cv::Mat& image);
+        void convert_normalize();
+        void forward();
+        void read_image_size(const cv::Mat& image);
     };
 }
 

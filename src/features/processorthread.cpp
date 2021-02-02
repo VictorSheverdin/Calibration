@@ -69,6 +69,7 @@ void ProcessorThread::run()
     if ( !m_img1.empty() && !m_img2.empty() ) {
 
         std::vector< cv::KeyPoint > keyPoints1, keyPoints2;
+        cv::Mat descriptors1, descriptors2;
 
         auto keypointProcessor = std::dynamic_pointer_cast< KeyPointProcessor >( m_detector );
 
@@ -85,12 +86,12 @@ void ProcessorThread::run()
             if ( superglueProcessor )  {
 
                 CvImage gray1, gray2;
+
                 cv::cvtColor( m_img1, gray1, cv::COLOR_BGR2GRAY );
                 cv::cvtColor( m_img2, gray2, cv::COLOR_BGR2GRAY );
 
-                std::vector< cv::DMatch > matches;
-
-                superglueProcessor->extractAndMatch( gray1, cv::Mat(), gray2, cv::Mat(), &keyPoints1, &keyPoints2, 1024, &matches );
+                superglueProcessor->extract( gray1, cv::Mat(), &keyPoints1, &descriptors1 );
+                superglueProcessor->extract( gray2, cv::Mat(), &keyPoints2, &descriptors2 );
             }
 
         }
@@ -173,7 +174,7 @@ void ProcessorThread::run()
 
                     std::vector< cv::DMatch > matches;
 
-                    superglueProcessor->match( gray1, gray2, keyPoints1, keyPoints2, &matches );
+                    superglueProcessor->match( gray1.size(), gray2.size(), keyPoints1, keyPoints2, descriptors1, descriptors2, &matches );
 
                     cv::drawMatches( m_img1, keyPoints1, m_img2, keyPoints2, matches, result );
 
