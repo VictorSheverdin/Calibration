@@ -26,9 +26,26 @@ public:
 
 class FeatureProcessorBase
 {
-protected:
-    FeatureProcessorBase() = default;
+public:
+    cv::Mat epipolarTest( const std::vector< cv::Point2f > &sourcePoints, const std::vector< cv::Point2f > &targetPoints, std::vector< size_t > *inliers );
+
     virtual ~FeatureProcessorBase() = default;
+
+    double ransacReprojectionThreshold() const;
+    void setRansacReprojectionThreshold( const double &value );
+
+    double ransacConfidence() const;
+    void setRansacConfidence( const double &value );
+
+protected:
+    FeatureProcessorBase();
+
+    double m_ransacReprojectionThreshold;
+    double m_ransacConfidence;
+
+private:
+    void initialize();
+
 };
 
 class FlowProcessor : public FeatureProcessorBase
@@ -51,14 +68,6 @@ public:
     virtual size_t levels() const = 0;
     virtual void setLevels( const size_t value ) = 0;
 
-    double ransacReprojectionThreshold() const;
-    void setRansacReprojectionThreshold( const double &value );
-
-    double ransacConfidence() const;
-    void setRansacConfidence( const double &value );
-
-    cv::Mat epiTest( const std::vector< cv::Point2f > &sourcePoints, const std::vector< cv::Point2f > &targetPoints, std::vector<int> *inliers );
-
 protected:
     FlowProcessor();
 
@@ -67,9 +76,6 @@ protected:
     double m_extractPrecision;
     double m_extractDistance;
     double m_blockSize;
-
-    double m_ransacReprojectionThreshold;
-    double m_ransacConfidence;
 
 private:
     void initialize();

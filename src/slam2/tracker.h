@@ -100,20 +100,6 @@ private:
 class FeatureTracker : public Tracker
 {
 public:
-
-protected:
-    FeatureTracker() = default;
-
-    std::unique_ptr< FullProcessor > _descriptorProcessor;
-    std::unique_ptr< DescriptorMatcher > _featuresMatcher;
-
-};
-
-class SiftTracker : public FeatureTracker
-{
-public:
-    SiftTracker();
-
     void prepareFrame( ProcStereoFrame *frame ) override;
     void prepareFrame( ConsecutiveFrames *frame ) override;
 
@@ -124,11 +110,24 @@ public:
     void match( ConsecutiveFrames *frame ) override;
 
 protected:
-    SiftProcessor *processor() const;
-    FlannMatcher *matcher() const;
+    FeatureTracker() = default;
+
+    std::unique_ptr< FullProcessor > _descriptorProcessor;
+    std::unique_ptr< DescriptorMatcher > _featuresMatcher;
 
     void prepareFrame( ProcFrame *frame );
     void extract( ProcFrame *frame );
+
+};
+
+class SiftTracker : public FeatureTracker
+{
+public:
+    SiftTracker();
+
+protected:
+    SiftProcessor *processor() const;
+    FlannMatcher *matcher() const;
 
 private:
     void initialize();
@@ -140,21 +139,9 @@ class OrbTracker : public FeatureTracker
 public:
     OrbTracker();
 
-    void prepareFrame( ProcStereoFrame *frame ) override;
-    void prepareFrame( ConsecutiveFrames *frame ) override;
-
-    void extract( ProcStereoFrame *frame ) override;
-    void extract( ConsecutiveFrames *frame ) override;
-
-    void match( ProcStereoFrame *frame ) override;
-    void match( ConsecutiveFrames *frame ) override;
-
 protected:
     OrbProcessor *processor() const;
     BFMatcher *matcher() const;
-
-    void prepareFrame( ProcFrame *frame );
-    void extract( ProcFrame *frame );
 
 private:
     void initialize();
@@ -166,21 +153,9 @@ class AKazeTracker : public FeatureTracker
 public:
     AKazeTracker();
 
-    void prepareFrame( ProcStereoFrame *frame ) override;
-    void prepareFrame( ConsecutiveFrames *frame ) override;
-
-    void extract( ProcStereoFrame *frame ) override;
-    void extract( ConsecutiveFrames *frame ) override;
-
-    void match( ProcStereoFrame *frame ) override;
-    void match( ConsecutiveFrames *frame ) override;
-
 protected:
     AKazeProcessor *processor() const;
     BFMatcher *matcher() const;
-
-    void prepareFrame( ProcFrame *frame );
-    void extract( ProcFrame *frame );
 
 private:
     void initialize();

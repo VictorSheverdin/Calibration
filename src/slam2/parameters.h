@@ -62,12 +62,14 @@ class Parameters
 public:
     Parameters();
 
+    void setFrameSize( const cv::Size &value );
+    const cv::Size &frameSize() const;
+
+    StereoRect processRect() const;
     void setProcessRect( const StereoRect &rect );
 
     void setCameraMatrix( const cv::Mat &left, const cv::Mat &right );
     void setDistCoefficients( const cv::Mat &left, const cv::Mat &right );
-
-    StereoRect processRect() const;
 
     const StereoCameraMatrix &cameraMatrix() const;
     const StereoDistorsionCoefficients &distorsionCoefficients() const;
@@ -90,6 +92,7 @@ public:
     double maxReprojectionError() const;
 
     double pointsDrawScale() const;
+    double textDrawScale() const;
 
 protected:
     cv::Size _frameSize;

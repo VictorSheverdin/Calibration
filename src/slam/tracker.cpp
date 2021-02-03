@@ -101,9 +101,9 @@ cv::Mat GPUFlowTracker::track( const FlowFramePtr &frame1, const FlowFramePtr &f
             targetPoints.push_back( i );
         }
 
-        std::vector< int > epipolarIndexes;
+        std::vector< size_t > epipolarIndexes;
 
-        auto fmat = processor()->epiTest( sourcePoints, targetPoints, &epipolarIndexes );
+        auto fmat = processor()->epipolarTest( sourcePoints, targetPoints, &epipolarIndexes );
 
         trackedPoints->clear();
 
@@ -203,9 +203,9 @@ cv::Mat CPUFlowTracker::track( const FlowFramePtr &frame1, const FlowFramePtr &f
             targetPoints.push_back( i );
         }
 
-        std::vector< int > epipolarIndexes;
+        std::vector< size_t > epipolarIndexes;
 
-        auto fmat = processor()->epiTest( sourcePoints, targetPoints, &epipolarIndexes );
+        auto fmat = processor()->epipolarTest( sourcePoints, targetPoints, &epipolarIndexes );
 
         trackedPoints->clear();
 

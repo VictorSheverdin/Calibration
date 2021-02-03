@@ -43,8 +43,8 @@ void ImagesWidget::initialize()
     _stereoWidget = new ImageWidget( this );
     addWidget( _stereoWidget );
 
-    _pointsWidget->hide();
-    _stereoWidget->hide();
+    //_pointsWidget->hide();
+    //_stereoWidget->hide();
 
     int widthDiv3 = width() / 3;
 
@@ -322,6 +322,8 @@ void SlamWidgetBase::initialize( const QString &calibrationFile )
     StereoCalibrationDataShort calibration( calibrationFile.toStdString() );
 
     slam2::Parameters parameters;
+
+    parameters.setFrameSize( calibration.leftCameraResults().frameSize() );
 
     parameters.setCameraMatrix( calibration.leftCameraResults().cameraMatrix(), calibration.rightCameraResults().cameraMatrix() );
     parameters.setDistCoefficients( calibration.leftCameraResults().distortionCoefficients(), calibration.rightCameraResults().distortionCoefficients() );

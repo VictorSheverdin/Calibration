@@ -80,10 +80,25 @@ Parameters::Parameters()
 
 void Parameters::initialize()
 {
-    _cornerExtractionCount = 1 << 9;
+    _cornerExtractionCount = 1 << 10;
     _minimumTracksCount = 1 << 6;
 
     setTracker( std::make_shared< SuperGlueTracker >() );
+}
+
+void Parameters::setFrameSize( const cv::Size &value )
+{
+    _frameSize = value;
+}
+
+const cv::Size &Parameters::frameSize() const
+{
+    return _frameSize;
+}
+
+StereoRect Parameters::processRect() const
+{
+    return _procRect;
 }
 
 void Parameters::setProcessRect( const StereoRect &rect )
@@ -99,11 +114,6 @@ void Parameters::setCameraMatrix( const cv::Mat &left, const cv::Mat &right )
 void Parameters::setDistCoefficients( const cv::Mat &left, const cv::Mat &right )
 {
     _distorsionCoefficients.set( left, right );
-}
-
-StereoRect Parameters::processRect() const
-{
-    return _procRect;
 }
 
 const StereoCameraMatrix &Parameters::cameraMatrix() const
@@ -174,6 +184,11 @@ double Parameters::maxReprojectionError() const
 double Parameters::pointsDrawScale() const
 {
     return 1./500.;
+}
+
+double Parameters::textDrawScale() const
+{
+    return 1./70.;
 }
 
 }

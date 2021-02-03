@@ -74,6 +74,7 @@ class ProcFrame : public FinalFrame
     friend class ProcStereoFrame;
     friend class CPUFlowTracker;
     friend class GPUFlowTracker;
+    friend class FeatureTracker;
     friend class SiftTracker;
     friend class OrbTracker;
     friend class AKazeTracker;

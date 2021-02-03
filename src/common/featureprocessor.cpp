@@ -44,6 +44,65 @@ bool FlowTrackResult::operator<( const FlowTrackResult &other ) const
     return index < other.index;
 }
 
+// FeatureProcessorBase
+FeatureProcessorBase::FeatureProcessorBase()
+{
+    initialize();
+}
+
+void FeatureProcessorBase::initialize()
+{
+    m_ransacReprojectionThreshold = 3.0;
+    m_ransacConfidence = 0.99;
+}
+
+double FeatureProcessorBase::ransacReprojectionThreshold() const
+{
+    return m_ransacReprojectionThreshold;
+}
+
+void FeatureProcessorBase::setRansacReprojectionThreshold( const double &value )
+{
+    m_ransacReprojectionThreshold = value;
+}
+
+double FeatureProcessorBase::ransacConfidence() const
+{
+    return m_ransacConfidence;
+}
+
+void FeatureProcessorBase::setRansacConfidence( const double &value )
+{
+    m_ransacConfidence = value;
+}
+
+cv::Mat FeatureProcessorBase::epipolarTest( const std::vector< cv::Point2f > &sourcePoints, const std::vector< cv::Point2f > &targetPoints, std::vector< size_t > *inliers )
+{
+    if ( inliers ) {
+
+        if ( sourcePoints.size() == targetPoints.size() && sourcePoints.size() > MIN_FMAT_POINTS_COUNT ) {
+
+            std::vector< uchar > inlierFlags( sourcePoints.size(), 0 );
+
+            auto fmat = cv::findFundamentalMat( sourcePoints, targetPoints, inlierFlags, cv::FM_RANSAC, m_ransacReprojectionThreshold, m_ransacConfidence );
+
+            inliers->clear();
+            inliers->reserve( inlierFlags.size() );
+
+            for ( size_t i = 0; i < inlierFlags.size(); ++i )
+                if ( inlierFlags[ i ] )
+                    inliers->push_back( i );
+
+            return fmat;
+
+        }
+
+    }
+
+    return cv::Mat();
+
+}
+
 // FlowProcessor
 FlowProcessor::FlowProcessor()
 {
@@ -56,15 +115,11 @@ void FlowProcessor::initialize()
     m_extractPrecision = 1.e-2;
     m_extractDistance = 10.;
     m_blockSize = 3;
-    m_ransacReprojectionThreshold = 1.0;
-    m_ransacConfidence = 1.0 - 1.e-2;
-
 }
 
 void FlowProcessor::extractPoints( const CvImage &image, const cv::Mat &mask, std::vector< cv::Point2f > *points, const size_t count )
 {
     if ( points ) {
-
         cv::Mat gray;
         cv::cvtColor( image, gray, cv::COLOR_BGR2GRAY );
 
@@ -102,53 +157,6 @@ void FlowProcessor::setExtractionDistance( const double value )
 double FlowProcessor::extractionDistance() const
 {
     return m_extractDistance;
-}
-
-double FlowProcessor::ransacReprojectionThreshold() const
-{
-    return m_ransacReprojectionThreshold;
-}
-
-void FlowProcessor::setRansacReprojectionThreshold( const double &value )
-{
-    m_ransacReprojectionThreshold = value;
-}
-
-double FlowProcessor::ransacConfidence() const
-{
-    return m_ransacConfidence;
-}
-
-void FlowProcessor::setRansacConfidence( const double &value )
-{
-    m_ransacConfidence = value;
-}
-
-cv::Mat FlowProcessor::epiTest( const std::vector< cv::Point2f > &sourcePoints, const std::vector< cv::Point2f > &targetPoints, std::vector< int > *inliers )
-{
-    if ( inliers ) {
-
-        if ( sourcePoints.size() == targetPoints.size() && sourcePoints.size() > MIN_FMAT_POINTS_COUNT ) {
-
-            std::vector< uchar > inlierFlags( sourcePoints.size(), 0 );
-
-            auto fmat = cv::findFundamentalMat( sourcePoints, targetPoints, inlierFlags, cv::FM_RANSAC, m_ransacReprojectionThreshold, m_ransacConfidence );
-
-            inliers->clear();
-            inliers->reserve( inlierFlags.size() );
-
-            for ( size_t i = 0; i < inlierFlags.size(); ++i )
-                if ( inlierFlags[ i ] )
-                    inliers->push_back( i );
-
-            return fmat;
-
-        }
-
-    }
-
-    return cv::Mat();
-
 }
 
 // GPUFlowProcessor
@@ -512,7 +520,7 @@ void SuperGlueProcessor::initialize( const std::string &detectorModelFile, const
     cfg.border = 10;
     cfg.score_threshold = .05;
 
-    _matcherThreshold = 0.75;
+    _matcherThreshold = .25;
 
     _detector = std::make_unique< marker::SuperPointDetector >( detectorModelFile, logger );
     _keypointSelector = std::make_unique< marker::KeypointSelector >( cfg, _detector->scores_shape() );
@@ -574,45 +582,23 @@ void SuperGlueProcessor::match( const cv::Size &imageSize1, const cv::Size &imag
 
     match_table.download( scores );
 
-    std::vector< cv::DMatch > rawMatches;
+    matches->clear();
 
     for( int i = 0; i < scores.rows - 1; ++i ) {
+
         auto row_begin = scores.ptr< float >( i );
         auto row_end = row_begin + scores.cols;
         auto max_score = std::max_element( row_begin, row_end );
+
         if ( max_score < row_end - 1 && *max_score > _matcherThreshold ) {
+
             int j = max_score - row_begin;
             float d = 1.f - *max_score;
-            rawMatches.emplace_back( i, j, d );
+            matches->emplace_back( i, j, d );
+
         }
 
     }
-
-    matches->clear();
-
-    *matches = rawMatches;
-
-    /*std::vector< cv::Point2f > points1, points2;
-
-    points1.reserve( keypoints1.size() );
-    points2.reserve( keypoints2.size() );
-
-    for ( auto &i : rawMatches ) {
-        points1.push_back( keypoints1[ i.queryIdx ].pt );
-        points2.push_back( keypoints2[ i.trainIdx ].pt );
-    }
-
-    if ( points1.size() > MIN_FMAT_POINTS_COUNT ) {
-
-        std::vector< uchar > inliers( points1.size(), 0 );
-
-        auto fMat = cv::findFundamentalMat( points1, points2, inliers, cv::FM_RANSAC );
-
-        for ( size_t i = 0; i < inliers.size(); ++i )
-            if ( inliers[ i ] )
-                matches->push_back( rawMatches[ i ] );
-
-    }*/
 
 }
 
@@ -746,7 +732,7 @@ cv::Mat DescriptorMatcher::match( const std::vector< cv::KeyPoint > &queryKeypoi
                 for ( auto &j : revMatches ) {
 
                     if ( i.queryIdx == j.trainIdx && i.trainIdx == j.queryIdx ) {
-                        symMatches.push_back( i );
+                        matches->push_back( i );
                         break;
                     }
 
@@ -754,29 +740,6 @@ cv::Mat DescriptorMatcher::match( const std::vector< cv::KeyPoint > &queryKeypoi
 
             }
 
-            std::vector< cv::Point2f > points1, points2;
-
-            points1.reserve( queryKeypoints.size() );
-            points2.reserve( queryKeypoints.size() );
-
-            for ( auto &i : symMatches ) {
-                points1.push_back( queryKeypoints[ i.queryIdx ].pt );
-                points2.push_back( trainKeypoints[ i.trainIdx ].pt );
-            }
-
-            if ( points1.size() > MIN_FMAT_POINTS_COUNT ) {
-
-                std::vector< uchar > inliers( points1.size(), 0 );
-
-                auto fMat = cv::findFundamentalMat( points1, points2, inliers, cv::FM_RANSAC );
-
-                for ( size_t i = 0; i < inliers.size(); ++i )
-                    if ( inliers[ i ] )
-                        matches->push_back( symMatches[ i ] );
-
-                return fMat;
-
-            }
 
         }
 

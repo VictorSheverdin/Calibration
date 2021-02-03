@@ -252,12 +252,16 @@ CvImage ProcFrame::drawPoints() const
     drawFeaturePoints( &ret, _cornerPoints, radius, cv::Scalar( 0, 0, 255, 255 ) );
     drawFeaturePoints( &ret, _keyPoints, radius, cv::Scalar( 0, 255, 0, 255 ) );
 
+    drawLabel( &ret, "Points count: " + std::to_string( _cornerPoints.size() + _keyPoints.size() ), std::min( ret.height(), ret.width() ) * system->parameters().textDrawScale() );
+
     return ret;
 }
 
 CvImage ProcFrame::drawTracks() const
 {
     CvImage ret;
+
+    size_t count = 0;
 
     auto system = parentSystem();
 
@@ -278,6 +282,8 @@ CvImage ProcFrame::drawTracks() const
         auto track = i.second->parentTrack();
 
         if ( track ) {
+
+            ++count;
 
             auto points = track->validPoints();
 
@@ -305,6 +311,8 @@ CvImage ProcFrame::drawTracks() const
 
         if ( track ) {
 
+            ++count;
+
             auto points = track->validPoints();
 
             Point2Ptr prev;
@@ -324,6 +332,8 @@ CvImage ProcFrame::drawTracks() const
     }
 
     drawFeaturePoints( &ret, points, radius, cv::Scalar( 0, 0, 255, 255 ) );
+
+    drawLabel( &ret, "Tracks count: " + std::to_string( count ), std::min( ret.height(), ret.width() ) * system->parameters().textDrawScale() );
 
     return ret;
 }
@@ -820,7 +830,7 @@ FeatureStereoPointPtr ProcStereoFrame::createFeaturePoint( const size_t leftInde
 
 CvImage ProcStereoFrame::drawPoints() const
 {
-    return makeStraightPreview( leftFrame()->drawPoints(), rightFrame()->drawPoints() );
+    return leftFrame()->drawPoints();
 }
 
 CvImage ProcStereoFrame::drawTracks() const
@@ -850,6 +860,8 @@ CvImage ProcStereoFrame::drawStereo() const
         drawFeaturePoint( &stackedImage, right + offset, radius, cv::Scalar( 0, 0, 255, 255 ) );
 
     }
+
+    drawLabel( &stackedImage, "Stereo count: " + std::to_string( _points.size() ), std::min( stackedImage.height(), stackedImage.width() ) * system->parameters().textDrawScale() );
 
     return stackedImage;
 }
