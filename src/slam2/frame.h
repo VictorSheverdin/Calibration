@@ -72,6 +72,7 @@ private:
 class ProcFrame : public FinalFrame
 {
     friend class ProcStereoFrame;
+    friend class FlowTracker;
     friend class CPUFlowTracker;
     friend class GPUFlowTracker;
     friend class FeatureTracker;
@@ -113,7 +114,7 @@ public:
     CvImage drawPoints() const;
     CvImage drawTracks() const;
 
-    size_t tracksCount() const;
+    size_t stereoTracksCount() const;
 
     void clearMemory();
 

@@ -41,10 +41,15 @@ public:
     void setLevels( const size_t value );
 
 protected:
-    FlowTracker() = default;
+    FlowTracker();
 
-    std::unique_ptr< FlowProcessor > _pointsProcessor;
+    std::unique_ptr< FastProcessor > _pointsDetector;
+    std::unique_ptr< FlowProcessor > _flowProcessor;
 
+    void extractPoints( ProcFrame *frame );
+
+private:
+    void initialize();
 };
 
 class CPUFlowTracker : public FlowTracker
@@ -65,7 +70,6 @@ protected:
     CPUFlowProcessor *processor() const;
 
     void prepareFrame( ProcFrame *frame );
-    void extract( ProcFrame *frame );
 
 private:
     void initialize();
@@ -90,7 +94,6 @@ protected:
     GPUFlowProcessor *processor() const;
 
     void prepareFrame( ProcFrame *frame );
-    void extract( ProcFrame *frame );
 
 private:
     void initialize();

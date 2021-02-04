@@ -31,12 +31,17 @@ public:
 
     std::vector< ColorPoint3d > lastSparseCloud() const;
 
+    MapPointPtr createMapPoint( const ColorPoint3d &point );
+    const std::vector< MapPointPtr > &mapPoints() const;
+
     void track( const StampedStereoImage &image );
 
 protected:
     Map( const SystemPtr &parent );
 
     std::list< StereoFramePtr > _sequence;
+
+    std::vector< MapPointPtr > _points;
 
 };
 

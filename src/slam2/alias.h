@@ -60,6 +60,8 @@ using FlowPointPtr = std::shared_ptr< FlowPoint >;
 using FeaturePointPtr = std::shared_ptr< FeaturePoint >;
 
 using StereoPointPtr = std::shared_ptr< StereoPoint >;
+using StereoPointWeak = std::weak_ptr< StereoPoint >;
+
 using ProcStereoPointPtr = std::shared_ptr< ProcStereoPoint >;
 using FlowStereoPointPtr = std::shared_ptr< FlowStereoPoint >;
 using FeatureStereoPointPtr = std::shared_ptr< FeatureStereoPoint >;

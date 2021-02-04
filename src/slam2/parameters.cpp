@@ -81,7 +81,7 @@ Parameters::Parameters()
 void Parameters::initialize()
 {
     _cornerExtractionCount = 1 << 10;
-    _minimumTracksCount = 1 << 6;
+    _minimumTracksCount = 1 << 7;
 
     setTracker( std::make_shared< SuperGlueTracker >() );
 }

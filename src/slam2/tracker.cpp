@@ -2,54 +2,88 @@
 
 #include "tracker.h"
 
+#include "map.h"
 #include "track.h"
-
 #include "frame.h"
-
 #include "framepoint.h"
 
 namespace slam2 {
 
 // FlowTracker
+FlowTracker::FlowTracker()
+{
+    initialize();
+}
+
+void FlowTracker::initialize()
+{
+    _pointsDetector = std::make_unique< FastProcessor >();
+}
+
 double FlowTracker::extractPrecision() const
 {
-    return _pointsProcessor->extractPrecision();
+    return _flowProcessor->extractPrecision();
 }
 
 void FlowTracker::setExtractPrecision( const double value )
 {
-    _pointsProcessor->setExtractPrecision( value );
+    _flowProcessor->setExtractPrecision( value );
 }
 
 void FlowTracker::setExtractionDistance( const double value )
 {
-    _pointsProcessor->setExtractionDistance( value );
+    _flowProcessor->setExtractionDistance( value );
 }
 
 double FlowTracker::extractionDistance() const
 {
-    return _pointsProcessor->extractionDistance();
+    return _flowProcessor->extractionDistance();
 }
 
 size_t FlowTracker::winSize() const
 {
-    return _pointsProcessor->winSize();
+    return _flowProcessor->winSize();
 }
 
 void FlowTracker::setWinSize( const size_t value )
 {
-    _pointsProcessor->setWinSize( value );
+    _flowProcessor->setWinSize( value );
 }
 
 size_t FlowTracker::levels() const
 {
-    return _pointsProcessor->levels();
+    return _flowProcessor->levels();
 }
 
 void FlowTracker::setLevels( const size_t value )
 {
-    _pointsProcessor->setLevels( value );
+    _flowProcessor->setLevels( value );
 }
+
+void FlowTracker::extractPoints( ProcFrame *frame )
+{
+    std::vector< cv::KeyPoint > keyPoints;
+
+    _pointsDetector->extractKeypoints( frame->image(), frame->mask(), &keyPoints );
+
+    std::vector< cv::Point2f > cornerPoints;
+
+    cornerPoints.reserve( keyPoints.size() );
+
+    for ( auto &i : keyPoints )
+        cornerPoints.push_back( i.pt );
+
+    frame->addCornerPoints( cornerPoints );
+}
+/*
+void FlowTracker::extractPoints( ProcFrame *frame )
+{
+    std::vector< cv::Point2f > cornerPoints;
+
+    _flowProcessor->extractPoints( frame->image(), frame->mask(), &cornerPoints, frame->extractionCornersCount() );
+
+    frame->addCornerPoints( cornerPoints );
+}*/
 
 // CPUFlowTracker
 CPUFlowTracker::CPUFlowTracker()
@@ -59,7 +93,7 @@ CPUFlowTracker::CPUFlowTracker()
 
 void CPUFlowTracker::initialize()
 {
-    _pointsProcessor = std::unique_ptr< FlowProcessor >( new CPUFlowProcessor() );
+    _flowProcessor = std::unique_ptr< FlowProcessor >( new CPUFlowProcessor() );
 }
 
 void CPUFlowTracker::prepareFrame( ProcFrame *frame )
@@ -70,15 +104,6 @@ void CPUFlowTracker::prepareFrame( ProcFrame *frame )
         frame->setImagePyramid( pyramid );
     }
 
-}
-
-void CPUFlowTracker::extract( ProcFrame *frame )
-{
-    std::vector< cv::Point2f > cornerPoints;
-
-    processor()->extractPoints( frame->image(), frame->mask(), &cornerPoints, frame->extractionCornersCount() );
-
-    frame->addCornerPoints( cornerPoints );
 }
 
 void CPUFlowTracker::prepareFrame( ProcStereoFrame *frame )
@@ -94,7 +119,7 @@ void CPUFlowTracker::prepareFrame( ConsecutiveFrames *frame )
 
 void CPUFlowTracker::extract( ProcStereoFrame *frame )
 {
-    extract( frame->leftFrame().get() );
+    extractPoints( frame->leftFrame().get() );
 }
 
 void CPUFlowTracker::extract( ConsecutiveFrames * )
@@ -158,7 +183,10 @@ void CPUFlowTracker::match( ConsecutiveFrames *frame )
 
     processor()->epipolarTest( points1, points2, &inliers );
 
+    auto map = frame->parentMap();
+
     for ( auto &i : inliers ) {
+
         auto flowPoint = frame2->createFlowPoint( indexes[ i ]  );
 
         auto prevFlowPoint = frame1->flowPoint( trackResults[ i ].index );
@@ -170,6 +198,19 @@ void CPUFlowTracker::match( ConsecutiveFrames *frame )
             if ( !track ) {
                 track = frame1->createTrack();
                 track->addPoint( prevFlowPoint );
+
+                auto stereoPoint = prevFlowPoint->stereoPoint();
+
+                if ( stereoPoint ) {
+
+                    if ( stereoPoint->isPoint3dExist() ) {
+                        auto mapPoint = map->createMapPoint( ColorPoint3d( stereoPoint->point3d(), stereoPoint->color() ) );
+                        track->setMapPoint( mapPoint );
+
+                    }
+
+                }
+
             }
 
             track->addPoint( flowPoint );
@@ -182,7 +223,7 @@ void CPUFlowTracker::match( ConsecutiveFrames *frame )
 
 CPUFlowProcessor *CPUFlowTracker::processor() const
 {
-    return dynamic_cast< CPUFlowProcessor* >( _pointsProcessor.get() );
+    return dynamic_cast< CPUFlowProcessor* >( _flowProcessor.get() );
 }
 
 // GPUFlowTracker
@@ -193,20 +234,11 @@ GPUFlowTracker::GPUFlowTracker()
 
 void GPUFlowTracker::initialize()
 {
-    _pointsProcessor = std::unique_ptr< FlowProcessor >( new GPUFlowProcessor() );
+    _flowProcessor = std::unique_ptr< FlowProcessor >( new GPUFlowProcessor() );
 }
 
 void GPUFlowTracker::prepareFrame( ProcFrame * )
 {
-}
-
-void GPUFlowTracker::extract( ProcFrame *frame )
-{
-    std::vector< cv::Point2f > cornerPoints;
-
-    processor()->extractPoints( frame->image(), frame->mask(), &cornerPoints, frame->extractionCornersCount() );
-
-    frame->addCornerPoints( cornerPoints );
 }
 
 void GPUFlowTracker::prepareFrame( ProcStereoFrame *frame )
@@ -222,7 +254,7 @@ void GPUFlowTracker::prepareFrame( ConsecutiveFrames *frame )
 
 void GPUFlowTracker::extract( ProcStereoFrame *frame )
 {
-    extract( frame->leftFrame().get() );
+    extractPoints( frame->leftFrame().get() );
 }
 
 void GPUFlowTracker::extract( ConsecutiveFrames * )
@@ -286,6 +318,8 @@ void GPUFlowTracker::match( ConsecutiveFrames *frame )
 
     processor()->epipolarTest( points1, points2, &inliers );
 
+    auto map = frame->parentMap();
+
     for ( auto &i : inliers ) {
         auto flowPoint = frame2->createFlowPoint( indexes[ i ]  );
 
@@ -298,6 +332,19 @@ void GPUFlowTracker::match( ConsecutiveFrames *frame )
             if ( !track ) {
                 track = frame1->createTrack();
                 track->addPoint( prevFlowPoint );
+
+                auto stereoPoint = prevFlowPoint->stereoPoint();
+
+                if ( stereoPoint ) {
+
+                    if ( stereoPoint->isPoint3dExist() ) {
+                        auto mapPoint = map->createMapPoint( ColorPoint3d( stereoPoint->point3d(), stereoPoint->color() ) );
+                        track->setMapPoint( mapPoint );
+
+                    }
+
+                }
+
             }
 
             track->addPoint( flowPoint );
@@ -310,7 +357,7 @@ void GPUFlowTracker::match( ConsecutiveFrames *frame )
 
 GPUFlowProcessor *GPUFlowTracker::processor() const
 {
-    return dynamic_cast< GPUFlowProcessor* >( _pointsProcessor.get() );
+    return dynamic_cast< GPUFlowProcessor* >( _flowProcessor.get() );
 }
 
 // FeatureTracker
@@ -405,6 +452,8 @@ void FeatureTracker::match( ConsecutiveFrames *frame )
 
     _descriptorProcessor->epipolarTest( points1, points2, &inliers );
 
+    auto map = frame->parentMap();
+
     for ( auto &i : inliers ) {
 
         auto featurePoint = frame2->createFeaturePoint( matches[ i ].trainIdx );
@@ -418,6 +467,19 @@ void FeatureTracker::match( ConsecutiveFrames *frame )
             if ( !track ) {
                 track = frame1->createTrack();
                 track->addPoint( prevFeaturePoint );
+
+                auto stereoPoint = prevFeaturePoint->stereoPoint();
+
+                if ( stereoPoint ) {
+
+                    if ( stereoPoint->isPoint3dExist() ) {
+                        auto mapPoint = map->createMapPoint( ColorPoint3d( stereoPoint->point3d(), stereoPoint->color() ) );
+                        track->setMapPoint( mapPoint );
+
+                    }
+
+                }
+
             }
 
             track->addPoint( featurePoint );
@@ -602,6 +664,8 @@ void SuperGlueTracker::match( ConsecutiveFrames *frame )
 
     _processor->epipolarTest( points1, points2, &inliers );
 
+    auto map = frame->parentMap();
+
     for ( auto &i : inliers ) {
 
         auto featurePoint = frame2->createFeaturePoint( matches[ i ].trainIdx );
@@ -615,6 +679,19 @@ void SuperGlueTracker::match( ConsecutiveFrames *frame )
             if ( !track ) {
                 track = frame1->createTrack();
                 track->addPoint( prevFeaturePoint );
+
+                auto stereoPoint = prevFeaturePoint->stereoPoint();
+
+                if ( stereoPoint ) {
+
+                    if ( stereoPoint->isPoint3dExist() ) {
+                        auto mapPoint = map->createMapPoint( ColorPoint3d( stereoPoint->point3d(), stereoPoint->color() ) );
+                        track->setMapPoint( mapPoint );
+
+                    }
+
+                }
+
             }
 
             track->addPoint( featurePoint );

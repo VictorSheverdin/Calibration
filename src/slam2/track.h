@@ -23,6 +23,9 @@ public:
 
     std::vector< Point2Ptr > validPoints() const;
 
+    void setMapPoint( const MapPointPtr &value );
+    MapPointPtr mapPoint() const;
+
 protected:
     Track();
 

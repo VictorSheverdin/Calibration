@@ -6,31 +6,20 @@
 
 void extractKeypoints( cv::Ptr< cv::Feature2D > processor, const CvImage &image, const cv::Mat &mask, std::vector< cv::KeyPoint > *keypoints )
 {
-    if ( processor && keypoints ) {
-
-        auto uImage = image.getUMat( cv::ACCESS_READ );
-        processor->detect( uImage, *keypoints, mask );
-
-    }
-
+    if ( processor && keypoints )
+        processor->detect( image, *keypoints, mask );
 }
 
 void extractDescriptors( cv::Ptr< cv::Feature2D > processor, const CvImage &image, std::vector< cv::KeyPoint > &keypoints, cv::Mat *descriptors )
 {
-    if ( processor && descriptors ) {
+    if ( processor && descriptors )
         processor->compute( image, keypoints, *descriptors );
-
-    }
-
 }
 
 void extractAndCompute( cv::Ptr< cv::Feature2D > processor, const CvImage &image, const cv::Mat &mask, std::vector< cv::KeyPoint > *keypoints, cv::Mat *descriptors )
 {
-    if ( processor && keypoints && descriptors ) {
+    if ( processor && keypoints && descriptors )
         processor->detectAndCompute( image, mask, *keypoints, *descriptors );
-
-    }
-
 }
 
 // TrackPointResult
@@ -467,7 +456,7 @@ FastProcessor::FastProcessor()
 
 void FastProcessor::initialize()
 {
-    m_processor = cv::FastFeatureDetector::create( 50 );
+    m_processor = cv::FastFeatureDetector::create( 100 );
 }
 
 cv::Ptr< cv::FastFeatureDetector > FastProcessor::processor() const

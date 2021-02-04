@@ -45,4 +45,14 @@ std::vector< Point2Ptr > Track::validPoints() const
     return ret;
 }
 
+void Track::setMapPoint( const MapPointPtr &value )
+{
+    _mapPoint = value;
+}
+
+MapPointPtr Track::mapPoint() const
+{
+    return _mapPoint.lock();
+}
+
 }

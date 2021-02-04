@@ -15,6 +15,7 @@ class Track;
 class Point2 : public std::enable_shared_from_this< Point2 >
 {
     friend class Track;
+    friend class StereoPoint;
 
 public:
     using ObjectClass = Point2;
@@ -29,14 +30,20 @@ public:
     TrackPtr parentTrack() const;
     size_t trackIndex() const;
 
+    StereoPointPtr stereoPoint() const;
+
 protected:
     Point2() = default;
 
     TrackWeak _parentTrack;
     size_t _trackIndex;
 
+    StereoPointWeak _stereoPoint;
+
     void setParentTrack( const TrackPtr &track );
     void setTrackIndex( const size_t index );
+
+    void setStereoPoint( const StereoPointPtr &value );
 
 };
 
@@ -142,7 +149,7 @@ public:
     Point2Ptr point2() const;
 
 protected:
-    DoublePoint( const Point2Ptr &point1, const Point2Ptr &point2  );
+    DoublePoint();
 
     Point2Weak _point1;
     Point2Weak _point2;
@@ -156,6 +163,8 @@ public:
     using ObjectPtr = std::shared_ptr< StereoPoint >;
     using ObjectConstPtr = std::shared_ptr< const StereoPoint >;
 
+    void set( const Point2Ptr &point1, const Point2Ptr &point2 );
+
     Point2Ptr leftPoint() const;
     Point2Ptr rightPoint() const;
 
@@ -166,8 +175,11 @@ public:
 
     cv::Scalar color() const;
 
+    ObjectPtr shared_from_this();
+    ObjectConstPtr shared_from_this() const;
+
 protected:
-    StereoPoint( const Point2Ptr &leftPoint, const Point2Ptr &rightPoint );
+    StereoPoint();
 
     std::optional< cv::Point3f > _point3d;
 
@@ -185,7 +197,7 @@ public:
     ProcPointPtr rightPoint() const;
 
 protected:
-    ProcStereoPoint( const ProcPointPtr &leftPoint, const ProcPointPtr &rightPoint );
+    ProcStereoPoint();
 };
 
 class FlowStereoPoint : public ProcStereoPoint
@@ -199,10 +211,10 @@ public:
     FlowPointPtr leftPoint() const;
     FlowPointPtr rightPoint() const;
 
-    static ObjectPtr create( const FlowPointPtr &leftPoint, const FlowPointPtr &rightPoint );
+    static ObjectPtr create();
 
 protected:
-    FlowStereoPoint( const FlowPointPtr &leftPoint, const FlowPointPtr &rightPoint );
+    FlowStereoPoint();
 };
 
 class FeatureStereoPoint : public ProcStereoPoint
@@ -216,10 +228,10 @@ public:
     FeaturePointPtr leftPoint() const;
     FeaturePointPtr rightPoint() const;
 
-    static ObjectPtr create( const FeaturePointPtr &leftPoint, const FeaturePointPtr &rightPoint );
+    static ObjectPtr create();
 
 protected:
-    FeatureStereoPoint( const FeaturePointPtr &leftPoint, const FeaturePointPtr &rightPoint );
+    FeatureStereoPoint();
 };
 
 class ConsecutivePoints : public DoublePoint
@@ -231,7 +243,7 @@ public:
     using ObjectConstPtr = std::shared_ptr< const ConsecutivePoints >;
 
 protected:
-    ConsecutivePoints( const Point2Ptr &point1, const Point2Ptr &point2 );
+    ConsecutivePoints();
 };
 
 }

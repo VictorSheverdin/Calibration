@@ -20,6 +20,8 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/ximgproc.hpp>
 #include <opencv2/cudastereo.hpp>
+#include <opencv2/cudafeatures2d.hpp>
+#include <opencv2/cudaoptflow.hpp>
 
 #include <VimbaCPP/Include/VimbaCPP.h>
 

@@ -2,6 +2,7 @@
 
 #include "map.h"
 
+#include "mappoint.h"
 #include "system.h"
 #include "frame.h"
 
@@ -67,6 +68,20 @@ std::vector< ColorPoint3d > Map::lastSparseCloud() const
     return std::vector< ColorPoint3d >();
 }
 
+const std::vector< MapPointPtr > &Map::mapPoints() const
+{
+    return _points;
+}
+
+MapPointPtr Map::createMapPoint( const ColorPoint3d &point )
+{
+    auto ret = MapPoint::create( point, shared_from_this() );
+
+    _points.push_back( ret );
+
+    return ret;
+}
+
 void Map::track( const StampedStereoImage &image )
 {
     auto frame = ProcStereoFrame::create( shared_from_this() );
@@ -96,7 +111,7 @@ void Map::track( const StampedStereoImage &image )
         consecutiveFrames->extract();
         consecutiveFrames->track();
 
-        if ( frame->leftFrame()->tracksCount() < system->parameters().minimumTracksCount() ) {
+        if ( frame->leftFrame()->stereoTracksCount() < system->parameters().minimumTracksCount() ) {
             frame->prepareFrame();
             frame->extract();
             frame->match();

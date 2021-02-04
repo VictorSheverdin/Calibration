@@ -261,7 +261,11 @@ CvImage ProcFrame::drawTracks() const
 {
     CvImage ret;
 
-    size_t count = 0;
+    size_t stereoTracksCount = 0;
+    size_t allCount = 0;
+
+    static const cv::Scalar stereoTrackColor( 255, 0, 0, 255 );
+    static const cv::Scalar otherTrackColor( 0, 255, 0, 255 );
 
     auto system = parentSystem();
 
@@ -283,7 +287,16 @@ CvImage ProcFrame::drawTracks() const
 
         if ( track ) {
 
-            ++count;
+            cv::Scalar color;
+
+            ++allCount;
+
+            if ( track->mapPoint() ) {
+                ++stereoTracksCount;
+                color = stereoTrackColor;
+            }
+            else
+                color = otherTrackColor;
 
             auto points = track->validPoints();
 
@@ -293,7 +306,7 @@ CvImage ProcFrame::drawTracks() const
                 if ( !prev )
                     prev = j;
                 else {
-                    drawLine( &ret, prev->point2d(), j->point2d(), 2, cv::Scalar( 0, 255, 0, 255 ) );
+                    drawLine( &ret, prev->point2d(), j->point2d(), 2, color );
                     prev = j;
                 }
 
@@ -311,7 +324,16 @@ CvImage ProcFrame::drawTracks() const
 
         if ( track ) {
 
-            ++count;
+            cv::Scalar color;
+
+            ++allCount;
+
+            if ( track->mapPoint() ) {
+                ++stereoTracksCount;
+                color = stereoTrackColor;
+            }
+            else
+                color = otherTrackColor;
 
             auto points = track->validPoints();
 
@@ -321,7 +343,7 @@ CvImage ProcFrame::drawTracks() const
                 if ( !prev )
                     prev = j;
                 else {
-                    drawLine( &ret, prev->point2d(), j->point2d(), 2, cv::Scalar( 0, 255, 0, 255 ) );
+                    drawLine( &ret, prev->point2d(), j->point2d(), 2, color );
                     prev = j;
                 }
 
@@ -333,21 +355,22 @@ CvImage ProcFrame::drawTracks() const
 
     drawFeaturePoints( &ret, points, radius, cv::Scalar( 0, 0, 255, 255 ) );
 
-    drawLabel( &ret, "Tracks count: " + std::to_string( count ), std::min( ret.height(), ret.width() ) * system->parameters().textDrawScale() );
+    drawLabel( &ret, "Stereo tracks count: " + std::to_string( stereoTracksCount ) + ", all tracks count: " + std::to_string( allCount ),
+                    std::min( ret.height(), ret.width() ) * system->parameters().textDrawScale() );
 
     return ret;
 }
 
-size_t ProcFrame::tracksCount() const
+size_t ProcFrame::stereoTracksCount() const
 {
     size_t ret = 0;
 
     for ( auto &i : _flowPoints )
-        if ( i.second->parentTrack() )
+        if ( i.second->parentTrack() && i.second->parentTrack()->mapPoint() )
             ++ret;
 
     for ( auto &i : _featurePoints )
-        if ( i.second->parentTrack() )
+        if ( i.second->parentTrack() && i.second->parentTrack()->mapPoint() )
             ++ret;
 
     return ret;
@@ -809,7 +832,9 @@ FlowStereoPointPtr ProcStereoFrame::createFlowPoint( const size_t leftIndex , co
     auto leftPoint = leftFrame()->createFlowPoint( leftIndex );
     auto rightPoint = rightFrame()->createFlowPoint( rightIndex );
 
-    auto stereoPoint = FlowStereoPoint::create( leftPoint, rightPoint );
+    auto stereoPoint = FlowStereoPoint::create();
+
+    stereoPoint->set(  leftPoint, rightPoint  );
 
     _points.push_back( stereoPoint );
 
@@ -821,7 +846,9 @@ FeatureStereoPointPtr ProcStereoFrame::createFeaturePoint( const size_t leftInde
     auto leftPoint = leftFrame()->createFeaturePoint( leftIndex );
     auto rightPoint = rightFrame()->createFeaturePoint( rightIndex );
 
-    auto stereoPoint = FeatureStereoPoint::create( leftPoint, rightPoint );
+    auto stereoPoint = FeatureStereoPoint::create();
+
+    stereoPoint->set( leftPoint, rightPoint );
 
     _points.push_back( stereoPoint );
 
