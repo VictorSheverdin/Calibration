@@ -41,16 +41,12 @@ public:
     explicit ReconstructionViewWidget( QWidget* parent = nullptr );
 
     void showPath( const bool value );
+    void setPath( const std::vector<cv::Point3d> &points );
 
 protected:
-    vtkSmartPointer< vtkActor > _leftTrajectoryActor;
-    vtkSmartPointer< vtkActor > _rightTrajectoryActor;
+    vtkSmartPointer< vtkActor > _trajectoryActor;
 
-    vtkSmartPointer< vtkActor > _leftCameraActor;
-    vtkSmartPointer< vtkActor > _rightCameraActor;
-
-    void setLeftPath( std::list< cv::Vec3d > &points );
-    void setRightPath( std::list< cv::Vec3d > &points );
+    vtkSmartPointer< vtkActor > _cameraActor;
 
     static void pickingEventHandler( const pcl::visualization::PointPickingEvent &event, void *viewer_void );
 
@@ -65,6 +61,8 @@ class SlamViewWidget : public QSplitter
 
 public:
     explicit SlamViewWidget( QWidget* parent = nullptr );
+
+    void setPath( const std::vector<cv::Point3d> &path );
 
     void setSparseCloud( const std::vector<ColorPoint3d> &points );
     void setPointCloud( const std::vector< ColorPoint3d > &points, const std::string &id,

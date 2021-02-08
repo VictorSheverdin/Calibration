@@ -8,6 +8,7 @@
 #include "parameters.h"
 
 #include "framepoint.h"
+#include "mappoint.h"
 
 #include "track.h"
 
@@ -91,6 +92,9 @@ const cv::Mat &FinalFrame::cameraMatrix() const
 }
 
 // ProcFrame
+const cv::Scalar ProcFrame::_recoverTrackColor( 0, 255, 0, 255 );
+const cv::Scalar ProcFrame::_otherTrackColor( 255, 0, 0, 255 );
+
 ProcFrame::ProcFrame( const StereoFramePtr &parent )
     : FinalFrame( parent )
 {
@@ -168,21 +172,22 @@ const StampedImage &ProcFrame::image() const
 
 cv::Mat ProcFrame::mask() const
 {
-    // TODO:
-    //cv::Mat ret( _image.rows, _image.cols, CV_8U, cv::Scalar( 1 ) );
+    cv::Mat ret( _image.size(), CV_8U, 1 );
 
-    //auto system = parentSystem();
+    auto system = parentSystem();
 
-    //auto tracker = system->flowTracker();
+    auto distance = system->parameters().extractionDistance();
 
-    //auto distance = tracker->extractionDistance();
+    for ( auto &i : _cornerPoints )
+        cv::rectangle( ret, cv::Rect( i.x - distance, i.y - distance, distance * 2, distance * 2 ), 0, cv::FILLED );
 
-    //for ( auto &i : _cornerPoints )
-        //cv::rectangle( ret, cv::Rect( i.x - distance, i.y - distance, distance * 2, distance * 2 ), cv::Scalar( 0 ) );
+    for ( auto &i : _keyPoints ) {
+        auto pt = i.pt;
+        cv::rectangle( ret, cv::Rect( pt.x - distance, pt.y - distance, distance * 2, distance * 2 ), 0, cv::FILLED );
+    }
 
-    //return ret;
+    return ret;
 
-    return cv::Mat();
 }
 
 FlowPointPtr ProcFrame::createFlowPoint( const size_t index )
@@ -261,11 +266,8 @@ CvImage ProcFrame::drawTracks() const
 {
     CvImage ret;
 
-    size_t stereoTracksCount = 0;
+    size_t recoverTracksCount = 0;
     size_t allCount = 0;
-
-    static const cv::Scalar stereoTrackColor( 255, 0, 0, 255 );
-    static const cv::Scalar otherTrackColor( 0, 255, 0, 255 );
 
     auto system = parentSystem();
 
@@ -292,11 +294,11 @@ CvImage ProcFrame::drawTracks() const
             ++allCount;
 
             if ( track->mapPoint() ) {
-                ++stereoTracksCount;
-                color = stereoTrackColor;
+                ++recoverTracksCount;
+                color = _recoverTrackColor;
             }
             else
-                color = otherTrackColor;
+                color = _otherTrackColor;
 
             auto points = track->validPoints();
 
@@ -329,11 +331,11 @@ CvImage ProcFrame::drawTracks() const
             ++allCount;
 
             if ( track->mapPoint() ) {
-                ++stereoTracksCount;
-                color = stereoTrackColor;
+                ++recoverTracksCount;
+                color = _recoverTrackColor;
             }
             else
-                color = otherTrackColor;
+                color = _otherTrackColor;
 
             auto points = track->validPoints();
 
@@ -355,25 +357,31 @@ CvImage ProcFrame::drawTracks() const
 
     drawFeaturePoints( &ret, points, radius, cv::Scalar( 0, 0, 255, 255 ) );
 
-    drawLabel( &ret, "Stereo tracks count: " + std::to_string( stereoTracksCount ) + ", all tracks count: " + std::to_string( allCount ),
+    drawLabel( &ret, "Recover tracks count: " + std::to_string( recoverTracksCount ) + ", all tracks count: " + std::to_string( allCount ),
                     std::min( ret.height(), ret.width() ) * system->parameters().textDrawScale() );
 
     return ret;
 }
 
-size_t ProcFrame::stereoTracksCount() const
+std::vector< ProcPointPtr > ProcFrame::recoverPoints() const
 {
-    size_t ret = 0;
+    std::vector< ProcPointPtr > ret;
 
     for ( auto &i : _flowPoints )
         if ( i.second->parentTrack() && i.second->parentTrack()->mapPoint() )
-            ++ret;
+            ret.push_back( i.second );
 
     for ( auto &i : _featurePoints )
         if ( i.second->parentTrack() && i.second->parentTrack()->mapPoint() )
-            ++ret;
+            ret.push_back( i.second );
 
     return ret;
+
+}
+
+size_t ProcFrame::recoverPointsCount() const
+{
+    return recoverPoints().size();
 }
 
 void ProcFrame::clearMemory()
@@ -403,12 +411,16 @@ size_t ProcFrame::addCornerPoints( const std::vector< cv::Point2f > &points )
 {
     auto ret = _cornerPoints.size();
 
-    std::vector< cv::Point2f > undistortedPoints;
+    if ( !points.empty() ) {
 
-    undistortPoints( points, &undistortedPoints );
+        std::vector< cv::Point2f > undistortedPoints;
 
-    _cornerPoints.insert( _cornerPoints.end(), points.begin(), points.end() );
-    _undistCornerPoints.insert( _undistCornerPoints.end(), undistortedPoints.begin(), undistortedPoints.end() );
+        undistortPoints( points, &undistortedPoints );
+
+        _cornerPoints.insert( _cornerPoints.end(), points.begin(), points.end() );
+        _undistCornerPoints.insert( _undistCornerPoints.end(), undistortedPoints.begin(), undistortedPoints.end() );
+
+    }
 
     return ret;
 }
@@ -592,6 +604,14 @@ const cv::Mat &StereoFrame::translation() const
     return _translation;
 }
 
+cv::Point3d StereoFrame::directTranslation() const
+{
+    cv::Mat directTranslation = rotation().t() * translation();
+
+    return cv::Point3d( directTranslation.at< double >( 0, 0 ), directTranslation.at< double >( 1, 0 ), directTranslation.at< double >( 2, 0 ) );
+}
+
+
 void StereoFrame::setRightRotation( const cv::Mat &value )
 {
     _rightRotation = value;
@@ -655,7 +675,7 @@ ProjectionMatrix FinalStereoFrame::rightProjectionMatrix() const
     ProjectionMatrix ret;
 
     ret.setCameraMatrix( rightFrame()->cameraMatrix() );
-    ret.setRotation( rotation() * rightRotation() );
+    ret.setRotation( rightRotation() * rotation() );
     ret.setTranslation( translation() + rightTranslation() );
 
     return ret;
@@ -690,15 +710,6 @@ void ProcStereoFrame::load( const StampedStereoImage &image )
 {
     leftFrame()->load( image.leftImage() );
     rightFrame()->load( image.rightImage() );
-}
-
-void ProcStereoFrame::prepareFrame()
-{
-    auto system = parentSystem();
-
-    auto tracker = system->tracker();
-
-    tracker->prepareFrame( this );
 }
 
 void ProcStereoFrame::extract()
@@ -785,7 +796,7 @@ size_t ProcStereoFrame::triangulatePoints()
 
                         ++ret;
 
-                        _points[i]->setPoint3d( pt );
+                        _points[ i ]->setPoint3d( pt );
 
                     }
 
@@ -798,6 +809,53 @@ size_t ProcStereoFrame::triangulatePoints()
     }
 
     return ret;
+
+}
+
+double ProcStereoFrame::recoverPose()
+{
+    auto frame = leftFrame();
+
+    auto points = frame->recoverPoints();
+
+    auto system = parentSystem();
+
+    auto maxReprojectionError = system->parameters().maxReprojectionError();
+    auto minRecoverPointsCount = system->parameters().minimumRecoverPointsCount();
+
+    std::vector< cv::Point3f > points3d;
+    std::vector< cv::Point2f > points2d;
+
+    for ( auto &i : points ) {
+
+        auto track = i->parentTrack();
+        auto mapPoint = track->mapPoint();
+
+        points3d.push_back( mapPoint->point().point() );
+        points2d.push_back( i->undistortedPoint() );
+
+    }
+
+    if ( points3d.size() < minRecoverPointsCount )
+        return 0.;
+
+    cv::Mat rvec;
+    cv::Mat tvec;
+
+    std::vector< int > inliers;
+
+    if ( !cv::solvePnPRansac( points3d, points2d, frame->cameraMatrix(), cv::noArray(), rvec, tvec, false, 500, maxReprojectionError, 0.99, inliers, cv::SOLVEPNP_ITERATIVE ) )
+        return 0.;
+
+    // TODO: Remove ountliers throught variable inliers
+
+    cv::Mat rmat;
+    cv::Rodrigues( rvec, rmat );
+
+    setTranslation( tvec );
+    setRotation( rmat );
+
+    return static_cast< double >( inliers.size() ) / points.size();
 
 }
 
@@ -928,38 +986,29 @@ void ProcStereoFrame::setDescriptors( const cv::Mat &left, const cv::Mat &right 
     rightFrame()->setDescriptors( right );
 }
 
-// ConsecutiveFrames
-ConsecutiveFrames::ConsecutiveFrames( const ProcFramePtr &frame1, const ProcFramePtr &frame2, const MapPtr &parent )
+// ConsecutiveFrame
+ConsecutiveFrame::ConsecutiveFrame( const ProcFramePtr &frame1, const ProcFramePtr &frame2, const MapPtr &parent )
     : DoubleFrame( parent )
 {
     set( frame1, frame2 );
 }
 
-ConsecutiveFrames::ObjectPtr ConsecutiveFrames::create( const ProcFramePtr &frame1, const ProcFramePtr &frame2, const MapPtr &parent )
+ConsecutiveFrame::ObjectPtr ConsecutiveFrame::create( const ProcFramePtr &frame1, const ProcFramePtr &frame2, const MapPtr &parent )
 {
-    return ObjectPtr( new ConsecutiveFrames( frame1, frame2, parent ) );
+    return ObjectPtr( new ConsecutiveFrame( frame1, frame2, parent ) );
 }
 
-ProcFramePtr ConsecutiveFrames::frame1() const
+ProcFramePtr ConsecutiveFrame::frame1() const
 {
     return std::dynamic_pointer_cast< ProcFrame >( DoubleFrame::frame1() );
 }
 
-ProcFramePtr ConsecutiveFrames::frame2() const
+ProcFramePtr ConsecutiveFrame::frame2() const
 {
     return std::dynamic_pointer_cast< ProcFrame >( DoubleFrame::frame2() );
 }
 
-void ConsecutiveFrames::prepareFrame()
-{
-    auto system = parentSystem();
-
-    auto tracker = system->tracker();
-
-    tracker->prepareFrame( this );
-}
-
-void ConsecutiveFrames::extract()
+void ConsecutiveFrame::extract()
 {
     auto system = parentSystem();
 
@@ -968,13 +1017,35 @@ void ConsecutiveFrames::extract()
     tracker->extract( this );
 }
 
-void ConsecutiveFrames::track()
+void ConsecutiveFrame::track()
 {
     auto system = parentSystem();
 
     auto tracker = system->tracker();
 
     tracker->match( this );
+}
+
+// ConsecutiveFrame
+ConsecutiveStereoFrame::ConsecutiveStereoFrame( const ProcStereoFramePtr &prevFrame, const ProcStereoFramePtr &nextFrame )
+{
+    set( prevFrame, nextFrame );
+}
+
+void ConsecutiveStereoFrame::set( const ProcStereoFramePtr &prevFrame, const ProcStereoFramePtr &nextFrame )
+{
+    _prevFrame = prevFrame;
+    _nextFrame = nextFrame;
+}
+
+const ProcStereoFramePtr &ConsecutiveStereoFrame::prevFrame() const
+{
+    return _prevFrame;
+}
+
+const ProcStereoFramePtr &ConsecutiveStereoFrame::nextFrame() const
+{
+    return _nextFrame;
 }
 
 }

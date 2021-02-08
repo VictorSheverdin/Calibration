@@ -3,6 +3,7 @@
 #include "thread.h"
 
 #include "system.h"
+#include "frame.h"
 
 #include "src/common/tictoc.h"
 
@@ -63,6 +64,15 @@ std::vector< ColorPoint3d > ProcessorThread::sparseCloud() const
     return ret;
 }
 
+std::vector< cv::Point3d > ProcessorThread::path() const
+{
+    _resultMutex.lock();
+    auto ret = _path;
+    _resultMutex.unlock();
+
+    return ret;
+}
+
 void ProcessorThread::run()
 {
     while( !isInterruptionRequested() ) {
@@ -90,7 +100,7 @@ void ProcessorThread::processNext()
 
         TicToc timer;
 
-        _system->track( frame );
+        auto procFrame = _system->track( frame );
 
         timer.report();
 
@@ -99,7 +109,12 @@ void ProcessorThread::processNext()
         _pointsImage = _system->pointsImage();
         _tracksImage = _system->tracksImage();
         _stereoImage = _system->stereoImage();
-        _sparseCloud = _system->sparseCloud();
+
+        auto lastSparseCloud = procFrame->sparseCloud();
+
+        _sparseCloud.insert( _sparseCloud.end(), lastSparseCloud.begin(), lastSparseCloud.end() );
+
+        _path.push_back( procFrame->directTranslation() );
 
         _resultMutex.unlock();
 

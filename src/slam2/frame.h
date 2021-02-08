@@ -114,7 +114,8 @@ public:
     CvImage drawPoints() const;
     CvImage drawTracks() const;
 
-    size_t stereoTracksCount() const;
+    std::vector< ProcPointPtr > recoverPoints() const;
+    size_t recoverPointsCount() const;
 
     void clearMemory();
 
@@ -137,6 +138,9 @@ protected:
     cv::Mat _descriptors;
 
     std::map< size_t, FeaturePointPtr > _featurePoints;
+
+    static const cv::Scalar _recoverTrackColor;
+    static const cv::Scalar _otherTrackColor;
 
     size_t addCornerPoint( const cv::Point2f &point );
     size_t addCornerPoints( const std::vector< cv::Point2f > &points );
@@ -205,6 +209,8 @@ public:
     void setTranslation( const cv::Mat &value );
     const cv::Mat &translation() const;
 
+    cv::Point3d directTranslation() const;
+
     void setRightRotation( const cv::Mat &value );
     const cv::Mat &rightRotation() const;
 
@@ -269,11 +275,11 @@ public:
 
     void load( const StampedStereoImage &image );
 
-    void prepareFrame();
     void extract();
     void match();
 
     size_t triangulatePoints();
+    double recoverPose();
 
     ProcFramePtr leftFrame() const;
     ProcFramePtr rightFrame() const;
@@ -306,25 +312,44 @@ protected:
 
 };
 
-class ConsecutiveFrames : public DoubleFrame
+class ConsecutiveFrame : public DoubleFrame
 {
 public:
-    using ObjectClass = ConsecutiveFrames;
+    using ObjectClass = ConsecutiveFrame;
     using ParentClass = DoubleFrame;
-    using ObjectPtr = std::shared_ptr< ConsecutiveFrames >;
-    using ObjectConstPtr = std::shared_ptr< const ConsecutiveFrames >;
+    using ObjectPtr = std::shared_ptr< ConsecutiveFrame >;
+    using ObjectConstPtr = std::shared_ptr< const ConsecutiveFrame >;
 
     static ObjectPtr create( const ProcFramePtr &frame1, const ProcFramePtr &frame2, const MapPtr &parent );
 
     ProcFramePtr frame1() const;
     ProcFramePtr frame2() const;
 
-    void prepareFrame();
     void extract();
     void track();
 
 protected:
-    ConsecutiveFrames( const ProcFramePtr &frame1, const ProcFramePtr &frame2, const MapPtr &parent );
+    ConsecutiveFrame( const ProcFramePtr &frame1, const ProcFramePtr &frame2, const MapPtr &parent );
+
+};
+
+class ConsecutiveStereoFrame
+{
+public:
+    using ObjectClass = ConsecutiveStereoFrame;
+    using ObjectPtr = std::shared_ptr< ConsecutiveStereoFrame >;
+    using ObjectConstPtr = std::shared_ptr< const ConsecutiveStereoFrame >;
+
+    ConsecutiveStereoFrame( const ProcStereoFramePtr &prevFrame, const ProcStereoFramePtr &nextFrame );
+
+    void set( const ProcStereoFramePtr &prevFrame, const ProcStereoFramePtr &nextFrame );
+
+    const ProcStereoFramePtr &prevFrame() const;
+    const ProcStereoFramePtr &nextFrame() const;
+
+protected:
+    ProcStereoFramePtr _prevFrame;
+    ProcStereoFramePtr _nextFrame;
 
 };
 

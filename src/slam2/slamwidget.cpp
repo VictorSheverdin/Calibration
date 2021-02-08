@@ -84,12 +84,12 @@ void ReconstructionViewWidget::initialize()
     m_pclViewer->registerPointPickingCallback( ReconstructionViewWidget::pickingEventHandler, m_pclViewer.get() );
 }
 
-vtkSmartPointer< vtkPolyDataMapper > polyLineMapper( std::list< cv::Vec3d > &points )
+vtkSmartPointer< vtkPolyDataMapper > polyLineMapper( const std::vector< cv::Point3d > &points )
 {
     vtkNew< vtkPoints > pts;
 
     for ( auto &i : points )
-        pts->InsertNextPoint( i[ 0 ], i[ 1 ], i[ 2 ] );
+        pts->InsertNextPoint( i.x, i.y, i.z );
 
     vtkNew< vtkPolyLine > polyLine;
      polyLine->GetPointIds()->SetNumberOfIds( points.size() );
@@ -109,48 +109,27 @@ vtkSmartPointer< vtkPolyDataMapper > polyLineMapper( std::list< cv::Vec3d > &poi
      return mapper;
 }
 
-void ReconstructionViewWidget::setLeftPath( std::list< cv::Vec3d > &points )
+void ReconstructionViewWidget::setPath( const std::vector< cv::Point3d > &points )
 {
     auto mapper = polyLineMapper( points );
 
-    if ( !_leftTrajectoryActor ) {
-        _leftTrajectoryActor = vtkSmartPointer< vtkActor >::New();
-        m_renderer->AddActor( _leftTrajectoryActor );
+    if ( !_trajectoryActor ) {
+        _trajectoryActor = vtkSmartPointer< vtkActor >::New();
+        m_renderer->AddActor( _trajectoryActor );
 
     }
 
-     _leftTrajectoryActor->SetMapper( mapper );
-
-}
-
-void ReconstructionViewWidget::setRightPath( std::list< cv::Vec3d > &points )
-{
-    auto mapper = polyLineMapper( points );
-
-    if ( !_rightTrajectoryActor ) {
-        _rightTrajectoryActor = vtkSmartPointer< vtkActor >::New();
-        m_renderer->AddActor( _rightTrajectoryActor );
-
-    }
-
-    _rightTrajectoryActor->SetMapper( mapper );
+     _trajectoryActor->SetMapper( mapper );
 
 }
 
 void ReconstructionViewWidget::showPath( const bool value )
 {
-    if ( _leftTrajectoryActor )
-        _leftTrajectoryActor->SetVisibility( value );
+    if ( _trajectoryActor )
+        _trajectoryActor->SetVisibility( value );
 
-    if ( _rightTrajectoryActor )
-        _rightTrajectoryActor->SetVisibility( value );
-
-    if ( _leftCameraActor )
-        _leftCameraActor->SetVisibility( value );
-
-    if ( _rightCameraActor )
-        _rightCameraActor->SetVisibility( value );
-
+    if ( _cameraActor )
+        _cameraActor->SetVisibility( value );
 }
 
 void ReconstructionViewWidget::pickingEventHandler( const pcl::visualization::PointPickingEvent &event, void *viewer_void )
@@ -196,6 +175,11 @@ void SlamViewWidget::initialize()
 
     setSizes( QList< int >() << widthDiv2  << widthDiv2 );
 
+}
+
+void SlamViewWidget::setPath( const std::vector< cv::Point3d > &path )
+{
+    _view3dWidget->setPath( path );
 }
 
 void SlamViewWidget::setSparseCloud( const std::vector< ColorPoint3d > &points )
@@ -367,6 +351,7 @@ void SlamWidgetBase::updateImages()
 void SlamWidgetBase::update3DView()
 {
     _viewWidget->setSparseCloud( _processorThread->sparseCloud() );
+    _viewWidget->setPath( _processorThread->path() );
 }
 
 // SlamImageWidget

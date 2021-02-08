@@ -4,6 +4,8 @@
 
 #include "map.h"
 
+#include "frame.h"
+
 namespace slam2 {
 
 // System
@@ -48,8 +50,7 @@ CvImage System::pointsImage() const
     if ( !_maps.empty() )
         return _maps.back()->drawPoints();
     else
-        return CvImage();
-}
+        return CvImage();}
 
 CvImage System::tracksImage() const
 {
@@ -67,21 +68,24 @@ CvImage System::stereoImage() const
         return CvImage();
 }
 
-std::vector< ColorPoint3d > System::sparseCloud() const
+ProcStereoFramePtr System::track( const StampedStereoImage &image )
 {
-    if ( !_maps.empty() )
-        return _maps.back()->lastSparseCloud();
-    else
-        return std::vector< ColorPoint3d >();
-}
+    auto procFrame = _maps.back()->track( image );
 
-void System::track( const StampedStereoImage &image )
-{
-    CV_Assert( !_maps.empty() );
+    if ( !procFrame ) {
+        auto lastFrame = _maps.back()->sequence().back();
 
-    CV_Assert( _maps.back() );
+        auto newMap = Map::create( shared_from_this() );
+        _maps.push_back( newMap );
 
-    _maps.back()->track( image );
+        procFrame = _maps.back()->track( image );
+
+        procFrame->setTranslation( lastFrame->translation() );
+        procFrame->setRotation( lastFrame->rotation() );
+
+    }
+
+    return procFrame;
 }
 
 }

@@ -34,9 +34,7 @@ public:
     CvImage tracksImage() const;
     CvImage stereoImage() const;
 
-    std::vector< ColorPoint3d > sparseCloud() const;
-
-    void track( const StampedStereoImage &image );
+    ProcStereoFramePtr track( const StampedStereoImage &image );
 
 protected:
     System( const Parameters &parameters );

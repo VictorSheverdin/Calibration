@@ -14,7 +14,9 @@ class ProcFrame;
 class StereoFrame;
 class FinalStereoFrame;
 class ProcStereoFrame;
-class ConsecutiveFrames;
+class ConsecutiveFrame;
+
+class ConsecutiveStereoFrame;
 
 class Track;
 

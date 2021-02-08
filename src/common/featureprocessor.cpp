@@ -41,7 +41,7 @@ FeatureProcessorBase::FeatureProcessorBase()
 
 void FeatureProcessorBase::initialize()
 {
-    m_ransacReprojectionThreshold = 3.0;
+    m_ransacReprojectionThreshold = 1.0;
     m_ransacConfidence = 0.99;
 }
 
@@ -456,7 +456,7 @@ FastProcessor::FastProcessor()
 
 void FastProcessor::initialize()
 {
-    m_processor = cv::FastFeatureDetector::create( 100 );
+    m_processor = cv::FastFeatureDetector::create( 50 );
 }
 
 cv::Ptr< cv::FastFeatureDetector > FastProcessor::processor() const

@@ -30,6 +30,8 @@ public:
 
     std::vector< ColorPoint3d > sparseCloud() const;
 
+    std::vector< cv::Point3d > path() const;
+
 signals:
     void updateSignal();
 
@@ -44,6 +46,10 @@ protected:
     CvImage _stereoImage;
 
     std::vector< ColorPoint3d > _sparseCloud;
+
+    std::vector< cv::Point3d > _path;
+
+    std::vector< cv::Point3d > _startingPoints;
 
     slam2::SystemPtr _system;
 

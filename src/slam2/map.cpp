@@ -26,8 +26,9 @@ std::shared_ptr< System > Map::parentSystem() const
 
 CvImage Map::drawPoints() const
 {
-    for ( auto i = _sequence.rbegin(); i!= _sequence.rend(); ++i ) {
-        auto procFrame = std::dynamic_pointer_cast< ProcStereoFrame >( *i );
+    if ( _sequence.size() > 1 ) {
+        auto procFrame = std::dynamic_pointer_cast< ProcStereoFrame >( *( ++_sequence.rbegin() ) );
+
         if ( procFrame )
             return procFrame->drawPoints();
     }
@@ -37,8 +38,9 @@ CvImage Map::drawPoints() const
 
 CvImage Map::drawTracks() const
 {
-    for ( auto i = _sequence.rbegin(); i!= _sequence.rend(); ++i ) {
-        auto procFrame = std::dynamic_pointer_cast< ProcStereoFrame >( *i );
+    if ( !_sequence.empty() ) {
+        auto procFrame = std::dynamic_pointer_cast< ProcStereoFrame >( _sequence.back() );
+
         if ( procFrame )
             return procFrame->drawTracks();
     }
@@ -48,24 +50,14 @@ CvImage Map::drawTracks() const
 
 CvImage Map::drawStereo() const
 {
-    for ( auto i = _sequence.rbegin(); i!= _sequence.rend(); ++i ) {
-        auto procFrame = std::dynamic_pointer_cast< ProcStereoFrame >( *i );
+    if ( _sequence.size() > 1 ) {
+        auto procFrame = std::dynamic_pointer_cast< ProcStereoFrame >( *( ++_sequence.rbegin() ) );
+
         if ( procFrame )
             return procFrame->drawStereo();
     }
 
     return CvImage();
-}
-
-std::vector< ColorPoint3d > Map::lastSparseCloud() const
-{
-    for ( auto i = _sequence.rbegin(); i!= _sequence.rend(); ++i ) {
-        auto procFrame = std::dynamic_pointer_cast< ProcStereoFrame >( *i );
-        if ( procFrame )
-            return procFrame->sparseCloud();
-    }
-
-    return std::vector< ColorPoint3d >();
 }
 
 const std::vector< MapPointPtr > &Map::mapPoints() const
@@ -82,7 +74,7 @@ MapPointPtr Map::createMapPoint( const ColorPoint3d &point )
     return ret;
 }
 
-void Map::track( const StampedStereoImage &image )
+ProcStereoFramePtr Map::track( const StampedStereoImage &image )
 {
     auto frame = ProcStereoFrame::create( shared_from_this() );
 
@@ -96,39 +88,46 @@ void Map::track( const StampedStereoImage &image )
 
     frame->load( image );
 
-    if ( _sequence.empty() ) {
-        frame->prepareFrame();
-        frame->extract();
-        frame->match();
-        frame->triangulatePoints();
-    }
-    else {
+    if ( !_sequence.empty() ) {
+
         auto prevFrame = std::dynamic_pointer_cast< ProcStereoFrame >( _sequence.back() );
 
-        auto consecutiveFrames = ConsecutiveFrames::create( prevFrame->leftFrame(), frame->leftFrame(), shared_from_this() );
+        if ( prevFrame ) {
 
-        consecutiveFrames->prepareFrame();
-        consecutiveFrames->extract();
-        consecutiveFrames->track();
+            if ( prevFrame->leftFrame()->recoverPointsCount() < system->parameters().minimumTracksCount() ) {
+                prevFrame->extract();
+                prevFrame->match();
+                prevFrame->triangulatePoints();
 
-        if ( frame->leftFrame()->stereoTracksCount() < system->parameters().minimumTracksCount() ) {
-            frame->prepareFrame();
-            frame->extract();
-            frame->match();
-            frame->triangulatePoints();
+            }
+
+            auto consecutiveFrame = ConsecutiveFrame::create( prevFrame->leftFrame(), frame->leftFrame(), shared_from_this() );
+
+            consecutiveFrame->extract();
+            consecutiveFrame->track();
+
+            auto inliers = frame->recoverPose();
+
+            if ( inliers < system->parameters().minimumInliersRatio() )
+                return ProcStereoFramePtr();
+
         }
-
-        // TEMPORARY:
-        prevFrame->clearMemory();
 
     }
 
     _sequence.push_back( frame );
 
     // TEMPORARY:
-    if ( _sequence.size() > 100 )
+    if ( _sequence.size() > 10 )
         _sequence.pop_front();
 
+    return frame;
+
+}
+
+const std::list< StereoFramePtr > &Map::sequence() const
+{
+    return _sequence;
 }
 
 }

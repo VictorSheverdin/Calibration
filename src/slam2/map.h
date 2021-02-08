@@ -29,12 +29,12 @@ public:
     CvImage drawTracks() const;
     CvImage drawStereo() const;
 
-    std::vector< ColorPoint3d > lastSparseCloud() const;
-
     MapPointPtr createMapPoint( const ColorPoint3d &point );
     const std::vector< MapPointPtr > &mapPoints() const;
 
-    void track( const StampedStereoImage &image );
+    ProcStereoFramePtr track( const StampedStereoImage &image );
+
+    const std::list< StereoFramePtr > &sequence() const;
 
 protected:
     Map( const SystemPtr &parent );

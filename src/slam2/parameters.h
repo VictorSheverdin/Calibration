@@ -91,6 +91,14 @@ public:
 
     double maxReprojectionError() const;
 
+    size_t minimumRecoverPointsCount() const;
+
+    double minimumInliersRatio() const;
+
+    double extractionDistance() const;
+
+    double minimumStereoDisparity() const;
+
     double pointsDrawScale() const;
     double textDrawScale() const;
 
@@ -110,6 +118,14 @@ protected:
     size_t _cornerExtractionCount;
 
     size_t _minimumTracksCount;
+
+    double _extractionDistance;
+
+    size_t _minimumRecoverPointsCount;
+
+    double _minimumInliersRatio;
+
+    double _minimumStereoDisparity;
 
 private:
     void initialize();

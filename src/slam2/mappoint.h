@@ -24,7 +24,7 @@ public:
     const ColorPoint3d &point() const;
 
 protected:
-    MapPoint( const ColorPoint3d &point, const MapPtr &map );
+    MapPoint( const ColorPoint3d &point, const MapPtr &parent );
 
     static ObjectPtr create( const ColorPoint3d &point, const MapPtr &parent );
 

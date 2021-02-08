@@ -83,7 +83,18 @@ void Parameters::initialize()
     _cornerExtractionCount = 1 << 10;
     _minimumTracksCount = 1 << 7;
 
-    setTracker( std::make_shared< SuperGlueTracker >() );
+    _minimumRecoverPointsCount = 1 << 5;
+    _minimumInliersRatio = 0.7;
+
+    _extractionDistance = 10.;
+
+    _minimumStereoDisparity = 5.;
+
+    auto tracker = std::make_shared< GPUFlowTracker >();
+
+    setTracker( tracker );
+
+
 }
 
 void Parameters::setFrameSize( const cv::Size &value )
@@ -178,7 +189,27 @@ const cv::Mat &Parameters::rightTranslation() const
 
 double Parameters::maxReprojectionError() const
 {
-    return 2.;
+    return 3.;
+}
+
+size_t Parameters::minimumRecoverPointsCount() const
+{
+    return _minimumRecoverPointsCount;
+}
+
+double Parameters::minimumInliersRatio() const
+{
+    return _minimumInliersRatio;
+}
+
+double Parameters::extractionDistance() const
+{
+    return _extractionDistance;
+}
+
+double Parameters::minimumStereoDisparity() const
+{
+    return _minimumStereoDisparity;
 }
 
 double Parameters::pointsDrawScale() const

@@ -6,7 +6,7 @@ namespace slam2 {
 
 // MapPoint
 MapPoint::MapPoint( const ColorPoint3d &point, const MapPtr &parent )
- : Parent_Shared_Ptr< Map >( parent )
+    : Parent_Shared_Ptr< Map >( parent )
 {
     setPoint( point );
 }

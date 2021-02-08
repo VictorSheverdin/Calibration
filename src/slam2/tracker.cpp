@@ -2,12 +2,21 @@
 
 #include "tracker.h"
 
+#include "system.h"
 #include "map.h"
 #include "track.h"
 #include "frame.h"
 #include "framepoint.h"
+#include "mappoint.h"
 
 namespace slam2 {
+
+// Tracker
+void Tracker::track( ConsecutiveStereoFrame &frames )
+{
+    auto prevFrame = frames.prevFrame();
+    auto nextFrame = frames.nextFrame();
+}
 
 // FlowTracker
 FlowTracker::FlowTracker()
@@ -18,6 +27,7 @@ FlowTracker::FlowTracker()
 void FlowTracker::initialize()
 {
     _pointsDetector = std::make_unique< FastProcessor >();
+    _pointsDetector->setThreshold( 100 );
 }
 
 double FlowTracker::extractPrecision() const
@@ -60,6 +70,26 @@ void FlowTracker::setLevels( const size_t value )
     _flowProcessor->setLevels( value );
 }
 
+void FlowTracker::setRansacReprojectionThreshold( const double &value )
+{
+    _flowProcessor->setRansacReprojectionThreshold( value );
+}
+
+double FlowTracker::ransacReprojectionThreshold() const
+{
+    return _flowProcessor->ransacReprojectionThreshold();
+}
+
+void FlowTracker::setRansacConfidence( const double &value )
+{
+    _flowProcessor->setRansacConfidence( value );
+}
+
+double FlowTracker::ransacConfidence() const
+{
+    return _flowProcessor->ransacConfidence();
+}
+
 void FlowTracker::extractPoints( ProcFrame *frame )
 {
     std::vector< cv::KeyPoint > keyPoints;
@@ -74,16 +104,20 @@ void FlowTracker::extractPoints( ProcFrame *frame )
         cornerPoints.push_back( i.pt );
 
     frame->addCornerPoints( cornerPoints );
-}
-/*
-void FlowTracker::extractPoints( ProcFrame *frame )
-{
-    std::vector< cv::Point2f > cornerPoints;
+
+    /*std::vector< cv::Point2f > cornerPoints;
 
     _flowProcessor->extractPoints( frame->image(), frame->mask(), &cornerPoints, frame->extractionCornersCount() );
 
-    frame->addCornerPoints( cornerPoints );
-}*/
+    frame->addCornerPoints( cornerPoints );*/
+
+}
+
+void FlowTracker::track( ConsecutiveStereoFrame &frames )
+{
+    auto prevFrame = frames.prevFrame();
+    auto nextFrame = frames.nextFrame();
+}
 
 // CPUFlowTracker
 CPUFlowTracker::CPUFlowTracker()
@@ -102,19 +136,9 @@ void CPUFlowTracker::prepareFrame( ProcFrame *frame )
         std::vector< cv::Mat > pyramid;
         processor()->buildImagePyramid( frame->image(), &pyramid );
         frame->setImagePyramid( pyramid );
+
     }
 
-}
-
-void CPUFlowTracker::prepareFrame( ProcStereoFrame *frame )
-{
-    prepareFrame( frame->leftFrame().get() );
-    prepareFrame( frame->rightFrame().get() );
-}
-
-void CPUFlowTracker::prepareFrame( ConsecutiveFrames *frame )
-{
-    prepareFrame( frame->frame2().get() );
 }
 
 void CPUFlowTracker::extract( ProcStereoFrame *frame )
@@ -122,18 +146,31 @@ void CPUFlowTracker::extract( ProcStereoFrame *frame )
     extractPoints( frame->leftFrame().get() );
 }
 
-void CPUFlowTracker::extract( ConsecutiveFrames * )
+void CPUFlowTracker::extract( ConsecutiveFrame *frame )
 {
+    extractPoints( frame->frame1().get() );
 }
 
 void CPUFlowTracker::match( ProcStereoFrame *frame )
 {
+    auto system = frame->parentSystem();
+
     std::vector< FlowTrackResult > trackResults;
 
     auto leftFrame = frame->leftFrame();
     auto rightFrame = frame->rightFrame();
 
+    prepareFrame( leftFrame.get() );
+    prepareFrame( rightFrame.get() );
+
     processor()->track( leftFrame->imagePyramid(), leftFrame->cornerPoints(), rightFrame->imagePyramid(), &trackResults );
+
+    for ( auto i = trackResults.begin(); i != trackResults.end(); ) {
+        if ( cv::norm( leftFrame->cornerPoint( i->index ) - *i ) < system->parameters().minimumStereoDisparity() )
+            i = trackResults.erase( i );
+        else
+            ++i;
+    }
 
     std::vector< size_t > indexes;
 
@@ -157,12 +194,15 @@ void CPUFlowTracker::match( ProcStereoFrame *frame )
 
 }
 
-void CPUFlowTracker::match( ConsecutiveFrames *frame )
+void CPUFlowTracker::match( ConsecutiveFrame *frame )
 {
     auto frame1 = frame->frame1();
     auto frame2 = frame->frame2();
 
     std::vector< FlowTrackResult > trackResults;
+
+    prepareFrame( frame1.get() );
+    prepareFrame( frame2.get() );
 
     processor()->track( frame1->imagePyramid(), frame1->cornerPoints(), frame2->imagePyramid(), &trackResults );
 
@@ -186,7 +226,6 @@ void CPUFlowTracker::match( ConsecutiveFrames *frame )
     auto map = frame->parentMap();
 
     for ( auto &i : inliers ) {
-
         auto flowPoint = frame2->createFlowPoint( indexes[ i ]  );
 
         auto prevFlowPoint = frame1->flowPoint( trackResults[ i ].index );
@@ -199,21 +238,29 @@ void CPUFlowTracker::match( ConsecutiveFrames *frame )
                 track = frame1->createTrack();
                 track->addPoint( prevFlowPoint );
 
-                auto stereoPoint = prevFlowPoint->stereoPoint();
+            }
 
-                if ( stereoPoint ) {
+            track->addPoint( flowPoint );
 
-                    if ( stereoPoint->isPoint3dExist() ) {
-                        auto mapPoint = map->createMapPoint( ColorPoint3d( stereoPoint->point3d(), stereoPoint->color() ) );
+            auto stereoPoint = prevFlowPoint->stereoPoint();
+
+            if ( stereoPoint ) {
+
+                if ( stereoPoint->isPoint3dExist() ) {
+
+                    auto mapPoint = track->mapPoint();
+
+                    if ( !mapPoint ) {
+                        mapPoint = map->createMapPoint( ColorPoint3d( stereoPoint->point3d(), stereoPoint->color() ) );
                         track->setMapPoint( mapPoint );
-
                     }
+                    else
+                        mapPoint->setPoint( ColorPoint3d( stereoPoint->point3d(), stereoPoint->color() ) );
 
                 }
 
             }
 
-            track->addPoint( flowPoint );
 
         }
 
@@ -237,38 +284,33 @@ void GPUFlowTracker::initialize()
     _flowProcessor = std::unique_ptr< FlowProcessor >( new GPUFlowProcessor() );
 }
 
-void GPUFlowTracker::prepareFrame( ProcFrame * )
-{
-}
-
-void GPUFlowTracker::prepareFrame( ProcStereoFrame *frame )
-{
-    prepareFrame( frame->leftFrame().get() );
-    prepareFrame( frame->rightFrame().get() );
-}
-
-void GPUFlowTracker::prepareFrame( ConsecutiveFrames *frame )
-{
-    prepareFrame( frame->frame2().get() );
-}
-
 void GPUFlowTracker::extract( ProcStereoFrame *frame )
 {
     extractPoints( frame->leftFrame().get() );
 }
 
-void GPUFlowTracker::extract( ConsecutiveFrames * )
+void GPUFlowTracker::extract( ConsecutiveFrame *frame )
 {
+    extractPoints( frame->frame1().get() );
 }
 
 void GPUFlowTracker::match( ProcStereoFrame *frame )
 {
+    auto system = frame->parentSystem();
+
     std::vector< FlowTrackResult > trackResults;
 
     auto leftFrame = frame->leftFrame();
     auto rightFrame = frame->rightFrame();
 
     processor()->track( leftFrame->image(), leftFrame->cornerPoints(), rightFrame->image(), &trackResults );
+
+    for ( auto i = trackResults.begin(); i != trackResults.end(); ) {
+        if ( cv::norm( leftFrame->cornerPoint( i->index ) - *i ) < system->parameters().minimumStereoDisparity() )
+            i = trackResults.erase( i );
+        else
+            ++i;
+    }
 
     std::vector< size_t > indexes;
 
@@ -292,7 +334,7 @@ void GPUFlowTracker::match( ProcStereoFrame *frame )
 
 }
 
-void GPUFlowTracker::match( ConsecutiveFrames *frame )
+void GPUFlowTracker::match( ConsecutiveFrame *frame )
 {
     auto frame1 = frame->frame1();
     auto frame2 = frame->frame2();
@@ -333,21 +375,29 @@ void GPUFlowTracker::match( ConsecutiveFrames *frame )
                 track = frame1->createTrack();
                 track->addPoint( prevFlowPoint );
 
-                auto stereoPoint = prevFlowPoint->stereoPoint();
+            }
 
-                if ( stereoPoint ) {
+            track->addPoint( flowPoint );
 
-                    if ( stereoPoint->isPoint3dExist() ) {
-                        auto mapPoint = map->createMapPoint( ColorPoint3d( stereoPoint->point3d(), stereoPoint->color() ) );
+            auto stereoPoint = prevFlowPoint->stereoPoint();
+
+            if ( stereoPoint ) {
+
+                if ( stereoPoint->isPoint3dExist() ) {
+
+                    auto mapPoint = track->mapPoint();
+
+                    if ( !mapPoint ) {
+                        mapPoint = map->createMapPoint( ColorPoint3d( stereoPoint->point3d(), stereoPoint->color() ) );
                         track->setMapPoint( mapPoint );
-
                     }
+                    else
+                        mapPoint->setPoint( ColorPoint3d( stereoPoint->point3d(), stereoPoint->color() ) );
 
                 }
 
             }
 
-            track->addPoint( flowPoint );
 
         }
 
@@ -361,10 +411,6 @@ GPUFlowProcessor *GPUFlowTracker::processor() const
 }
 
 // FeatureTracker
-void FeatureTracker::prepareFrame( ProcFrame * )
-{
-}
-
 void FeatureTracker::extract( ProcFrame *frame )
 {
     std::vector< cv::Point2f > cornerPoints;
@@ -378,15 +424,24 @@ void FeatureTracker::extract( ProcFrame *frame )
     frame->setDescriptors( descriptors );
 }
 
-void FeatureTracker::prepareFrame( ProcStereoFrame *frame )
+void FeatureTracker::setRansacReprojectionThreshold( const double &value )
 {
-    prepareFrame( frame->leftFrame().get() );
-    prepareFrame( frame->rightFrame().get() );
+    _descriptorProcessor->setRansacReprojectionThreshold( value );
 }
 
-void FeatureTracker::prepareFrame( ConsecutiveFrames *frame )
+double FeatureTracker::ransacReprojectionThreshold() const
 {
-    prepareFrame( frame->frame2().get() );
+    return _descriptorProcessor->ransacReprojectionThreshold();
+}
+
+void FeatureTracker::setRansacConfidence( const double &value )
+{
+    _descriptorProcessor->setRansacConfidence( value );
+}
+
+double FeatureTracker::ransacConfidence() const
+{
+    return _descriptorProcessor->ransacConfidence();
 }
 
 void FeatureTracker::extract( ProcStereoFrame *frame )
@@ -395,7 +450,7 @@ void FeatureTracker::extract( ProcStereoFrame *frame )
     extract( frame->rightFrame().get() );
 }
 
-void FeatureTracker::extract( ConsecutiveFrames *frame )
+void FeatureTracker::extract( ConsecutiveFrame *frame )
 {
     extract( frame->frame2().get() );
 }
@@ -428,7 +483,7 @@ void FeatureTracker::match( ProcStereoFrame *frame )
         frame->createFeaturePoint( matches[ i ].queryIdx, matches[ i ].trainIdx );
 }
 
-void FeatureTracker::match( ConsecutiveFrames *frame )
+void FeatureTracker::match( ConsecutiveFrame *frame )
 {
     auto frame1 = frame->frame1();
     auto frame2 = frame->frame2();
@@ -487,6 +542,11 @@ void FeatureTracker::match( ConsecutiveFrames *frame )
         }
 
     }
+
+}
+
+void FeatureTracker::track( ConsecutiveStereoFrame &frames )
+{
 
 }
 
@@ -567,10 +627,6 @@ void SuperGlueTracker::initialize()
     _processor = std::make_unique< SuperGlueProcessor >( "superpoint_fp32_1024.eng", "superglue_fp32.eng" );
 }
 
-void SuperGlueTracker::prepareFrame( ProcFrame * )
-{
-}
-
 void SuperGlueTracker::extract( ProcFrame *frame )
 {
     if ( frame->keyPoints().empty() ) {
@@ -590,15 +646,24 @@ void SuperGlueTracker::extract( ProcFrame *frame )
 
 }
 
-void SuperGlueTracker::prepareFrame( ProcStereoFrame *frame )
+void SuperGlueTracker::setRansacReprojectionThreshold( const double &value )
 {
-    prepareFrame( frame->leftFrame().get() );
-    prepareFrame( frame->rightFrame().get() );
+    _processor->setRansacReprojectionThreshold( value );
 }
 
-void SuperGlueTracker::prepareFrame( ConsecutiveFrames *frame )
+double SuperGlueTracker::ransacReprojectionThreshold() const
 {
-    prepareFrame( frame->frame2().get() );
+    return _processor->ransacReprojectionThreshold();
+}
+
+void SuperGlueTracker::setRansacConfidence( const double &value )
+{
+    _processor->setRansacConfidence( value );
+}
+
+double SuperGlueTracker::ransacConfidence() const
+{
+    return _processor->ransacConfidence();
 }
 
 void SuperGlueTracker::extract( ProcStereoFrame *frame )
@@ -607,7 +672,7 @@ void SuperGlueTracker::extract( ProcStereoFrame *frame )
     extract( frame->rightFrame().get() );
 }
 
-void SuperGlueTracker::extract( ConsecutiveFrames *frame )
+void SuperGlueTracker::extract( ConsecutiveFrame *frame )
 {
     extract( frame->frame2().get() );
 }
@@ -640,7 +705,7 @@ void SuperGlueTracker::match( ProcStereoFrame *frame )
         frame->createFeaturePoint( matches[ i ].queryIdx, matches[ i ].trainIdx );
 }
 
-void SuperGlueTracker::match( ConsecutiveFrames *frame )
+void SuperGlueTracker::match( ConsecutiveFrame *frame )
 {
     auto frame1 = frame->frame1();
     auto frame2 = frame->frame2();
@@ -700,6 +765,10 @@ void SuperGlueTracker::match( ConsecutiveFrames *frame )
 
     }
 
+}
+
+void SuperGlueTracker::track( ConsecutiveStereoFrame &frames )
+{
 }
 
 SuperGlueProcessor *SuperGlueTracker::processor() const
