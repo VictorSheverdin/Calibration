@@ -6,7 +6,7 @@ SlamGeometry::SlamGeometry()
 {
 }
 
-void SlamGeometry::addPath( const StereoCameraMatrix &matrix )
+void SlamGeometry::addPath( const StereoProjectionMatrix &matrix )
 {
     m_path.push_back( matrix );
 }
@@ -22,7 +22,7 @@ void SlamGeometry::addPoints( const std::list< ColorPoint3d > &points )
         addPoint( i );
 }
 
-const std::list< StereoCameraMatrix > &SlamGeometry::path() const
+const std::list< StereoProjectionMatrix > &SlamGeometry::path() const
 {
     return m_path;
 }

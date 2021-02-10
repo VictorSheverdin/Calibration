@@ -28,7 +28,7 @@ const cv::Rect &StereoRect::right() const
     return _right;
 }
 
-// StereoCameraMatrix
+// StereoProjectionMatrix
 StereoCameraMatrix::StereoCameraMatrix( const cv::Mat &left, const cv::Mat &right )
 {
     set( left, right );
@@ -80,31 +80,44 @@ Parameters::Parameters()
 
 void Parameters::initialize()
 {
-    _cornerExtractionCount = 1 << 10;
-    _minimumTracksCount = 1 << 7;
+    _cornerExtractionCount = 1 << 11;
+    _minimumTracksCount = 1 << 8;
 
-    _minimumRecoverPointsCount = 1 << 5;
-    _minimumInliersRatio = 0.7;
+    _minimumRecoverPointsCount = 1 << 6;
+    _minimumInliersRatio = 0.5;
 
     _extractionDistance = 10.;
 
-    _minimumStereoDisparity = 5.;
+    _minimumStereoDisparity = 10.;
+
+    _maxReprojectionError = 5.;
 
     auto tracker = std::make_shared< GPUFlowTracker >();
+    tracker->setRansacReprojectionThreshold( 3. );
 
     setTracker( tracker );
 
 
 }
 
-void Parameters::setFrameSize( const cv::Size &value )
+void Parameters::setLeftFrameSize( const cv::Size &value )
 {
-    _frameSize = value;
+    _leftFrameSize = value;
 }
 
-const cv::Size &Parameters::frameSize() const
+const cv::Size &Parameters::leftFrameSize() const
 {
-    return _frameSize;
+    return _leftFrameSize;
+}
+
+void Parameters::setRightFrameSize( const cv::Size &value )
+{
+    _rightFrameSize = value;
+}
+
+const cv::Size &Parameters::rightFrameSize() const
+{
+    return _rightFrameSize;
 }
 
 StereoRect Parameters::processRect() const
@@ -189,7 +202,7 @@ const cv::Mat &Parameters::rightTranslation() const
 
 double Parameters::maxReprojectionError() const
 {
-    return 3.;
+    return _maxReprojectionError;
 }
 
 size_t Parameters::minimumRecoverPointsCount() const

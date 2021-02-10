@@ -132,7 +132,7 @@ void ReconstructionViewWidget::setRightPath( std::list< cv::Vec3d > &points )
 
 }
 
-void ReconstructionViewWidget::setPath( const std::list< StereoCameraMatrix > &path )
+void ReconstructionViewWidget::setPath( const std::list< StereoProjectionMatrix > &path )
 {
     std::list< cv::Vec3d > leftPoints;
     std::list< cv::Vec3d > rightPoints;
@@ -176,7 +176,7 @@ void ReconstructionViewWidget::showPath( const bool value )
 
 }
 
-void ReconstructionViewWidget::setFrustum( const StereoCameraMatrix &cameraMatrix )
+void ReconstructionViewWidget::setFrustum( const StereoProjectionMatrix &cameraMatrix )
 {
     setLeftFrustum( cameraMatrix.leftProjectionMatrix() );
     setRightFrustum( cameraMatrix.rightProjectionMatrix() );
@@ -1114,7 +1114,7 @@ void SlamViewWidget::initialize()
 
 }
 
-void SlamViewWidget::setPath( const std::list< StereoCameraMatrix > &path )
+void SlamViewWidget::setPath( const std::list< StereoProjectionMatrix > &path )
 {
     _view3dWidget->setPath( path );
 }

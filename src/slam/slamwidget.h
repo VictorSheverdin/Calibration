@@ -47,7 +47,7 @@ class ReconstructionViewWidget : public PCLWidget
 public:
     explicit ReconstructionViewWidget( QWidget* parent = nullptr );
 
-    void setPath( const std::list< StereoCameraMatrix > &path );
+    void setPath( const std::list< StereoProjectionMatrix > &path );
 
     void showPath( const bool value );
 
@@ -61,7 +61,7 @@ protected:
     void setLeftPath( std::list< cv::Vec3d > &points );
     void setRightPath( std::list< cv::Vec3d > &points );
 
-    void setFrustum( const StereoCameraMatrix &cameraMatrix );
+    void setFrustum( const StereoProjectionMatrix &cameraMatrix );
     void setLeftFrustum( const ProjectionMatrix &cameraMatrix );
     void setRightFrustum( const ProjectionMatrix &cameraMatrix );
 
@@ -336,7 +336,7 @@ class SlamViewWidget : public QSplitter
 public:
     explicit SlamViewWidget( QWidget* parent = nullptr );
 
-    void setPath( const std::list< StereoCameraMatrix > &path );
+    void setPath( const std::list< StereoProjectionMatrix > &path );
     void setSparseCloud( const std::vector< ColorPoint3d > &points );
     void setPointCloud( const std::vector< ColorPoint3d> &points, const std::string &id,
                         const Eigen::Vector4f &origin = Eigen::Vector4f::Zero(),

@@ -60,21 +60,20 @@ CvImage Map::drawStereo() const
     return CvImage();
 }
 
-const std::vector< MapPointPtr > &Map::mapPoints() const
+std::vector< ColorPoint3d > Map::lastSparseCloud() const
 {
-    return _points;
+    if ( _sequence.size() > 1 ) {
+        auto stereoFrame = *( ++_sequence.rbegin() );
+
+        if ( stereoFrame )
+            return stereoFrame->sparseCloud();
+    }
+
+    return std::vector< ColorPoint3d >();
+
 }
 
-MapPointPtr Map::createMapPoint( const ColorPoint3d &point )
-{
-    auto ret = MapPoint::create( point, shared_from_this() );
-
-    _points.push_back( ret );
-
-    return ret;
-}
-
-ProcStereoFramePtr Map::track( const StampedStereoImage &image )
+bool Map::track( const StampedStereoImage &image )
 {
     auto frame = ProcStereoFrame::create( shared_from_this() );
 
@@ -108,8 +107,10 @@ ProcStereoFramePtr Map::track( const StampedStereoImage &image )
 
             auto inliers = frame->recoverPose();
 
+            qDebug() << inliers;
+
             if ( inliers < system->parameters().minimumInliersRatio() )
-                return ProcStereoFramePtr();
+                return false;
 
         }
 
@@ -121,7 +122,7 @@ ProcStereoFramePtr Map::track( const StampedStereoImage &image )
     if ( _sequence.size() > 10 )
         _sequence.pop_front();
 
-    return frame;
+    return true;
 
 }
 
@@ -129,5 +130,14 @@ const std::list< StereoFramePtr > &Map::sequence() const
 {
     return _sequence;
 }
+
+StereoFramePtr Map::lastFrame() const
+{
+    if ( !_sequence.empty() )
+        return _sequence.back();
+    else
+        return StereoFramePtr();
+}
+
 
 }

@@ -27,7 +27,7 @@ public:
 
     virtual ~Map() = default;
 
-    static ObjectPtr create( const StereoCameraMatrix &cameraMatrix, const WorldPtr &parentWorld );
+    static ObjectPtr create( const StereoProjectionMatrix &cameraMatrix, const WorldPtr &parentWorld );
 
     WorldPtr parentWorld() const;
 
@@ -49,7 +49,7 @@ public:
 
     bool isRudimental() const;
 
-    StereoCameraMatrix backProjectionMatrix() const;
+    StereoProjectionMatrix backProjectionMatrix() const;
 
     bool track( const StampedImage &leftImage, const StampedImage &rightImage );
 
@@ -57,11 +57,11 @@ public:
 protected:
     using WorldPtrImpl = std::weak_ptr< World >;
 
-    Map( const StereoCameraMatrix &projectionMatrix, const WorldPtr &parentWorld );
+    Map( const StereoProjectionMatrix &projectionMatrix, const WorldPtr &parentWorld );
 
     WorldPtrImpl m_parentWorld;
 
-    StereoCameraMatrix m_projectionMatrix;
+    StereoProjectionMatrix m_projectionMatrix;
 
     std::set< MapPointPtr > m_mapPoints;
 

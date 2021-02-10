@@ -16,7 +16,7 @@
 namespace slam {
 
 // Map
-Map::Map( const StereoCameraMatrix &projectionMatrix, const WorldPtr &parentWorld )
+Map::Map( const StereoProjectionMatrix &projectionMatrix, const WorldPtr &parentWorld )
     :  m_parentWorld( parentWorld ), m_projectionMatrix( projectionMatrix )
 {
     initialize();
@@ -26,7 +26,7 @@ void Map::initialize()
 {
 }
 
-Map::ObjectPtr Map::create( const StereoCameraMatrix &cameraMatrix , const WorldPtr &parentWorld )
+Map::ObjectPtr Map::create( const StereoProjectionMatrix &cameraMatrix , const WorldPtr &parentWorld )
 {
     return ObjectPtr( new Map( cameraMatrix, parentWorld ) );
 }
@@ -154,7 +154,7 @@ bool Map::isRudimental() const
     return m_frames.size() <= 1;
 }
 
-StereoCameraMatrix Map::backProjectionMatrix() const
+StereoProjectionMatrix Map::backProjectionMatrix() const
 {
     for ( auto i = m_frames.rbegin(); i != m_frames.rend(); ++i ) {
 

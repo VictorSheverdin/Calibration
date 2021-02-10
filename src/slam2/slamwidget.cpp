@@ -109,27 +109,161 @@ vtkSmartPointer< vtkPolyDataMapper > polyLineMapper( const std::vector< cv::Poin
      return mapper;
 }
 
-void ReconstructionViewWidget::setPath( const std::vector< cv::Point3d > &points )
+cv::Point3d calcTranslation( const ProjectionMatrix &cameraMatrix )
+{
+    auto rot = cameraMatrix.rotation().t();
+
+    cv::Mat translation = -rot * cameraMatrix.translation();
+    cv::Point3d translationVec( translation.at< double >( 0, 0 ), translation.at< double >( 1, 0 ), translation.at< double >( 2, 0 ) );
+
+    return translationVec;
+}
+
+void ReconstructionViewWidget::setPath( const std::vector< StereoProjectionMatrix > &points )
+{
+    std::vector< cv::Point3d > leftPoints, rightPoints;
+
+    for ( auto &i : points ) {
+        leftPoints.push_back( calcTranslation( i.leftProjectionMatrix() ) );
+        rightPoints.push_back( calcTranslation( i.rightProjectionMatrix() ) );
+    }
+
+    setLeftPath( leftPoints );
+    setRightPath( rightPoints );
+
+}
+
+void ReconstructionViewWidget::setLeftPath( const std::vector< cv::Point3d > &points )
 {
     auto mapper = polyLineMapper( points );
 
-    if ( !_trajectoryActor ) {
-        _trajectoryActor = vtkSmartPointer< vtkActor >::New();
-        m_renderer->AddActor( _trajectoryActor );
+    if ( !_leftTrajectoryActor ) {
+        _leftTrajectoryActor = vtkSmartPointer< vtkActor >::New();
+        m_renderer->AddActor( _leftTrajectoryActor );
 
     }
 
-     _trajectoryActor->SetMapper( mapper );
+     _leftTrajectoryActor->SetMapper( mapper );
+
+}
+
+void ReconstructionViewWidget::setRightPath( const std::vector< cv::Point3d > &points )
+{
+    auto mapper = polyLineMapper( points );
+
+    if ( !_rightTrajectoryActor ) {
+        _rightTrajectoryActor = vtkSmartPointer< vtkActor >::New();
+        m_renderer->AddActor( _rightTrajectoryActor );
+
+    }
+
+     _rightTrajectoryActor->SetMapper( mapper );
+
+}
+
+vtkSmartPointer< vtkPolyDataMapper > cameraMapper( const ProjectionMatrix &cameraMatrix )
+{
+    double fx = cameraMatrix.fx();
+    double fy = cameraMatrix.fy();
+    double cy = cameraMatrix.cy();
+
+    double fovy = 2.0 * atan2( cy, fy ) * 180.0 / CV_PI;
+    double aspectRatio = fy / fx;
+    double scale = 0.2;
+
+    vtkNew< vtkCamera > camera;
+
+    auto rot = cameraMatrix.rotation().t();
+
+    auto translationVec = calcTranslation( cameraMatrix );
+
+    cv::Mat upVec = ( cv::Mat_< double >( 3, 1 ) << 0.0, 1.0, 0.0 );
+    cv::Mat focalVec = ( cv::Mat_< double >( 3, 1 ) << 0.0, 0.0, 1.0 );
+
+    cv::Mat rotUpVec = rot * upVec;
+    cv::Mat rotFocalVec = rot * focalVec;
+
+    camera->SetViewAngle( fovy );
+    camera->SetPosition( translationVec.x, translationVec.y, translationVec.z );
+    camera->SetViewUp( rotUpVec.at< double >( 0 ), rotUpVec.at< double >( 1 ), rotUpVec.at< double >( 2 ) );
+    camera->SetFocalPoint( translationVec.x + rotFocalVec.at< double >( 0 ),
+                                    translationVec.y + rotFocalVec.at< double >( 1 ),
+                                    translationVec.z + rotFocalVec.at< double >( 2 ) );
+    camera->SetClippingRange( 1e-9, scale );
+
+    double planesArray[ 24 ];
+    camera->GetFrustumPlanes( aspectRatio, planesArray );
+
+    vtkNew< vtkPlanes > planes;
+    planes->SetFrustumPlanes( planesArray );
+
+    vtkNew< vtkFrustumSource > frustumSource;
+    frustumSource->ShowLinesOff();
+    frustumSource->SetPlanes( planes );
+    frustumSource->Update();
+
+    vtkPolyData* frustum = frustumSource->GetOutput();
+
+    vtkNew< vtkPolyDataMapper > mapper;
+    mapper->SetInputData( frustum );
+
+    return mapper;
+}
+
+void ReconstructionViewWidget::setFrustum( const StereoProjectionMatrix &cameraMatrix )
+{
+    setLeftFrustum( cameraMatrix.leftProjectionMatrix() );
+    setRightFrustum( cameraMatrix.rightProjectionMatrix() );
+}
+
+void ReconstructionViewWidget::setLeftFrustum( const ProjectionMatrix &cameraMatrix )
+{
+    auto mapper = cameraMapper( cameraMatrix );
+
+    if ( !_leftCameraActor ) {
+        _leftCameraActor = vtkSmartPointer< vtkActor >::New();
+        _leftCameraActor->GetProperty()->SetRepresentationToWireframe();
+
+        m_renderer->AddActor( _leftCameraActor );
+
+    }
+
+    _leftCameraActor->SetMapper( mapper ) ;
+
+}
+
+void ReconstructionViewWidget::setRightFrustum( const ProjectionMatrix &cameraMatrix )
+{
+    auto mapper = cameraMapper( cameraMatrix );
+
+    if ( !_rightCameraActor ) {
+        _rightCameraActor = vtkSmartPointer< vtkActor >::New();
+        _rightCameraActor->GetProperty()->SetRepresentationToWireframe();
+
+        m_renderer->AddActor( _rightCameraActor );
+
+    }
+
+    _rightCameraActor->SetMapper( mapper ) ;
 
 }
 
 void ReconstructionViewWidget::showPath( const bool value )
 {
-    if ( _trajectoryActor )
-        _trajectoryActor->SetVisibility( value );
+    if ( _leftTrajectoryActor )
+        _leftTrajectoryActor->SetVisibility( value );
 
-    if ( _cameraActor )
-        _cameraActor->SetVisibility( value );
+    if ( _rightTrajectoryActor )
+        _rightTrajectoryActor->SetVisibility( value );
+}
+
+void ReconstructionViewWidget::showFrustum( const bool value )
+{
+    if ( _leftCameraActor )
+        _leftCameraActor->SetVisibility( value );
+
+    if ( _rightCameraActor )
+        _rightCameraActor->SetVisibility( value );
 }
 
 void ReconstructionViewWidget::pickingEventHandler( const pcl::visualization::PointPickingEvent &event, void *viewer_void )
@@ -177,9 +311,14 @@ void SlamViewWidget::initialize()
 
 }
 
-void SlamViewWidget::setPath( const std::vector< cv::Point3d > &path )
+void SlamViewWidget::setPath( const std::vector< StereoProjectionMatrix > &path )
 {
     _view3dWidget->setPath( path );
+}
+
+void SlamViewWidget::setCamera( const StereoProjectionMatrix &camera )
+{
+    _view3dWidget->setFrustum( camera );
 }
 
 void SlamViewWidget::setSparseCloud( const std::vector< ColorPoint3d > &points )
@@ -307,7 +446,8 @@ void SlamWidgetBase::initialize( const QString &calibrationFile )
 
     slam2::Parameters parameters;
 
-    parameters.setFrameSize( calibration.leftCameraResults().frameSize() );
+    parameters.setLeftFrameSize( calibration.leftCameraResults().frameSize() );
+    parameters.setRightFrameSize( calibration.rightCameraResults().frameSize() );
 
     parameters.setCameraMatrix( calibration.leftCameraResults().cameraMatrix(), calibration.rightCameraResults().cameraMatrix() );
     parameters.setDistCoefficients( calibration.leftCameraResults().distortionCoefficients(), calibration.rightCameraResults().distortionCoefficients() );
@@ -351,7 +491,14 @@ void SlamWidgetBase::updateImages()
 void SlamWidgetBase::update3DView()
 {
     _viewWidget->setSparseCloud( _processorThread->sparseCloud() );
+
+    auto path = _processorThread->path();
+
     _viewWidget->setPath( _processorThread->path() );
+
+    if ( !path.empty() )
+        _viewWidget->setCamera( path.back() );
+
 }
 
 // SlamImageWidget

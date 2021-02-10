@@ -10,6 +10,8 @@
 #include "src/common/colorpoint.h"
 #include "src/common/image.h"
 
+#include "src/common/projectionmatrix.h"
+
 namespace slam2 {
 
 class System : public std::enable_shared_from_this< System >
@@ -34,7 +36,11 @@ public:
     CvImage tracksImage() const;
     CvImage stereoImage() const;
 
-    ProcStereoFramePtr track( const StampedStereoImage &image );
+    std::vector< ColorPoint3d > lastSparseCloud() const;
+
+    MapPtr lastMap() const;
+
+    bool track( const StampedStereoImage &image );
 
 protected:
     System( const Parameters &parameters );

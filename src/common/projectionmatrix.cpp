@@ -6,11 +6,35 @@
 
 #include "defs.h"
 
+cv::Mat calcProjectionMatrix( const cv::Mat &cameraMatrix, const cv::Mat &r, const cv::Mat &t )
+{
+    cv::Mat ret;
+
+    // cv::sfm::projectionFromKRt( cameraMatrix, r, t, ret );
+
+    auto extrinsicMatrix = cv::Mat( 3, 4, CV_64F );
+    r.copyTo( extrinsicMatrix.rowRange( 0, 3 ).colRange( 0, 3 ) );
+    t.copyTo( extrinsicMatrix.rowRange( 0, 3 ).col( 3 ) );
+    ret = cameraMatrix * extrinsicMatrix;
+
+    return ret;
+}
+
 // ProjectionMatrix
 ProjectionMatrix::ProjectionMatrix()
 {
     initialize();
 }
+
+ProjectionMatrix::ProjectionMatrix( const cv::Mat &cameraMatrix, const cv::Mat &rotationMatrix, const cv::Mat &translationMatrix )
+{
+    initialize();
+
+    setCameraMatrix( cameraMatrix );
+    setRotation( rotationMatrix );
+    setTranslation( translationMatrix );
+}
+
 
 ProjectionMatrix::ProjectionMatrix( const ProjectionMatrix &other )
 {
@@ -128,13 +152,8 @@ void ProjectionMatrix::setProjectionMatrix( const cv::Mat &value )
 
 const cv::Mat &ProjectionMatrix::projectionMatrix() const
 {
-    if ( m_projectionMatrix.empty() ) {
-        auto extrinsicMatrix = cv::Mat( 3, 4, CV_64F );
-        m_r.copyTo( extrinsicMatrix.rowRange( 0, 3 ).colRange( 0, 3 ) );
-        m_t.copyTo( extrinsicMatrix.rowRange( 0, 3 ).col( 3 ) );
-        m_projectionMatrix = m_cameraMatrix * extrinsicMatrix;
-
-    }
+    if ( m_projectionMatrix.empty() )
+        m_projectionMatrix = calcProjectionMatrix( m_cameraMatrix, m_r, m_t );
 
     return m_projectionMatrix;
 
@@ -319,91 +338,91 @@ std::ostream &operator<<( std::ostream& out, const ProjectionMatrix& matrix )
     return out;
 }
 
-// StereoCameraMatrix
-StereoCameraMatrix::StereoCameraMatrix()
+// StereoProjectionMatrix
+StereoProjectionMatrix::StereoProjectionMatrix()
 {
 }
 
-StereoCameraMatrix::StereoCameraMatrix( const ProjectionMatrix &leftProjectionMatrix, const ProjectionMatrix &rightProjectionMatrix )
+StereoProjectionMatrix::StereoProjectionMatrix( const ProjectionMatrix &leftProjectionMatrix, const ProjectionMatrix &rightProjectionMatrix )
     : m_leftProjectionMatrix( leftProjectionMatrix ), m_rightProjectionMatrix( rightProjectionMatrix )
 {
 }
 
-StereoCameraMatrix::StereoCameraMatrix( const cv::Mat &leftProjectionMatrix, const cv::Mat &rightProjectionMatrix )
+StereoProjectionMatrix::StereoProjectionMatrix( const cv::Mat &leftProjectionMatrix, const cv::Mat &rightProjectionMatrix )
     : m_leftProjectionMatrix( leftProjectionMatrix ), m_rightProjectionMatrix( rightProjectionMatrix )
 {
 }
 
-StereoCameraMatrix::StereoCameraMatrix( const std::string &fileName )
+StereoProjectionMatrix::StereoProjectionMatrix( const std::string &fileName )
 {
     loadYaml( fileName );
 }
 
-void StereoCameraMatrix::setLeftProjectionMatrix( const cv::Mat &value )
+void StereoProjectionMatrix::setLeftProjectionMatrix( const cv::Mat &value )
 {
     m_leftProjectionMatrix.setProjectionMatrix( value );
 }
 
-void StereoCameraMatrix::setLeftProjectionMatrix( const ProjectionMatrix &value )
+void StereoProjectionMatrix::setLeftProjectionMatrix( const ProjectionMatrix &value )
 {
     m_leftProjectionMatrix = value;
 }
 
-void StereoCameraMatrix::setRightProjectionMatrix( const cv::Mat &value )
+void StereoProjectionMatrix::setRightProjectionMatrix( const cv::Mat &value )
 {
     m_rightProjectionMatrix.setProjectionMatrix( value );
 }
 
-void StereoCameraMatrix::setRightProjectionMatrix( const ProjectionMatrix &value )
+void StereoProjectionMatrix::setRightProjectionMatrix( const ProjectionMatrix &value )
 {
     m_rightProjectionMatrix = value;
 }
 
-void StereoCameraMatrix::multiplicateCameraMatrix( const double value )
+void StereoProjectionMatrix::multiplicateCameraMatrix( const double value )
 {
     m_leftProjectionMatrix.multiplicateCameraMatrix( value );
     m_rightProjectionMatrix.multiplicateCameraMatrix( value );
 }
 
-void StereoCameraMatrix::movePrincipalPoint( const cv::Vec2f &value )
+void StereoProjectionMatrix::movePrincipalPoint( const cv::Vec2f &value )
 {
     m_leftProjectionMatrix.movePrincipalPoint( value );
     m_rightProjectionMatrix.movePrincipalPoint( value );
 }
 
-void StereoCameraMatrix::rotate( const cv::Mat &mat )
+void StereoProjectionMatrix::rotate( const cv::Mat &mat )
 {
     m_leftProjectionMatrix.rotate( mat );
     m_rightProjectionMatrix.rotate( mat );
 }
 
-void StereoCameraMatrix::translate( const cv::Mat &vec )
+void StereoProjectionMatrix::translate( const cv::Mat &vec )
 {
     m_leftProjectionMatrix.translate( vec );
     m_rightProjectionMatrix.translate( vec );
 }
 
-const ProjectionMatrix &StereoCameraMatrix::leftProjectionMatrix() const
+const ProjectionMatrix &StereoProjectionMatrix::leftProjectionMatrix() const
 {
     return m_leftProjectionMatrix;
 }
 
-const ProjectionMatrix &StereoCameraMatrix::rightProjectionMatrix() const
+const ProjectionMatrix &StereoProjectionMatrix::rightProjectionMatrix() const
 {
     return m_rightProjectionMatrix;
 }
 
-cv::Mat StereoCameraMatrix::baselineVector() const
+cv::Mat StereoProjectionMatrix::baselineVector() const
 {
     return m_rightProjectionMatrix.translation() - m_leftProjectionMatrix.translation();
 }
 
-double StereoCameraMatrix::baselineVectorLenght() const
+double StereoProjectionMatrix::baselineVectorLenght() const
 {
     return cv::norm( baselineVector() );
 }
 
-cv::Mat StereoCameraMatrix::disparityToDepthMatrix() const
+cv::Mat StereoProjectionMatrix::disparityToDepthMatrix() const
 {
     auto tx = baselineVectorLenght();
 
@@ -426,7 +445,7 @@ cv::Mat StereoCameraMatrix::disparityToDepthMatrix() const
 
 }
 
-bool StereoCameraMatrix::saveYaml( const std::string &fileName ) const
+bool StereoProjectionMatrix::saveYaml( const std::string &fileName ) const
 {
     cv::FileStorage fs( fileName, cv::FileStorage::WRITE );
     if ( !fs.isOpened() )
@@ -450,7 +469,7 @@ bool StereoCameraMatrix::saveYaml( const std::string &fileName ) const
     return true;
 }
 
-bool StereoCameraMatrix::loadYaml( const std::string &fileName )
+bool StereoProjectionMatrix::loadYaml( const std::string &fileName )
 {
     cv::FileStorage fs ( fileName, cv::FileStorage::READ );
 
@@ -505,17 +524,17 @@ bool StereoCameraMatrix::loadYaml( const std::string &fileName )
 
 }
 
-bool StereoCameraMatrix::operator==( const StereoCameraMatrix &other ) const
+bool StereoProjectionMatrix::operator==( const StereoProjectionMatrix &other ) const
 {
     return m_leftProjectionMatrix == other.m_leftProjectionMatrix && m_rightProjectionMatrix == other.m_rightProjectionMatrix ;
 }
 
-bool StereoCameraMatrix::operator!=( const StereoCameraMatrix &other ) const
+bool StereoProjectionMatrix::operator!=( const StereoProjectionMatrix &other ) const
 {
     return !operator==( other ) ;
 }
 
-std::ostream &operator<<( std::ostream& out, const StereoCameraMatrix& matrix )
+std::ostream &operator<<( std::ostream& out, const StereoProjectionMatrix& matrix )
 {
     out << matrix.m_leftProjectionMatrix << matrix.m_rightProjectionMatrix;
 

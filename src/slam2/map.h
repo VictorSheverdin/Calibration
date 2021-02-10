@@ -7,6 +7,7 @@
 
 #include "src/common/colorpoint.h"
 #include "src/common/image.h"
+#include "src/common/projectionmatrix.h"
 
 #include "alias.h"
 
@@ -29,19 +30,18 @@ public:
     CvImage drawTracks() const;
     CvImage drawStereo() const;
 
-    MapPointPtr createMapPoint( const ColorPoint3d &point );
-    const std::vector< MapPointPtr > &mapPoints() const;
+    std::vector< ColorPoint3d > lastSparseCloud() const;
 
-    ProcStereoFramePtr track( const StampedStereoImage &image );
+    bool track( const StampedStereoImage &image );
 
     const std::list< StereoFramePtr > &sequence() const;
+
+    StereoFramePtr lastFrame() const;
 
 protected:
     Map( const SystemPtr &parent );
 
     std::list< StereoFramePtr > _sequence;
-
-    std::vector< MapPointPtr > _points;
 
 };
 

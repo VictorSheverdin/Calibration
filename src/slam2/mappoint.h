@@ -3,16 +3,15 @@
 #include <memory>
 
 #include "src/common/supportclasses.h"
-
 #include "src/common/colorpoint.h"
 
 #include "alias.h"
 
 namespace slam2 {
 
-class MapPoint : public std::enable_shared_from_this< MapPoint >, protected Parent_Shared_Ptr< Map >
+class MapPoint : public std::enable_shared_from_this< MapPoint >, protected Parent_Shared_Ptr< Track >
 {
-    friend class Map;
+    friend class Track;
 public:
     using ObjectClass = MapPoint;
     using ObjectPtr = std::shared_ptr< MapPoint >;
@@ -24,9 +23,9 @@ public:
     const ColorPoint3d &point() const;
 
 protected:
-    MapPoint( const ColorPoint3d &point, const MapPtr &parent );
+    MapPoint( const ColorPoint3d &point, const TrackPtr &parent );
 
-    static ObjectPtr create( const ColorPoint3d &point, const MapPtr &parent );
+    static ObjectPtr create( const ColorPoint3d &point, const TrackPtr &parent );
 
     ColorPoint3d _point;
 

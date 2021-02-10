@@ -88,7 +88,7 @@ CvImage SlamThread::stereoImage() const
     return ret;
 }
 
-std::list< StereoCameraMatrix > SlamThread::path() const
+std::list< StereoProjectionMatrix > SlamThread::path() const
 {
     m_systemMutex.lock();
 

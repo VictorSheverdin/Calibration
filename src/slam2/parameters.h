@@ -62,8 +62,11 @@ class Parameters
 public:
     Parameters();
 
-    void setFrameSize( const cv::Size &value );
-    const cv::Size &frameSize() const;
+    void setLeftFrameSize( const cv::Size &value );
+    const cv::Size &leftFrameSize() const;
+
+    void setRightFrameSize( const cv::Size &value );
+    const cv::Size &rightFrameSize() const;
 
     StereoRect processRect() const;
     void setProcessRect( const StereoRect &rect );
@@ -103,7 +106,8 @@ public:
     double textDrawScale() const;
 
 protected:
-    cv::Size _frameSize;
+    cv::Size _leftFrameSize;
+    cv::Size _rightFrameSize;
 
     StereoRect _procRect;
 
@@ -126,6 +130,8 @@ protected:
     double _minimumInliersRatio;
 
     double _minimumStereoDisparity;
+
+    double _maxReprojectionError;
 
 private:
     void initialize();

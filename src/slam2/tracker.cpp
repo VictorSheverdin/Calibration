@@ -26,8 +26,6 @@ FlowTracker::FlowTracker()
 
 void FlowTracker::initialize()
 {
-    _pointsDetector = std::make_unique< FastProcessor >();
-    _pointsDetector->setThreshold( 100 );
 }
 
 double FlowTracker::extractPrecision() const
@@ -92,24 +90,13 @@ double FlowTracker::ransacConfidence() const
 
 void FlowTracker::extractPoints( ProcFrame *frame )
 {
-    std::vector< cv::KeyPoint > keyPoints;
-
-    _pointsDetector->extractKeypoints( frame->image(), frame->mask(), &keyPoints );
-
     std::vector< cv::Point2f > cornerPoints;
 
-    cornerPoints.reserve( keyPoints.size() );
+    auto count = std::max( static_cast< int >( frame->extractionCornersCount() ) - static_cast< int >( frame->cornerPoints().size() ), 0 );
 
-    for ( auto &i : keyPoints )
-        cornerPoints.push_back( i.pt );
+    _flowProcessor->extractPoints( frame->image(), frame->mask(), &cornerPoints, count );
 
     frame->addCornerPoints( cornerPoints );
-
-    /*std::vector< cv::Point2f > cornerPoints;
-
-    _flowProcessor->extractPoints( frame->image(), frame->mask(), &cornerPoints, frame->extractionCornersCount() );
-
-    frame->addCornerPoints( cornerPoints );*/
 
 }
 
@@ -165,13 +152,6 @@ void CPUFlowTracker::match( ProcStereoFrame *frame )
 
     processor()->track( leftFrame->imagePyramid(), leftFrame->cornerPoints(), rightFrame->imagePyramid(), &trackResults );
 
-    for ( auto i = trackResults.begin(); i != trackResults.end(); ) {
-        if ( cv::norm( leftFrame->cornerPoint( i->index ) - *i ) < system->parameters().minimumStereoDisparity() )
-            i = trackResults.erase( i );
-        else
-            ++i;
-    }
-
     std::vector< size_t > indexes;
 
     for ( auto &i : trackResults )
@@ -199,10 +179,10 @@ void CPUFlowTracker::match( ConsecutiveFrame *frame )
     auto frame1 = frame->frame1();
     auto frame2 = frame->frame2();
 
-    std::vector< FlowTrackResult > trackResults;
-
     prepareFrame( frame1.get() );
     prepareFrame( frame2.get() );
+
+    std::vector< FlowTrackResult > trackResults;
 
     processor()->track( frame1->imagePyramid(), frame1->cornerPoints(), frame2->imagePyramid(), &trackResults );
 
@@ -250,10 +230,8 @@ void CPUFlowTracker::match( ConsecutiveFrame *frame )
 
                     auto mapPoint = track->mapPoint();
 
-                    if ( !mapPoint ) {
-                        mapPoint = map->createMapPoint( ColorPoint3d( stereoPoint->point3d(), stereoPoint->color() ) );
-                        track->setMapPoint( mapPoint );
-                    }
+                    if ( !mapPoint )
+                        track->createMapPoint( ColorPoint3d( stereoPoint->point3d(), stereoPoint->color() ) );
                     else
                         mapPoint->setPoint( ColorPoint3d( stereoPoint->point3d(), stereoPoint->color() ) );
 
@@ -304,13 +282,6 @@ void GPUFlowTracker::match( ProcStereoFrame *frame )
     auto rightFrame = frame->rightFrame();
 
     processor()->track( leftFrame->image(), leftFrame->cornerPoints(), rightFrame->image(), &trackResults );
-
-    for ( auto i = trackResults.begin(); i != trackResults.end(); ) {
-        if ( cv::norm( leftFrame->cornerPoint( i->index ) - *i ) < system->parameters().minimumStereoDisparity() )
-            i = trackResults.erase( i );
-        else
-            ++i;
-    }
 
     std::vector< size_t > indexes;
 
@@ -363,6 +334,7 @@ void GPUFlowTracker::match( ConsecutiveFrame *frame )
     auto map = frame->parentMap();
 
     for ( auto &i : inliers ) {
+
         auto flowPoint = frame2->createFlowPoint( indexes[ i ]  );
 
         auto prevFlowPoint = frame1->flowPoint( trackResults[ i ].index );
@@ -387,10 +359,8 @@ void GPUFlowTracker::match( ConsecutiveFrame *frame )
 
                     auto mapPoint = track->mapPoint();
 
-                    if ( !mapPoint ) {
-                        mapPoint = map->createMapPoint( ColorPoint3d( stereoPoint->point3d(), stereoPoint->color() ) );
-                        track->setMapPoint( mapPoint );
-                    }
+                    if ( !mapPoint )
+                        track->createMapPoint( ColorPoint3d( stereoPoint->point3d(), stereoPoint->color() ) );
                     else
                         mapPoint->setPoint( ColorPoint3d( stereoPoint->point3d(), stereoPoint->color() ) );
 
@@ -527,11 +497,9 @@ void FeatureTracker::match( ConsecutiveFrame *frame )
 
                 if ( stereoPoint ) {
 
-                    if ( stereoPoint->isPoint3dExist() ) {
-                        auto mapPoint = map->createMapPoint( ColorPoint3d( stereoPoint->point3d(), stereoPoint->color() ) );
-                        track->setMapPoint( mapPoint );
+                    if ( stereoPoint->isPoint3dExist() )
+                        track->createMapPoint( ColorPoint3d( stereoPoint->point3d(), stereoPoint->color() ) );
 
-                    }
 
                 }
 
@@ -624,7 +592,7 @@ SuperGlueTracker::SuperGlueTracker()
 
 void SuperGlueTracker::initialize()
 {
-    _processor = std::make_unique< SuperGlueProcessor >( "superpoint_fp32_1024.eng", "superglue_fp32.eng" );
+    _processor = std::make_unique< SuperGlueProcessor >( "superpoint_fp32_2048.eng", "superglue_fp32.eng" );
 }
 
 void SuperGlueTracker::extract( ProcFrame *frame )
@@ -750,10 +718,16 @@ void SuperGlueTracker::match( ConsecutiveFrame *frame )
                 if ( stereoPoint ) {
 
                     if ( stereoPoint->isPoint3dExist() ) {
-                        auto mapPoint = map->createMapPoint( ColorPoint3d( stereoPoint->point3d(), stereoPoint->color() ) );
-                        track->setMapPoint( mapPoint );
+
+                        auto mapPoint = track->mapPoint();
+
+                        if ( !mapPoint )
+                            track->createMapPoint( ColorPoint3d( stereoPoint->point3d(), stereoPoint->color() ) );
+                        else
+                            mapPoint->setPoint( ColorPoint3d( stereoPoint->point3d(), stereoPoint->color() ) );
 
                     }
+
 
                 }
 

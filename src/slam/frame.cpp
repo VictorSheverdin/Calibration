@@ -1099,15 +1099,15 @@ void StereoKeyFrame::setProjectionMatrix( const ProjectionMatrix &matrix1, const
         rightFrame->setProjectionMatrix( matrix2 );
 }
 
-void StereoKeyFrame::setProjectionMatrix( const StereoCameraMatrix &matrix )
+void StereoKeyFrame::setProjectionMatrix( const StereoProjectionMatrix &matrix )
 {
     leftFrame()->setProjectionMatrix( matrix.leftProjectionMatrix() );
     rightFrame()->setProjectionMatrix( matrix.rightProjectionMatrix() );
 }
 
-StereoCameraMatrix StereoKeyFrame::projectionMatrix() const
+StereoProjectionMatrix StereoKeyFrame::projectionMatrix() const
 {
-    return StereoCameraMatrix( leftFrame()->projectionMatrix(), rightFrame()->projectionMatrix() );
+    return StereoProjectionMatrix( leftFrame()->projectionMatrix(), rightFrame()->projectionMatrix() );
 }
 
 double StereoKeyFrame::bf() const

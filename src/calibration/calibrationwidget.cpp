@@ -210,9 +210,18 @@ StereoCalibrationData CalibrationWidgetBase::calcStereoCalibration( const std::v
     cv::Mat E;
     cv::Mat F;
 
+    cv::Mat rectifiedLeftCameraMatrix, rectifiedRightCameraMatrix;
+    cv::Mat rectifiedLeftDistortionCoefficients, rectifiedRightDistortionCoefficients;
+
+    ret.leftCameraResults().cameraMatrix().copyTo( rectifiedLeftCameraMatrix );
+    ret.rightCameraResults().cameraMatrix().copyTo( rectifiedRightCameraMatrix );
+
+    ret.leftCameraResults().distortionCoefficients().copyTo( rectifiedLeftDistortionCoefficients );
+    ret.rightCameraResults().distortionCoefficients().copyTo( rectifiedRightDistortionCoefficients );
+
     double rms = cv::stereoCalibrate( points3d, leftPoints, rightPoints,
-                                      ret.leftCameraResults().cameraMatrix(), ret.leftCameraResults().distortionCoefficients(),
-                                      ret.rightCameraResults().cameraMatrix(), ret.rightCameraResults().distortionCoefficients(), ret.leftCameraResults().frameSize(),
+                                      rectifiedLeftCameraMatrix, rectifiedLeftDistortionCoefficients,
+                                      rectifiedRightCameraMatrix, rectifiedRightDistortionCoefficients, ret.leftCameraResults().frameSize(),
                                       R, T, E, F, cv::CALIB_USE_INTRINSIC_GUESS | cv::CALIB_FIX_K3 | cv::CALIB_FIX_K4 | cv::CALIB_FIX_K5,
                                       cv::TermCriteria( cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 100, 1e-5 ) );
 
@@ -227,10 +236,16 @@ StereoCalibrationData CalibrationWidgetBase::calcStereoCalibration( const std::v
     cv::Rect leftROI;
     cv::Rect rightROI;
 
-    cv::stereoRectify( ret.leftCameraResults().cameraMatrix(), ret.leftCameraResults().distortionCoefficients(),
-                       ret.rightCameraResults().cameraMatrix(), ret.rightCameraResults().distortionCoefficients(), ret.leftCameraResults().frameSize(),
+    cv::stereoRectify( rectifiedLeftCameraMatrix, rectifiedLeftDistortionCoefficients,
+                       rectifiedRightCameraMatrix, rectifiedRightDistortionCoefficients, ret.leftCameraResults().frameSize(),
                        R, T, R1, R2, P1, P2, Q, cv::CALIB_ZERO_DISPARITY, 1, cv::Size(), &leftROI, &rightROI );
 
+
+    ret.setLeftCameraMatrix( rectifiedLeftCameraMatrix );
+    ret.setRightCameraMatrix( rectifiedRightCameraMatrix );
+
+    ret.setLeftDistortionCoefficients( rectifiedLeftDistortionCoefficients );
+    ret.setRightDistortionCoefficients( rectifiedRightDistortionCoefficients );
 
     ret.setLeftRectifyMatrix( R1 );
     ret.setRightRectifyMatrix( R2 );
@@ -345,6 +360,8 @@ MonocularIcon *MonocularImageCalibrationWidget::createIcon( const CvImage &image
 
     m_processorThread.templateProcessor().setCount( m_parametersWidget->templateCount() );
     m_processorThread.templateProcessor().setSize( m_parametersWidget->templateSize() );
+
+    m_processorThread.markerProcessor().setSize( m_parametersWidget->templateSize() );
 
     MonocularProcessorResult result;
 
@@ -466,6 +483,8 @@ StereoIcon *StereoImageCalibrationWidget::createIcon( const CvImage &leftImage, 
     m_processorThread.templateProcessor().setCount( m_parametersWidget->templateCount() );
     m_processorThread.templateProcessor().setSize( m_parametersWidget->templateSize() );
 
+    m_processorThread.markerProcessor().setSize( m_parametersWidget->templateSize() );
+
     StereoProcessorResult result;
 
     if ( m_parametersWidget->templateType() == TypeComboBox::CHECKERBOARD || m_parametersWidget->templateType() == TypeComboBox::CIRCLES || m_parametersWidget->templateType() == TypeComboBox::ASYM_CIRCLES  )
@@ -571,6 +590,8 @@ void MonocularCameraCalibrationWidget::grabFrame()
         m_processorThread.templateProcessor().setCount( m_taskWidget->templateCount() );
         m_processorThread.templateProcessor().setSize( m_taskWidget->templateSize() );
 
+        m_processorThread.markerProcessor().setSize( m_taskWidget->templateSize() );
+
         if ( taskWidget->templateType() == TypeComboBox::CHECKERBOARD || taskWidget->templateType() == TypeComboBox::CIRCLES || taskWidget->templateType() == TypeComboBox::ASYM_CIRCLES  )
             m_processorThread.processFrame( image, MonocularProcessorThread::TEMPLATE );
         else if ( taskWidget->templateType() == TypeComboBox::ARUCO_MARKERS )
@@ -593,6 +614,8 @@ MonocularIcon *MonocularCameraCalibrationWidget::createIcon( const CvImage &imag
 
     m_processorThread.templateProcessor().setCount( m_taskWidget->templateCount() );
     m_processorThread.templateProcessor().setSize( m_taskWidget->templateSize() );
+
+    m_processorThread.markerProcessor().setSize( m_taskWidget->templateSize() );
 
     MonocularProcessorResult result;
 
@@ -712,6 +735,8 @@ void StereoCameraCalibrationWidget::grabFrame()
         m_processorThread.templateProcessor().setCount( m_taskWidget->templateCount() );
         m_processorThread.templateProcessor().setSize( m_taskWidget->templateSize() );
 
+        m_processorThread.markerProcessor().setSize( m_taskWidget->templateSize() );
+
         if ( taskWidget->templateType() == TypeComboBox::CHECKERBOARD || taskWidget->templateType() == TypeComboBox::CIRCLES || taskWidget->templateType() == TypeComboBox::ASYM_CIRCLES  )
             m_processorThread.processFrame( frame, StereoProcessorThread::TEMPLATE );
         else if ( taskWidget->templateType() == TypeComboBox::ARUCO_MARKERS )
@@ -782,6 +807,8 @@ StereoIcon *StereoCameraCalibrationWidget::createIcon( const CvImage &leftImage,
 
     m_processorThread.templateProcessor().setCount( m_taskWidget->templateCount() );
     m_processorThread.templateProcessor().setSize( m_taskWidget->templateSize() );
+
+    m_processorThread.markerProcessor().setSize( m_taskWidget->templateSize() );
 
     StereoProcessorResult result;
 

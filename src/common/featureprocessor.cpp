@@ -108,11 +108,15 @@ void FlowProcessor::initialize()
 
 void FlowProcessor::extractPoints( const CvImage &image, const cv::Mat &mask, std::vector< cv::Point2f > *points, const size_t count )
 {
-    if ( points ) {
-        cv::Mat gray;
-        cv::cvtColor( image, gray, cv::COLOR_BGR2GRAY );
+    if ( count > 0 ) {
 
-        cv::goodFeaturesToTrack( gray, *points, count, m_extractPrecision, m_extractDistance, mask, m_blockSize );
+        if ( points ) {
+            cv::Mat gray;
+            cv::cvtColor( image, gray, cv::COLOR_BGR2GRAY );
+
+            cv::goodFeaturesToTrack( gray, *points, count, m_extractPrecision, m_extractDistance, mask, m_blockSize );
+
+        }
 
     }
 

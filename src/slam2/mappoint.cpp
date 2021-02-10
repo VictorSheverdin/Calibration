@@ -5,13 +5,13 @@
 namespace slam2 {
 
 // MapPoint
-MapPoint::MapPoint( const ColorPoint3d &point, const MapPtr &parent )
-    : Parent_Shared_Ptr< Map >( parent )
+MapPoint::MapPoint( const ColorPoint3d &point, const TrackPtr &parent )
+    : Parent_Shared_Ptr< Track >( parent )
 {
     setPoint( point );
 }
 
-MapPoint::ObjectPtr MapPoint::create( const ColorPoint3d &point, const MapPtr &parent )
+MapPoint::ObjectPtr MapPoint::create( const ColorPoint3d &point, const TrackPtr &parent )
 {
     return ObjectPtr( new MapPoint( point, parent ) );
 }

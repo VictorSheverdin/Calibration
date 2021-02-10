@@ -14,16 +14,16 @@ class SlamGeometry
 public:
     SlamGeometry();
 
-    void addPath( const StereoCameraMatrix &matrix );
+    void addPath( const StereoProjectionMatrix &matrix );
     void addPoint( const ColorPoint3d &point );
     void addPoints( const std::list< ColorPoint3d > &points );
 
-    const std::list< StereoCameraMatrix > &path() const;
+    const std::list< StereoProjectionMatrix > &path() const;
     const std::list< ColorPoint3d > &points() const;
 
 protected:
     std::list< ColorPoint3d > m_points;
-    std::list< StereoCameraMatrix > m_path;
+    std::list< StereoProjectionMatrix > m_path;
 
 };
 

@@ -35,7 +35,7 @@ public:
     CvImage tracksImage() const;
     CvImage stereoImage() const;
 
-    std::list< StereoCameraMatrix > path() const;
+    std::list< StereoProjectionMatrix > path() const;
     std::vector< ColorPoint3d > sparseCloud() const;
 
 signals:

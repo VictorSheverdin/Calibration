@@ -389,8 +389,8 @@ public:
 
     void setProjectionMatrix( const ProjectionMatrix &matrix1, const ProjectionMatrix &matrix2 );
 
-    void setProjectionMatrix( const StereoCameraMatrix &matrix );
-    StereoCameraMatrix projectionMatrix() const;
+    void setProjectionMatrix( const StereoProjectionMatrix &matrix );
+    StereoProjectionMatrix projectionMatrix() const;
 
     double bf() const;
 

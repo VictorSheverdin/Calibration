@@ -3,6 +3,7 @@
 #include "track.h"
 
 #include "framepoint.h"
+#include "mappoint.h"
 
 namespace slam2 {
 
@@ -52,7 +53,17 @@ void Track::setMapPoint( const MapPointPtr &value )
 
 MapPointPtr Track::mapPoint() const
 {
-    return _mapPoint.lock();
+    return _mapPoint;
+}
+
+void Track::createMapPoint( const ColorPoint3d &point )
+{
+    _mapPoint = MapPoint::create( point, shared_from_this() );
+}
+
+void Track::clearMapPoint()
+{
+    _mapPoint.reset();
 }
 
 }

@@ -50,7 +50,6 @@ public:
 protected:
     FlowTracker();
 
-    std::unique_ptr< FastProcessor > _pointsDetector;
     std::unique_ptr< FlowProcessor > _flowProcessor;
 
     void extractPoints( ProcFrame *frame );

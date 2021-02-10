@@ -8,7 +8,7 @@
 
 namespace slam {
 
-World::World( const StereoCameraMatrix &cameraMatrix )
+World::World( const StereoProjectionMatrix &cameraMatrix )
 {
     initialize( cameraMatrix );
 
@@ -26,7 +26,7 @@ World::World( const StereoCameraMatrix &cameraMatrix )
     m_stereoProcessor.setDisp12MaxDiff( 0 );
 }
 
-void World::initialize( const StereoCameraMatrix &cameraMatrix )
+void World::initialize( const StereoProjectionMatrix &cameraMatrix )
 {
     auto flowTracker = new CPUFlowTracker();
     m_flowTracker = std::unique_ptr< FlowTracker >( flowTracker );
@@ -36,7 +36,7 @@ void World::initialize( const StereoCameraMatrix &cameraMatrix )
     m_startCameraMatrix = cameraMatrix;
 }
 
-World::ObjectPtr World::create( const StereoCameraMatrix &cameraMatrix )
+World::ObjectPtr World::create( const StereoProjectionMatrix &cameraMatrix )
 {
     return ObjectPtr( new World( cameraMatrix ) );
 }
@@ -73,7 +73,7 @@ bool World::track( const StampedImage &leftImage, const StampedImage &rightImage
 
             std::cout << "\nTrack lost!\n" << std::endl ;
 
-            StereoCameraMatrix projectionMatrix;
+            StereoProjectionMatrix projectionMatrix;
 
             if ( !restoreRotation.empty() && !restoreTranslation.empty() ) {
 
@@ -249,9 +249,9 @@ CvImage World::stereoImage() const
 
 }
 
-std::list< StereoCameraMatrix > World::path() const
+std::list< StereoProjectionMatrix > World::path() const
 {
-    std::list< StereoCameraMatrix > ret;
+    std::list< StereoProjectionMatrix > ret;
 
     for ( auto &map : m_maps ) {
 
@@ -291,7 +291,7 @@ std::vector< ColorPoint3d > World::sparseCloud() const
     return ret;
 }
 
-void World::createMap( const StereoCameraMatrix &cameraMatrix )
+void World::createMap( const StereoProjectionMatrix &cameraMatrix )
 {
     m_maps.push_back( Map::create( cameraMatrix, shared_from_this() ) );
 }

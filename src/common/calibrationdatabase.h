@@ -82,6 +82,18 @@ public:
     void setCorrespondFrameCount( const unsigned int value );
     unsigned int correspondFrameCount() const;
 
+    void setLeftCameraMatrix( const cv::Mat &value );
+    const cv::Mat &leftCameraMatrix() const;
+
+    void setRightCameraMatrix( const cv::Mat &value );
+    const cv::Mat &rightCameraMatrix() const;
+
+    void setLeftDistortionCoefficients( const cv::Mat &value );
+    const cv::Mat &leftDistortionCoefficients() const;
+
+    void setRightDistortionCoefficients( const cv::Mat &value );
+    const cv::Mat &rightDistortionCoefficients() const;
+
     void setRotationMatrix( const cv::Mat &value );
     const cv::Mat &rotationMatrix() const;
 
@@ -110,9 +122,9 @@ public:
     void setRightProjectionMatrix( const ProjectionMatrix &value );
     const ProjectionMatrix &rightProjectionMatrix() const;
 
-    void setProjectionMatrix( const StereoCameraMatrix &value );
-    StereoCameraMatrix &projectionMatrix();
-    const StereoCameraMatrix &projectionMatrix() const;
+    void setProjectionMatrix( const StereoProjectionMatrix &value );
+    StereoProjectionMatrix &projectionMatrix();
+    const StereoProjectionMatrix &projectionMatrix() const;
 
     cv::Mat disparityToDepthMatrix() const;
 
@@ -129,6 +141,12 @@ public:
 protected:
     unsigned int m_correspondFrameCount;
 
+    cv::Mat m_leftCameraMatrix;
+    cv::Mat m_rightCameraMatrix;
+
+    cv::Mat m_leftDistortionCoefficients;
+    cv::Mat m_rightDistortionCoefficients;
+
     cv::Mat m_rotationMatrix;
     cv::Mat m_translationVector;
     cv::Mat m_fundamentalMatrix;
@@ -137,7 +155,7 @@ protected:
     cv::Mat m_leftRectifyMatrix;
     cv::Mat m_rightRectifyMatrix;
 
-    StereoCameraMatrix m_projectionMatrix;
+    StereoProjectionMatrix m_projectionMatrix;
 
     cv::Rect m_leftROI;
     cv::Rect m_rightROI;

@@ -275,6 +275,22 @@ void StereoReportWidget::report(const StereoCalibrationData &calibration )
         addMatrix( calibration.essentialMatrix() );
         addDoubleBreak();
 
+        addText( tr( "Rectified left camera matrix:" ) + " " );
+        addMatrix( calibration.leftCameraMatrix() );
+        addDoubleBreak();
+
+        addText( tr( "Rectified left distortion coefficients:" ) + " " );
+        addMatrix( calibration.leftDistortionCoefficients() );
+        addDoubleBreak();
+
+        addText( tr( "Rectified right camera matrix:" ) + " " );
+        addMatrix( calibration.rightCameraMatrix() );
+        addDoubleBreak();
+
+        addText( tr( "Rectified right distortion coefficients:" ) + " " );
+        addMatrix( calibration.rightDistortionCoefficients() );
+        addDoubleBreak();
+
         addText( tr( "Left camera rectification matrix:" ) + " " );
         addMatrix( calibration.leftRectifyMatrix() );
         addDoubleBreak();

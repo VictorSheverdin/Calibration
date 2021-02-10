@@ -225,7 +225,8 @@ bool StereoCalibrationData::saveYaml( const std::string &fileName ) const
 
         fs << "correspondFrameCount" << static_cast<int>( correspondFrameCount() );
 
-        fs << "frameSize" << leftCameraResults().frameSize();
+        fs << "leftFrameSize" << leftCameraResults().frameSize();
+        fs << "rightFrameSize" << rightCameraResults().frameSize();
 
         fs << "leftFrameCount" << static_cast<int>( leftCameraResults().resultsSize() );
         fs << "leftCameraMatrix" << leftCameraResults().cameraMatrix();
@@ -241,6 +242,12 @@ bool StereoCalibrationData::saveYaml( const std::string &fileName ) const
         fs << "translationVector" << translationVector();
         fs << "fundamentalMatrix" << fundamentalMatrix();
         fs << "essentialMatrix" << essentialMatrix();
+
+        fs << "leftRectifiedCameraMatrix" << leftCameraMatrix();
+        fs << "rightRectifiedCameraMatrix" << rightCameraMatrix();
+        fs << "leftRectifiedDistortionCoefficients" << leftDistortionCoefficients();
+        fs << "rightRectifiedDistortionCoefficients" << rightDistortionCoefficients();
+
         fs << "leftRectifyMatrix" << leftRectifyMatrix();
         fs << "rightRectifyMatrix" << rightRectifyMatrix();
         fs << "leftProjectionMatrix" << leftProjectionMatrix();
@@ -270,11 +277,12 @@ bool StereoCalibrationData::loadYaml( const std::string &fileName )
         int correspondFrameCount;
         fs["correspondFrameCount"] >> correspondFrameCount;
 
-        cv::Size frameSize;
-        fs["frameSize"] >> frameSize;
+        cv::Size leftFrameSize, rightFrameSize;
+        fs["leftFrameSize"] >> leftFrameSize;
+        fs["rightFrameSize"] >> rightFrameSize;
 
-        leftCameraResults().setFrameSize( frameSize );
-        rightCameraResults().setFrameSize( frameSize );
+        leftCameraResults().setFrameSize( leftFrameSize );
+        rightCameraResults().setFrameSize( rightFrameSize );
 
         cv::Mat leftCameraMatrix, leftDistortionCoefficients;
         double leftError;
@@ -303,6 +311,11 @@ bool StereoCalibrationData::loadYaml( const std::string &fileName )
         cv::Mat fundamentalMatrix;
         cv::Mat essentialMatrix;
 
+        cv::Mat leftRectifiedCameraMatrix;
+        cv::Mat rightRectifiedCameraMatrix;
+        cv::Mat leftRectifiedDistortionCoefficients;
+        cv::Mat rightRectifiedDistortionCoefficients;
+
         cv::Mat leftRectifyMatrix;
         cv::Mat rightRectifyMatrix;
         cv::Mat leftProjectionMatrix;
@@ -318,6 +331,12 @@ bool StereoCalibrationData::loadYaml( const std::string &fileName )
         fs["translationVector"] >> translationVector;
         fs["fundamentalMatrix"] >> fundamentalMatrix;
         fs["essentialMatrix"] >> essentialMatrix;
+
+        fs["leftRectifiedCameraMatrix"] >> leftRectifiedCameraMatrix;
+        fs["rightRectifiedCameraMatrix"] >> rightRectifiedCameraMatrix;
+        fs["leftRectifiedDistortionCoefficients"] >> leftRectifiedDistortionCoefficients;
+        fs["rightRectifiedDistortionCoefficients"] >> rightRectifiedDistortionCoefficients;
+
         fs["leftRectifyMatrix"] >> leftRectifyMatrix;
         fs["rightRectifyMatrix"] >> rightRectifyMatrix;
         fs["leftProjectionMatrix"] >> leftProjectionMatrix;
@@ -332,6 +351,11 @@ bool StereoCalibrationData::loadYaml( const std::string &fileName )
         setTranslationVector( translationVector );
         setFundamentalMatrix( fundamentalMatrix );
         setEssentialMatrix( essentialMatrix );
+
+        setLeftCameraMatrix( leftRectifiedCameraMatrix );
+        setRightCameraMatrix( rightRectifiedCameraMatrix );
+        setLeftDistortionCoefficients( leftRectifiedDistortionCoefficients );
+        setRightDistortionCoefficients( rightRectifiedDistortionCoefficients );
 
         setLeftRectifyMatrix( leftRectifyMatrix );
         setRightRectifyMatrix( rightRectifyMatrix );

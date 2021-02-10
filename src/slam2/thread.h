@@ -6,6 +6,7 @@
 #include "src/common/colorpoint.h"
 
 #include "src/common/image.h"
+#include "src/common/projectionmatrix.h"
 
 #include "parameters.h"
 
@@ -30,7 +31,7 @@ public:
 
     std::vector< ColorPoint3d > sparseCloud() const;
 
-    std::vector< cv::Point3d > path() const;
+    std::vector< StereoProjectionMatrix > path() const;
 
 signals:
     void updateSignal();
@@ -47,9 +48,9 @@ protected:
 
     std::vector< ColorPoint3d > _sparseCloud;
 
-    std::vector< cv::Point3d > _path;
-
     std::vector< cv::Point3d > _startingPoints;
+
+    std::vector< StereoProjectionMatrix > _path;
 
     slam2::SystemPtr _system;
 

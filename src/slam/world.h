@@ -14,7 +14,7 @@ public:
     using ObjectPtr = std::shared_ptr< World >;
     using ObjectConstPtr = std::shared_ptr< const World >;
 
-    static ObjectPtr create( const StereoCameraMatrix &cameraMatrix );
+    static ObjectPtr create( const StereoProjectionMatrix &cameraMatrix );
 
     const std::list< MapPtr > &maps() const;
 
@@ -47,15 +47,15 @@ public:
     CvImage tracksImage() const;
     CvImage stereoImage() const;
 
-    std::list< StereoCameraMatrix > path() const;
+    std::list< StereoProjectionMatrix > path() const;
     std::vector< ColorPoint3d > sparseCloud() const;
 
 protected:
-    World( const StereoCameraMatrix &cameraMatrix );
+    World( const StereoProjectionMatrix &cameraMatrix );
 
     std::list < MapPtr > m_maps;
 
-    StereoCameraMatrix m_startCameraMatrix;
+    StereoProjectionMatrix m_startCameraMatrix;
 
     BMStereoProcessor m_stereoProcessor;
 
@@ -66,10 +66,10 @@ protected:
 
     Settings m_settings;
 
-    void createMap( const StereoCameraMatrix &cameraMatrix );
+    void createMap( const StereoProjectionMatrix &cameraMatrix );
 
 private:
-    void initialize( const StereoCameraMatrix &cameraMatrix );
+    void initialize( const StereoProjectionMatrix &cameraMatrix );
 
 };
 

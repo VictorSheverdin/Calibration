@@ -7,6 +7,7 @@
 
 #include "src/common/imagewidget.h"
 #include "src/common/pclwidget.h"
+#include "src/common/projectionmatrix.h"
 
 class QCheckBox;
 class ProcessorThread;
@@ -40,15 +41,26 @@ class ReconstructionViewWidget : public PCLWidget
 public:
     explicit ReconstructionViewWidget( QWidget* parent = nullptr );
 
+    void setPath( const std::vector< StereoProjectionMatrix > &points );
+    void setFrustum( const StereoProjectionMatrix &cameraMatrix );
+
     void showPath( const bool value );
-    void setPath( const std::vector<cv::Point3d> &points );
+    void showFrustum( const bool value );
 
 protected:
-    vtkSmartPointer< vtkActor > _trajectoryActor;
+    vtkSmartPointer< vtkActor > _leftTrajectoryActor;
+    vtkSmartPointer< vtkActor > _rightTrajectoryActor;
 
-    vtkSmartPointer< vtkActor > _cameraActor;
+    vtkSmartPointer< vtkActor > _leftCameraActor;
+    vtkSmartPointer< vtkActor > _rightCameraActor;
 
     static void pickingEventHandler( const pcl::visualization::PointPickingEvent &event, void *viewer_void );
+
+    void setLeftPath( const std::vector< cv::Point3d > &points );
+    void setRightPath( const std::vector< cv::Point3d > &points );
+
+    void setLeftFrustum( const ProjectionMatrix &cameraMatrix );
+    void setRightFrustum( const ProjectionMatrix &cameraMatrix );
 
 private:
     void initialize();
@@ -62,9 +74,10 @@ class SlamViewWidget : public QSplitter
 public:
     explicit SlamViewWidget( QWidget* parent = nullptr );
 
-    void setPath( const std::vector<cv::Point3d> &path );
+    void setPath( const std::vector< StereoProjectionMatrix > &path );
+    void setCamera(const StereoProjectionMatrix &camera );
 
-    void setSparseCloud( const std::vector<ColorPoint3d> &points );
+    void setSparseCloud( const std::vector< ColorPoint3d > &points );
     void setPointCloud( const std::vector< ColorPoint3d > &points, const std::string &id,
                         const Eigen::Vector4f &origin = Eigen::Vector4f::Zero(),
                         const Eigen::Quaternionf &orientation = Eigen::Quaternionf::Identity() );

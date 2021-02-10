@@ -16,7 +16,6 @@ namespace slam2 {
 class StereoCameraMatrix;
 class StereoDistorsionCoefficients;
 
-
 class Frame : public std::enable_shared_from_this< Frame >, protected Parent_Shared_Ptr< StereoFrame >
 {
 public:
@@ -31,6 +30,8 @@ public:
     std::shared_ptr< System > parentSystem() const;
 
     TrackPtr createTrack();
+
+    const std::vector< TrackPtr > &tracks() const;
 
 protected:
     Frame( const StereoFramePtr &parent );
@@ -209,13 +210,13 @@ public:
     void setTranslation( const cv::Mat &value );
     const cv::Mat &translation() const;
 
-    cv::Point3d directTranslation() const;
-
     void setRightRotation( const cv::Mat &value );
     const cv::Mat &rightRotation() const;
 
     void setRightTranslation( const cv::Mat &value );
     const cv::Mat &rightTranslation() const;
+
+    std::vector< ColorPoint3d > sparseCloud() const;
 
 protected:
     StereoFrame( const MapPtr &parent );
@@ -246,11 +247,13 @@ public:
 
     void setCameraMatrices( const StereoCameraMatrix &value );
 
-    ProjectionMatrix leftProjectionMatrix() const;
-    ProjectionMatrix rightProjectionMatrix() const;
+    cv::Mat leftProjectionMatrix() const;
+    cv::Mat rightProjectionMatrix() const;
 
     ObjectPtr shared_from_this();
     ObjectConstPtr shared_from_this() const;
+
+    StereoProjectionMatrix projectionMatrix() const;
 
 protected:
     FinalStereoFrame( const MapPtr &parent );
@@ -295,8 +298,6 @@ public:
     CvImage drawPoints() const;
     CvImage drawTracks() const;
     CvImage drawStereo() const;
-
-    std::vector< ColorPoint3d > sparseCloud() const;
 
     void clearMemory();
 

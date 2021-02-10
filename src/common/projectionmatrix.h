@@ -6,11 +6,14 @@
 
 #include <g2o/types/slam3d/se3quat.h>
 
+cv::Mat calcProjectionMatrix( const cv::Mat &cameraMatrix, const cv::Mat &r, const cv::Mat &t );
+
 class ProjectionMatrix
 {
 public:
     ProjectionMatrix();
-    ProjectionMatrix(const ProjectionMatrix &other );
+    ProjectionMatrix( const cv::Mat &cameraMatrix, const cv::Mat &rotationMatrix, const cv::Mat &translationMatrix );
+    ProjectionMatrix( const ProjectionMatrix &other );
     ProjectionMatrix( const cv::Mat &projectionMatrix );
     ProjectionMatrix( const std::string &fileName );
 
@@ -72,16 +75,16 @@ private:
 
 std::ostream &operator<<( std::ostream& out, const ProjectionMatrix& matrix );
 
-class StereoCameraMatrix
+class StereoProjectionMatrix
 {
-    friend std::ostream &operator<<( std::ostream& out, const StereoCameraMatrix& matrix );
+    friend std::ostream &operator<<( std::ostream& out, const StereoProjectionMatrix& matrix );
 
 public:
 
-    StereoCameraMatrix();
-    StereoCameraMatrix( const ProjectionMatrix &leftProjectionMatrix, const ProjectionMatrix &rightProjectionMatrix );
-    StereoCameraMatrix( const cv::Mat &leftProjectionMatrix, const cv::Mat &rightProjectionMatrix );
-    StereoCameraMatrix( const std::string &fileName );
+    StereoProjectionMatrix();
+    StereoProjectionMatrix( const ProjectionMatrix &leftProjectionMatrix, const ProjectionMatrix &rightProjectionMatrix );
+    StereoProjectionMatrix( const cv::Mat &leftProjectionMatrix, const cv::Mat &rightProjectionMatrix );
+    StereoProjectionMatrix( const std::string &fileName );
 
     void setLeftProjectionMatrix( const cv::Mat &value );
     void setLeftProjectionMatrix( const ProjectionMatrix &value );
@@ -106,8 +109,8 @@ public:
     bool saveYaml( const std::string &fileName ) const;
     bool loadYaml( const std::string &fileName );
 
-    bool operator==( const StereoCameraMatrix &other ) const;
-    bool operator!=( const StereoCameraMatrix &other ) const;
+    bool operator==( const StereoProjectionMatrix &other ) const;
+    bool operator!=( const StereoProjectionMatrix &other ) const;
 
 protected:
     ProjectionMatrix m_leftProjectionMatrix;
@@ -115,4 +118,4 @@ protected:
 
 };
 
-std::ostream &operator<<( std::ostream& out, const StereoCameraMatrix& matrix );
+std::ostream &operator<<( std::ostream& out, const StereoProjectionMatrix& matrix );

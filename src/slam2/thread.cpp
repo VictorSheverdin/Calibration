@@ -3,6 +3,7 @@
 #include "thread.h"
 
 #include "system.h"
+#include "map.h"
 #include "frame.h"
 
 #include "src/common/tictoc.h"
@@ -64,7 +65,7 @@ std::vector< ColorPoint3d > ProcessorThread::sparseCloud() const
     return ret;
 }
 
-std::vector< cv::Point3d > ProcessorThread::path() const
+std::vector< StereoProjectionMatrix > ProcessorThread::path() const
 {
     _resultMutex.lock();
     auto ret = _path;
@@ -100,7 +101,7 @@ void ProcessorThread::processNext()
 
         TicToc timer;
 
-        auto procFrame = _system->track( frame );
+        _system->track( frame );
 
         timer.report();
 
@@ -110,11 +111,13 @@ void ProcessorThread::processNext()
         _tracksImage = _system->tracksImage();
         _stereoImage = _system->stereoImage();
 
-        auto lastSparseCloud = procFrame->sparseCloud();
+        auto lastSparseCloud = _system->lastSparseCloud();
 
         _sparseCloud.insert( _sparseCloud.end(), lastSparseCloud.begin(), lastSparseCloud.end() );
 
-        _path.push_back( procFrame->directTranslation() );
+        auto procFrame = std::dynamic_pointer_cast< slam2::ProcStereoFrame > ( _system->lastMap()->lastFrame() );
+
+        _path.push_back( procFrame->projectionMatrix() );
 
         _resultMutex.unlock();
 

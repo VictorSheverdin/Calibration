@@ -264,6 +264,46 @@ unsigned int StereoCalibrationDataBase::correspondFrameCount() const
     return m_correspondFrameCount;
 }
 
+void StereoCalibrationDataBase::setLeftCameraMatrix( const cv::Mat &value )
+{
+    m_leftCameraMatrix = value;
+}
+
+const cv::Mat &StereoCalibrationDataBase::leftCameraMatrix() const
+{
+    return m_leftCameraMatrix;
+}
+
+void StereoCalibrationDataBase::setRightCameraMatrix( const cv::Mat &value )
+{
+    m_rightCameraMatrix = value;
+}
+
+const cv::Mat &StereoCalibrationDataBase::rightCameraMatrix() const
+{
+    return m_rightCameraMatrix;
+}
+
+void StereoCalibrationDataBase::setLeftDistortionCoefficients( const cv::Mat &value )
+{
+    m_leftDistortionCoefficients = value;
+}
+
+const cv::Mat &StereoCalibrationDataBase::leftDistortionCoefficients() const
+{
+    return m_leftDistortionCoefficients;
+}
+
+void StereoCalibrationDataBase::setRightDistortionCoefficients( const cv::Mat &value )
+{
+    m_rightDistortionCoefficients = value;
+}
+
+const cv::Mat &StereoCalibrationDataBase::rightDistortionCoefficients() const
+{
+    return m_rightDistortionCoefficients;
+}
+
 void StereoCalibrationDataBase::setRotationMatrix( const cv::Mat &value )
 {
     m_rotationMatrix = value;
@@ -359,17 +399,17 @@ const ProjectionMatrix &StereoCalibrationDataBase::rightProjectionMatrix() const
     return m_projectionMatrix.rightProjectionMatrix();
 }
 
-void StereoCalibrationDataBase::setProjectionMatrix( const StereoCameraMatrix &value )
+void StereoCalibrationDataBase::setProjectionMatrix( const StereoProjectionMatrix &value )
 {
     m_projectionMatrix = value;
 }
 
-StereoCameraMatrix &StereoCalibrationDataBase::projectionMatrix()
+StereoProjectionMatrix &StereoCalibrationDataBase::projectionMatrix()
 {
     return m_projectionMatrix;
 }
 
-const StereoCameraMatrix &StereoCalibrationDataBase::projectionMatrix() const
+const StereoProjectionMatrix &StereoCalibrationDataBase::projectionMatrix() const
 {
     return m_projectionMatrix;
 }

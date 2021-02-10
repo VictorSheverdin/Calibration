@@ -68,24 +68,41 @@ CvImage System::stereoImage() const
         return CvImage();
 }
 
-ProcStereoFramePtr System::track( const StampedStereoImage &image )
+std::vector< ColorPoint3d > System::lastSparseCloud() const
 {
-    auto procFrame = _maps.back()->track( image );
+    if ( !_maps.empty() )
+        return _maps.back()->lastSparseCloud();
+    else
+        return std::vector< ColorPoint3d >();
+}
 
-    if ( !procFrame ) {
-        auto lastFrame = _maps.back()->sequence().back();
+MapPtr System::lastMap() const
+{
+    if ( !_maps.empty() )
+        return _maps.back();
+    else
+        return MapPtr();
+}
+
+bool System::track( const StampedStereoImage &image )
+{
+    if ( !_maps.back()->track( image ) ) {
+
+        auto lastFrame = lastMap()->lastFrame();
 
         auto newMap = Map::create( shared_from_this() );
         _maps.push_back( newMap );
 
-        procFrame = _maps.back()->track( image );
+        _maps.back()->track( image );
+
+        auto procFrame = std::dynamic_pointer_cast< ProcStereoFrame >( lastMap()->lastFrame() );
 
         procFrame->setTranslation( lastFrame->translation() );
         procFrame->setRotation( lastFrame->rotation() );
 
     }
 
-    return procFrame;
+    return true;
 }
 
 }
