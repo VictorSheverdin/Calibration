@@ -2,14 +2,6 @@
 
 #include "xsens.h"
 
-#include <xscontroller/xsdevice_def.h>
-#include <xscontroller/xsscanner.h>
-#include <xscontroller/xscontrol_def.h>
-#include <xscontroller/xsdevice_def.h>
-#include <xstypes/xsdatapacket.h>
-#include <xstypes/xsportinfo.h>
-#include <xstypes/xsoutputconfigurationarray.h>
-
 Journaller *gJournal = 0;
 
 // XsensData

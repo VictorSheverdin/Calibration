@@ -89,6 +89,15 @@ bool Map::track( const StampedStereoImage &image )
 
     if ( !_sequence.empty() ) {
 
+        // TEMPORARY:
+        if ( _sequence.size() > 1 ) {
+
+            auto prePrevFrame = std::dynamic_pointer_cast< ProcStereoFrame >( *( ++_sequence.rbegin() ) );
+
+            prePrevFrame->clearMemory();
+
+        }
+
         auto prevFrame = std::dynamic_pointer_cast< ProcStereoFrame >( _sequence.back() );
 
         if ( prevFrame ) {
@@ -97,7 +106,6 @@ bool Map::track( const StampedStereoImage &image )
                 prevFrame->extract();
                 prevFrame->match();
                 prevFrame->triangulatePoints();
-
             }
 
             auto consecutiveFrame = ConsecutiveFrame::create( prevFrame->leftFrame(), frame->leftFrame(), shared_from_this() );
@@ -117,10 +125,6 @@ bool Map::track( const StampedStereoImage &image )
     }
 
     _sequence.push_back( frame );
-
-    // TEMPORARY:
-    if ( _sequence.size() > 10 )
-        _sequence.pop_front();
 
     return true;
 

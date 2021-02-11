@@ -155,8 +155,7 @@ link_libraries(
     ${EIGEN3_LIBS}
     OpenMP::OpenMP_CXX
     ${CMAKE_CURRENT_SOURCE_DIR}/src/vimba/lib/libVimbaCPP.so
-    xscontroller
-    xscommon
+    xsensdeviceapi
     xstypes
 )
 

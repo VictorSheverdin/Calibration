@@ -262,9 +262,6 @@ CvImage ProcFrame::drawPoints() const
     drawFeaturePoints( &ret, _cornerPoints, radius, cv::Scalar( 0, 0, 255, 100 ) );
     drawFeaturePoints( &ret, _keyPoints, radius, cv::Scalar( 0, 255, 0, 100 ) );
 
-    drawFeaturePoints( &ret, _undistCornerPoints, radius - 1, cv::Scalar( 255, 255, 255, 255 ) );
-    drawFeaturePoints( &ret, _undistKeyPoints, radius, cv::Scalar( 0, 0, 255, 255 ) );
-
     drawLabel( &ret, "Points count: " + std::to_string( _cornerPoints.size() + _keyPoints.size() ), std::min( ret.height(), ret.width() ) * system->parameters().textDrawScale() );
 
     return ret;
@@ -826,9 +823,6 @@ size_t ProcStereoFrame::triangulatePoints()
 
         }
 
-        qDebug() << size << ret;
-
-
     }
 
     return ret;
@@ -859,16 +853,20 @@ double ProcStereoFrame::recoverPose()
 
     }
 
-    if ( points.size() < minRecoverPointsCount )
+    if ( points.size() < minRecoverPointsCount ) {
+        qDebug() << "minRecoverPointsCount fail." << points.size();
         return 0.;
+    }
 
     cv::Mat rvec;
     cv::Mat tvec;
 
     std::vector< int > inliers;
 
-    if ( !cv::solvePnPRansac( points3d, points2d, frame->cameraMatrix(), cv::noArray(), rvec, tvec, false, 500, maxReprojectionError, 0.99, inliers, cv::SOLVEPNP_ITERATIVE ) )
+    if ( !cv::solvePnPRansac( points3d, points2d, frame->cameraMatrix(), cv::noArray(), rvec, tvec, false, 500, maxReprojectionError, 0.99, inliers, cv::SOLVEPNP_ITERATIVE ) ) {
+        qDebug() << "solvePnPRansac fail";
         return 0.;
+    }
 
     std::set< int > inliersSet;
 

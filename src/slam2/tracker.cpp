@@ -592,7 +592,7 @@ SuperGlueTracker::SuperGlueTracker()
 
 void SuperGlueTracker::initialize()
 {
-    _processor = std::make_unique< SuperGlueProcessor >( "superpoint_fp32_2048.eng", "superglue_fp32.eng" );
+    _processor = std::make_unique< SuperGlueProcessor >( "superpoint_fp32_1024.eng", "superglue_fp32.eng" );
 }
 
 void SuperGlueTracker::extract( ProcFrame *frame )

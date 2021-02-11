@@ -1,8 +1,7 @@
 #pragma once
 
-#include <xscontroller/xscallback.h>
-#include <xstypes/xsportinfo.h>
-#include <xstypes/xsdatapacket.h>
+#include <xsensdeviceapi.h>
+
 #include <chrono>
 #include <mutex>
 #include <condition_variable>

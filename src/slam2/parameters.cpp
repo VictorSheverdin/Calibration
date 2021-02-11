@@ -81,22 +81,21 @@ Parameters::Parameters()
 void Parameters::initialize()
 {
     _cornerExtractionCount = 1 << 11;
-    _minimumTracksCount = 1 << 8;
+    _minimumTracksCount = 1 << 7;
 
-    _minimumRecoverPointsCount = 1 << 6;
+    _minimumRecoverPointsCount = 1 << 5;
     _minimumInliersRatio = 0.5;
 
     _extractionDistance = 10.;
 
-    _minimumStereoDisparity = 10.;
+    _minimumStereoDisparity = 5.;
 
-    _maxReprojectionError = 5.;
+    _maxReprojectionError = 3.;
 
     auto tracker = std::make_shared< GPUFlowTracker >();
-    tracker->setRansacReprojectionThreshold( 3. );
+    tracker->setRansacReprojectionThreshold( 2. );
 
     setTracker( tracker );
-
 
 }
 
