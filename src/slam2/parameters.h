@@ -2,9 +2,11 @@
 
 #include <opencv2/opencv.hpp>
 
+#include "src/common/calibrationdatabase.h"
 namespace slam2 {
 
-class Tracker;
+class FlowTracker;
+class FeatureTracker;
 
 class StereoRect
 {
@@ -62,23 +64,20 @@ class Parameters
 public:
     Parameters();
 
-    void setLeftFrameSize( const cv::Size &value );
-    const cv::Size &leftFrameSize() const;
-
-    void setRightFrameSize( const cv::Size &value );
-    const cv::Size &rightFrameSize() const;
+    void setCalibration( const StereoCalibrationDataShort &value );
+    const StereoCalibrationDataShort &calibration() const;
 
     StereoRect processRect() const;
     void setProcessRect( const StereoRect &rect );
 
-    void setCameraMatrix( const cv::Mat &left, const cv::Mat &right );
-    void setDistCoefficients( const cv::Mat &left, const cv::Mat &right );
+    StereoCameraMatrix cameraMatrix() const;
+    StereoDistorsionCoefficients distorsionCoefficients() const;
 
-    const StereoCameraMatrix &cameraMatrix() const;
-    const StereoDistorsionCoefficients &distorsionCoefficients() const;
+    void setFlowTracker( const std::shared_ptr< FlowTracker > &value );
+    const std::shared_ptr< FlowTracker > &flowTracker() const;
 
-    void setTracker( const std::shared_ptr< Tracker > &value );
-    const std::shared_ptr< Tracker > &tracker() const;
+    void setFeatureTracker( const std::shared_ptr< FeatureTracker > &value );
+    const std::shared_ptr< FeatureTracker > &featureTracker() const;
 
     void setCornerExtractionCount( const size_t value );
     size_t cornerExtractionCount() const;
@@ -86,11 +85,8 @@ public:
     void setMinimumTracksCount(  const size_t value );
     size_t minimumTracksCount() const;
 
-    void setRightRotation( const cv::Mat &value );
-    const cv::Mat &rightRotation() const;
-
-    void setRightTranslation( const cv::Mat &value );
-    const cv::Mat &rightTranslation() const;
+    cv::Mat rightRotation() const;
+    cv::Mat rightTranslation() const;
 
     double maxReprojectionError() const;
 
@@ -106,18 +102,12 @@ public:
     double textDrawScale() const;
 
 protected:
-    cv::Size _leftFrameSize;
-    cv::Size _rightFrameSize;
+    StereoCalibrationDataShort _calibration;
 
     StereoRect _procRect;
 
-    StereoCameraMatrix _cameraMatrix;
-    StereoDistorsionCoefficients _distorsionCoefficients;
-
-    std::shared_ptr< Tracker > _tracker;
-
-    cv::Mat _rightRotation;
-    cv::Mat _rightTranslation;
+    std::shared_ptr< FlowTracker > _flowTracker;
+    std::shared_ptr< FeatureTracker > _featureTracker;
 
     size_t _cornerExtractionCount;
 

@@ -22,8 +22,10 @@ public:
     static ObjectPtr create();
 
     void addPoint( const Point2Ptr &point );
+    void setPoint( const size_t index, const Point2Ptr &point );
 
-    std::vector< Point2Ptr > validPoints() const;
+    std::vector< Point2Ptr > pointsVector() const;
+    const std::map< size_t, Point2Ptr > &points() const;
 
     void setMapPoint( const MapPointPtr &value );
     MapPointPtr mapPoint() const;
@@ -35,7 +37,7 @@ public:
 protected:
     Track();
 
-    std::map< size_t, Point2Weak > _points;
+    std::map< size_t, Point2Ptr > _points;
 
     MapPointPtr _mapPoint;
 

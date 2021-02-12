@@ -23,7 +23,7 @@
 #include <vtkPlanes.h>
 #include <vtkFrustumSource.h>
 
-#define _DEBUG_THREADS
+// #define _DEBUG_THREADS
 
 // ImagesWidget
 ImagesWidget::ImagesWidget( QWidget* parent )
@@ -446,14 +446,7 @@ void SlamWidgetBase::initialize( const QString &calibrationFile )
 
     slam2::Parameters parameters;
 
-    parameters.setLeftFrameSize( calibration.leftCameraResults().frameSize() );
-    parameters.setRightFrameSize( calibration.rightCameraResults().frameSize() );
-
-    parameters.setCameraMatrix( calibration.leftCameraResults().cameraMatrix(), calibration.rightCameraResults().cameraMatrix() );
-    parameters.setDistCoefficients( calibration.leftCameraResults().distortionCoefficients(), calibration.rightCameraResults().distortionCoefficients() );
-
-    parameters.setRightRotation( calibration.rotationMatrix() );
-    parameters.setRightTranslation( calibration.translationVector() );
+    parameters.setCalibration( calibration );
 
     _processorThread = new ProcessorThread( parameters, this );
 

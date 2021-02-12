@@ -30,7 +30,8 @@ public:
     void setParameters( const Parameters &value );
     const Parameters &parameters() const;
 
-    const std::shared_ptr< Tracker > &tracker() const;
+    const std::shared_ptr< FlowTracker > &flowTracker() const;
+    const std::shared_ptr< FeatureTracker > &featureTracker() const;
 
     CvImage pointsImage() const;
     CvImage tracksImage() const;

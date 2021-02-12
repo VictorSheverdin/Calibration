@@ -100,6 +100,12 @@ private:
 
 class FeatureTracker : public Tracker
 {
+protected:
+    FeatureTracker() = default;
+};
+
+class FeatureTrackerAndMatcher : public FeatureTracker
+{
 public:
     void setRansacReprojectionThreshold( const double &value );
     double ransacReprojectionThreshold() const;
@@ -116,7 +122,7 @@ public:
     void track( ConsecutiveStereoFrame &frames ) override;
 
 protected:
-    FeatureTracker() = default;
+    FeatureTrackerAndMatcher() = default;
 
     std::unique_ptr< FullProcessor > _descriptorProcessor;
     std::unique_ptr< DescriptorMatcher > _featuresMatcher;
@@ -125,7 +131,7 @@ protected:
 
 };
 
-class SiftTracker : public FeatureTracker
+class SiftTracker : public FeatureTrackerAndMatcher
 {
 public:
     SiftTracker();
@@ -139,7 +145,7 @@ private:
 
 };
 
-class OrbTracker : public FeatureTracker
+class OrbTracker : public FeatureTrackerAndMatcher
 {
 public:
     OrbTracker();
@@ -153,7 +159,7 @@ private:
 
 };
 
-class AKazeTracker : public FeatureTracker
+class AKazeTracker : public FeatureTrackerAndMatcher
 {
 public:
     AKazeTracker();
@@ -167,7 +173,7 @@ private:
 
 };
 
-class SuperGlueTracker : public Tracker
+class SuperGlueTracker : public FeatureTracker
 {
 public:
     SuperGlueTracker();

@@ -25,25 +25,34 @@ Track::ObjectPtr Track::create()
 
 void Track::addPoint( const Point2Ptr &point )
 {
-    _points[ _maxIndex ] = point;
-
-    point->setParentTrack( shared_from_this() );
-    point->setTrackIndex( _maxIndex );
+    setPoint( _maxIndex, point );
 
     ++_maxIndex;
 }
 
-std::vector< Point2Ptr > Track::validPoints() const
+void Track::setPoint( const size_t index, const Point2Ptr &point )
+{
+    _points[ index ] = point;
+
+    point->setParentTrack( shared_from_this() );
+    point->setTrackIndex( index );
+}
+
+std::vector< Point2Ptr > Track::pointsVector() const
 {
     std::vector< Point2Ptr > ret;
 
     ret.reserve( _points.size() );
 
     for ( auto &i : _points )
-        if ( !i.second.expired() )
-            ret.push_back( i.second.lock() );
+        ret.push_back( i.second );
 
     return ret;
+}
+
+const std::map< size_t, Point2Ptr > &Track::points() const
+{
+    return _points;
 }
 
 void Track::setMapPoint( const MapPointPtr &value )

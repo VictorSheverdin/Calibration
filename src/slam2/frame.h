@@ -25,6 +25,12 @@ public:
 
     virtual ~Frame() = default;
 
+    void setTime( const std::chrono::time_point< std::chrono::system_clock > &time );
+    const std::chrono::time_point< std::chrono::system_clock > &time() const;
+
+    void setCameraMatrix( const cv::Mat &value );
+    const cv::Mat &cameraMatrix() const;
+
     std::shared_ptr< StereoFrame > parentStereoFrame() const;
     std::shared_ptr< Map > parentMap() const;
     std::shared_ptr< System > parentSystem() const;
@@ -36,7 +42,12 @@ public:
 protected:
     Frame( const StereoFramePtr &parent );
 
+    std::chrono::time_point< std::chrono::system_clock > _time;
+
+    cv::Mat _cameraMatrix;
+
     std::vector< TrackPtr > _tracks;
+
 };
 
 class FinalFrame : public Frame
@@ -47,36 +58,30 @@ public:
     using ObjectPtr = std::shared_ptr< FinalFrame >;
     using ObjectConstPtr = std::shared_ptr< const FinalFrame >;
 
+    static ObjectPtr create( const FinalStereoFramePtr &parent );
+
     ObjectPtr shared_from_this();
     ObjectConstPtr shared_from_this() const;
 
-    void setTime( const std::chrono::time_point< std::chrono::system_clock > &time );
-    const std::chrono::time_point< std::chrono::system_clock > &time() const;
-
-    void setCameraMatrix( const cv::Mat &value );
-    const cv::Mat &cameraMatrix() const;
+    void replace( ProcFramePtr source );
 
 protected:
-    FinalFrame( const StereoFramePtr &parent );
+    FinalFrame( const FinalStereoFramePtr &parent );
 
-    std::vector< FramePointPtr > _points;
-
-    cv::Mat _cameraMatrix;
-
-    std::chrono::time_point< std::chrono::system_clock > _time;
+    std::vector< FinalPointPtr > _points;
 
 private:
     void initialize();
 
 };
 
-class ProcFrame : public FinalFrame
+class ProcFrame : public Frame
 {
     friend class ProcStereoFrame;
     friend class FlowTracker;
     friend class CPUFlowTracker;
     friend class GPUFlowTracker;
-    friend class FeatureTracker;
+    friend class FeatureTrackerAndMatcher;
     friend class SiftTracker;
     friend class OrbTracker;
     friend class AKazeTracker;
@@ -87,7 +92,7 @@ public:
     using ObjectPtr = std::shared_ptr< ProcFrame >;
     using ObjectConstPtr = std::shared_ptr< const ProcFrame >;
 
-    static ObjectPtr create( const StereoFramePtr &parent );
+    static ObjectPtr create( const ProcStereoFramePtr &parent );
 
     void load( const StampedImage &image );
 
@@ -112,6 +117,12 @@ public:
     FlowPointPtr flowPoint( const size_t index ) const;
     FeaturePointPtr featurePoint( const size_t index ) const;
 
+    const std::map< size_t, FlowPointPtr > &flowPoints() const;
+    std::vector< FlowPointPtr > flowPointsVector();
+
+    const std::map< size_t, FeaturePointPtr > &featurePoints() const;
+    std::vector< FeaturePointPtr > featurePointsVector();
+
     CvImage drawPoints() const;
     CvImage drawTracks() const;
 
@@ -121,7 +132,7 @@ public:
     void clearMemory();
 
 protected:
-    ProcFrame( const StereoFramePtr &parent );
+    ProcFrame( const ProcStereoFramePtr &parent );
 
     StampedImage _image;
 
@@ -175,8 +186,11 @@ public:
 
     void set( const FramePtr &frame1, const FramePtr &frame2 );
 
-    const FramePtr &frame1() const;
-    const FramePtr &frame2() const;
+    const FramePtr &frame1();
+    const FramePtr &frame2();
+
+    FrameConstPtr frame1() const;
+    FrameConstPtr frame2() const;
 
     std::shared_ptr< Map > parentMap() const;
     std::shared_ptr< System > parentSystem() const;
@@ -201,8 +215,18 @@ public:
 
     void set( const FramePtr &leftFrame, const FramePtr &rightFrame );
 
-    const FramePtr &leftFrame() const;
-    const FramePtr &rightFrame() const;
+    const FramePtr &leftFrame();
+    const FramePtr &rightFrame();
+
+    FrameConstPtr leftFrame() const;
+    FrameConstPtr rightFrame() const;
+
+    void setCameraMatrices( const StereoCameraMatrix &value );
+
+    cv::Mat leftProjectionMatrix() const;
+    cv::Mat rightProjectionMatrix() const;
+
+    StereoProjectionMatrix projectionMatrix() const;
 
     void setRotation( const cv::Mat &value );
     const cv::Mat &rotation() const;
@@ -242,25 +266,25 @@ public:
 
     static ObjectPtr create( const MapPtr &parent );
 
-    FinalFramePtr leftFrame() const;
-    FinalFramePtr rightFrame() const;
+    FinalFramePtr leftFrame();
+    FinalFramePtr rightFrame();
 
-    void setCameraMatrices( const StereoCameraMatrix &value );
-
-    cv::Mat leftProjectionMatrix() const;
-    cv::Mat rightProjectionMatrix() const;
+    FinalFrameConstPtr leftFrame() const;
+    FinalFrameConstPtr rightFrame() const;
 
     ObjectPtr shared_from_this();
     ObjectConstPtr shared_from_this() const;
 
-    StereoProjectionMatrix projectionMatrix() const;
+    void replace( ProcStereoFramePtr source );
 
 protected:
     FinalStereoFrame( const MapPtr &parent );
 
+    std::vector< FinalStereoPointPtr > _points;
+
 };
 
-class ProcStereoFrame : public FinalStereoFrame
+class ProcStereoFrame : public StereoFrame
 {
     friend class CPUFlowTracker;
     friend class GPUFlowTracker;
@@ -270,7 +294,7 @@ class ProcStereoFrame : public FinalStereoFrame
     friend class SuperGlueTracker;
 public:
     using ObjectClass = ProcStereoFrame;
-    using ParentClass = FinalStereoFrame;
+    using ParentClass = StereoFrame;
     using ObjectPtr = std::shared_ptr< ProcStereoFrame >;
     using ObjectConstPtr = std::shared_ptr< const ProcStereoFrame >;
 
@@ -284,8 +308,11 @@ public:
     size_t triangulatePoints();
     double recoverPose();
 
-    ProcFramePtr leftFrame() const;
-    ProcFramePtr rightFrame() const;
+    ProcFramePtr leftFrame();
+    ProcFramePtr rightFrame();
+
+    ProcFrameConstPtr leftFrame() const;
+    ProcFrameConstPtr rightFrame() const;
 
     void setDistorsionCoefficients( const StereoDistorsionCoefficients &value );
 
@@ -323,8 +350,11 @@ public:
 
     static ObjectPtr create( const ProcFramePtr &frame1, const ProcFramePtr &frame2, const MapPtr &parent );
 
-    ProcFramePtr frame1() const;
-    ProcFramePtr frame2() const;
+    ProcFramePtr frame1();
+    ProcFramePtr frame2();
+
+    ProcFrameConstPtr frame1() const;
+    ProcFrameConstPtr frame2() const;
 
     void extract();
     void track();

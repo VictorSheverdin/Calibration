@@ -16,6 +16,7 @@ class Point2 : public std::enable_shared_from_this< Point2 >
 {
     friend class Track;
     friend class StereoPoint;
+    friend class FinalFrame;
 
 public:
     using ObjectClass = Point2;
@@ -47,19 +48,27 @@ protected:
 
 };
 
-class FramePoint : public Point2, public ColorPoint2d
+class FinalPoint : public Point2, public ColorPoint2d, protected Parent_Shared_Ptr< FinalFrame >
 {
+    friend class FinalFrame;
+
 public:
-    using ObjectClass = FramePoint;
+    using ObjectClass = FinalPoint;
     using ParentClass = Point2;
-    using ObjectPtr = std::shared_ptr< FramePoint >;
-    using ObjectConstPtr = std::shared_ptr< const FramePoint >;
+    using ObjectPtr = std::shared_ptr< FinalPoint >;
+    using ObjectConstPtr = std::shared_ptr< const FinalPoint >;
 
     ObjectPtr shared_from_this();
     ObjectConstPtr shared_from_this() const;
 
+    virtual const cv::Point2f &point2d() const override;
+    virtual cv::Scalar color() const override;
+
 protected:
-    FramePoint() = default;
+    FinalPoint( const FinalFramePtr &parentFrame );
+
+    static ObjectPtr create( const FinalFramePtr &parentFrame );
+
 };
 
 class ProcPoint : public Point2, protected Parent_Shared_Ptr< ProcFrame >
@@ -145,14 +154,17 @@ public:
 
     void set( const Point2Ptr &point1, const Point2Ptr &point2 );
 
-    Point2Ptr point1() const;
-    Point2Ptr point2() const;
+    const Point2Ptr &point1();
+    const Point2Ptr &point2();
+
+    Point2ConstPtr point1() const;
+    Point2ConstPtr point2() const;
 
 protected:
     DoublePoint();
 
-    Point2Weak _point1;
-    Point2Weak _point2;
+    Point2Ptr _point1;
+    Point2Ptr _point2;
 };
 
 class StereoPoint : public DoublePoint
@@ -165,8 +177,11 @@ public:
 
     void set( const Point2Ptr &point1, const Point2Ptr &point2 );
 
-    Point2Ptr leftPoint() const;
-    Point2Ptr rightPoint() const;
+    const Point2Ptr &leftPoint();
+    const Point2Ptr &rightPoint();
+
+    Point2ConstPtr leftPoint() const;
+    Point2ConstPtr rightPoint() const;
 
     bool isPoint3dExist();
 
@@ -185,6 +200,25 @@ protected:
 
 };
 
+class FinalStereoPoint : public StereoPoint
+{
+public:
+    using ObjectClass = FinalStereoPoint;
+    using ParentClass = StereoPoint;
+    using ObjectPtr = std::shared_ptr< FinalStereoPoint >;
+    using ObjectConstPtr = std::shared_ptr< const FinalStereoPoint >;
+
+    FinalPointPtr leftPoint();
+    FinalPointPtr rightPoint();
+
+    FinalPointConstPtr leftPoint() const;
+    FinalPointConstPtr rightPoint() const;
+
+protected:
+    FinalStereoPoint();
+
+};
+
 class ProcStereoPoint : public StereoPoint
 {
 public:
@@ -193,8 +227,11 @@ public:
     using ObjectPtr = std::shared_ptr< ProcStereoPoint >;
     using ObjectConstPtr = std::shared_ptr< const ProcStereoPoint >;
 
-    ProcPointPtr leftPoint() const;
-    ProcPointPtr rightPoint() const;
+    ProcPointPtr leftPoint();
+    ProcPointPtr rightPoint();
+
+    ProcPointConstPtr leftPoint() const;
+    ProcPointConstPtr rightPoint() const;
 
 protected:
     ProcStereoPoint();
@@ -208,8 +245,11 @@ public:
     using ObjectPtr = std::shared_ptr< FlowStereoPoint >;
     using ObjectConstPtr = std::shared_ptr< const FlowStereoPoint >;
 
-    FlowPointPtr leftPoint() const;
-    FlowPointPtr rightPoint() const;
+    FlowPointPtr leftPoint();
+    FlowPointPtr rightPoint();
+
+    FlowPointConstPtr leftPoint() const;
+    FlowPointConstPtr rightPoint() const;
 
     static ObjectPtr create();
 
@@ -225,8 +265,11 @@ public:
     using ObjectPtr = std::shared_ptr< FeatureStereoPoint >;
     using ObjectConstPtr = std::shared_ptr< const FeatureStereoPoint >;
 
-    FeaturePointPtr leftPoint() const;
-    FeaturePointPtr rightPoint() const;
+    FeaturePointPtr leftPoint();
+    FeaturePointPtr rightPoint();
+
+    FeaturePointConstPtr leftPoint() const;
+    FeaturePointConstPtr rightPoint() const;
 
     static ObjectPtr create();
 

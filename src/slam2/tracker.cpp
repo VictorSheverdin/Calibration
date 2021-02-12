@@ -380,8 +380,8 @@ GPUFlowProcessor *GPUFlowTracker::processor() const
     return dynamic_cast< GPUFlowProcessor* >( _flowProcessor.get() );
 }
 
-// FeatureTracker
-void FeatureTracker::extract( ProcFrame *frame )
+// FeatureTrackerAndMatcher
+void FeatureTrackerAndMatcher::extract( ProcFrame *frame )
 {
     std::vector< cv::Point2f > cornerPoints;
 
@@ -394,38 +394,38 @@ void FeatureTracker::extract( ProcFrame *frame )
     frame->setDescriptors( descriptors );
 }
 
-void FeatureTracker::setRansacReprojectionThreshold( const double &value )
+void FeatureTrackerAndMatcher::setRansacReprojectionThreshold( const double &value )
 {
     _descriptorProcessor->setRansacReprojectionThreshold( value );
 }
 
-double FeatureTracker::ransacReprojectionThreshold() const
+double FeatureTrackerAndMatcher::ransacReprojectionThreshold() const
 {
     return _descriptorProcessor->ransacReprojectionThreshold();
 }
 
-void FeatureTracker::setRansacConfidence( const double &value )
+void FeatureTrackerAndMatcher::setRansacConfidence( const double &value )
 {
     _descriptorProcessor->setRansacConfidence( value );
 }
 
-double FeatureTracker::ransacConfidence() const
+double FeatureTrackerAndMatcher::ransacConfidence() const
 {
     return _descriptorProcessor->ransacConfidence();
 }
 
-void FeatureTracker::extract( ProcStereoFrame *frame )
+void FeatureTrackerAndMatcher::extract( ProcStereoFrame *frame )
 {
     extract( frame->leftFrame().get() );
     extract( frame->rightFrame().get() );
 }
 
-void FeatureTracker::extract( ConsecutiveFrame *frame )
+void FeatureTrackerAndMatcher::extract( ConsecutiveFrame *frame )
 {
     extract( frame->frame2().get() );
 }
 
-void FeatureTracker::match( ProcStereoFrame *frame )
+void FeatureTrackerAndMatcher::match( ProcStereoFrame *frame )
 {
     std::vector< cv::DMatch > matches;
 
@@ -453,7 +453,7 @@ void FeatureTracker::match( ProcStereoFrame *frame )
         frame->createFeaturePoint( matches[ i ].queryIdx, matches[ i ].trainIdx );
 }
 
-void FeatureTracker::match( ConsecutiveFrame *frame )
+void FeatureTrackerAndMatcher::match( ConsecutiveFrame *frame )
 {
     auto frame1 = frame->frame1();
     auto frame2 = frame->frame2();
@@ -513,7 +513,7 @@ void FeatureTracker::match( ConsecutiveFrame *frame )
 
 }
 
-void FeatureTracker::track( ConsecutiveStereoFrame &frames )
+void FeatureTrackerAndMatcher::track( ConsecutiveStereoFrame &frames )
 {
 
 }
@@ -592,7 +592,7 @@ SuperGlueTracker::SuperGlueTracker()
 
 void SuperGlueTracker::initialize()
 {
-    _processor = std::make_unique< SuperGlueProcessor >( "superpoint_fp32_1024.eng", "superglue_fp32.eng" );
+    _processor = std::make_unique< SuperGlueProcessor >( "superpoint_fp32_2048.eng", "superglue_fp32.eng" );
 }
 
 void SuperGlueTracker::extract( ProcFrame *frame )

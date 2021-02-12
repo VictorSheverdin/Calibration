@@ -25,6 +25,26 @@ Frame::Frame( const StereoFramePtr &parent )
 {
 }
 
+void Frame::setTime( const std::chrono::time_point< std::chrono::system_clock > &time )
+{
+    _time = time;
+}
+
+const std::chrono::time_point< std::chrono::system_clock > &Frame::time() const
+{
+    return _time;
+}
+
+void Frame::setCameraMatrix( const cv::Mat &value )
+{
+    _cameraMatrix = value;
+}
+
+const cv::Mat &Frame::cameraMatrix() const
+{
+    return _cameraMatrix;
+}
+
 std::shared_ptr< StereoFrame > Frame::parentStereoFrame() const
 {
     return parentPointer();
@@ -55,7 +75,7 @@ const std::vector< TrackPtr > &Frame::tracks() const
 }
 
 // FinalFrame
-FinalFrame::FinalFrame( const StereoFramePtr &parent )
+FinalFrame::FinalFrame( const FinalStereoFramePtr &parent )
     : Frame( parent )
 {
     initialize();
@@ -64,6 +84,11 @@ FinalFrame::FinalFrame( const StereoFramePtr &parent )
 void FinalFrame::initialize()
 {
     setCameraMatrix( cv::Mat::eye( 3, 3, CV_64F ) );
+}
+
+FinalFrame::ObjectPtr FinalFrame::create( const FinalStereoFramePtr &parent )
+{
+    return ObjectPtr( new FinalFrame( parent ) );
 }
 
 FinalFrame::ObjectPtr FinalFrame::shared_from_this()
@@ -76,36 +101,48 @@ FinalFrame::ObjectConstPtr FinalFrame::shared_from_this() const
     return std::dynamic_pointer_cast< const FinalFrame >( Frame::shared_from_this() );
 }
 
-void FinalFrame::setTime( const std::chrono::time_point< std::chrono::system_clock > &time )
+void FinalFrame::replace( ProcFramePtr source )
 {
-    _time = time;
-}
+    setTime( source->time() );
+    setCameraMatrix( source->cameraMatrix() );
 
-const std::chrono::time_point< std::chrono::system_clock > &FinalFrame::time() const
-{
-    return _time;
-}
+    _tracks = source->tracks();
 
-void FinalFrame::setCameraMatrix( const cv::Mat &value )
-{
-    _cameraMatrix = value;
-}
+    auto flowPoints = source->flowPointsVector();
+    auto featurePoints = source->featurePointsVector();
 
-const cv::Mat &FinalFrame::cameraMatrix() const
-{
-    return _cameraMatrix;
+    for ( auto &i : flowPoints ) {
+        auto point = FinalPoint::create( shared_from_this() );
+        point->setPoint( i->point2d() );
+        point->setColor( i->color() );
+        i->parentTrack()->setPoint( i->trackIndex(), point );
+
+        _points.push_back( point );
+
+    }
+
+    for ( auto &i : featurePoints ) {
+        auto point = FinalPoint::create( shared_from_this() );
+        point->setPoint( i->point2d() );
+        point->setColor( i->color() );
+        i->parentTrack()->setPoint( i->trackIndex(), point );
+
+        _points.push_back( point );
+
+    }
+
 }
 
 // ProcFrame
 const cv::Scalar ProcFrame::_recoverTrackColor( 0, 255, 0, 255 );
 const cv::Scalar ProcFrame::_otherTrackColor( 255, 0, 0, 255 );
 
-ProcFrame::ProcFrame( const StereoFramePtr &parent )
-    : FinalFrame( parent )
+ProcFrame::ProcFrame( const ProcStereoFramePtr &parent )
+    : Frame( parent )
 {
 }
 
-ProcFrame::ObjectPtr ProcFrame::create( const StereoFramePtr &parent )
+ProcFrame::ObjectPtr ProcFrame::create( const ProcStereoFramePtr &parent )
 {
     return ObjectPtr( new ProcFrame( parent ) );
 }
@@ -245,6 +282,40 @@ FeaturePointPtr ProcFrame::featurePoint( const size_t index ) const
 
 }
 
+const std::map< size_t, FlowPointPtr > &ProcFrame::flowPoints() const
+{
+    return _flowPoints;
+}
+
+std::vector< FlowPointPtr > ProcFrame::flowPointsVector()
+{
+    std::vector< FlowPointPtr > ret;
+
+    ret.reserve( _flowPoints.size() );
+
+    for ( auto &i : _flowPoints )
+        ret.push_back( i.second );
+
+    return ret;
+}
+
+const std::map< size_t, FeaturePointPtr > &ProcFrame::featurePoints() const
+{
+    return _featurePoints;
+}
+
+std::vector< FeaturePointPtr > ProcFrame::featurePointsVector()
+{
+    std::vector< FeaturePointPtr > ret;
+
+    ret.reserve( _featurePoints.size() );
+
+    for ( auto &i : _featurePoints )
+        ret.push_back( i.second );
+
+    return ret;
+}
+
 CvImage ProcFrame::drawPoints() const
 {
     CvImage ret;
@@ -305,7 +376,7 @@ CvImage ProcFrame::drawTracks() const
             else
                 color = _otherTrackColor;
 
-            auto points = track->validPoints();
+            auto points = track->pointsVector();
 
             Point2Ptr prev;
 
@@ -342,7 +413,7 @@ CvImage ProcFrame::drawTracks() const
             else
                 color = _otherTrackColor;
 
-            auto points = track->validPoints();
+            auto points = track->pointsVector();
 
             Point2Ptr prev;
 
@@ -541,12 +612,22 @@ void DoubleFrame::set( const FramePtr &frame1, const FramePtr &frame2 )
     _frame2 = frame2;
 }
 
-const FramePtr &DoubleFrame::frame1() const
+const FramePtr &DoubleFrame::frame1()
 {
     return _frame1;
 }
 
-const FramePtr &DoubleFrame::frame2() const
+const FramePtr &DoubleFrame::frame2()
+{
+    return _frame2;
+}
+
+FrameConstPtr DoubleFrame::frame1() const
+{
+    return _frame1;
+}
+
+FrameConstPtr DoubleFrame::frame2() const
 {
     return _frame2;
 }
@@ -579,14 +660,55 @@ void StereoFrame::set( const FramePtr &leftFrame, const FramePtr &rightFrame )
     DoubleFrame::set( leftFrame, rightFrame );
 }
 
-const FramePtr &StereoFrame::leftFrame() const
+const FramePtr &StereoFrame::leftFrame()
 {
     return frame1();
 }
 
-const FramePtr &StereoFrame::rightFrame() const
+const FramePtr &StereoFrame::rightFrame()
 {
     return frame2();
+}
+
+FrameConstPtr StereoFrame::leftFrame() const
+{
+    return frame1();
+}
+
+FrameConstPtr StereoFrame::rightFrame() const
+{
+    return frame2();
+}
+
+void StereoFrame::setCameraMatrices( const StereoCameraMatrix &value )
+{
+    leftFrame()->setCameraMatrix( value.left() );
+    rightFrame()->setCameraMatrix( value.right() );
+}
+
+cv::Mat StereoFrame::leftProjectionMatrix() const
+{
+    return calcProjectionMatrix( leftFrame()->cameraMatrix(), rotation(), translation() );
+}
+
+cv::Mat StereoFrame::rightProjectionMatrix() const
+{
+    cv::Mat m1 = cv::Mat::eye( 4, 4, CV_64F );
+    rightRotation().copyTo( m1.rowRange( 0, 3 ).colRange( 0, 3 ) );
+    rightTranslation().copyTo( m1.rowRange( 0, 3 ).col( 3 ) );
+
+    cv::Mat m2 = cv::Mat::eye( 4, 4, CV_64F );
+    rotation().copyTo( m2.rowRange( 0, 3 ).colRange( 0, 3 ) );
+    translation().copyTo( m2.rowRange( 0, 3 ).col( 3 ) );
+
+    cv::Mat mul = m1 * m2;
+
+    return calcProjectionMatrix( rightFrame()->cameraMatrix(), mul.rowRange( 0, 3 ).colRange( 0, 3 ), mul.rowRange( 0, 3 ).col( 3 ) );
+}
+
+StereoProjectionMatrix StereoFrame::projectionMatrix() const
+{
+    return StereoProjectionMatrix( ProjectionMatrix( leftProjectionMatrix() ), ProjectionMatrix( rightProjectionMatrix() ) );
 }
 
 void StereoFrame::setRotation( const cv::Mat &value )
@@ -653,40 +775,24 @@ FinalStereoFrame::ObjectPtr FinalStereoFrame::create( const MapPtr &parent )
     return ObjectPtr( new FinalStereoFrame( parent ) );
 }
 
-FinalFramePtr FinalStereoFrame::leftFrame() const
+FinalFramePtr FinalStereoFrame::leftFrame()
 {
     return std::dynamic_pointer_cast< FinalFrame >( StereoFrame::leftFrame() );
 }
 
-FinalFramePtr FinalStereoFrame::rightFrame() const
+FinalFramePtr FinalStereoFrame::rightFrame()
 {
     return std::dynamic_pointer_cast< FinalFrame >( StereoFrame::rightFrame() );
 }
 
-void FinalStereoFrame::setCameraMatrices( const StereoCameraMatrix &value )
+FinalFrameConstPtr FinalStereoFrame::leftFrame() const
 {
-    leftFrame()->setCameraMatrix( value.left() );
-    rightFrame()->setCameraMatrix( value.right() );
+    return std::dynamic_pointer_cast< const FinalFrame >( StereoFrame::leftFrame() );
 }
 
-cv::Mat FinalStereoFrame::leftProjectionMatrix() const
+FinalFrameConstPtr FinalStereoFrame::rightFrame() const
 {
-    return calcProjectionMatrix( leftFrame()->cameraMatrix(), rotation(), translation() );
-}
-
-cv::Mat FinalStereoFrame::rightProjectionMatrix() const
-{
-    cv::Mat m1 = cv::Mat::eye( 4, 4, CV_64F );
-    rightRotation().copyTo( m1.rowRange( 0, 3 ).colRange( 0, 3 ) );
-    rightTranslation().copyTo( m1.rowRange( 0, 3 ).col( 3 ) );
-
-    cv::Mat m2 = cv::Mat::eye( 4, 4, CV_64F );
-    rotation().copyTo( m2.rowRange( 0, 3 ).colRange( 0, 3 ) );
-    translation().copyTo( m2.rowRange( 0, 3 ).col( 3 ) );
-
-    cv::Mat mul = m1 * m2;
-
-    return calcProjectionMatrix( rightFrame()->cameraMatrix(), mul.rowRange( 0, 3 ).colRange( 0, 3 ), mul.rowRange( 0, 3 ).col( 3 ) );
+    return std::dynamic_pointer_cast< const FinalFrame >( StereoFrame::rightFrame() );
 }
 
 FinalStereoFrame::ObjectPtr FinalStereoFrame::shared_from_this()
@@ -699,14 +805,26 @@ FinalStereoFrame::ObjectConstPtr FinalStereoFrame::shared_from_this() const
     return std::dynamic_pointer_cast< const FinalStereoFrame >( StereoFrame::shared_from_this() );
 }
 
-StereoProjectionMatrix FinalStereoFrame::projectionMatrix() const
+void FinalStereoFrame::replace( ProcStereoFramePtr source )
 {
-    return StereoProjectionMatrix( ProjectionMatrix( leftProjectionMatrix() ), ProjectionMatrix( rightProjectionMatrix() ) );
+    setRotation( source->rotation() );
+    setTranslation( source->translation() );
+
+    setRightRotation( source->rightRotation() );
+    setRightTranslation( source->rightTranslation() );
+
+    auto leftFrame = FinalFrame::create( shared_from_this() );
+    auto rightFrame = FinalFrame::create( shared_from_this() );
+
+    leftFrame->replace( source->leftFrame() );
+    rightFrame->replace( source->rightFrame() );
+
+    set( leftFrame, rightFrame );
 }
 
 // ProcStereoFrame
 ProcStereoFrame::ProcStereoFrame( const MapPtr &parent )
-    : FinalStereoFrame( parent )
+    : StereoFrame( parent )
 {
 }
 
@@ -729,18 +847,30 @@ void ProcStereoFrame::extract()
 {
     auto system = parentSystem();
 
-    auto tracker = system->tracker();
+    auto flowTracker = system->flowTracker();
 
-    tracker->extract( this );
+    if ( flowTracker )
+        flowTracker->extract( this );
+
+    auto featureTracker = system->featureTracker();
+
+    if ( featureTracker )
+        featureTracker->extract( this );
 }
 
 void ProcStereoFrame::match()
 {
     auto system = parentSystem();
 
-    auto tracker = system->tracker();
+    auto flowTracker = system->flowTracker();
 
-    tracker->match( this );
+    if ( flowTracker )
+        flowTracker->match( this );
+
+    auto featureTracker = system->featureTracker();
+
+    if ( featureTracker )
+        featureTracker->match( this );
 }
 
 size_t ProcStereoFrame::triangulatePoints()
@@ -863,7 +993,7 @@ double ProcStereoFrame::recoverPose()
 
     std::vector< int > inliers;
 
-    if ( !cv::solvePnPRansac( points3d, points2d, frame->cameraMatrix(), cv::noArray(), rvec, tvec, false, 500, maxReprojectionError, 0.99, inliers, cv::SOLVEPNP_ITERATIVE ) ) {
+    if ( !cv::solvePnPRansac( points3d, points2d, frame->cameraMatrix(), cv::noArray(), rvec, tvec, false, 500, maxReprojectionError, 0.999, inliers, cv::SOLVEPNP_ITERATIVE ) ) {
         qDebug() << "solvePnPRansac fail";
         return 0.;
     }
@@ -887,14 +1017,24 @@ double ProcStereoFrame::recoverPose()
 
 }
 
-ProcFramePtr ProcStereoFrame::leftFrame() const
+ProcFramePtr ProcStereoFrame::leftFrame()
 {
     return std::dynamic_pointer_cast< ProcFrame >( StereoFrame::leftFrame() );
 }
 
-ProcFramePtr ProcStereoFrame::rightFrame() const
+ProcFramePtr ProcStereoFrame::rightFrame()
 {
     return std::dynamic_pointer_cast< ProcFrame >( StereoFrame::rightFrame() );
+}
+
+ProcFrameConstPtr ProcStereoFrame::leftFrame() const
+{
+    return std::dynamic_pointer_cast< const ProcFrame >( StereoFrame::leftFrame() );
+}
+
+ProcFrameConstPtr ProcStereoFrame::rightFrame() const
+{
+    return std::dynamic_pointer_cast< const ProcFrame >( StereoFrame::rightFrame() );
 }
 
 void ProcStereoFrame::setDistorsionCoefficients( const StereoDistorsionCoefficients &value )
@@ -1015,32 +1155,54 @@ ConsecutiveFrame::ObjectPtr ConsecutiveFrame::create( const ProcFramePtr &frame1
     return ObjectPtr( new ConsecutiveFrame( frame1, frame2, parent ) );
 }
 
-ProcFramePtr ConsecutiveFrame::frame1() const
+ProcFramePtr ConsecutiveFrame::frame1()
 {
     return std::dynamic_pointer_cast< ProcFrame >( DoubleFrame::frame1() );
 }
 
-ProcFramePtr ConsecutiveFrame::frame2() const
+ProcFramePtr ConsecutiveFrame::frame2()
 {
     return std::dynamic_pointer_cast< ProcFrame >( DoubleFrame::frame2() );
+}
+
+ProcFrameConstPtr ConsecutiveFrame::frame1() const
+{
+    return std::dynamic_pointer_cast< const ProcFrame >( DoubleFrame::frame1() );
+}
+
+ProcFrameConstPtr ConsecutiveFrame::frame2() const
+{
+    return std::dynamic_pointer_cast< const ProcFrame >( DoubleFrame::frame2() );
 }
 
 void ConsecutiveFrame::extract()
 {
     auto system = parentSystem();
 
-    auto tracker = system->tracker();
+    auto flowTracker = system->flowTracker();
 
-    tracker->extract( this );
+    if ( flowTracker )
+        flowTracker->extract( this );
+
+    auto featureTracker = system->featureTracker();
+
+    if ( featureTracker )
+        featureTracker->extract( this );
 }
 
 void ConsecutiveFrame::track()
 {
     auto system = parentSystem();
 
-    auto tracker = system->tracker();
+    auto flowTracker = system->flowTracker();
 
-    tracker->match( this );
+    if ( flowTracker )
+        flowTracker->match( this );
+
+    auto featureTracker = system->featureTracker();
+
+    if ( featureTracker )
+        featureTracker->match( this );
 }
 
 // ConsecutiveFrame

@@ -40,9 +40,14 @@ const Parameters &System::parameters() const
     return _parameters;
 }
 
-const std::shared_ptr< Tracker > &System::tracker() const
+const std::shared_ptr<FlowTracker> &System::flowTracker() const
 {
-    return _parameters.tracker();
+    return _parameters.flowTracker();
+}
+
+const std::shared_ptr< FeatureTracker > &System::featureTracker() const
+{
+    return _parameters.featureTracker();
 }
 
 CvImage System::pointsImage() const

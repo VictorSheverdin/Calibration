@@ -80,11 +80,11 @@ Parameters::Parameters()
 
 void Parameters::initialize()
 {
-    _cornerExtractionCount = 1 << 11;
+    _cornerExtractionCount = 1 << 10;
     _minimumTracksCount = 1 << 7;
 
     _minimumRecoverPointsCount = 1 << 5;
-    _minimumInliersRatio = 0.5;
+    _minimumInliersRatio = 0.7;
 
     _extractionDistance = 10.;
 
@@ -92,31 +92,25 @@ void Parameters::initialize()
 
     _maxReprojectionError = 3.;
 
-    auto tracker = std::make_shared< GPUFlowTracker >();
-    tracker->setRansacReprojectionThreshold( 2. );
+    auto flowTracker = std::make_shared< GPUFlowTracker >();
+    flowTracker->setRansacReprojectionThreshold( 3. );
 
-    setTracker( tracker );
+    auto featureTracker = std::make_shared< SuperGlueTracker >();
+    featureTracker->setRansacReprojectionThreshold( 3. );
+
+    setFlowTracker( flowTracker );
+    setFeatureTracker( featureTracker );
 
 }
 
-void Parameters::setLeftFrameSize( const cv::Size &value )
+void Parameters::setCalibration( const StereoCalibrationDataShort &value )
 {
-    _leftFrameSize = value;
+    _calibration = value;
 }
 
-const cv::Size &Parameters::leftFrameSize() const
+const StereoCalibrationDataShort &Parameters::calibration() const
 {
-    return _leftFrameSize;
-}
-
-void Parameters::setRightFrameSize( const cv::Size &value )
-{
-    _rightFrameSize = value;
-}
-
-const cv::Size &Parameters::rightFrameSize() const
-{
-    return _rightFrameSize;
+    return _calibration;
 }
 
 StereoRect Parameters::processRect() const
@@ -129,34 +123,34 @@ void Parameters::setProcessRect( const StereoRect &rect )
     _procRect = rect;
 }
 
-void Parameters::setCameraMatrix( const cv::Mat &left, const cv::Mat &right )
+StereoCameraMatrix Parameters::cameraMatrix() const
 {
-    _cameraMatrix.set( left, right );
+    return StereoCameraMatrix( _calibration.leftCameraResults().cameraMatrix(), _calibration.rightCameraResults().cameraMatrix() );
 }
 
-void Parameters::setDistCoefficients( const cv::Mat &left, const cv::Mat &right )
+StereoDistorsionCoefficients Parameters::distorsionCoefficients() const
 {
-    _distorsionCoefficients.set( left, right );
+    return StereoDistorsionCoefficients( _calibration.leftCameraResults().distortionCoefficients(), _calibration.rightCameraResults().distortionCoefficients() );
 }
 
-const StereoCameraMatrix &Parameters::cameraMatrix() const
+void Parameters::setFlowTracker( const std::shared_ptr< FlowTracker > &value )
 {
-    return _cameraMatrix;
+    _flowTracker = value;
 }
 
-const StereoDistorsionCoefficients &Parameters::distorsionCoefficients() const
+const std::shared_ptr< FlowTracker > &Parameters::flowTracker() const
 {
-    return _distorsionCoefficients;
+    return _flowTracker;
 }
 
-void Parameters::setTracker( const std::shared_ptr< Tracker > &value )
+void Parameters::setFeatureTracker( const std::shared_ptr< FeatureTracker > &value )
 {
-    _tracker = value;
+    _featureTracker = value;
 }
 
-const std::shared_ptr< Tracker > &Parameters::tracker() const
+const std::shared_ptr< FeatureTracker > &Parameters::featureTracker() const
 {
-    return _tracker;
+    return _featureTracker;
 }
 
 void Parameters::setCornerExtractionCount( const size_t value )
@@ -179,24 +173,14 @@ size_t Parameters::minimumTracksCount() const
     return _minimumTracksCount;
 }
 
-void Parameters::setRightRotation( const cv::Mat &value )
+cv::Mat Parameters::rightRotation() const
 {
-    _rightRotation = value;
+    return _calibration.rotationMatrix();
 }
 
-const cv::Mat &Parameters::rightRotation() const
+cv::Mat Parameters::rightTranslation() const
 {
-    return _rightRotation;
-}
-
-void Parameters::setRightTranslation( const cv::Mat &value )
-{
-    _rightTranslation = value;
-}
-
-const cv::Mat &Parameters::rightTranslation() const
-{
-    return _rightTranslation;
+    return _calibration.translationVector();
 }
 
 double Parameters::maxReprojectionError() const

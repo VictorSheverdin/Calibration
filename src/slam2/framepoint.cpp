@@ -37,21 +37,41 @@ StereoPointPtr Point2::stereoPoint() const
     return _stereoPoint.lock();
 }
 
-// FramePoint
-FramePoint::ObjectPtr FramePoint::shared_from_this()
+// FinalPoint
+FinalPoint::FinalPoint( const FinalFramePtr &parentFrame )
+    : Parent_Shared_Ptr< FinalFrame >( parentFrame )
 {
-    return std::dynamic_pointer_cast< FramePoint >( Point2::shared_from_this() );
 }
 
-FramePoint::ObjectConstPtr FramePoint::shared_from_this() const
+FinalPoint::ObjectPtr FinalPoint::create( const FinalFramePtr &parentFrame )
 {
-    return std::dynamic_pointer_cast< const FramePoint >( Point2::shared_from_this() );
+    return ObjectPtr( new FinalPoint( parentFrame ) );
+}
+
+FinalPoint::ObjectPtr FinalPoint::shared_from_this()
+{
+    return std::dynamic_pointer_cast< FinalPoint >( Point2::shared_from_this() );
+}
+
+FinalPoint::ObjectConstPtr FinalPoint::shared_from_this() const
+{
+    return std::dynamic_pointer_cast< const FinalPoint >( Point2::shared_from_this() );
+}
+
+const cv::Point2f &FinalPoint::point2d() const
+{
+    return ColorPoint2d::point();
+}
+
+cv::Scalar FinalPoint::color() const
+{
+    return ColorPoint2d::color();
 }
 
 // ProcPoint
 ProcPoint::ProcPoint(const ProcFramePtr &parentFrame , const size_t index )
+    : Parent_Shared_Ptr< ProcFrame >( parentFrame )
 {
-    setParentFrame( parentFrame );
     setIndex( index );
 }
 
@@ -163,14 +183,24 @@ void DoublePoint::set( const Point2Ptr &point1, const Point2Ptr &point2 )
     _point2 = point2;
 }
 
-Point2Ptr DoublePoint::point1() const
+const Point2Ptr &DoublePoint::point1()
 {
-    return _point1.lock();
+    return _point1;
 }
 
-Point2Ptr DoublePoint::point2() const
+const Point2Ptr &DoublePoint::point2()
 {
-    return _point2.lock();
+    return _point2;
+}
+
+Point2ConstPtr DoublePoint::point1() const
+{
+    return _point1;
+}
+
+Point2ConstPtr DoublePoint::point2() const
+{
+    return _point2;
 }
 
 // StereoPoint
@@ -189,12 +219,22 @@ void StereoPoint::set( const Point2Ptr &point1, const Point2Ptr &point2 )
         point2->setStereoPoint( shared_from_this() );
 }
 
-Point2Ptr StereoPoint::leftPoint() const
+const Point2Ptr &StereoPoint::leftPoint()
 {
     return point1();
 }
 
-Point2Ptr StereoPoint::rightPoint() const
+const Point2Ptr &StereoPoint::rightPoint()
+{
+    return point2();
+}
+
+Point2ConstPtr StereoPoint::leftPoint() const
+{
+    return point1();
+}
+
+Point2ConstPtr StereoPoint::rightPoint() const
 {
     return point2();
 }
@@ -229,19 +269,54 @@ StereoPoint::ObjectConstPtr StereoPoint::shared_from_this() const
     return std::dynamic_pointer_cast< const StereoPoint >( DoublePoint::shared_from_this() );
 }
 
+// FinalStereoPoint
+FinalStereoPoint::FinalStereoPoint()
+{
+}
+
+FinalPointPtr FinalStereoPoint::leftPoint()
+{
+    return std::dynamic_pointer_cast< FinalPoint >( StereoPoint::leftPoint() );
+}
+
+FinalPointPtr FinalStereoPoint::rightPoint()
+{
+    return std::dynamic_pointer_cast< FinalPoint >( StereoPoint::rightPoint() );
+}
+
+FinalPointConstPtr FinalStereoPoint::leftPoint() const
+{
+    return std::dynamic_pointer_cast< const FinalPoint >( StereoPoint::leftPoint() );
+}
+
+FinalPointConstPtr FinalStereoPoint::rightPoint() const
+{
+    return std::dynamic_pointer_cast< const FinalPoint >( StereoPoint::rightPoint() );
+}
+
 // ProcStereoPoint
 ProcStereoPoint::ProcStereoPoint()
 {
 }
 
-ProcPointPtr ProcStereoPoint::leftPoint() const
+ProcPointPtr ProcStereoPoint::leftPoint()
 {
     return std::dynamic_pointer_cast< ProcPoint >( StereoPoint::leftPoint() );
 }
 
-ProcPointPtr ProcStereoPoint::rightPoint() const
+ProcPointPtr ProcStereoPoint::rightPoint()
 {
     return std::dynamic_pointer_cast< ProcPoint >( StereoPoint::rightPoint() );
+}
+
+ProcPointConstPtr ProcStereoPoint::leftPoint() const
+{
+    return std::dynamic_pointer_cast< const ProcPoint >( StereoPoint::leftPoint() );
+}
+
+ProcPointConstPtr ProcStereoPoint::rightPoint() const
+{
+    return std::dynamic_pointer_cast< const ProcPoint >( StereoPoint::rightPoint() );
 }
 
 // FlowStereoPoint
@@ -249,14 +324,24 @@ FlowStereoPoint::FlowStereoPoint()
 {
 }
 
-FlowPointPtr FlowStereoPoint::leftPoint() const
+FlowPointPtr FlowStereoPoint::leftPoint()
 {
     return std::dynamic_pointer_cast< FlowPoint >( StereoPoint::leftPoint() );
 }
 
-FlowPointPtr FlowStereoPoint::rightPoint() const
+FlowPointPtr FlowStereoPoint::rightPoint()
 {
     return std::dynamic_pointer_cast< FlowPoint >( StereoPoint::rightPoint() );
+}
+
+FlowPointConstPtr FlowStereoPoint::leftPoint() const
+{
+    return std::dynamic_pointer_cast< const FlowPoint >( StereoPoint::leftPoint() );
+}
+
+FlowPointConstPtr FlowStereoPoint::rightPoint() const
+{
+    return std::dynamic_pointer_cast< const FlowPoint >( StereoPoint::rightPoint() );
 }
 
 FlowStereoPoint::ObjectPtr FlowStereoPoint::create()
@@ -269,14 +354,24 @@ FeatureStereoPoint::FeatureStereoPoint()
 {
 }
 
-FeaturePointPtr FeatureStereoPoint::leftPoint() const
+FeaturePointPtr FeatureStereoPoint::leftPoint()
 {
     return std::dynamic_pointer_cast< FeaturePoint >( StereoPoint::leftPoint() );
 }
 
-FeaturePointPtr FeatureStereoPoint::rightPoint() const
+FeaturePointPtr FeatureStereoPoint::rightPoint()
 {
     return std::dynamic_pointer_cast< FeaturePoint >( StereoPoint::rightPoint() );
+}
+
+FeaturePointConstPtr FeatureStereoPoint::leftPoint() const
+{
+    return std::dynamic_pointer_cast< const FeaturePoint >( StereoPoint::leftPoint() );
+}
+
+FeaturePointConstPtr FeatureStereoPoint::rightPoint() const
+{
+    return std::dynamic_pointer_cast< const FeaturePoint >( StereoPoint::rightPoint() );
 }
 
 FeatureStereoPoint::ObjectPtr FeatureStereoPoint::create()
