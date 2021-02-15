@@ -16,8 +16,10 @@ namespace slam2 {
 class StereoCameraMatrix;
 class StereoDistorsionCoefficients;
 
-class Frame : public std::enable_shared_from_this< Frame >, protected Parent_Shared_Ptr< StereoFrame >
+class Frame : public std::enable_shared_from_this< Frame >, protected Parent_Weak_Ptr< StereoFrame >
 {
+    friend class FinalStereoFrame;
+
 public:
     using ObjectClass = Frame;
     using ObjectPtr = std::shared_ptr< Frame >;
@@ -48,6 +50,8 @@ protected:
 
     std::vector< TrackPtr > _tracks;
 
+    void setTracks( const std::vector< TrackPtr > &value );
+
 };
 
 class FinalFrame : public Frame
@@ -63,7 +67,7 @@ public:
     ObjectPtr shared_from_this();
     ObjectConstPtr shared_from_this() const;
 
-    void replace( ProcFramePtr source );
+    void addPoint( const FinalPointPtr &point );
 
 protected:
     FinalFrame( const FinalStereoFramePtr &parent );
@@ -129,7 +133,7 @@ public:
     std::vector< ProcPointPtr > recoverPoints() const;
     size_t recoverPointsCount() const;
 
-    void clearMemory();
+    cv::Scalar color( const cv::Point2f &point ) const;
 
 protected:
     ProcFrame( const ProcStereoFramePtr &parent );
@@ -175,7 +179,7 @@ protected:
 
 };
 
-class DoubleFrame : public std::enable_shared_from_this< DoubleFrame >, protected Parent_Shared_Ptr< Map >
+class DoubleFrame : public std::enable_shared_from_this< DoubleFrame >, protected Parent_Weak_Ptr< Map >
 {
 public:
     using ObjectClass = DoubleFrame;
@@ -306,6 +310,8 @@ public:
     void match();
 
     size_t triangulatePoints();
+    size_t triangulateTracks();
+
     double recoverPose();
 
     ProcFramePtr leftFrame();
@@ -326,7 +332,7 @@ public:
     CvImage drawTracks() const;
     CvImage drawStereo() const;
 
-    void clearMemory();
+    const std::vector< ProcStereoPointPtr > &stereoPoints() const;
 
 protected:
     ProcStereoFrame( const MapPtr &parent );

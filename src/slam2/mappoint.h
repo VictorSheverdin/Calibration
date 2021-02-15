@@ -9,7 +9,7 @@
 
 namespace slam2 {
 
-class MapPoint : public std::enable_shared_from_this< MapPoint >, protected Parent_Shared_Ptr< Track >
+class MapPoint : public std::enable_shared_from_this< MapPoint >, protected Parent_Weak_Ptr< Track >
 {
     friend class Track;
 public:

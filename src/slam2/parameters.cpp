@@ -83,12 +83,14 @@ void Parameters::initialize()
     _cornerExtractionCount = 1 << 10;
     _minimumTracksCount = 1 << 7;
 
-    _minimumRecoverPointsCount = 1 << 5;
+    _minimumRecoverPointsCount = 1 << 6;
     _minimumInliersRatio = 0.7;
 
     _extractionDistance = 10.;
 
-    _minimumStereoDisparity = 5.;
+    _minimumTriangulationDistance = 3.;
+
+    _minimumDisparity = 7.;
 
     _maxReprojectionError = 3.;
 
@@ -99,7 +101,7 @@ void Parameters::initialize()
     featureTracker->setRansacReprojectionThreshold( 3. );
 
     setFlowTracker( flowTracker );
-    setFeatureTracker( featureTracker );
+    // setFeatureTracker( featureTracker );
 
 }
 
@@ -203,9 +205,19 @@ double Parameters::extractionDistance() const
     return _extractionDistance;
 }
 
-double Parameters::minimumStereoDisparity() const
+void Parameters::setMinimumTriangulationDistance( const double value )
 {
-    return _minimumStereoDisparity;
+    _minimumTriangulationDistance = value;
+}
+
+double Parameters::minimumTriangulationDistance() const
+{
+    return _minimumTriangulationDistance;
+}
+
+double Parameters::minimumDisparity() const
+{
+    return _minimumDisparity;
 }
 
 double Parameters::pointsDrawScale() const

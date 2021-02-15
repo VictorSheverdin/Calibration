@@ -6,7 +6,7 @@ namespace slam2 {
 
 // MapPoint
 MapPoint::MapPoint( const ColorPoint3d &point, const TrackPtr &parent )
-    : Parent_Shared_Ptr< Track >( parent )
+    : Parent_Weak_Ptr< Track >( parent )
 {
     setPoint( point );
 }

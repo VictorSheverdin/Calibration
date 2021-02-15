@@ -7,6 +7,7 @@
 
 #include "src/common/image.h"
 #include "src/common/projectionmatrix.h"
+#include "src/common/limitedqueue.h"
 
 #include "parameters.h"
 
@@ -37,7 +38,7 @@ signals:
     void updateSignal();
 
 protected:
-    std::list< StampedStereoImage > _processQueue;
+    LimitedQueue< StampedStereoImage > _processQueue;
 
     QMutex _queueMutex;
     mutable QMutex _resultMutex;

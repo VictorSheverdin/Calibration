@@ -21,7 +21,7 @@ void ProcessorThread::process( const StampedStereoImage image )
 {
     QMutexLocker lock( &_queueMutex );
 
-    _processQueue.push_back( image );
+    _processQueue.push( image );
 }
 
 slam2::SystemPtr ProcessorThread::system() const
@@ -92,7 +92,7 @@ void ProcessorThread::processNext()
 
     if ( !_processQueue.empty() ) {
         frame = _processQueue.front();
-        _processQueue.pop_front();
+        _processQueue.pop();
     }
 
     _queueMutex.unlock();

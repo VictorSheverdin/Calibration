@@ -7,9 +7,24 @@
 namespace slam2 {
 
 // Point2
+Point2::Point2( const FramePtr &parentFrame )
+    : Parent_Weak_Ptr< Frame >( parentFrame )
+{
+}
+
+void Point2::setParentFrame( const FramePtr &parent )
+{
+    setParentPointer( parent );
+}
+
 void Point2::setParentTrack( const TrackPtr &track )
 {
     _parentTrack = track;
+}
+
+FramePtr Point2::parentFrame() const
+{
+    return parentPointer();
 }
 
 TrackPtr Point2::parentTrack() const
@@ -32,6 +47,11 @@ void Point2::setStereoPoint( const StereoPointPtr &value )
     _stereoPoint = value;
 }
 
+void Point2::clearStereoPoint()
+{
+    _stereoPoint.reset();
+}
+
 StereoPointPtr Point2::stereoPoint() const
 {
     return _stereoPoint.lock();
@@ -39,7 +59,7 @@ StereoPointPtr Point2::stereoPoint() const
 
 // FinalPoint
 FinalPoint::FinalPoint( const FinalFramePtr &parentFrame )
-    : Parent_Shared_Ptr< FinalFrame >( parentFrame )
+    : Point2( parentFrame )
 {
 }
 
@@ -58,6 +78,11 @@ FinalPoint::ObjectConstPtr FinalPoint::shared_from_this() const
     return std::dynamic_pointer_cast< const FinalPoint >( Point2::shared_from_this() );
 }
 
+const cv::Point2f &FinalPoint::undistortedPoint() const
+{
+    return ColorPoint2d::point();
+}
+
 const cv::Point2f &FinalPoint::point2d() const
 {
     return ColorPoint2d::point();
@@ -70,7 +95,7 @@ cv::Scalar FinalPoint::color() const
 
 // ProcPoint
 ProcPoint::ProcPoint(const ProcFramePtr &parentFrame , const size_t index )
-    : Parent_Shared_Ptr< ProcFrame >( parentFrame )
+    : Point2( parentFrame )
 {
     setIndex( index );
 }
@@ -82,7 +107,7 @@ void ProcPoint::setParentFrame( const ProcFramePtr &parent )
 
 ProcFramePtr ProcPoint::parentFrame() const
 {
-    return parentPointer();
+    return std::dynamic_pointer_cast< ProcFrame >( Point2::parentFrame() );
 }
 
 void ProcPoint::setIndex( const size_t index )
@@ -107,7 +132,7 @@ ProcPoint::ObjectConstPtr ProcPoint::shared_from_this() const
 
 cv::Scalar ProcPoint::color() const
 {
-    return parentFrame()->image().at< cv::Vec3b >( point2d() );
+    return parentFrame()->color( point2d() );
 }
 
 // FlowPoint
@@ -292,6 +317,11 @@ FinalPointConstPtr FinalStereoPoint::leftPoint() const
 FinalPointConstPtr FinalStereoPoint::rightPoint() const
 {
     return std::dynamic_pointer_cast< const FinalPoint >( StereoPoint::rightPoint() );
+}
+
+FinalStereoPoint::ObjectPtr FinalStereoPoint::create()
+{
+    return ObjectPtr( new FinalStereoPoint() );
 }
 
 // ProcStereoPoint

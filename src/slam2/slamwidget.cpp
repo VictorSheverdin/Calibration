@@ -506,7 +506,7 @@ SlamImageWidget::SlamImageWidget( const QStringList &leftList, const QStringList
 void SlamImageWidget::initialize()
 {
     _index = 0;
-    _fps = 25;
+    _fps = 5;
 
     startTimer( 1000. / _fps );
 }

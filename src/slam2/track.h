@@ -24,6 +24,8 @@ public:
     void addPoint( const Point2Ptr &point );
     void setPoint( const size_t index, const Point2Ptr &point );
 
+    Point2Ptr startPoint() const;
+
     std::vector< Point2Ptr > pointsVector() const;
     const std::map< size_t, Point2Ptr > &points() const;
 

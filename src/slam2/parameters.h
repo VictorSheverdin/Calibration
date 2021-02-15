@@ -96,7 +96,10 @@ public:
 
     double extractionDistance() const;
 
-    double minimumStereoDisparity() const;
+    void setMinimumTriangulationDistance( const double value );
+    double minimumTriangulationDistance() const;
+
+    double minimumDisparity() const;
 
     double pointsDrawScale() const;
     double textDrawScale() const;
@@ -115,11 +118,13 @@ protected:
 
     double _extractionDistance;
 
+    double _minimumTriangulationDistance;
+
     size_t _minimumRecoverPointsCount;
 
     double _minimumInliersRatio;
 
-    double _minimumStereoDisparity;
+    double _minimumDisparity;
 
     double _maxReprojectionError;
 

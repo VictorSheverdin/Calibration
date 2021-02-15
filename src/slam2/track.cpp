@@ -38,6 +38,11 @@ void Track::setPoint( const size_t index, const Point2Ptr &point )
     point->setTrackIndex( index );
 }
 
+Point2Ptr Track::startPoint() const
+{
+    return _points.begin()->second;
+}
+
 std::vector< Point2Ptr > Track::pointsVector() const
 {
     std::vector< Point2Ptr > ret;

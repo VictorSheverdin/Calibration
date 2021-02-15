@@ -94,16 +94,22 @@ bool System::track( const StampedStereoImage &image )
     if ( !_maps.back()->track( image ) ) {
 
         auto lastFrame = lastMap()->lastFrame();
+        cv::Mat lastTranslation = lastFrame->translation();
+        cv::Mat lastRotation = lastFrame->rotation();
+
+        if ( lastMap()->sequence().size() < 2 )
+            _maps.pop_back();
 
         auto newMap = Map::create( shared_from_this() );
+
         _maps.push_back( newMap );
 
-        _maps.back()->track( image );
+        newMap->track( image );
 
-        auto procFrame = std::dynamic_pointer_cast< ProcStereoFrame >( lastMap()->lastFrame() );
+        auto procFrame = std::dynamic_pointer_cast< ProcStereoFrame >( newMap->lastFrame() );
 
-        procFrame->setTranslation( lastFrame->translation() );
-        procFrame->setRotation( lastFrame->rotation() );
+        procFrame->setTranslation( lastTranslation );
+        procFrame->setRotation( lastRotation );
 
     }
 

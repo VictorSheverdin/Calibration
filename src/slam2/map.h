@@ -13,7 +13,7 @@
 
 namespace slam2 {
 
-class Map : public std::enable_shared_from_this< Map >, protected Parent_Shared_Ptr< System >
+class Map : public std::enable_shared_from_this< Map >, protected Parent_Weak_Ptr< System >
 {
 public:
     using ObjectClass = Map;
@@ -42,6 +42,8 @@ protected:
     Map( const SystemPtr &parent );
 
     std::list< StereoFramePtr > _sequence;
+
+    void finalizeFrame( const std::reverse_iterator< std::list< StereoFramePtr >::iterator > it );
 
 };
 

@@ -12,7 +12,7 @@ namespace slam2 {
 
 class Track;
 
-class Point2 : public std::enable_shared_from_this< Point2 >
+class Point2 : public std::enable_shared_from_this< Point2 >, protected Parent_Weak_Ptr< Frame >
 {
     friend class Track;
     friend class StereoPoint;
@@ -25,8 +25,11 @@ public:
 
     virtual ~Point2() = default;
 
+    virtual const cv::Point2f &undistortedPoint() const = 0;
     virtual const cv::Point2f &point2d() const = 0;
     virtual cv::Scalar color() const = 0;
+
+    FramePtr parentFrame() const;
 
     TrackPtr parentTrack() const;
     size_t trackIndex() const;
@@ -34,23 +37,26 @@ public:
     StereoPointPtr stereoPoint() const;
 
 protected:
-    Point2() = default;
+    Point2( const FramePtr &parentFrame );
 
     TrackWeak _parentTrack;
     size_t _trackIndex;
 
     StereoPointWeak _stereoPoint;
 
+    void setParentFrame( const FramePtr &parent );
+
     void setParentTrack( const TrackPtr &track );
     void setTrackIndex( const size_t index );
 
     void setStereoPoint( const StereoPointPtr &value );
-
+    void clearStereoPoint();
 };
 
-class FinalPoint : public Point2, public ColorPoint2d, protected Parent_Shared_Ptr< FinalFrame >
+class FinalPoint : public Point2, public ColorPoint2d
 {
     friend class FinalFrame;
+    friend class FinalStereoFrame;
 
 public:
     using ObjectClass = FinalPoint;
@@ -61,6 +67,7 @@ public:
     ObjectPtr shared_from_this();
     ObjectConstPtr shared_from_this() const;
 
+    virtual const cv::Point2f &undistortedPoint() const override;
     virtual const cv::Point2f &point2d() const override;
     virtual cv::Scalar color() const override;
 
@@ -71,7 +78,7 @@ protected:
 
 };
 
-class ProcPoint : public Point2, protected Parent_Shared_Ptr< ProcFrame >
+class ProcPoint : public Point2
 {
 public:
     using ObjectClass = ProcPoint;
@@ -86,7 +93,6 @@ public:
     ObjectPtr shared_from_this();
     ObjectConstPtr shared_from_this() const;
 
-    virtual const cv::Point2f &undistortedPoint() const = 0;
     cv::Scalar color() const override;
 
 protected:
@@ -213,6 +219,8 @@ public:
 
     FinalPointConstPtr leftPoint() const;
     FinalPointConstPtr rightPoint() const;
+
+    static ObjectPtr create();
 
 protected:
     FinalStereoPoint();

@@ -10,7 +10,7 @@ namespace slam2 {
 
 // Map
 Map::Map( const SystemPtr &parent )
-    : Parent_Shared_Ptr< System >( parent )
+    : Parent_Weak_Ptr< System >( parent )
 {
 }
 
@@ -89,14 +89,8 @@ bool Map::track( const StampedStereoImage &image )
 
     if ( !_sequence.empty() ) {
 
-        // TEMPORARY:
-        if ( _sequence.size() > 1 ) {
-
-            auto prePrevFrame = std::dynamic_pointer_cast< ProcStereoFrame >( *( ++_sequence.rbegin() ) );
-
-            prePrevFrame->clearMemory();
-
-        }
+        if ( _sequence.size() > 1 )
+            finalizeFrame( ++_sequence.rbegin() );
 
         auto prevFrame = std::dynamic_pointer_cast< ProcStereoFrame >( _sequence.back() );
 
@@ -117,8 +111,12 @@ bool Map::track( const StampedStereoImage &image )
 
             qDebug() << inliers;
 
-            if ( inliers < system->parameters().minimumInliersRatio() )
+            frame->triangulateTracks();
+
+            if ( inliers < system->parameters().minimumInliersRatio() ) {
+                finalizeFrame( _sequence.rbegin() );
                 return false;
+            }
 
         }
 
@@ -128,6 +126,17 @@ bool Map::track( const StampedStereoImage &image )
 
     return true;
 
+}
+
+void Map::finalizeFrame( const std::reverse_iterator< std::list< StereoFramePtr >::iterator > it )
+{
+    auto frame = std::dynamic_pointer_cast< ProcStereoFrame >( *it );
+
+    auto finalFrame = FinalStereoFrame::create( shared_from_this() );
+
+    finalFrame->replace( frame ) ;
+
+    *it = finalFrame;
 }
 
 const std::list< StereoFramePtr > &Map::sequence() const
