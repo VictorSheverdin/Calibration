@@ -7,6 +7,7 @@
 
 #include "src/common/imagewidget.h"
 #include "src/common/pclwidget.h"
+
 #include "src/common/projectionmatrix.h"
 
 class QCheckBox;
@@ -84,6 +85,8 @@ public:
     void setPointCloudPose( const std::string &id, const Eigen::Vector4f &origin, const Eigen::Quaternionf &orientation );
 
     void showPath( const bool flag );
+    void showFrustum( const bool flag );
+    void showSparseCloud( const bool flag );
 
     bool contains( const std::string &id ) const ;
 
@@ -130,7 +133,7 @@ class SlamWidgetBase : public QWidget
     Q_OBJECT
 
 public:
-    explicit SlamWidgetBase( const QString &calibrationFile, QWidget* parent = nullptr );
+    explicit SlamWidgetBase( const QString &calibrationFile, const QString &leftMaskFile, const QString &rightMaskFile, QWidget* parent = nullptr );
     ~SlamWidgetBase();
 
 public slots:
@@ -150,7 +153,7 @@ protected:
     QPointer< QTimer > _updateTimer;
 
 private:
-    void initialize( const QString &calibrationFile );
+    void initialize( const QString &calibrationFile, const QString &leftMaskFile, const QString &rightMaskFile );
 
 };
 
@@ -159,7 +162,7 @@ class SlamImageWidget : public SlamWidgetBase
     Q_OBJECT
 
 public:
-    explicit SlamImageWidget( const QStringList &leftList, const QStringList &rightList, const QString &calibrationFile, QWidget* parent = nullptr );
+    explicit SlamImageWidget( const QStringList &leftList, const QStringList &rightList, const QString &calibrationFile, const QString &leftMaskFile, const QString &rightMaskFile, QWidget* parent = nullptr );
 
     void setImageList(const QStringList &leftList, const QStringList &rightList );
 

@@ -13,11 +13,11 @@ class ImageSlamDocument : public DocumentBase
     Q_OBJECT
 
 public:
-    explicit ImageSlamDocument( const QStringList &leftList, const QStringList &rightList, const QString &calibrationFile, QWidget* parent = nullptr );
+    explicit ImageSlamDocument( const QStringList &leftList, const QStringList &rightList, const QString &calibrationFile, const QString &leftMaskFile, const QString &rightMaskFile, QWidget* parent = nullptr );
 
     SlamImageWidget *widget() const;
 
 private:
-    void initialize( const QStringList &leftList, const QStringList &rightList, const QString &calibrationFile );
+    void initialize( const QStringList &leftList, const QStringList &rightList, const QString &calibrationFile, const QString &leftMaskFile, const QString &rightMaskFile );
 
 };

@@ -5,15 +5,15 @@
 #include "slamwidget.h"
 
 // ImageSlamDocument
-ImageSlamDocument::ImageSlamDocument( const QStringList &leftList, const QStringList &rightList, const QString &calibrationFile, QWidget *parent )
+ImageSlamDocument::ImageSlamDocument( const QStringList &leftList, const QStringList &rightList, const QString &calibrationFile, const QString &leftMaskFile, const QString &rightMaskFile, QWidget* parent )
     : DocumentBase( parent )
 {
-    initialize( leftList, rightList, calibrationFile );
+    initialize( leftList, rightList, calibrationFile, leftMaskFile, rightMaskFile );
 }
 
-void ImageSlamDocument::initialize( const QStringList &leftList, const QStringList &rightList, const QString &calibrationFile )
+void ImageSlamDocument::initialize( const QStringList &leftList, const QStringList &rightList, const QString &calibrationFile, const QString &leftMaskFile, const QString &rightMaskFile )
 {
-    setWidget( new SlamImageWidget( leftList, rightList, calibrationFile, this ) );
+    setWidget( new SlamImageWidget( leftList, rightList, calibrationFile, leftMaskFile, rightMaskFile, this ) );
 }
 
 SlamImageWidget *ImageSlamDocument::widget() const

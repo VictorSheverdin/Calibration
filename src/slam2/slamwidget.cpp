@@ -341,6 +341,16 @@ void SlamViewWidget::showPath( const bool flag )
     _view3dWidget->showPath( flag );
 }
 
+void SlamViewWidget::showFrustum( const bool flag )
+{
+    _view3dWidget->showFrustum( flag );
+}
+
+void SlamViewWidget::showSparseCloud( const bool flag )
+{
+    _view3dWidget->showPointCloud( "sparse_cloud", flag );
+}
+
 bool SlamViewWidget::contains( const std::string &id ) const
 {
     return _view3dWidget->contains( id );
@@ -381,7 +391,7 @@ void SlamControlWidget::initialize()
     _viewSparseCheck->setChecked( false );
 
     _viewDenseCheck = new QCheckBox( tr( "Show dense reconstruction" ), this );
-    _viewDenseCheck->setChecked( true );
+    _viewDenseCheck->setChecked( false );
 
     layout->addWidget( _viewOdometryCheck );
     layout->addWidget( _viewSparseCheck );
@@ -420,10 +430,10 @@ bool SlamControlWidget::isDenseChecked() const
 }
 
 // SlamWidgetBase
-SlamWidgetBase::SlamWidgetBase( const QString &calibrationFile, QWidget* parent )
+SlamWidgetBase::SlamWidgetBase( const QString &calibrationFile, const QString &leftMaskFile, const QString &rightMaskFile, QWidget* parent )
     : QWidget( parent )
 {
-    initialize( calibrationFile );
+    initialize( calibrationFile, leftMaskFile, rightMaskFile );
 }
 
 SlamWidgetBase::~SlamWidgetBase()
@@ -432,7 +442,7 @@ SlamWidgetBase::~SlamWidgetBase()
     _processorThread->wait();
 }
 
-void SlamWidgetBase::initialize( const QString &calibrationFile )
+void SlamWidgetBase::initialize(const QString &calibrationFile ,const QString &leftMaskFile, const QString &rightMaskFile )
 {
     auto layout = new QVBoxLayout( this );
 
@@ -448,6 +458,20 @@ void SlamWidgetBase::initialize( const QString &calibrationFile )
 
     parameters.setCalibration( calibration );
 
+    cv::Mat leftMask, rightMask;
+
+    if ( !leftMaskFile.isEmpty() ) {
+        auto leftGrayMask = cv::imread( leftMaskFile.toStdString(), cv::IMREAD_GRAYSCALE );
+        cv::threshold( leftGrayMask, leftMask, 127, 255, cv::THRESH_BINARY );
+    }
+
+    if ( !rightMaskFile.isEmpty() ) {
+        auto rightGrayMask = cv::imread( rightMaskFile.toStdString(), cv::IMREAD_GRAYSCALE );
+        cv::threshold( rightGrayMask, rightMask, 127, 255, cv::THRESH_BINARY );
+    }
+
+    parameters.setMask( slam2::StereoMat( leftMask, rightMask ) );
+
     _processorThread = new ProcessorThread( parameters, this );
 
     _updateTimer = new QTimer( this );
@@ -459,13 +483,20 @@ void SlamWidgetBase::initialize( const QString &calibrationFile )
     _processorThread->start();
 #endif
 
-    updateVisibility();
+    connect( _controlWidget->odometryCheck(), &QCheckBox::stateChanged, this, &SlamWidgetBase::updateVisibility );
+    connect( _controlWidget->sparseCheck(), &QCheckBox::stateChanged, this, &SlamWidgetBase::updateVisibility );
+    connect( _controlWidget->denseCheck(), &QCheckBox::stateChanged, this, &SlamWidgetBase::updateVisibility );
 
+    updateViews();
+
+    updateVisibility();
 }
 
 void SlamWidgetBase::updateVisibility()
 {
     _viewWidget->showPath( _controlWidget->isOdometryChecked() );
+    _viewWidget->showFrustum( _controlWidget->isOdometryChecked() );
+    _viewWidget->showSparseCloud( _controlWidget->isSparseChecked() );
 }
 
 void SlamWidgetBase::updateViews()
@@ -495,8 +526,8 @@ void SlamWidgetBase::update3DView()
 }
 
 // SlamImageWidget
-SlamImageWidget::SlamImageWidget( const QStringList &leftList, const QStringList &rightList, const QString &calibrationFile, QWidget* parent )
-    : SlamWidgetBase( calibrationFile, parent )
+SlamImageWidget::SlamImageWidget( const QStringList &leftList, const QStringList &rightList, const QString &calibrationFile, const QString &leftMaskFile, const QString &rightMaskFile, QWidget* parent )
+    : SlamWidgetBase( calibrationFile, leftMaskFile, rightMaskFile, parent )
 {
     initialize();
 

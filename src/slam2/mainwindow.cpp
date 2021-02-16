@@ -59,11 +59,11 @@ void MainWindow::addDialog()
     ImagesDialog dialog( this );
 
     if ( dialog.exec() == DialogBase::Accepted )
-        addDocument( dialog.leftFileNames(), dialog.rightFileNames(), dialog.calibrationFile() );
+        addDocument( dialog.leftFileNames(), dialog.rightFileNames(), dialog.calibrationFile(), dialog.leftMaskFile(), dialog.rightMaskFile() );
 }
 
-void MainWindow::addDocument( const QStringList &leftList, const QStringList &rightList, const QString &calibrationFile )
+void MainWindow::addDocument( const QStringList &leftList, const QStringList &rightList, const QString &calibrationFile, const QString &leftMaskFile, const QString &rightMaskFile )
 {
-    DocumentMainWindow::addDocument( new ImageSlamDocument( leftList, rightList, calibrationFile, this ) );
+    DocumentMainWindow::addDocument( new ImageSlamDocument( leftList, rightList, calibrationFile, leftMaskFile, rightMaskFile, this ) );
 }
 

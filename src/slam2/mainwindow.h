@@ -27,7 +27,8 @@ protected:
     void setupMenus();
     void setupToolBars();
 
-    void addDocument( const QStringList &leftList, const QStringList &rightList, const QString &calibrationFile );
+    void addDocument( const QStringList &leftList, const QStringList &rightList, const QString &calibrationFile,
+                                                const QString &leftMaskFile, const QString &rightMaskFile );
 
 private:
     void initialize();

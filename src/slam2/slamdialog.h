@@ -19,9 +19,14 @@ public:
 
     QString calibrationFile() const;
 
+    QString leftMaskFile() const;
+    QString rightMaskFile() const;
+
 protected:
     QPointer< FileLine > _calibrationFileLine;
     QPointer< StereoFilesListWidget > _filesListWidget;
+    QPointer< FileLine > _leftMaskLine;
+    QPointer< FileLine > _rightMaskLine;
 
 private:
     void initialize();
@@ -44,6 +49,9 @@ public:
     QStringList rightFileNames() const;
 
     QString calibrationFile() const;
+
+    QString leftMaskFile() const;
+    QString rightMaskFile() const;
 
 private:
     void initialize();

@@ -5,8 +5,6 @@
 #include "system.h"
 #include "map.h"
 
-#include "parameters.h"
-
 #include "framepoint.h"
 #include "mappoint.h"
 
@@ -190,9 +188,17 @@ const StampedImage &ProcFrame::image() const
     return _image;
 }
 
+void ProcFrame::setMask( const cv::Mat &mask )
+{
+    _mask = mask;
+}
+
 cv::Mat ProcFrame::mask() const
 {
     cv::Mat ret( _image.size(), CV_8U, 1 );
+
+    if ( !_mask.empty() )
+        _mask.copyTo( ret );
 
     auto system = parentSystem();
 
@@ -909,6 +915,12 @@ void ProcStereoFrame::load( const StampedStereoImage &image )
     rightFrame()->load( image.rightImage() );
 }
 
+void ProcStereoFrame::setMask( const StereoMat &value )
+{
+    leftFrame()->setMask( value.left() );
+    rightFrame()->setMask( value.right() );
+}
+
 void ProcStereoFrame::extract()
 {
     auto system = parentSystem();
@@ -1061,7 +1073,7 @@ size_t ProcStereoFrame::triangulateTracks()
 
         auto track = i->parentTrack();
 
-        if ( track && !track->mapPoint() ) {
+        if ( track ) {
 
             auto startPoint = track->startPoint();
 
@@ -1096,7 +1108,7 @@ size_t ProcStereoFrame::triangulateTracks()
 
         auto track = i->parentTrack();
 
-        if ( track && !track->mapPoint() ) {
+        if ( track ) {
 
             auto startPoint = track->startPoint();
 
@@ -1191,7 +1203,14 @@ size_t ProcStereoFrame::triangulateTracks()
 
                             if ( prevNorm < maxReprojectionError && lastNorm < maxReprojectionError ) {
                                 ++ret;
-                                lastPoint->parentTrack()->createMapPoint( ColorPoint3d( pt, leftFrame()->color( lastPoint->point2d() ) ) );
+
+                                auto track = lastPoint->parentTrack();
+                                auto mapPoint = track->mapPoint();
+
+                                if ( !mapPoint )
+                                    track->createMapPoint( ColorPoint3d( pt, leftFrame()->color( lastPoint->point2d() ) ) );
+                                else
+                                    mapPoint->setPoint( ColorPoint3d( pt, leftFrame()->color( lastPoint->point2d() ) ) );
 
                             }
 
@@ -1269,7 +1288,14 @@ size_t ProcStereoFrame::triangulateTracks()
 
                             if ( prevNorm < maxReprojectionError && lastNorm < maxReprojectionError ) {
                                 ++ret;
-                                lastPoint->parentTrack()->createMapPoint( ColorPoint3d( pt, rightFrame()->color( lastPoint->point2d() ) ) );
+
+                                auto track = lastPoint->parentTrack();
+                                auto mapPoint = track->mapPoint();
+
+                                if ( !mapPoint )
+                                    track->createMapPoint( ColorPoint3d( pt, leftFrame()->color( lastPoint->point2d() ) ) );
+                                else
+                                    mapPoint->setPoint( ColorPoint3d( pt, leftFrame()->color( lastPoint->point2d() ) ) );
 
                             }
 
@@ -1323,7 +1349,7 @@ double ProcStereoFrame::recoverPose()
 
     std::vector< int > inliers;
 
-    if ( !cv::solvePnPRansac( points3d, points2d, frame->cameraMatrix(), cv::noArray(), rvec, tvec, false, 500, maxReprojectionError, 0.999, inliers, cv::SOLVEPNP_ITERATIVE ) ) {
+    if ( !cv::solvePnPRansac( points3d, points2d, frame->cameraMatrix(), cv::noArray(), rvec, tvec, false, 1000, maxReprojectionError, 0.9999, inliers, cv::SOLVEPNP_ITERATIVE ) ) {
         qDebug() << "solvePnPRansac fail";
         return 0.;
     }

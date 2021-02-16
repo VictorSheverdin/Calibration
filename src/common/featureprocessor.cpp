@@ -513,7 +513,7 @@ void SuperGlueProcessor::initialize( const std::string &detectorModelFile, const
     cfg.border = 10;
     cfg.score_threshold = .05;
 
-    _matcherThreshold = .25;
+    _matcherThreshold = .5;
 
     _detector = std::make_unique< marker::SuperPointDetector >( detectorModelFile, logger );
     _keypointSelector = std::make_unique< marker::KeypointSelector >( cfg, _detector->scores_shape() );

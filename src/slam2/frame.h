@@ -9,6 +9,8 @@
 #include "src/common/image.h"
 #include "src/common/projectionmatrix.h"
 
+#include "parameters.h"
+
 #include "alias.h"
 
 namespace slam2 {
@@ -113,6 +115,9 @@ public:
     const cv::Mat &distorsionCoefficients() const;
 
     const StampedImage &image() const;
+
+    void setMask( const cv::Mat &mask );
+
     cv::Mat mask() const;
 
     FlowPointPtr createFlowPoint( const size_t index );
@@ -139,6 +144,8 @@ protected:
     ProcFrame( const ProcStereoFramePtr &parent );
 
     StampedImage _image;
+
+    cv::Mat _mask;
 
     std::vector< cv::Mat > _imagePyramid;
 
@@ -305,6 +312,8 @@ public:
     static ObjectPtr create( const MapPtr &parent );
 
     void load( const StampedStereoImage &image );
+
+    void setMask( const StereoMat &value );
 
     void extract();
     void match();

@@ -25,11 +25,11 @@ protected:
 
 };
 
-class StereoCameraMatrix
+class StereoMat
 {
 public:
-    StereoCameraMatrix() = default;
-    StereoCameraMatrix( const cv::Mat &left, const cv::Mat &right );
+    StereoMat() = default;
+    StereoMat( const cv::Mat &left, const cv::Mat &right );
 
     void set( const cv::Mat &left, const cv::Mat &right );
 
@@ -39,6 +39,14 @@ public:
 protected:
     cv::Mat _left;
     cv::Mat _right;
+
+};
+
+class StereoCameraMatrix : public StereoMat
+{
+public:
+    StereoCameraMatrix() = default;
+    StereoCameraMatrix( const cv::Mat &left, const cv::Mat &right );
 
 };
 
@@ -66,6 +74,9 @@ public:
 
     void setCalibration( const StereoCalibrationDataShort &value );
     const StereoCalibrationDataShort &calibration() const;
+
+    void setMask( const StereoMat &value );
+    const StereoMat &mask() const;
 
     StereoRect processRect() const;
     void setProcessRect( const StereoRect &rect );
@@ -106,6 +117,8 @@ public:
 
 protected:
     StereoCalibrationDataShort _calibration;
+
+    StereoMat _mask;
 
     StereoRect _procRect;
 

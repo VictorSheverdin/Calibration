@@ -85,6 +85,8 @@ bool Map::track( const StampedStereoImage &image )
     frame->setRightRotation( system->parameters().rightRotation() );
     frame->setRightTranslation( system->parameters().rightTranslation() );
 
+    frame->setMask( system->parameters().mask() );
+
     frame->load( image );
 
     if ( !_sequence.empty() ) {
@@ -115,6 +117,7 @@ bool Map::track( const StampedStereoImage &image )
 
             if ( inliers < system->parameters().minimumInliersRatio() ) {
                 finalizeFrame( _sequence.rbegin() );
+                qDebug() << "Track lost!";
                 return false;
             }
 

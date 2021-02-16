@@ -19,6 +19,16 @@ void ImagesChoiceWidget::initialize()
     _filesListWidget = new StereoFilesListWidget( this );
     layout->addWidget( _filesListWidget );
 
+    _leftMaskLine = new FileLine( QString(), tr( "Image files (*.png *.xpm *.jpg *.tiff *.exr)" ), this );
+    _rightMaskLine = new FileLine( QString(), tr( "Image files (*.png *.xpm *.jpg *.tiff *.exr)" ), this );
+
+    QFormLayout *maskLayout = new QFormLayout();
+
+    maskLayout->addRow( new QLabel( tr( "left mask file:" ) ), _leftMaskLine );
+    maskLayout->addRow( new QLabel( tr( "Right mask file:" ) ), _rightMaskLine );
+
+    layout->addLayout( maskLayout );
+
 }
 
 int ImagesChoiceWidget::leftCount() const
@@ -44,6 +54,16 @@ QStringList ImagesChoiceWidget::rightFileNames() const
 QString ImagesChoiceWidget::calibrationFile() const
 {
     return _calibrationFileLine->path();
+}
+
+QString ImagesChoiceWidget::leftMaskFile() const
+{
+    return _leftMaskLine->path();
+}
+
+QString ImagesChoiceWidget::rightMaskFile() const
+{
+    return _rightMaskLine->path();
 }
 
 // ImagesDialog
@@ -88,4 +108,14 @@ QStringList ImagesDialog::rightFileNames() const
 QString ImagesDialog::calibrationFile() const
 {
     return widget()->calibrationFile();
+}
+
+QString ImagesDialog::leftMaskFile() const
+{
+    return widget()->leftMaskFile();
+}
+
+QString ImagesDialog::rightMaskFile() const
+{
+    return widget()->rightMaskFile();
 }

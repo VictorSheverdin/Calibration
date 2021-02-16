@@ -29,25 +29,31 @@ const cv::Rect &StereoRect::right() const
 }
 
 // StereoProjectionMatrix
-StereoCameraMatrix::StereoCameraMatrix( const cv::Mat &left, const cv::Mat &right )
+StereoMat::StereoMat( const cv::Mat &left, const cv::Mat &right )
 {
     set( left, right );
 }
 
-void StereoCameraMatrix::set( const cv::Mat &left, const cv::Mat &right )
+void StereoMat::set( const cv::Mat &left, const cv::Mat &right )
 {
     _left = left;
     _right = right;
 }
 
-const cv::Mat &StereoCameraMatrix::left() const
+const cv::Mat &StereoMat::left() const
 {
     return _left;
 }
 
-const cv::Mat &StereoCameraMatrix::right() const
+const cv::Mat &StereoMat::right() const
 {
     return _right;
+}
+
+// StereoProjectionMatrix
+StereoCameraMatrix::StereoCameraMatrix( const cv::Mat &left, const cv::Mat &right )
+    : StereoMat( left, right )
+{
 }
 
 // StereoDistorsionCoefficients
@@ -83,8 +89,8 @@ void Parameters::initialize()
     _cornerExtractionCount = 1 << 10;
     _minimumTracksCount = 1 << 7;
 
-    _minimumRecoverPointsCount = 1 << 6;
-    _minimumInliersRatio = 0.7;
+    _minimumRecoverPointsCount = 1 << 5;
+    _minimumInliersRatio = 0.25;
 
     _extractionDistance = 10.;
 
@@ -113,6 +119,16 @@ void Parameters::setCalibration( const StereoCalibrationDataShort &value )
 const StereoCalibrationDataShort &Parameters::calibration() const
 {
     return _calibration;
+}
+
+void Parameters::setMask( const StereoMat &value )
+{
+    _mask = value;
+}
+
+const StereoMat &Parameters::mask() const
+{
+    return _mask;
 }
 
 StereoRect Parameters::processRect() const
